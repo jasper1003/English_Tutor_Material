@@ -691,7 +691,6 @@
       } else {
         db.lessons.forEach(lesson => {
           const vocabCount = db.vocab.filter(v => v.Date === lesson.Date).length;
-          const quizCount = db.quiz.filter(q => q.Date === lesson.Date).length;
 
           const card = document.createElement("div");
           card.className = "folder-card";
@@ -703,7 +702,6 @@
             </div>
             <div class="folder-meta">
               <span>單字：${vocabCount} 個</span>
-              <span>測驗：${quizCount} 題</span>
             </div>
           `;
           card.addEventListener("click", () => navigateTo(lesson.Date));
