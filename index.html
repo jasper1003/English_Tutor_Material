@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="text-scale" content="scale" />
   <title>English Tutor Material — Vic</title>
   <style>
     :root {
@@ -47,22 +48,22 @@
     }
 
     .header-inner {
-      max-width: 1200px;
+      max-width: 1280px;
       margin: 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 1rem;
     }
 
     .brand {
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 1.125rem;
       color: var(--muted);
       text-decoration: none;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 0.5rem;
       cursor: pointer;
       letter-spacing: 0.02em;
     }
@@ -74,15 +75,15 @@
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 0.65rem;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 8px 14px;
-      font-size: 0.875rem;
+      padding: 0.55rem 1rem;
+      font-size: 0.98rem;
       font-weight: 500;
       border-radius: 6px;
       border: 1px solid var(--border);
@@ -109,9 +110,9 @@
 
     /* Main Container */
     main {
-      max-width: 1200px;
+      max-width: 1280px;
       margin: 0 auto;
-      padding: 40px 24px 72px;
+      padding: 2.5rem 1.5rem 4.5rem;
     }
 
     /* Loading & Error States */
@@ -133,30 +134,30 @@
 
     /* Folder Grid View (Home) — 強化字級反差與層級 */
     .page-title {
-      font-size: 1.85rem;
+      font-size: 2rem;
       font-weight: 800;
       letter-spacing: -0.02em;
-      margin-bottom: 28px;
+      margin-bottom: 1.75rem;
       color: var(--text);
     }
 
     .folder-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+      gap: 1.5rem;
     }
 
     .folder-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 26px;
+      padding: 1.75rem;
       cursor: pointer;
       transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      gap: 20px;
+      gap: 1.25rem;
     }
 
     .folder-card:hover {
@@ -168,79 +169,79 @@
     /* 層級 1：日期（最大視覺焦點） */
     .folder-date {
       display: block;
-      font-size: 1.5rem;
+      font-size: 1.65rem;
       font-weight: 800;
       color: var(--primary);
       letter-spacing: -0.01em;
-      margin-bottom: 6px;
+      margin-bottom: 0.4rem;
     }
 
     /* 層級 2：乾淨的大 Title */
     .folder-title {
-      font-size: 1.125rem;
+      font-size: 1.28rem;
       font-weight: 600;
       color: var(--text);
-      margin-bottom: 10px;
+      margin-bottom: 0.65rem;
     }
 
-    /* 層級 3：底部 Description（縮小字級並降低對比度，形成清晰主從關係） */
+    /* 層級 3：底部 Description（維持主從關係並提升可讀性） */
     .folder-grammar {
-      font-size: 0.85rem;
-      line-height: 1.55;
+      font-size: 1rem;
+      line-height: 1.6;
       color: var(--muted);
     }
 
     .folder-meta {
-      padding-top: 14px;
+      padding-top: 0.9rem;
       border-top: 1px solid var(--border);
-      font-size: 0.8rem;
+      font-size: 0.95rem;
       font-weight: 500;
       color: var(--muted);
       display: flex;
-      gap: 16px;
+      gap: 1rem;
     }
 
     /* Lesson Detail View */
     .lesson-header {
-      margin-bottom: 36px;
-      padding-bottom: 24px;
+      margin-bottom: 2.25rem;
+      padding-bottom: 1.5rem;
       border-bottom: 1px solid var(--border);
     }
 
     .lesson-date-pill {
       display: inline-block;
-      font-size: 0.9rem;
+      font-size: 1rem;
       font-weight: 700;
       color: var(--primary);
       background: var(--primary-light);
-      padding: 4px 12px;
+      padding: 0.3rem 0.8rem;
       border-radius: 6px;
-      margin-bottom: 10px;
+      margin-bottom: 0.65rem;
     }
 
     .lesson-header h1 {
-      font-size: 2rem;
+      font-size: 2.2rem;
       font-weight: 800;
       letter-spacing: -0.02em;
-      margin-bottom: 8px;
+      margin-bottom: 0.5rem;
       color: var(--text);
     }
 
     .grammar-tag {
-      font-size: 0.95rem;
+      font-size: 1.1rem;
       color: var(--muted);
     }
 
     /* Section Boundaries */
     .section-block {
-      margin-bottom: 56px;
+      margin-bottom: 3.5rem;
     }
 
     .section-heading {
-      font-size: 1.35rem;
+      font-size: 1.55rem;
       font-weight: 700;
-      margin-bottom: 20px;
-      padding-left: 14px;
+      margin-bottom: 1.25rem;
+      padding-left: 0.9rem;
       border-left: 4px solid var(--primary);
       color: var(--text);
     }
@@ -248,8 +249,8 @@
     /* Vocabulary Flashcards */
     .vocab-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 20.5rem), 1fr));
+      gap: 1.35rem;
     }
 
     .flashcard {
@@ -259,15 +260,15 @@
       width: 100%;
       font: inherit;
       color: inherit;
-      height: 195px;
+      min-height: 14.5rem;
       perspective: 1000px;
       cursor: pointer;
-      display: block;
+      display: flex;
       border-radius: var(--radius);
     }
 
     .flashcard.has-image {
-      height: 320px;
+      min-height: 25rem;
     }
 
     .flashcard:focus-visible {
@@ -277,8 +278,9 @@
 
     .flashcard-inner {
       position: relative;
+      display: grid;
       width: 100%;
-      height: 100%;
+      min-height: inherit;
       transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
       transform-style: preserve-3d;
     }
@@ -289,28 +291,27 @@
 
     .flashcard-front,
     .flashcard-back {
-      position: absolute;
-      inset: 0;
+      grid-area: 1 / 1;
+      width: 100%;
       -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
       border-radius: var(--radius);
       border: 1px solid var(--border);
-      padding: 20px;
+      padding: 1.5rem;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      overflow: hidden;
     }
 
     .flashcard-front {
       background: var(--surface);
       align-items: center;
       text-align: center;
-      gap: 12px;
+      gap: 0.9rem;
     }
 
     .flashcard.has-image .flashcard-front {
-      padding: 14px;
+      padding: 1.1rem;
       justify-content: flex-start;
     }
 
@@ -334,16 +335,17 @@
     }
 
     .flashcard-word {
-      font-size: 1.45rem;
+      font-size: 1.75rem;
       font-weight: 700;
       color: var(--text);
       line-height: 1.25;
+      overflow-wrap: anywhere;
     }
 
     .flashcard-pos {
-      font-size: 0.85rem;
+      font-size: 1rem;
       color: var(--muted);
-      margin-top: 6px;
+      margin-top: 0.4rem;
     }
 
     .flashcard-back {
@@ -352,38 +354,37 @@
       transform: rotateY(180deg);
       justify-content: space-between;
       text-align: left;
-      gap: 10px;
+      gap: 0.85rem;
     }
 
     .flashcard.has-image .flashcard-back {
-      padding: 14px;
+      padding: 1.1rem;
       justify-content: flex-start;
     }
 
     .flashcard-back .flashcard-img {
-      aspect-ratio: 16 / 8;
+      aspect-ratio: 16 / 8.5;
     }
 
     .flashcard-back-body {
       display: flex;
       flex-direction: column;
       flex: 1;
-      min-height: 0;
+      gap: 0.65rem;
       justify-content: space-between;
     }
 
     .flashcard-meaning {
-      font-size: 1.1rem;
+      font-size: 1.3rem;
       font-weight: 700;
       color: var(--primary);
-      margin-bottom: 6px;
+      line-height: 1.35;
     }
 
     .flashcard-example {
-      font-size: 0.86rem;
+      font-size: 1.08rem;
       color: var(--text-secondary);
-      line-height: 1.5;
-      overflow-y: auto;
+      line-height: 1.6;
     }
 
     /* IELTS Split Layout (Reading + Quiz) */
@@ -404,7 +405,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 32px;
+      padding: 2.25rem;
       position: sticky;
       top: 84px;
       max-height: calc(100vh - 110px);
@@ -419,16 +420,16 @@
     }
 
     .reading-title {
-      font-size: 1.45rem;
+      font-size: 1.65rem;
       font-weight: 800;
-      margin-bottom: 18px;
-      padding-bottom: 14px;
+      margin-bottom: 1.15rem;
+      padding-bottom: 0.9rem;
       border-bottom: 1px solid var(--border);
       color: var(--text);
     }
 
     .reading-body {
-      font-size: 1.05rem;
+      font-size: 1.2rem;
       line-height: 1.85;
       color: var(--text-secondary);
     }
@@ -436,14 +437,14 @@
     .quiz-pane {
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 1.25rem;
     }
 
     .question-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 22px;
+      padding: 1.6rem;
     }
 
     .question-card.correct {
@@ -458,37 +459,37 @@
 
     .question-type-badge {
       display: inline-block;
-      font-size: 0.75rem;
+      font-size: 0.875rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--muted);
-      margin-bottom: 8px;
+      margin-bottom: 0.5rem;
     }
 
     .question-text {
       font-weight: 700;
-      font-size: 1.05rem;
-      margin-bottom: 16px;
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
       color: var(--text);
     }
 
     .options-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 0.6rem;
     }
 
     .option-label {
       display: flex;
       align-items: flex-start;
-      gap: 10px;
-      padding: 10px 14px;
+      gap: 0.65rem;
+      padding: 0.75rem 1rem;
       border: 1px solid var(--border);
       border-radius: 8px;
       background: var(--surface);
       cursor: pointer;
-      font-size: 0.925rem;
+      font-size: 1.06rem;
       color: var(--text-secondary);
       transition: background 0.15s ease;
     }
@@ -498,15 +499,16 @@
     }
 
     .option-label input[type="radio"] {
-      margin-top: 4px;
+      margin-top: 5px;
       accent-color: var(--primary);
     }
 
     .explanation-box {
-      margin-top: 16px;
-      padding-top: 14px;
+      margin-top: 1rem;
+      padding-top: 0.9rem;
       border-top: 1px dashed var(--border);
-      font-size: 0.875rem;
+      font-size: 1.02rem;
+      line-height: 1.65;
       display: none;
     }
 
