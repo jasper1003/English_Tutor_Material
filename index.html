@@ -3,682 +3,796 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Private English Tutor</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>English Tutor Material — Vic</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
-    body {
-      font-family: 'Inter', 'Noto Sans TC', sans-serif;
-      background-color: #f8fafc;
-      color: #0f172a;
-    }
-    .ielts-pane {
-      height: calc(100vh - 108px);
-      overflow-y: auto;
-    }
-    @media (max-width: 768px) {
-      .ielts-pane {
-        height: auto;
-      }
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #1e40af;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --success: #15803d;
+      --success-bg: #f0fdf4;
+      --error: #b91c1c;
+      --error-bg: #fef2f2;
+      --radius: 10px;
     }
 
-    /* Minimal 3D Flashcard */
-    .flashcard-scene {
-      perspective: 1000px;
-      height: 210px;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: #f1f5f9;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Main Container */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+
+    /* Loading & Error States */
+    .status-box {
+      text-align: center;
+      padding: 64px 20px;
+      color: var(--muted);
+    }
+
+    .error-box {
+      background: var(--error-bg);
+      color: var(--error);
+      border: 1px solid #fecaca;
+      padding: 20px;
+      border-radius: var(--radius);
+      max-width: 600px;
+      margin: 40px auto;
+    }
+
+    /* Folder Grid View (Home) */
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+
+    .folder-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .folder-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .folder-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+      box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.08);
+    }
+
+    .folder-date {
+      display: inline-block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+
+    .folder-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .folder-grammar {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .folder-meta {
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: flex;
+      gap: 16px;
+    }
+
+    /* Lesson View */
+    .lesson-header {
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .lesson-header h1 {
+      font-size: 1.65rem;
+      margin: 8px 0;
+    }
+
+    .grammar-tag {
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    /* Section Boundaries */
+    .section-block {
+      margin-bottom: 48px;
+    }
+
+    .section-heading {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      padding-left: 12px;
+      border-left: 4px solid var(--primary);
+    }
+
+    /* Vocabulary Flashcards */
+    .vocab-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .flashcard {
+      background-color: transparent;
+      height: 190px;
+      perspective: 1000px;
+      cursor: pointer;
+    }
+
     .flashcard-inner {
       position: relative;
       width: 100%;
       height: 100%;
-      transition: transform 0.45s cubic-bezier(0.4, 0.2, 0.2, 1);
+      transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
       transform-style: preserve-3d;
-      cursor: pointer;
     }
-    .flashcard-inner.is-flipped {
+
+    .flashcard.flipped .flashcard-inner {
       transform: rotateY(180deg);
     }
-    .flashcard-face {
+
+    .flashcard-front,
+    .flashcard-back {
       position: absolute;
       width: 100%;
       height: 100%;
       -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
-      border-radius: 0.5rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      padding: 1.25rem;
-    }
-    .flashcard-front {
-      background-color: #ffffff;
-      border: 1px solid #e2e8f0;
-    }
-    .flashcard-front:hover {
-      border-color: #94a3b8;
-    }
-    .flashcard-back {
-      background-color: #ffffff;
-      border: 1px solid #0284c7;
-      transform: rotateY(180deg);
-    }
-
-    /* Reading Highlighter */
-    .highlight-mark {
-      background-color: #fef08a;
-      padding: 1px 2px;
-      border-radius: 2px;
-    }
-    .evidence-mark {
-      background-color: #dcfce7;
-      border-bottom: 2px solid #16a34a;
-      padding: 1px 2px;
-    }
-
-    /* Palette Buttons */
-    .palette-btn {
-      width: 28px;
-      height: 28px;
-      font-size: 12px;
-      font-weight: 600;
-      border-radius: 4px;
-      display: inline-flex;
-      align-items: center;
       justify-content: center;
     }
-    .palette-unanswered {
-      background-color: #ffffff;
-      border: 1px solid #cbd5e1;
-      color: #475569;
+
+    .flashcard-front {
+      background: var(--surface);
+      align-items: center;
+      text-align: center;
     }
-    .palette-answered {
-      background-color: #0284c7;
-      color: #ffffff;
+
+    .flashcard-word {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text);
     }
-    .palette-correct {
-      background-color: #16a34a;
-      color: #ffffff;
+
+    .flashcard-pos {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 6px;
     }
-    .palette-wrong {
-      background-color: #dc2626;
-      color: #ffffff;
+
+    .flashcard-back {
+      background: var(--primary-light);
+      border-color: #bfdbfe;
+      transform: rotateY(180deg);
+      justify-content: space-between;
+      text-align: left;
+    }
+
+    .flashcard-meaning {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .flashcard-example {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.5;
+      overflow-y: auto;
+    }
+
+    /* IELTS Split Layout (Reading + Quiz) */
+    .ielts-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .ielts-split {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .reading-pane {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 110px);
+      overflow-y: auto;
+    }
+
+    @media (max-width: 900px) {
+      .reading-pane {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    .reading-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .reading-body {
+      font-size: 1.02rem;
+      line-height: 1.8;
+      color: #1e293b;
+    }
+
+    .quiz-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .question-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .question-card.correct {
+      border-color: #86efac;
+      background: var(--success-bg);
+    }
+
+    .question-card.incorrect {
+      border-color: #fca5a5;
+      background: var(--error-bg);
+    }
+
+    .question-type-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .question-text {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 14px;
+    }
+
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .option-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: background 0.15s ease;
+    }
+
+    .option-label:hover {
+      background: #f8fafc;
+    }
+
+    .option-label input[type="radio"] {
+      margin-top: 4px;
+      accent-color: var(--primary);
+    }
+
+    .explanation-box {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .explanation-box.visible {
+      display: block;
+    }
+
+    .score-banner {
+      background: var(--surface);
+      border: 2px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .score-banner.visible {
+      display: flex;
+    }
+
+    .hidden {
+      display: none !important;
     }
   </style>
 </head>
-<body class="flex flex-col min-h-screen">
+<body>
 
-  <!-- Minimal Header -->
-  <header class="bg-slate-900 text-white px-5 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30">
-    <h1 class="font-semibold text-base tracking-tight">Private English Tutor</h1>
-
-    <nav class="flex items-center gap-1">
-      <button onclick="switchTab('vocab')" id="tab-vocab" class="tab-btn px-3 py-1.5 rounded text-xs md:text-sm font-medium bg-sky-600 text-white transition">
-        Vocabulary
-      </button>
-      <button onclick="switchTab('grammar')" id="tab-grammar" class="tab-btn px-3 py-1.5 rounded text-xs md:text-sm font-medium text-slate-300 hover:text-white transition">
-        Grammar
-      </button>
-      <button onclick="switchTab('reading')" id="tab-reading" class="tab-btn px-3 py-1.5 rounded text-xs md:text-sm font-medium text-slate-300 hover:text-white transition">
-        Reading
-      </button>
-      <button onclick="switchTab('listening')" id="tab-listening" class="tab-btn px-3 py-1.5 rounded text-xs md:text-sm font-medium text-slate-300 hover:text-white transition">
-        Listening
-      </button>
-    </nav>
+  <header>
+    <div class="header-inner">
+      <div class="brand" id="home-btn">English Tutor Material</div>
+      <div class="header-actions" id="lesson-actions" style="display: none;">
+        <button class="btn" id="back-btn">← 返回課程資料夾</button>
+        <button class="btn btn-primary" id="copy-link-btn">複製本堂課連結</button>
+      </div>
+    </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="flex-1">
+  <main>
+    <div id="loading-view" class="status-box">正在同步 Google 試算表教案資料庫...</div>
+    <div id="error-view" class="error-box hidden"></div>
 
-    <!-- SECTION 1: VOCABULARY FLASHCARDS -->
-    <section id="view-vocab" class="max-w-6xl mx-auto p-5">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
-        <div class="flex items-center gap-1.5">
-          <button onclick="filterVocab('all')" class="v-filter px-3 py-1 rounded text-xs font-medium bg-slate-800 text-white" data-filter="all">All (20)</button>
-          <button onclick="filterVocab('word')" class="v-filter px-3 py-1 rounded text-xs font-medium bg-white border border-slate-200 text-slate-600" data-filter="word">Words (14)</button>
-          <button onclick="filterVocab('phrase')" class="v-filter px-3 py-1 rounded text-xs font-medium bg-white border border-slate-200 text-slate-600" data-filter="phrase">Phrases (6)</button>
-          <button onclick="filterVocab('unmastered')" class="v-filter px-3 py-1 rounded text-xs font-medium bg-white border border-slate-200 text-slate-600" data-filter="unmastered">Review</button>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button onclick="flipAllCards(false)" class="px-2.5 py-1 rounded text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">Front</button>
-          <button onclick="flipAllCards(true)" class="px-2.5 py-1 rounded text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">Back</button>
-        </div>
-      </div>
-
-      <div id="vocab-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    <!-- Home: Date Folders -->
+    <section id="home-view" class="hidden">
+      <h1 class="page-title">課程資料夾</h1>
+      <div class="folder-grid" id="folder-grid"></div>
     </section>
 
-    <!-- SECTION 2: GRAMMAR -->
-    <section id="view-grammar" class="hidden grid grid-cols-1 md:grid-cols-12">
-      <!-- Left Reference -->
-      <div class="md:col-span-5 bg-white border-r border-slate-200 p-6 ielts-pane">
-        <h2 class="text-base font-bold text-slate-900 mb-4">Grammar Notes</h2>
-        <div class="space-y-4 text-sm text-slate-700 leading-relaxed">
-          <div class="pb-3 border-b border-slate-100">
-            <h3 class="font-semibold text-slate-900 mb-1">1. 介系詞與動名詞 (V-ing)</h3>
-            <p><strong>after / before</strong> 後無主詞時，動詞加 <strong>-ing</strong>。</p>
-            <p class="mt-1">必接 V-ing：<strong>give up, enjoy, practice, keep, finish</strong>。</p>
-          </div>
-          <div class="pb-3 border-b border-slate-100">
-            <h3 class="font-semibold text-slate-900 mb-1">2. 不定詞 (to V) 與否定</h3>
-            <p>必接 to V：<strong>plan, decide, hope, want, need</strong>。</p>
-            <p class="mt-1">否定形式：<strong>not</strong> 置於 <strong>to</strong> 前（decide <strong>not to</strong> V）。</p>
-          </div>
-          <div class="pb-3 border-b border-slate-100">
-            <h3 class="font-semibold text-slate-900 mb-1">3. stop & remember</h3>
-            <ul class="list-disc pl-4 space-y-1 mt-1">
-              <li><strong>stop to V</strong>：停下原本的事，去做另一件事</li>
-              <li><strong>stop V-ing</strong>：停止正在做的事</li>
-              <li><strong>remember to V</strong>：記得「去做」未做的事</li>
-              <li><strong>remember V-ing</strong>：記得「曾經做過」某事</li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="font-semibold text-slate-900 mb-1">4. 片語與轉折詞</h3>
-            <p><strong>save A from B</strong>（將 A 從 B 中拯救出來）</p>
-            <p class="mt-1"><strong>however</strong>（然而）表語氣轉折。</p>
-          </div>
-        </div>
+    <!-- Lesson Detail -->
+    <section id="lesson-view" class="hidden">
+      <div class="lesson-header">
+        <span class="folder-date" id="lesson-date-badge"></span>
+        <h1 id="lesson-title"></h1>
+        <div class="grammar-tag" id="lesson-grammar"></div>
       </div>
 
-      <!-- Right Questions -->
-      <div class="md:col-span-7 bg-slate-50 p-6 ielts-pane">
-        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
-          <h2 class="text-base font-bold text-slate-900">Questions 1 – 8</h2>
-          <div class="flex items-center gap-2">
-            <span id="score-grammar" class="hidden text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">0 / 8</span>
-            <button id="submit-grammar" onclick="submitSection('grammar')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-3.5 py-1.5 rounded transition">Submit</button>
-            <button id="reset-grammar" onclick="resetSection('grammar')" class="hidden bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1.5 rounded transition">Reset</button>
-          </div>
-        </div>
-        <div id="grammar-questions" class="space-y-4"></div>
-      </div>
-    </section>
-
-    <!-- SECTION 3: READING -->
-    <section id="view-reading" class="hidden grid grid-cols-1 md:grid-cols-12">
-      <!-- Left Passage -->
-      <div class="md:col-span-6 bg-white border-r border-slate-200 p-6 ielts-pane">
-        <div class="flex items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-200">
-          <h2 class="text-lg font-bold text-slate-900">From the Farm to the Screen</h2>
-          <div class="flex items-center gap-1.5">
-            <button onclick="highlightSelection()" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-900 text-xs font-medium px-2.5 py-1 rounded transition">Highlight</button>
-            <button onclick="clearHighlights()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium px-2.5 py-1 rounded transition">Clear</button>
-          </div>
-        </div>
-
-        <article id="reading-passage-content" class="space-y-4 text-base text-slate-800 leading-8 select-text">
-          <p>
-            Daniel grew up in a small village in southern Taiwan, where almost everyone in his family worked as a <strong>farmer</strong>. For decades, his parents woke up at five to five every morning to grow sweet pineapples and tea leaves. <strong>However</strong>, life was never easy for them. <span data-evidence="1">Because they didn't know how to sell their crops directly to big cities, they had to sell everything to middlemen at very low prices. Sometimes, insects even made tiny <strong>holes</strong> in the leaves, and buyers refused to take the fruit.</span>
-          </p>
-          <p>
-            After graduating from college, Daniel got a job as a <strong>salesman</strong> at a busy tech company in Taipei. His <strong>boss</strong> was strict and always told the workers not to waste time during office hours. Daniel worked hard, but he often felt worried about his parents' farm back home. One evening, while he was watching clips online, he noticed that many young creators were becoming popular by sharing stories about their daily lives. Suddenly, a good idea came to his mind: why not use the internet to help his family?
-          </p>
-          <p>
-            The next weekend, Daniel went back to his hometown with a camera. He decided to <strong>make a video</strong> showing how carefully his parents took care of the land without using dangerous chemicals. <span data-evidence="2">In the video, he even showed a big spider spinning a <strong>web</strong> between two tea trees to prove how natural and healthy the farm environment was!</span> <span data-evidence="4">After Daniel posted the clip online, thousands of people watched it and left warm comments. Many customers immediately ordered boxes of pineapples and tea leaves online.</span> <span data-evidence="3">By connecting traditional farming with modern digital tools, Daniel successfully <strong>saved his family's farm from closing down</strong>.</span>
-          </p>
-        </article>
+      <!-- Vocabulary Section -->
+      <div class="section-block" id="vocab-section">
+        <h2 class="section-heading">Vocabulary Flashcards</h2>
+        <div class="vocab-grid" id="vocab-grid"></div>
       </div>
 
-      <!-- Right Questions -->
-      <div class="md:col-span-6 bg-slate-50 p-6 ielts-pane">
-        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
-          <h2 class="text-base font-bold text-slate-900">Questions 1 – 4</h2>
-          <div class="flex items-center gap-2">
-            <span id="score-reading" class="hidden text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">0 / 4</span>
-            <button id="submit-reading" onclick="submitSection('reading')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-3.5 py-1.5 rounded transition">Submit</button>
-            <button id="reset-reading" onclick="resetSection('reading')" class="hidden bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1.5 rounded transition">Reset</button>
-          </div>
-        </div>
-        <div id="reading-questions" class="space-y-4"></div>
-      </div>
-    </section>
+      <!-- IELTS Reading & Quiz Section -->
+      <div class="section-block" id="reading-quiz-section">
+        <h2 class="section-heading">IELTS Reading &amp; Comprehension</h2>
+        <div class="ielts-split">
+          <article class="reading-pane">
+            <h3 class="reading-title" id="reading-title"></h3>
+            <div class="reading-body" id="reading-body"></div>
+          </article>
 
-    <!-- SECTION 4: LISTENING -->
-    <section id="view-listening" class="hidden grid grid-cols-1 md:grid-cols-12">
-      <!-- Left Audio -->
-      <div class="md:col-span-5 bg-white border-r border-slate-200 p-6 ielts-pane">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-base font-bold text-slate-900">Audio</h2>
-          <div class="flex items-center gap-1">
-            <button onclick="setSpeechRate(0.8)" class="rate-btn px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-700" data-rate="0.8">0.8x</button>
-            <button onclick="setSpeechRate(1.0)" class="rate-btn px-2 py-1 rounded text-xs font-medium bg-slate-900 text-white" data-rate="1.0">1.0x</button>
-            <button onclick="setSpeechRate(1.15)" class="rate-btn px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-700" data-rate="1.15">1.15x</button>
-          </div>
-        </div>
-
-        <!-- Part 1 -->
-        <div class="p-4 rounded-lg border border-slate-200 mb-4">
-          <div class="flex items-center justify-between mb-2">
-            <span class="font-semibold text-slate-800 text-sm">Part 1 (Q1–Q2)</span>
-            <div class="flex items-center gap-1.5">
-              <button onclick="playListening(1)" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium px-3 py-1.5 rounded transition">Play</button>
-              <button onclick="stopSpeech()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded transition">Stop</button>
+          <div class="quiz-pane">
+            <div class="score-banner" id="score-banner">
+              <span id="score-text"></span>
+              <button class="btn" id="reset-quiz-btn">重新作答</button>
             </div>
-          </div>
-          <div id="transcript-1" class="hidden mt-3 pt-3 border-t border-slate-100 text-sm text-slate-700 leading-relaxed">
-            Yesterday evening at a quarter to eight, while Ryan was helping his mom do the dishes, his smartphone suddenly rang. It was a call from his boss at the tech company. A dangerous hacker was trying to steal important data through a cyber attack! Ryan got butterflies in his stomach at first; however, he quickly made up his mind to drive back to the office. Together with two software engineers, Ryan fixed the broken server and saved the company's private files from the attack before midnight.
-          </div>
-        </div>
-
-        <!-- Part 2 -->
-        <div class="p-4 rounded-lg border border-slate-200 mb-4">
-          <div class="flex items-center justify-between mb-2">
-            <span class="font-semibold text-slate-800 text-sm">Part 2 (Q3–Q4)</span>
-            <div class="flex items-center gap-1.5">
-              <button onclick="playListening(2)" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium px-3 py-1.5 rounded transition">Play</button>
-              <button onclick="stopSpeech()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded transition">Stop</button>
-            </div>
-          </div>
-          <div id="transcript-2" class="hidden mt-3 pt-3 border-t border-slate-100 text-sm text-slate-700 leading-relaxed">
-            Last winter, a terrible typhoon hit the coast, bringing freezing rain and strong winds. Mr. Chen, an experienced truck driver, needed to deliver a rare antique violin to a museum before noon. While he was driving past an old factory, a small earthquake shook the ground, and falling rocks blocked the road. Instead of giving up, Mr. Chen stopped to check the fragile box to make sure it was still in good condition, and then he safely took another mountain path to finish his job.
+            <div id="quiz-container" style="display: flex; flex-direction: column; gap: 16px;"></div>
+            <button class="btn btn-primary" id="submit-quiz-btn" style="padding: 12px; font-size: 1rem;">提交答案並查看解析</button>
           </div>
         </div>
-
-        <button onclick="toggleTranscripts()" class="w-full py-2 px-3 rounded border border-slate-200 hover:bg-slate-50 text-xs font-medium text-slate-600 transition">
-          Transcript
-        </button>
-      </div>
-
-      <!-- Right Questions -->
-      <div class="md:col-span-7 bg-slate-50 p-6 ielts-pane">
-        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
-          <h2 class="text-base font-bold text-slate-900">Questions 1 – 4</h2>
-          <div class="flex items-center gap-2">
-            <span id="score-listening" class="hidden text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">0 / 4</span>
-            <button id="submit-listening" onclick="submitSection('listening')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-3.5 py-1.5 rounded transition">Submit</button>
-            <button id="reset-listening" onclick="resetSection('listening')" class="hidden bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1.5 rounded transition">Reset</button>
-          </div>
-        </div>
-        <div id="listening-questions" class="space-y-4"></div>
       </div>
     </section>
-
   </main>
 
-  <!-- Minimal Question Palette (Quiz Sections Only) -->
-  <footer id="exam-footer" class="hidden bg-white border-t border-slate-200 px-5 py-2 sticky bottom-0 z-30">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div id="question-palette" class="flex items-center gap-1.5 flex-wrap"></div>
-    </div>
-  </footer>
-
   <script>
-    const vocabData = [
-      { id: 1, term: "salesman", ipa: "['sɛlzmən]", pos: "(n.)", zh: "業務員", type: "word", sentence: "The experienced salesman gave a good idea to his boss about how to deliver products to foreign customers faster." },
-      { id: 2, term: "soldier", ipa: "['soldʒɚ]", pos: "(n.)", zh: "士兵", type: "word", sentence: "During the heavy typhoon, the brave soldier saved a trapped farmer from the rising river." },
-      { id: 3, term: "relative", ipa: "['rɛlətɪv]", pos: "(n.)", zh: "親戚", type: "word", sentence: "Even when her relatives made fun of her dream, Maya still believed in herself and kept practicing." },
-      { id: 4, term: "farmer", ipa: "['fɑrmɚ]", pos: "(n.)", zh: "農夫", type: "word", sentence: "The farmer wanted to grow organic vegetables in his country; however, heavy rain destroyed his farmland." },
-      { id: 5, term: "factory", ipa: "['fækt(ə)rɪ]", pos: "(n.)", zh: "工廠", type: "word", sentence: "Many workers in that shoe factory gathered together to fight for their rights and ask for safer machines." },
-      { id: 6, term: "career", ipa: "[kə'rɪr]", pos: "(n.)", zh: "職業生涯；事業", type: "word", sentence: "Before starting her career as a movie star, she went to many auditions and never gave up." },
-      { id: 7, term: "audition", ipa: "[ɔ'dɪʃən]", pos: "(n.)", zh: "試鏡；試音", type: "word", sentence: "Emma got butterflies in her stomach right before the audition, however, she still acted wonderfully on stage." },
-      { id: 8, term: "web", ipa: "[wɛb]", pos: "(n.)", zh: "網子；網路", type: "word", sentence: "He decided to make a video and share it on the web so that people all over the country could watch it." },
-      { id: 9, term: "foreign", ipa: "['fɔrɪn]", pos: "(adj.)", zh: "外國的", type: "word", sentence: "The salesman practiced speaking foreign languages every night because he planned to drive business deals abroad." },
-      { id: 10, term: "hole", ipa: "[hol]", pos: "(n.)", zh: "洞", type: "word", sentence: "The soldier spotted a deep hole hidden under the leaves and saved his teammate from falling into it." },
-      { id: 11, term: "believe", ipa: "[bə'liv]", pos: "(v.)", zh: "相信", type: "word", sentence: "The boss didn't believe the salesman at first, however, the sales report proved that his plan worked." },
-      { id: 12, term: "act", ipa: "[ækt]", pos: "(v.)", zh: "表演；行動", type: "word", sentence: "Don't make fun of Lucas when he acts on stage; he is just trying his best for tomorrow's audition." },
-      { id: 13, term: "deliver", ipa: "[dɪ'lɪvɚ]", pos: "(v.)", zh: "投遞；運送", type: "word", sentence: "Someone called the factory this morning to ask if we could deliver the winter coats to a foreign port." },
-      { id: 14, term: "however", ipa: "[haʊ'ɛvɚ]", pos: "(adv.)", zh: "然而；不過", type: "word", sentence: "The fisherman wanted to sail out early; however, the storm warning saved him from a terrible accident." },
-      { id: 15, term: "save ... from ...", ipa: "", pos: "(phr.)", zh: "將……從……拯救出來", type: "phrase", sentence: "The local farmer built a strong fence to save his chickens from wild animals hiding in the hole." },
-      { id: 16, term: "make a video", ipa: "", pos: "(phr.)", zh: "製作／拍攝影片", type: "phrase", sentence: "Thinking it was a good idea, the students made a video to help those in need raise money on the web." },
-      { id: 17, term: "fight for one's rights", ipa: "", pos: "(phr.)", zh: "為……爭取權益", type: "phrase", sentence: "Although the boss refused to listen at first, the factory workers never gave up fighting for their rights." },
-      { id: 18, term: "get butterflies in one's stomach", ipa: "", pos: "(phr.)", zh: "非常緊張", type: "phrase", sentence: "The brave soldier gets butterflies in his stomach when someone announces a new mission." },
-      { id: 19, term: "make fun of", ipa: "", pos: "(phr.)", zh: "取笑；嘲弄", type: "phrase", sentence: "It is rude to make fun of a foreign salesman just because he speaks with a different accent." },
-      { id: 20, term: "those in need", ipa: "", pos: "(phr.)", zh: "需要幫助的人們", type: "phrase", sentence: "The truck driver volunteered to deliver warm blankets and food to those in need across the country." }
-    ];
+    // 綁定你的 Google 試算表 ID
+    const SPREADSHEET_ID = "1DrKwyy-L9g_nHFBFJ0joLfsDE64vBb1ymjtKiaNQJ5U";
 
-    const sectionQuestions = {
-      grammar: [
-        { num: 1, q: "After ______ breakfast, William read the morning newspaper in the living room.", options: ["(A) have", "(B) has", "(C) had", "(D) having"], answer: 3, explanation: "after 後無主詞作介系詞，後方動詞改為動名詞 (V-ing) having。" },
-        { num: 2, q: "Chloe wanted to get better grades; therefore, she gave up ______ video games after school.", options: ["(A) play", "(B) to play", "(C) playing", "(D) played"], answer: 2, explanation: "give up 後固定接動名詞 (V-ing)，故選 playing。" },
-        { num: 3, q: "The hardworking salesman plans ______ the branch manager at a quarter to eleven.", options: ["(A) meet", "(B) to meet", "(C) meeting", "(D) met"], answer: 1, explanation: "plan 後固定接不定詞 (to V)，故選 to meet。" },
-        { num: 4, q: "The brave firefighters saved the crying little girl ______ the burning factory yesterday.", options: ["(A) from", "(B) with", "(C) for", "(D) of"], answer: 0, explanation: "固定片語 save A from B，介系詞用 from。" },
-        { num: 5, q: "When the emergency earthquake alarm blinked on the screen, all employees decided ______ inside the building.", options: ["(A) to not stay", "(B) not staying", "(C) not to stay", "(D) don't stay"], answer: 2, explanation: "decide 後接 to V，否定時 not 放在 to 前面，即 decide not to stay。" },
-        { num: 6, q: "After driving for five long hours in heavy rain, the delivery driver stopped ______ a short break at the gas station.", options: ["(A) taking", "(B) to take", "(C) took", "(D) take"], answer: 1, explanation: "stop to V 表示停下原本動作去做另一件事（休息），故選 to take。" },
-        { num: 7, q: "Don't worry! I clearly remember ______ the financial report to the boss's email yesterday afternoon.", options: ["(A) send", "(B) to send", "(C) sending", "(D) sent"], answer: 2, explanation: "yesterday afternoon 表記得昨天已經做過（寄出）這件事，用 remember + V-ing。" },
-        { num: 8, q: "The farmer worked hard in the field all year; ______, the terrible typhoon destroyed most of his crops.", options: ["(A) therefore", "(B) however", "(C) because", "(D) in fact"], answer: 1, explanation: "前後語意轉折，且有分號與逗號隔開，選副詞 however。" }
-      ],
-      reading: [
-        { num: 1, q: "Why did Daniel's parents have a hard time making enough money in the past?", options: ["(A) Because Daniel's boss refused to buy any fruit from their village.", "(B) Because they sold their crops at low prices and sometimes insects damaged the leaves.", "(C) Because they forgot to water the tea trees before five o'clock every morning.", "(D) Because they spent too much money buying cameras and computers."], answer: 1, explanation: "第一段提到他們只能低價賣給中盤商，且昆蟲有時會在葉子上咬出小洞。" },
-        { num: 2, q: "Why did Daniel film a spider's web in his video?", options: ["(A) To teach students how spiders catch insects in the forest.", "(B) To show that his parents' farm was natural and free of dangerous chemicals.", "(C) To ask his boss for a longer vacation in southern Taiwan.", "(D) To complain about the bad weather in his hometown."], answer: 1, explanation: "第三段提到拍攝蜘蛛網是為了證明農場環境自然健康、無危險化學農藥。" },
-        { num: 3, q: "What does the phrase \"saved his family's farm from closing down\" in the last paragraph mean?", options: ["(A) Daniel helped the farm survive and make money again.", "(B) Daniel bought a bigger house for his parents in Taipei.", "(C) Daniel stopped his parents from growing pineapples forever.", "(D) Daniel asked his coworkers to work on the farm for free."], answer: 0, explanation: "close down 為倒閉，save ... from closing down 即幫助農場免於倒閉、繼續營運。" },
-        { num: 4, q: "Which of the following is TRUE about Daniel according to the passage?", options: ["(A) He worked as a soldier before moving to Taipei.", "(B) His boss told him to quit his job and become a farmer.", "(C) He used online videos to help customers buy directly from his parents.", "(D) Nobody watched his video after he posted it on the internet."], answer: 2, explanation: "第三段指出影片上傳後，顧客直接在網路上向他父母訂購鳳梨與茶葉。" }
-      ],
-      listening: [
-        { num: 1, q: "[Part 1] What was Ryan doing when his smartphone rang yesterday evening?", options: ["(A) He was driving his car to the tech company.", "(B) He was helping his mother clean the dishes at home.", "(C) He was talking to two software engineers in the office.", "(D) He was downloading a new game on his computer screen."], answer: 1, explanation: "while Ryan was helping his mom do the dishes（正在幫媽媽洗碗）。" },
-        { num: 2, q: "[Part 1] How did Ryan feel at first, and what did he do next?", options: ["(A) He felt completely bored, so he decided to go to sleep early.", "(B) He was very angry at his boss and refused to answer the phone.", "(C) He felt very nervous at first, but he decided to return to the office to help.", "(D) He was under the weather, so he asked a salesman to fix the server."], answer: 2, explanation: "got butterflies in his stomach（非常緊張），隨後 made up his mind to drive back to the office。" },
-        { num: 3, q: "[Part 2] What was Mr. Chen's job in this story?", options: ["(A) He was a pilot flying a rescue plane through a heavy storm.", "(B) He was a musician practicing the violin for a big audition.", "(C) He was a truck driver delivering an old violin to a museum.", "(D) He was a factory worker inspecting broken machines."], answer: 2, explanation: "Mr. Chen, an experienced truck driver, needed to deliver a rare antique violin to a museum。" },
-        { num: 4, q: "[Part 2] Why did Mr. Chen stop his truck on the way?", options: ["(A) Because he wanted to buy a cup of hot chocolate at a coffee shop.", "(B) Because falling rocks from an earthquake blocked the road, and he wanted to check the box.", "(C) Because he forgot to bring his password and needed to call his relative.", "(D) Because a soldier asked him to rescue a farmer from a flooded house."], answer: 1, explanation: "落石擋路（falling rocks blocked the road），停下來檢查易碎箱子（check the fragile box）。" }
-      ]
+    let db = {
+      lessons: [],
+      vocab: [],
+      quiz: []
     };
 
-    let activeTab = 'vocab';
-    let sectionAnswers = { grammar: {}, reading: {}, listening: {} };
-    let sectionSubmitted = { grammar: false, reading: false, listening: false };
-    let masteredVocab = JSON.parse(localStorage.getItem('masteredVocab') || '[]');
-    let flippedCards = {};
-    let currentVocabFilter = 'all';
-    let speechRate = 1.0;
+    // 透過 Google Visualization API 讀取指定工作表分頁
+    async function fetchSheetTab(sheetName) {
+      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`無法讀取工作表：${sheetName}`);
+      const text = await res.text();
+      // 剥除 google.visualization.Query.setResponse(...) 包裝
+      const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+      const data = JSON.parse(jsonStr);
 
-    document.addEventListener('DOMContentLoaded', () => {
-      renderVocab();
-      renderSectionQuestions('grammar');
-      renderSectionQuestions('reading');
-      renderSectionQuestions('listening');
+      if (data.status === "error") {
+        throw new Error(`工作表 ${sheetName} 讀取錯誤：${data.errors.map(e => e.message).join(", ")}`);
+      }
+
+      const cols = data.table.cols.map(c => (c.label || "").trim());
+      const rows = data.table.rows || [];
+
+      return rows.map(row => {
+        const obj = {};
+        cols.forEach((colName, idx) => {
+          if (!colName) return;
+          const cell = row.c[idx];
+          // 優先使用 formatted value (f) 以保留 YYYY-MM-DD 日期格式，否則取 raw value (v)
+          let val = "";
+          if (cell) {
+            val = (cell.f !== undefined && cell.f !== null) ? String(cell.f) : (cell.v !== undefined && cell.v !== null ? String(cell.v) : "");
+          }
+          obj[colName] = val.trim();
+        });
+        return obj;
+      }).filter(item => item.Date); // 過濾空列
+    }
+
+    // 初始化載入所有資料
+    async function init() {
+      try {
+        const [lessons, vocab, quiz] = await Promise.all([
+          fetchSheetTab("Lessons"),
+          fetchSheetTab("Vocab"),
+          fetchSheetTab("Quiz")
+        ]);
+
+        // 依日期由新到舊排序
+        db.lessons = lessons.sort((a, b) => b.Date.localeCompare(a.Date));
+        db.vocab = vocab;
+        db.quiz = quiz;
+
+        document.getElementById("loading-view").classList.add("hidden");
+        routeFromURL();
+      } catch (err) {
+        document.getElementById("loading-view").classList.add("hidden");
+        const errBox = document.getElementById("error-view");
+        errBox.textContent = `載入失敗：${err.message}。請確認 Google 試算表已設為「知道連結的使用者皆可檢視」，且分頁名稱為 Lessons、Vocab、Quiz。`;
+        errBox.classList.remove("hidden");
+      }
+    }
+
+    // 路由控制（支援 ?date=YYYY-MM-DD 深層連結）
+    function routeFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      const targetDate = params.get("date");
+
+      if (targetDate && db.lessons.some(l => l.Date === targetDate)) {
+        renderLesson(targetDate);
+      } else {
+        renderHome();
+      }
+    }
+
+    function navigateTo(dateStr) {
+      const url = new URL(window.location.href);
+      if (dateStr) {
+        url.searchParams.set("date", dateStr);
+      } else {
+        url.searchParams.delete("date");
+      }
+      window.history.pushState({}, "", url);
+      routeFromURL();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // 渲染首頁課程資料夾
+    function renderHome() {
+      document.getElementById("lesson-view").classList.add("hidden");
+      document.getElementById("lesson-actions").style.display = "none";
+      const homeView = document.getElementById("home-view");
+      const grid = document.getElementById("folder-grid");
+      grid.innerHTML = "";
+
+      if (db.lessons.length === 0) {
+        grid.innerHTML = `<p style="color: var(--muted);">目前試算表中尚無課程資料。</p>`;
+      } else {
+        db.lessons.forEach(lesson => {
+          const vocabCount = db.vocab.filter(v => v.Date === lesson.Date).length;
+          const quizCount = db.quiz.filter(q => q.Date === lesson.Date).length;
+
+          const card = document.createElement("div");
+          card.className = "folder-card";
+          card.innerHTML = `
+            <div>
+              <span class="folder-date">${escapeHtml(lesson.Date)}</span>
+              <div class="folder-title">${escapeHtml(lesson.Title || "Untitled Lesson")}</div>
+              <div class="folder-grammar">${escapeHtml(lesson.Grammar_Focus || "")}</div>
+            </div>
+            <div class="folder-meta">
+              <span>單字：${vocabCount} 個</span>
+              <span>測驗：${quizCount} 題</span>
+            </div>
+          `;
+          card.addEventListener("click", () => navigateTo(lesson.Date));
+          grid.appendChild(card);
+        });
+      }
+
+      homeView.classList.remove("hidden");
+    }
+
+    // 渲染單堂課程頁面
+    function renderLesson(dateStr) {
+      const lesson = db.lessons.find(l => l.Date === dateStr);
+      if (!lesson) return renderHome();
+
+      document.getElementById("home-view").classList.add("hidden");
+      document.getElementById("lesson-actions").style.display = "flex";
+      const lessonView = document.getElementById("lesson-view");
+
+      // 標題資訊
+      document.getElementById("lesson-date-badge").textContent = lesson.Date;
+      document.getElementById("lesson-title").textContent = lesson.Title;
+      document.getElementById("lesson-grammar").textContent = lesson.Grammar_Focus ? `文法重點：${lesson.Grammar_Focus}` : "";
+
+      // 1. 渲染單字翻轉卡
+      const lessonVocab = db.vocab.filter(v => v.Date === dateStr);
+      const vocabSection = document.getElementById("vocab-section");
+      const vocabGrid = document.getElementById("vocab-grid");
+      vocabGrid.innerHTML = "";
+
+      if (lessonVocab.length === 0) {
+        vocabSection.classList.add("hidden");
+      } else {
+        vocabSection.classList.remove("hidden");
+        lessonVocab.forEach(v => {
+          const card = document.createElement("div");
+          card.className = "flashcard";
+          card.innerHTML = `
+            <div class="flashcard-inner">
+              <div class="flashcard-front">
+                <div class="flashcard-word">${escapeHtml(v.Word)}</div>
+                ${v.POS ? `<div class="flashcard-pos">(${escapeHtml(v.POS)})</div>` : ""}
+              </div>
+              <div class="flashcard-back">
+                <div class="flashcard-meaning">${escapeHtml(v.Meaning)}</div>
+                <div class="flashcard-example">${escapeHtml(v.Example)}</div>
+              </div>
+            </div>
+          `;
+          card.addEventListener("click", () => card.classList.toggle("flipped"));
+          vocabGrid.appendChild(card);
+        });
+      }
+
+      // 2. 渲染閱讀文章與 IELTS 測驗
+      const lessonQuiz = db.quiz.filter(q => q.Date === dateStr);
+      document.getElementById("reading-title").textContent = lesson.Reading_Title || "Reading Passage";
+      // 允許 <br> 分段，同時對其餘文字做安全轉義
+      const safePassage = escapeHtml(lesson.Reading_Passage || "").replace(/&lt;br\s*\/?&gt;/gi, "<br>");
+      document.getElementById("reading-body").innerHTML = safePassage;
+
+      const quizContainer = document.getElementById("quiz-container");
+      const scoreBanner = document.getElementById("score-banner");
+      const submitBtn = document.getElementById("submit-quiz-btn");
+      quizContainer.innerHTML = "";
+      scoreBanner.classList.remove("visible");
+      submitBtn.style.display = lessonQuiz.length > 0 ? "inline-flex" : "none";
+
+      lessonQuiz.forEach((q, idx) => {
+        const qCard = document.createElement("div");
+        qCard.className = "question-card";
+        qCard.dataset.index = idx;
+
+        const isTFNG = (q.Type || "").toUpperCase() === "TFNG";
+        const typeLabel = isTFNG ? "TRUE / FALSE / NOT GIVEN" : "MULTIPLE CHOICE";
+
+        let optionsHtml = "";
+        if (isTFNG) {
+          ["TRUE", "FALSE", "NOT GIVEN"].forEach(val => {
+            optionsHtml += `
+              <label class="option-label">
+                <input type="radio" name="q_${idx}" value="${val}" />
+                <span>${val}</span>
+              </label>
+            `;
+          });
+        } else {
+          const opts = [
+            { key: "A", text: q.Option_A },
+            { key: "B", text: q.Option_B },
+            { key: "C", text: q.Option_C },
+            { key: "D", text: q.Option_D }
+          ].filter(o => o.text && o.text !== "-");
+
+          opts.forEach(o => {
+            optionsHtml += `
+              <label class="option-label">
+                <input type="radio" name="q_${idx}" value="${o.key}" />
+                <span><strong>(${o.key})</strong> ${escapeHtml(o.text)}</span>
+              </label>
+            `;
+          });
+        }
+
+        qCard.innerHTML = `
+          <div class="question-type-badge">Question ${idx + 1} · ${typeLabel}</div>
+          <div class="question-text">${escapeHtml(q.Question)}</div>
+          <div class="options-list">${optionsHtml}</div>
+          <div class="explanation-box" id="exp_${idx}">
+            <div><strong>正確答案：</strong>${escapeHtml(q.Answer)}</div>
+            <div style="margin-top: 4px; color: var(--muted);">${escapeHtml(q.Explanation || "")}</div>
+          </div>
+        `;
+        quizContainer.appendChild(qCard);
+      });
+
+      // 綁定提交批改事件
+      submitBtn.onclick = () => gradeQuiz(lessonQuiz);
+      document.getElementById("reset-quiz-btn").onclick = () => renderLesson(dateStr);
+
+      lessonView.classList.remove("hidden");
+    }
+
+    // 批改測驗並顯示解析
+    function gradeQuiz(questions) {
+      let correctCount = 0;
+
+      questions.forEach((q, idx) => {
+        const card = document.querySelector(`.question-card[data-index="${idx}"]`);
+        const selected = document.querySelector(`input[name="q_${idx}"]:checked`);
+        const userAns = selected ? selected.value.trim().toUpperCase() : "";
+        const rightAns = (q.Answer || "").trim().toUpperCase();
+
+        card.classList.remove("correct", "incorrect");
+        if (userAns === rightAns) {
+          correctCount++;
+          card.classList.add("correct");
+        } else {
+          card.classList.add("incorrect");
+        }
+
+        document.getElementById(`exp_${idx}`).classList.add("visible");
+      });
+
+      const scoreBanner = document.getElementById("score-banner");
+      document.getElementById("score-text").textContent = `測驗結果：${correctCount} / ${questions.length} 題答對`;
+      scoreBanner.classList.add("visible");
+      scoreBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    // HTML 特殊字元轉義（防 XSS）
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // 導航按鈕綁定
+    document.getElementById("home-btn").addEventListener("click", () => navigateTo(null));
+    document.getElementById("back-btn").addEventListener("click", () => navigateTo(null));
+    document.getElementById("copy-link-btn").addEventListener("click", async () => {
+      const btn = document.getElementById("copy-link-btn");
+      await navigator.clipboard.writeText(window.location.href);
+      const orig = btn.textContent;
+      btn.textContent = "已複製專屬連結 ✓";
+      setTimeout(() => (btn.textContent = orig), 2000);
     });
 
-    function switchTab(tabName) {
-      activeTab = tabName;
-      stopSpeech();
-
-      ['vocab', 'grammar', 'reading', 'listening'].forEach(t => {
-        document.getElementById(`view-${t}`).classList.add('hidden');
-        const btn = document.getElementById(`tab-${t}`);
-        btn.classList.remove('bg-sky-600', 'text-white');
-        btn.classList.add('text-slate-300');
-      });
-
-      document.getElementById(`view-${tabName}`).classList.remove('hidden');
-      const activeBtn = document.getElementById(`tab-${tabName}`);
-      activeBtn.classList.add('bg-sky-600', 'text-white');
-      activeBtn.classList.remove('text-slate-300');
-
-      const footer = document.getElementById('exam-footer');
-      if (tabName === 'vocab') {
-        footer.classList.add('hidden');
-      } else {
-        footer.classList.remove('hidden');
-        renderPalette(tabName);
-      }
-    }
-
-    function jumpToSectionQuestion(sectionName, qNum) {
-      const el = document.getElementById(`${sectionName}-q-${qNum}`);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    // --- MINIMAL FLASHCARD ---
-    function renderVocab() {
-      const grid = document.getElementById('vocab-grid');
-      grid.innerHTML = '';
-      const filtered = vocabData.filter(item => {
-        if (currentVocabFilter === 'word') return item.type === 'word';
-        if (currentVocabFilter === 'phrase') return item.type === 'phrase';
-        if (currentVocabFilter === 'unmastered') return !masteredVocab.includes(item.id);
-        return true;
-      });
-
-      filtered.forEach(item => {
-        const isMastered = masteredVocab.includes(item.id);
-        const isFlipped = !!flippedCards[item.id];
-
-        const scene = document.createElement('div');
-        scene.className = 'flashcard-scene';
-        scene.innerHTML = `
-          <div id="fc-inner-${item.id}" onclick="flipCard(${item.id})" class="flashcard-inner ${isFlipped ? 'is-flipped' : ''}">
-            
-            <!-- FRONT: ENGLISH ONLY -->
-            <div class="flashcard-face flashcard-front">
-              <div class="flex items-center justify-end">
-                <button onclick="event.stopPropagation(); toggleMastered(${item.id})" class="w-6 h-6 rounded-full border flex items-center justify-center text-xs transition ${isMastered ? 'bg-emerald-600 text-white border-emerald-600' : 'border-slate-300 text-slate-400 hover:border-slate-500'}">
-                  ✓
-                </button>
-              </div>
-
-              <div class="text-center my-auto px-2">
-                <h3 class="text-2xl font-bold text-slate-900 tracking-tight break-words">${item.term}</h3>
-                <p class="text-xs text-slate-400 mt-1">${item.ipa} ${item.pos}</p>
-              </div>
-
-              <div class="flex justify-center">
-                <button onclick="event.stopPropagation(); speakText('${item.term.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-sky-600 p-1.5 rounded transition" title="Listen">
-                  🔊
-                </button>
-              </div>
-            </div>
-
-            <!-- BACK: CHINESE & EXAMPLE -->
-            <div class="flashcard-face flashcard-back">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                <h4 class="text-base font-bold text-sky-900">${item.zh}</h4>
-                <button onclick="event.stopPropagation(); speakText('${item.sentence.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-sky-600 p-1 rounded transition" title="Listen">
-                  🔊
-                </button>
-              </div>
-
-              <p class="text-sm text-slate-700 leading-relaxed my-auto">${item.sentence}</p>
-              <div class="h-2"></div>
-            </div>
-
-          </div>
-        `;
-        grid.appendChild(scene);
-      });
-    }
-
-    function flipCard(id) {
-      flippedCards[id] = !flippedCards[id];
-      const el = document.getElementById(`fc-inner-${id}`);
-      if (el) el.classList.toggle('is-flipped', flippedCards[id]);
-    }
-
-    function flipAllCards(toBack) {
-      vocabData.forEach(item => { flippedCards[item.id] = toBack; });
-      renderVocab();
-    }
-
-    function filterVocab(type) {
-      currentVocabFilter = type;
-      document.querySelectorAll('.v-filter').forEach(btn => {
-        if (btn.dataset.filter === type) {
-          btn.classList.add('bg-slate-800', 'text-white');
-          btn.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
-        } else {
-          btn.classList.remove('bg-slate-800', 'text-white');
-          btn.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
-        }
-      });
-      renderVocab();
-    }
-
-    function toggleMastered(id) {
-      if (masteredVocab.includes(id)) {
-        masteredVocab = masteredVocab.filter(item => item !== id);
-      } else {
-        masteredVocab.push(id);
-      }
-      localStorage.setItem('masteredVocab', JSON.stringify(masteredVocab));
-      renderVocab();
-    }
-
-    // --- SECTION QUESTIONS ---
-    function renderSectionQuestions(sectionName) {
-      const container = document.getElementById(`${sectionName}-questions`);
-      container.innerHTML = '';
-      const list = sectionQuestions[sectionName];
-      const isSub = sectionSubmitted[sectionName];
-      const ansMap = sectionAnswers[sectionName];
-
-      list.forEach(item => {
-        const card = document.createElement('div');
-        card.id = `${sectionName}-q-${item.num}`;
-        card.className = 'bg-white rounded-lg border border-slate-200 p-4';
-
-        let optionsHtml = item.options.map((opt, idx) => {
-          const checked = ansMap[item.num] === idx ? 'checked' : '';
-          let statusClass = 'border-slate-200 hover:bg-slate-50';
-          if (isSub) {
-            if (idx === item.answer) {
-              statusClass = 'border-emerald-500 bg-emerald-50 font-medium text-emerald-900';
-            } else if (ansMap[item.num] === idx && idx !== item.answer) {
-              statusClass = 'border-rose-500 bg-rose-50 text-rose-900';
-            }
-          }
-          return `
-            <label class="flex items-center gap-2.5 p-2.5 rounded border ${statusClass} cursor-pointer transition text-sm">
-              <input type="radio" name="${sectionName}-q-${item.num}" value="${idx}" ${checked} ${isSub ? 'disabled' : ''} onchange="selectSectionAnswer('${sectionName}', ${item.num}, ${idx})" class="accent-sky-600" />
-              <span>${opt}</span>
-            </label>
-          `;
-        }).join('');
-
-        let explanationHtml = '';
-        if (isSub) {
-          const isCorrect = ansMap[item.num] === item.answer;
-          explanationHtml = `
-            <div class="mt-3 pt-2.5 border-t border-slate-100 text-xs ${isCorrect ? 'text-emerald-700' : 'text-rose-700'}">
-              ${item.explanation}
-            </div>
-          `;
-        }
-
-        card.innerHTML = `
-          <div class="flex items-start gap-2.5 mb-3">
-            <span class="text-xs font-bold text-slate-400 mt-0.5">${item.num}.</span>
-            <p class="font-medium text-slate-900 text-sm md:text-base leading-snug">${item.q}</p>
-          </div>
-          <div class="space-y-2">${optionsHtml}</div>
-          ${explanationHtml}
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    function selectSectionAnswer(sectionName, qNum, optionIdx) {
-      if (sectionSubmitted[sectionName]) return;
-      sectionAnswers[sectionName][qNum] = optionIdx;
-      renderPalette(sectionName);
-    }
-
-    function renderPalette(sectionName) {
-      const palette = document.getElementById('question-palette');
-      palette.innerHTML = '';
-      const list = sectionQuestions[sectionName];
-      const isSub = sectionSubmitted[sectionName];
-      const ansMap = sectionAnswers[sectionName];
-
-      list.forEach(q => {
-        const btn = document.createElement('button');
-        btn.textContent = q.num;
-        btn.onclick = () => jumpToSectionQuestion(sectionName, q.num);
-        let cls = 'palette-btn ';
-        if (isSub) {
-          cls += ansMap[q.num] === q.answer ? 'palette-correct' : 'palette-wrong';
-        } else {
-          cls += ansMap[q.num] !== undefined ? 'palette-answered' : 'palette-unanswered';
-        }
-        btn.className = cls;
-        palette.appendChild(btn);
-      });
-    }
-
-    function submitSection(sectionName) {
-      const list = sectionQuestions[sectionName];
-      const ansMap = sectionAnswers[sectionName];
-      sectionSubmitted[sectionName] = true;
-
-      let score = 0;
-      list.forEach(q => { if (ansMap[q.num] === q.answer) score++; });
-
-      const badge = document.getElementById(`score-${sectionName}`);
-      badge.textContent = `${score} / ${list.length}`;
-      badge.classList.remove('hidden');
-      document.getElementById(`submit-${sectionName}`).classList.add('hidden');
-      document.getElementById(`reset-${sectionName}`).classList.remove('hidden');
-
-      if (sectionName === 'reading') {
-        document.querySelectorAll('[data-evidence]').forEach(el => el.classList.add('evidence-mark'));
-      }
-      if (sectionName === 'listening') {
-        document.getElementById('transcript-1').classList.remove('hidden');
-        document.getElementById('transcript-2').classList.remove('hidden');
-      }
-
-      renderSectionQuestions(sectionName);
-      renderPalette(sectionName);
-    }
-
-    function resetSection(sectionName) {
-      sectionAnswers[sectionName] = {};
-      sectionSubmitted[sectionName] = false;
-
-      document.getElementById(`score-${sectionName}`).classList.add('hidden');
-      document.getElementById(`submit-${sectionName}`).classList.remove('hidden');
-      document.getElementById(`reset-${sectionName}`).classList.add('hidden');
-
-      if (sectionName === 'reading') {
-        document.querySelectorAll('[data-evidence]').forEach(el => el.classList.remove('evidence-mark'));
-      }
-      if (sectionName === 'listening') {
-        document.getElementById('transcript-1').classList.add('hidden');
-        document.getElementById('transcript-2').classList.add('hidden');
-      }
-
-      renderSectionQuestions(sectionName);
-      renderPalette(sectionName);
-    }
-
-    // --- HIGHLIGHTER ---
-    function highlightSelection() {
-      const selection = window.getSelection();
-      if (!selection.rangeCount || selection.isCollapsed) return;
-      const range = selection.getRangeAt(0);
-      const passage = document.getElementById('reading-passage-content');
-      if (!passage.contains(range.commonAncestorContainer)) return;
-
-      const span = document.createElement('span');
-      span.className = 'highlight-mark';
-      try {
-        range.surroundContents(span);
-        selection.removeAllRanges();
-      } catch (e) {}
-    }
-
-    function clearHighlights() {
-      document.querySelectorAll('#reading-passage-content .highlight-mark').forEach(span => {
-        const parent = span.parentNode;
-        while (span.firstChild) parent.insertBefore(span.firstChild, span);
-        parent.removeChild(span);
-      });
-    }
-
-    // --- SPEECH ---
-    function speakText(text) {
-      if (!('speechSynthesis' in window)) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = speechRate;
-      window.speechSynthesis.speak(utterance);
-    }
-
-    function playListening(part) {
-      const el = document.getElementById(`transcript-${part}`);
-      if (el) speakText(el.textContent.trim());
-    }
-
-    function stopSpeech() {
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    }
-
-    function setSpeechRate(rate) {
-      speechRate = rate;
-      document.querySelectorAll('.rate-btn').forEach(btn => {
-        if (parseFloat(btn.dataset.rate) === rate) {
-          btn.classList.add('bg-slate-900', 'text-white');
-          btn.classList.remove('bg-slate-100', 'text-slate-700');
-        } else {
-          btn.classList.remove('bg-slate-900', 'text-white');
-          btn.classList.add('bg-slate-100', 'text-slate-700');
-        }
-      });
-    }
-
-    function toggleTranscripts() {
-      document.getElementById('transcript-1').classList.toggle('hidden');
-      document.getElementById('transcript-2').classList.toggle('hidden');
-    }
+    window.addEventListener("popstate", routeFromURL);
+    init();
   </script>
 </body>
 </html>
