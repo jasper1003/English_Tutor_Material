@@ -590,17 +590,38 @@
       z-index: 9999;
     }
 
-    .explanation-box {
+    /* 低調且不顯眼的折疊解析：預設關閉，由老師主導展開 */
+    .explanation-details {
       margin-top: 1rem;
-      padding-top: 0.9rem;
+      padding-top: 0.75rem;
       border-top: 1px dashed var(--border);
-      font-size: 1.02rem;
-      line-height: 1.65;
-      display: none;
     }
 
-    .explanation-box.visible {
-      display: block;
+    .explanation-summary {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #94a3b8;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .explanation-summary:hover {
+      color: var(--text-secondary);
+    }
+
+    .explanation-content {
+      margin-top: 0.65rem;
+      padding: 0.85rem 1rem;
+      background: #f8fafc;
+      border-radius: 6px;
+      border-left: 3px solid #cbd5e1;
+      font-size: 0.98rem;
+      line-height: 1.65;
+      color: var(--text-secondary);
     }
 
     .score-banner {
@@ -939,11 +960,14 @@
           <div class="question-type-badge">Question ${idx + 1} · ${typeLabel}</div>
           <div class="question-text">${escapeHtml(q.Question)}</div>
           <div class="options-list">${optionsHtml}</div>
-          <div class="explanation-box" id="exp_${idx}">
-            <div id="feedback_pill_${idx}"></div>
-            <div><strong>正確答案：</strong>${escapeHtml(q.Answer)}</div>
-            <div style="margin-top: 4px; color: var(--muted);">${escapeHtml(q.Explanation || "")}</div>
-          </div>
+          <div id="feedback_pill_${idx}" style="margin-top: 10px;"></div>
+          <details class="explanation-details" id="exp_${idx}">
+            <summary class="explanation-summary">▸ 展開解析提示與證據（點擊查看）</summary>
+            <div class="explanation-content">
+              <div><strong>正確答案：</strong>${escapeHtml(q.Answer)}</div>
+              <div style="margin-top: 4px;">${escapeHtml(q.Explanation || "")}</div>
+            </div>
+          </details>
         `;
 
         // 即時回饋：點選選項瞬間判定與微多巴胺慶祝
@@ -971,9 +995,9 @@
       labels.forEach(lbl => {
         lbl.classList.remove("opt-correct", "opt-incorrect");
         const val = (lbl.dataset.value || "").trim().toUpperCase();
-        if (val === rightAns) {
+        if (isCorrect && val === rightAns) {
           lbl.classList.add("opt-correct");
-        } else if (val === userAns && !isCorrect) {
+        } else if (!isCorrect && val === userAns) {
           lbl.classList.add("opt-incorrect");
         }
       });
@@ -985,9 +1009,14 @@
       if (pillBox) {
         pillBox.innerHTML = isCorrect
           ? `<span class="feedback-pill correct">✓ 答對了！</span>`
-          : `<span class="feedback-pill incorrect">✕ 再看看解析與文章細節</span>`;
+          : `<span class="feedback-pill incorrect">✕ 答案不是這個喔，老師帶你看文章</span>`;
       }
-      document.getElementById(`exp_${idx}`).classList.add("visible");
+
+      // 注意：解析 details 保持關閉，絕不自動展開，完全由老師視教學需要手動點開
+      const detailsEl = document.getElementById(`exp_${idx}`);
+      if (detailsEl && !isCorrect) {
+        detailsEl.removeAttribute("open");
+      }
 
       // 答對時噴發局部微型彩帶慶祝
       if (isCorrect) {
