@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private English Tutor - 段考總複習互動學習網 | IELTS Exam Interface</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Inter & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        ielts: {
+                            dark: '#1c2431',
+                            header: '#232f3e',
+                            accent: '#e31837',
+                            blue: '#005eb8',
+                            light: '#f4f6f9',
+                            border: '#d1d9e0',
+                            highlight: '#fef08a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* 自訂捲軸與雅思機考質感細節 */
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #f0f2f5;
+            color: #1e293b;
+        }
+
+        /* 獨立捲動面板樣式 (IELTS Split-Screen) */
+        .ielts-pane {
+            height: calc(100vh - 185px);
+            min-height: 460px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #94a3b8 #e2e8f0;
+        }
+        .ielts-pane::-webkit-scrollbar {
+            width: 8px;
+        }
+        .ielts-pane::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .ielts-pane::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .ielts-pane {
+                height: auto;
+                max-height: none;
+            }
+        }
+
+        /* 螢光筆標記樣式 */
+        .ielts-highlight {
+            background-color: #fef08a;
+            border-bottom: 2px solid #eab308;
+            padding: 0 2px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        /* 單字卡翻轉與展開動畫 */
+        .flashcard-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .flashcard-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+        }
+
+        /* 雅思題號方塊 */
+        .q-palette-btn {
+            transition: all 0.15s ease;
+        }
+        .q-palette-btn.active {
+            outline: 2px solid #005eb8;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen select-none sm:select-auto">
+
+    <!-- ==================== 頂部雅思機考風格狀態列 ==================== -->
+    <header class="bg-[#1b2430] text-white shadow-md sticky top-0 z-40">
+        <!-- 第一層：品牌、教師資訊與計時器 -->
+        <div class="max-w-full px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-700">
+            <div class="flex items-center space-x-3">
+                <div class="bg-[#e31837] text-white font-extrabold px-2.5 py-1 rounded text-sm tracking-wider shadow-sm">
+                    IELTS STYLE
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold tracking-tight flex items-center gap-2">
+                        <span>Private English Tutor</span>
+                        <span class="hidden md:inline-block text-slate-400 font-normal">|</span>
+                        <span class="hidden md:inline-block text-sky-300 text-sm font-medium">複習段考內容總檢核</span>
+                    </h1>
+                    <p class="text-xs text-slate-300 flex items-center gap-2">
+                        <span><i class="fa-solid fa-user-tie text-sky-400 mr-1"></i>Tutor: Jasper Guo (Philosophy, THU)</span>
+                        <span>•</span>
+                        <span><i class="fa-regular fa-calendar text-sky-400 mr-1"></i>2026/11/17</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- 中央計時器 & 總分狀態 -->
+            <div class="flex items-center space-x-3 sm:space-x-5">
+                <div class="bg-slate-800/90 border border-slate-600 px-3 py-1.5 rounded-lg flex items-center space-x-2">
+                    <i class="fa-regular fa-clock text-amber-400"></i>
+                    <span id="exam-timer" class="font-mono text-sm sm:text-base font-bold text-amber-300">25:00</span>
+                    <button onclick="toggleTimer()" id="timer-toggle-btn" title="暫停/繼續計時" class="text-xs text-slate-400 hover:text-white ml-1">
+                        <i class="fa-solid fa-pause"></i>
+                    </button>
+                </div>
+
+                <!-- 總分顯示徽章 -->
+                <div id="score-badge" class="hidden bg-emerald-900/80 border border-emerald-500 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold text-emerald-300">
+                    <i class="fa-solid fa-award mr-1"></i>總分：<span id="total-score-text">0 / 16</span>
+                </div>
+
+                <!-- 交卷與重設按鈕 -->
+                <div class="flex items-center space-x-2">
+                    <button id="submit-exam-btn" onclick="submitExam()" class="bg-[#005eb8] hover:bg-blue-600 text-white text-xs sm:text-sm font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>交卷並檢視解析</span>
+                    </button>
+                    <button onclick="confirmResetExam()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs sm:text-sm font-medium px-3 py-2 rounded-lg transition" title="重設所有作答">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span class="hidden sm:inline ml-1">重設</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第二層：四大教學模組切換分頁列 -->
+        <nav class="bg-[#263242] px-4 sm:px-6 flex items-center space-x-1 sm:space-x-2 overflow-x-auto">
+            <button onclick="switchTab('vocab')" id="tab-vocab" class="tab-btn active-tab px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-3 border-sky-400 text-white bg-slate-800/60 flex items-center gap-2 whitespace-nowrap transition">
+                <i class="fa-solid fa-layer-group text-sky-400"></i>
+                <span>1. 核心單字與片語閃卡 (20)</span>
+            </button>
+            <button onclick="switchTab('grammar')" id="tab-grammar" class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-3 border-transparent text-slate-300 hover:text-white hover:bg-slate-700/40 flex items-center gap-2 whitespace-nowrap transition">
+                <i class="fa-solid fa-spell-check text-amber-400"></i>
+                <span>2. Grammar 文法測驗 (Q1–Q8)</span>
+            </button>
+            <button onclick="switchTab('reading')" id="tab-reading" class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-3 border-transparent text-slate-300 hover:text-white hover:bg-slate-700/40 flex items-center gap-2 whitespace-nowrap transition">
+                <i class="fa-solid fa-book-open text-emerald-400"></i>
+                <span>3. Reading 閱讀理解 (Q9–Q12)</span>
+            </button>
+            <button onclick="switchTab('listening')" id="tab-listening" class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-3 border-transparent text-slate-300 hover:text-white hover:bg-slate-700/40 flex items-center gap-2 whitespace-nowrap transition">
+                <i class="fa-solid fa-headphones text-rose-400"></i>
+                <span>4. Listening 聽力練習 (Q13–Q16)</span>
+            </button>
+        </nav>
+    </header>
+
+    <!-- ==================== 自訂提示訊息框 (取代 alert/confirm) ==================== -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div class="flex items-center space-x-3 mb-3">
+                <div id="modal-icon" class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-circle-info"></i>
+                </div>
+                <h3 id="modal-title" class="text-lg font-bold text-slate-800">系統提示</h3>
+            </div>
+            <p id="modal-message" class="text-sm text-slate-600 leading-relaxed mb-6"></p>
+            <div id="modal-actions" class="flex justify-end space-x-3"></div>
+        </div>
+    </div>
+
+    <!-- ==================== 主內容區塊 ==================== -->
+    <main class="flex-1 w-full">
+
+        <!-- =====================================================================
+             模組一：核心單字與片語互動閃卡 (Vocabulary & Phrases Flashcards)
+             ===================================================================== -->
+        <section id="section-vocab" class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+            <!-- 單字學習控制列 -->
+            <div class="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-slate-200 mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <h2 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <span class="w-2 h-6 bg-[#005eb8] rounded-full"></span>
+                        <span>段考核心單字與片語精選（共 20 組）</span>
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                        點擊卡片可展開/收合混合情境例句與中文翻譯；點擊喇叭圖示可聆聽標準英文發音。
+                    </p>
+                </div>
+
+                <!-- 篩選器與熟記進度 -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200">
+                        <button onclick="filterVocab('all')" id="filter-all" class="vocab-filter-btn bg-white text-slate-800 shadow-xs px-3 py-1.5 rounded-md text-xs font-semibold transition">全部 (20)</button>
+                        <button onclick="filterVocab('word')" id="filter-word" class="vocab-filter-btn text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-md text-xs font-semibold transition">核心單字 (14)</button>
+                        <button onclick="filterVocab('phrase')" id="filter-phrase" class="vocab-filter-btn text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-md text-xs font-semibold transition">重點片語 (6)</button>
+                        <button onclick="filterVocab('unmastered')" id="filter-unmastered" class="vocab-filter-btn text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-md text-xs font-semibold transition">待加強</button>
+                    </div>
+
+                    <button onclick="toggleAllExamples()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition">
+                        <i class="fa-solid fa-eye mr-1"></i>全部展開/收合例句
+                    </button>
+                </div>
+            </div>
+
+            <!-- 熟記進度條 -->
+            <div class="bg-white rounded-xl px-5 py-3 shadow-xs border border-slate-200 mb-6 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700 whitespace-nowrap">
+                    <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                    <span>已熟記進度：<span id="mastered-count" class="text-emerald-600 font-bold">0</span> / 20</span>
+                </div>
+                <div class="flex-1 bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                    <div id="mastered-progress-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <button onclick="resetMastered()" class="text-xs text-slate-400 hover:text-slate-600 underline whitespace-nowrap">清除熟記紀錄</button>
+            </div>
+
+            <!-- 單字卡網格 -->
+            <div id="vocab-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- 由 JS 動態渲染 20 張單字卡 -->
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             模組二：Grammar 文法練習 (IELTS Computer-Delivered Split-Screen)
+             ===================================================================== -->
+        <section id="section-grammar" class="hidden">
+            <!-- 雅思測驗子標題列 -->
+            <div class="bg-[#e8eef5] border-b border-slate-300 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-slate-800 text-white text-xs font-bold px-2.5 py-1 rounded">PART 1: GRAMMAR</span>
+                    <span class="text-xs sm:text-sm font-semibold text-slate-700">Questions 1 – 8 | Choose the correct letter, A, B, C or D.</span>
+                </div>
+                <div class="text-xs text-slate-600">
+                    <i class="fa-solid fa-circle-info text-[#005eb8] mr-1"></i>提示：左側為本次段考文法速查卡，右側為測驗題目區
+                </div>
+            </div>
+
+            <!-- 雙欄分割版面 -->
+            <div class="grid grid-cols-1 md:grid-cols-12 border-b border-slate-300 bg-white">
+                <!-- 左欄：考點提示與結構速查表 (佔 5 欄) -->
+                <div class="md:col-span-5 border-b md:border-b-0 md:border-r border-slate-300 p-5 sm:p-6 ielts-pane bg-[#fafbfc]">
+                    <div class="border-b-2 border-slate-800 pb-2 mb-4">
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 uppercase tracking-wide">
+                            Grammar Quick Reference Sheet
+                        </h3>
+                        <p class="text-xs text-slate-500">段考核心文法觀念速查表（Unit 4 動名詞、不定詞與轉折詞）</p>
+                    </div>
+
+                    <div class="space-y-4 text-sm leading-relaxed">
+                        <!-- 考點 1 -->
+                        <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
+                            <h4 class="font-bold text-[#005eb8] mb-1.5 flex items-center gap-1.5">
+                                <span class="bg-blue-100 text-[#005eb8] text-xs px-2 py-0.5 rounded">考點 1</span>
+                                <span>介系詞與特定動詞後接 V-ing</span>
+                            </h4>
+                            <ul class="list-disc list-inside text-slate-700 space-y-1 text-xs sm:text-sm">
+                                <li><strong>介系詞 + V-ing</strong>：<code class="bg-slate-100 px-1 rounded">after / before / without + V-ing</code></li>
+                                <li><strong>必接 V-ing 動詞</strong>：<code class="bg-slate-100 px-1 rounded">give up / enjoy / practice / keep / finish + V-ing</code></li>
+                            </ul>
+                        </div>
+
+                        <!-- 考點 2 -->
+                        <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
+                            <h4 class="font-bold text-[#005eb8] mb-1.5 flex items-center gap-1.5">
+                                <span class="bg-blue-100 text-[#005eb8] text-xs px-2 py-0.5 rounded">考點 2</span>
+                                <span>不定詞 to V 與否定位置</span>
+                            </h4>
+                            <ul class="list-disc list-inside text-slate-700 space-y-1 text-xs sm:text-sm">
+                                <li><strong>必接 to V 動詞</strong>：<code class="bg-slate-100 px-1 rounded">plan / decide / want / hope / need + to V</code></li>
+                                <li><strong>否定陷阱</strong>：不定詞的否定一律將 <span class="text-rose-600 font-bold">not 放在 to 前面</span> → <code class="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded font-semibold">decide not to V</code></li>
+                            </ul>
+                        </div>
+
+                        <!-- 考點 3 -->
+                        <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
+                            <h4 class="font-bold text-[#005eb8] mb-1.5 flex items-center gap-1.5">
+                                <span class="bg-blue-100 text-[#005eb8] text-xs px-2 py-0.5 rounded">考點 3</span>
+                                <span>魔王辨析組：stop & remember</span>
+                            </h4>
+                            <div class="grid grid-cols-1 gap-2 text-xs sm:text-sm mt-2">
+                                <div class="p-2 bg-amber-50/70 rounded border border-amber-200">
+                                    <p class="font-bold text-slate-800">stop + to V vs. stop + V-ing</p>
+                                    <p class="text-slate-600 mt-0.5">• <strong>stop to V</strong>：停下原本的事，<strong>去做另一件事</strong>（表目的）</p>
+                                    <p class="text-slate-600">• <strong>stop V-ing</strong>：<strong>停止正在做</strong>的這件事</p>
+                                </div>
+                                <div class="p-2 bg-emerald-50/70 rounded border border-emerald-200">
+                                    <p class="font-bold text-slate-800">remember + to V vs. remember + V-ing</p>
+                                    <p class="text-slate-600 mt-0.5">• <strong>remember to V</strong>：記得<strong>要去</strong>做（尚未做）</p>
+                                    <p class="text-slate-600">• <strong>remember V-ing</strong>：記得<strong>曾經做過</strong>（已發生）</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 考點 4 -->
+                        <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
+                            <h4 class="font-bold text-[#005eb8] mb-1.5 flex items-center gap-1.5">
+                                <span class="bg-blue-100 text-[#005eb8] text-xs px-2 py-0.5 rounded">考點 4</span>
+                                <span>固定片語與語意轉折副詞</span>
+                            </h4>
+                            <ul class="list-disc list-inside text-slate-700 space-y-1 text-xs sm:text-sm">
+                                <li><strong>save A from B</strong>：將 A 從 B 中拯救出來</li>
+                                <li><strong>however</strong>（然而，表語意轉折）vs. <strong>therefore</strong>（因此，表因果）</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右欄：Grammar 8 題單選題區 (佔 7 欄) -->
+                <div class="md:col-span-7 p-5 sm:p-8 ielts-pane bg-white" id="grammar-questions-pane">
+                    <div class="mb-5 pb-3 border-b border-slate-200 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Questions 1 – 8</h3>
+                            <p class="text-xs text-slate-500">Choose the best answer to complete each sentence.</p>
+                        </div>
+                        <span id="grammar-score-pill" class="hidden bg-blue-100 text-[#005eb8] text-xs font-bold px-3 py-1 rounded-full"></span>
+                    </div>
+
+                    <div id="grammar-questions-list" class="space-y-6">
+                        <!-- 由 JS 渲染 Q1 - Q8 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             模組三：Reading 閱讀理解 (IELTS Split-Screen + Text Highlighting)
+             ===================================================================== -->
+        <section id="section-reading" class="hidden">
+            <!-- 雅思測驗子標題列 -->
+            <div class="bg-[#e8eef5] border-b border-slate-300 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-slate-800 text-white text-xs font-bold px-2.5 py-1 rounded">PART 2: READING</span>
+                    <span class="text-xs sm:text-sm font-semibold text-slate-700">Questions 9 – 12 | Read the passage and answer the questions below.</span>
+                </div>
+                <!-- 雅思機考螢光筆工具列 -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="highlightSelectedText()" class="bg-amber-200 hover:bg-amber-300 text-amber-950 border border-amber-400 text-xs font-bold px-2.5 py-1 rounded flex items-center gap-1 shadow-2xs transition" title="先在文章中反白選取文字，再點擊此按鈕標記螢光筆">
+                        <i class="fa-solid fa-highlighter"></i>
+                        <span>螢光筆標記選取文字</span>
+                    </button>
+                    <button onclick="clearAllHighlights()" class="bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 text-xs font-medium px-2.5 py-1 rounded transition">
+                        清除標記
+                    </button>
+                </div>
+            </div>
+
+            <!-- 雙欄分割版面 -->
+            <div class="grid grid-cols-1 md:grid-cols-12 border-b border-slate-300 bg-white">
+                <!-- 左欄：閱讀文章 (獨立捲動，佔 6 欄) -->
+                <div class="md:col-span-6 border-b md:border-b-0 md:border-r border-slate-300 p-6 sm:p-8 ielts-pane bg-[#fcfcfd]" id="reading-passage-pane">
+                    <div class="max-w-2xl mx-auto">
+                        <div class="mb-4 pb-3 border-b border-slate-200">
+                            <span class="text-xs font-bold uppercase tracking-wider text-[#005eb8]">Reading Passage</span>
+                            <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1">
+                                From Traditional Fields to Online Screens: Daniel's Story
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-1">
+                                <i class="fa-solid fa-wand-magic-sparkles text-amber-500 mr-1"></i>機考技巧：可用滑鼠反白文中關鍵句並點擊上方「螢光筆標記」，交卷後亦會自動標示出題依據。
+                            </p>
+                        </div>
+
+                        <article id="reading-article-body" class="space-y-5 text-[15px] sm:text-base text-slate-800 leading-8 font-normal">
+                            <p id="reading-p1" class="relative pl-6">
+                                <span class="absolute left-0 top-0 text-xs font-bold text-slate-400 select-none">A</span>
+                                Daniel grew up in a small village in southern Taiwan, where almost everyone in his family worked as a <strong class="text-slate-900 font-semibold">farmer</strong>. For decades, his parents woke up at five to five every morning to grow sweet pineapples and tea leaves. <strong class="text-slate-900 font-semibold">However</strong>, life was never easy for them. <span data-evidence="9" class="evidence-span transition-colors duration-300">Because they didn't know how to sell their crops directly to big cities, they had to sell everything to middlemen at very low prices. Sometimes, insects even made tiny <strong class="text-slate-900 font-semibold">holes</strong> in the leaves, and buyers refused to take the fruit.</span>
+                            </p>
+
+                            <p id="reading-p2" class="relative pl-6">
+                                <span class="absolute left-0 top-0 text-xs font-bold text-slate-400 select-none">B</span>
+                                After graduating from college, Daniel got a job as a <strong class="text-slate-900 font-semibold">salesman</strong> at a busy tech company in Taipei. His <strong class="text-slate-900 font-semibold">boss</strong> was strict and always told the workers not to waste time during office hours. Daniel worked hard, but he often felt worried about his parents' farm back home. One evening, while he was watching clips online, he noticed that many young creators were becoming popular by sharing stories about their daily lives. Suddenly, a good idea came to his mind: why not use the internet to help his family?
+                            </p>
+
+                            <p id="reading-p3" class="relative pl-6">
+                                <span class="absolute left-0 top-0 text-xs font-bold text-slate-400 select-none">C</span>
+                                The next weekend, Daniel went back to his hometown with a camera. He decided to <strong class="text-slate-900 font-semibold">make a video</strong> showing how carefully his parents took care of the land without using dangerous chemicals. <span data-evidence="10" class="evidence-span transition-colors duration-300">In the video, he even showed a big spider spinning a <strong class="text-slate-900 font-semibold">web</strong> between two tea trees to prove how natural and healthy the farm environment was!</span> <span data-evidence="12" class="evidence-span transition-colors duration-300">After Daniel posted the clip online, thousands of people watched it and left warm comments. Many customers immediately ordered boxes of pineapples and tea leaves online.</span> <span data-evidence="11" class="evidence-span transition-colors duration-300">By connecting traditional farming with modern digital tools, Daniel successfully <strong class="text-slate-900 font-semibold">saved</strong> his family's farm <strong class="text-slate-900 font-semibold">from</strong> closing down.</span>
+                            </p>
+                        </article>
+                    </div>
+                </div>
+
+                <!-- 右欄：閱讀理解 4 題單選題 (獨立捲動，佔 6 欄) -->
+                <div class="md:col-span-6 p-5 sm:p-8 ielts-pane bg-white" id="reading-questions-pane">
+                    <div class="mb-5 pb-3 border-b border-slate-200 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Questions 9 – 12</h3>
+                            <p class="text-xs text-slate-500">Choose the correct letter, A, B, C or D.</p>
+                        </div>
+                        <span id="reading-score-pill" class="hidden bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full"></span>
+                    </div>
+
+                    <div id="reading-questions-list" class="space-y-6">
+                        <!-- 由 JS 渲染 Q9 - Q12 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             模組四：Listening 聽力練習 (IELTS Audio Player + Split-Screen)
+             ===================================================================== -->
+        <section id="section-listening" class="hidden">
+            <!-- 雅思測驗子標題列 -->
+            <div class="bg-[#e8eef5] border-b border-slate-300 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-slate-800 text-white text-xs font-bold px-2.5 py-1 rounded">PART 3: LISTENING</span>
+                    <span class="text-xs sm:text-sm font-semibold text-slate-700">Questions 13 – 16 | Listen to the recordings and answer the questions.</span>
+                </div>
+                <!-- 教師/檢討模式開關：顯示或隱藏聽力逐字稿 -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="toggleAudioScript()" id="toggle-script-btn" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-2xs">
+                        <i class="fa-solid fa-eye-slash text-amber-400" id="script-eye-icon"></i>
+                        <span id="script-btn-label">檢討模式：顯示聽力逐字稿 (目前隱藏)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 雙欄分割版面 -->
+            <div class="grid grid-cols-1 md:grid-cols-12 border-b border-slate-300 bg-white">
+                <!-- 左欄：雅思聽力模擬播放器與逐字稿區 (佔 5 欄) -->
+                <div class="md:col-span-5 border-b md:border-b-0 md:border-r border-slate-300 p-5 sm:p-6 ielts-pane bg-[#f8fafc]">
+                    <div class="mb-4">
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900">IELTS Listening Audio Console</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">內建語音合成朗讀器（支援調整語速），建議先盲聽作答再開啟逐字稿核對。</p>
+                    </div>
+
+                    <!-- 語速全域設定 -->
+                    <div class="bg-white border border-slate-200 rounded-lg p-3 mb-4 flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-700"><i class="fa-solid fa-gauge-high text-[#005eb8] mr-1.5"></i>朗讀語速設定 (Playback Speed)：</span>
+                        <div class="inline-flex rounded-md bg-slate-100 p-0.5 border border-slate-200">
+                            <button onclick="setSpeechRate(0.8)" id="rate-0.8" class="rate-btn px-2.5 py-1 text-xs font-semibold rounded text-slate-600 hover:text-slate-900">0.8x (慢速)</button>
+                            <button onclick="setSpeechRate(0.95)" id="rate-0.95" class="rate-btn px-2.5 py-1 text-xs font-semibold rounded bg-[#005eb8] text-white shadow-2xs">1.0x (標準)</button>
+                            <button onclick="setSpeechRate(1.1)" id="rate-1.1" class="rate-btn px-2.5 py-1 text-xs font-semibold rounded text-slate-600 hover:text-slate-900">1.1x (挑戰)</button>
+                        </div>
+                    </div>
+
+                    <!-- Audio Track 1 Card -->
+                    <div class="bg-white rounded-xl border border-slate-300 shadow-xs p-4 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-extrabold uppercase tracking-wider bg-blue-100 text-[#005eb8] px-2.5 py-0.5 rounded">Section 1 (Q13–Q14)</span>
+                            <span class="text-xs font-mono text-slate-500">約 30 秒 | 緊急資安應變</span>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-sm mb-3">Recording 1: Ryan's Midnight Cyber Crisis</h4>
+                        
+                        <!-- 播放控制按鈕 -->
+                        <div class="flex items-center space-x-2">
+                            <button onclick="playListeningTrack(1)" id="play-btn-1" class="flex-1 bg-[#005eb8] hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 transition">
+                                <i class="fa-solid fa-play"></i>
+                                <span>播放音檔 1 (Play Audio 1)</span>
+                            </button>
+                            <button onclick="stopSpeech()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-lg transition" title="停止播放">
+                                <i class="fa-solid fa-stop"></i>
+                            </button>
+                        </div>
+
+                        <!-- 隱藏/顯示逐字稿區塊 1 -->
+                        <div id="script-box-1" class="hidden mt-3 pt-3 border-t border-dashed border-slate-300">
+                            <div class="text-xs font-bold text-amber-700 mb-1 flex items-center justify-between">
+                                <span><i class="fa-solid fa-file-lines mr-1"></i>Audio Script 1 (聽力原文)</span>
+                            </div>
+                            <p class="text-xs sm:text-sm text-slate-700 leading-relaxed bg-amber-50/70 p-3 rounded-lg border border-amber-200">
+                                "Yesterday evening at <strong>a quarter to eight</strong>, while Ryan was helping his mom <strong>do the dishes</strong>, his smartphone suddenly rang. It was a call from his <strong>boss</strong> at the tech company. A dangerous hacker was trying to steal important data through a cyber attack! Ryan <strong>got butterflies in his stomach</strong> at first; <strong>however</strong>, he quickly <strong>made up his mind</strong> to drive back to the office. Together with two software engineers, Ryan fixed the broken server and <strong>saved</strong> the company's private files <strong>from</strong> the attack before midnight."
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Audio Track 2 Card -->
+                    <div class="bg-white rounded-xl border border-slate-300 shadow-xs p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-extrabold uppercase tracking-wider bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded">Section 2 (Q15–Q16)</span>
+                            <span class="text-xs font-mono text-slate-500">約 30 秒 | 暴風雨中的運送任務</span>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-sm mb-3">Recording 2: Mr. Chen's Mountain Delivery</h4>
+                        
+                        <!-- 播放控制按鈕 -->
+                        <div class="flex items-center space-x-2">
+                            <button onclick="playListeningTrack(2)" id="play-btn-2" class="flex-1 bg-[#005eb8] hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 transition">
+                                <i class="fa-solid fa-play"></i>
+                                <span>播放音檔 2 (Play Audio 2)</span>
+                            </button>
+                            <button onclick="stopSpeech()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-lg transition" title="停止播放">
+                                <i class="fa-solid fa-stop"></i>
+                            </button>
+                        </div>
+
+                        <!-- 隱藏/顯示逐字稿區塊 2 -->
+                        <div id="script-box-2" class="hidden mt-3 pt-3 border-t border-dashed border-slate-300">
+                            <div class="text-xs font-bold text-amber-700 mb-1 flex items-center justify-between">
+                                <span><i class="fa-solid fa-file-lines mr-1"></i>Audio Script 2 (聽力原文)</span>
+                            </div>
+                            <p class="text-xs sm:text-sm text-slate-700 leading-relaxed bg-amber-50/70 p-3 rounded-lg border border-amber-200">
+                                "Last winter, a terrible typhoon hit the coast, bringing freezing rain and strong winds. Mr. Chen, an experienced <strong>truck driver</strong>, needed to <strong>deliver</strong> a rare antique violin to a museum before noon. While he was driving past an old <strong>factory</strong>, a small earthquake shook the ground, and falling rocks blocked the road. Instead of <strong>giving up</strong>, Mr. Chen stopped to check the fragile box to make sure it was still in good condition, and then he safely took another mountain path to finish his job."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右欄：聽力 4 題單選題 (佔 7 欄) -->
+                <div class="md:col-span-7 p-5 sm:p-8 ielts-pane bg-white" id="listening-questions-pane">
+                    <div class="mb-5 pb-3 border-b border-slate-200 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900">Questions 13 – 16</h3>
+                            <p class="text-xs text-slate-500">Listen carefully and choose the correct letter, A, B, C or D.</p>
+                        </div>
+                        <span id="listening-score-pill" class="hidden bg-rose-100 text-rose-800 text-xs font-bold px-3 py-1 rounded-full"></span>
+                    </div>
+
+                    <div id="listening-questions-list" class="space-y-6">
+                        <!-- 由 JS 渲染 Q13 - Q16 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== 底部固定雅思題號導覽列 (IELTS Question Navigation Bar) ==================== -->
+    <footer class="bg-[#1b2430] text-white border-t border-slate-700 px-4 sm:px-6 py-3 sticky bottom-0 z-30 shadow-lg">
+        <div class="max-w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <!-- 題號方塊群組 -->
+            <div class="flex flex-wrap items-center gap-1.5" id="question-palette-container">
+                <span class="text-xs font-bold text-slate-400 mr-1 uppercase tracking-wider">題號導覽：</span>
+                <!-- 由 JS 動態生成 Q1 - Q16 方塊 -->
+            </div>
+
+            <!-- 圖例說明 -->
+            <div class="flex items-center space-x-3 text-[11px] text-slate-300 shrink-0">
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-xs bg-slate-700 border border-slate-500 inline-block"></span>未作答</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-xs bg-[#005eb8] inline-block"></span>已作答</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-xs bg-emerald-600 inline-block"></span>答對</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-xs bg-rose-600 inline-block"></span>答錯</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==================== JavaScript 互動邏輯 ==================== -->
+    <script>
+        // ==================== 1. 教材資料庫 ====================
+        const vocabData = [
+            {
+                id: 1,
+                type: 'word',
+                term: 'salesman',
+                phonetic: "['sɛlzmən]",
+                pos: '(n.)',
+                meaning: '業務員；銷售員',
+                sentence: 'The experienced salesman gave a good idea to his boss about how to deliver products to foreign customers faster.',
+                translation: '那位經驗豐富的業務員向老闆提出了一個好主意，關於如何更快地將產品運送給外國顧客。'
+            },
+            {
+                id: 2,
+                type: 'word',
+                term: 'soldier',
+                phonetic: "['soldʒɚ]",
+                pos: '(n.)',
+                meaning: '士兵',
+                sentence: 'During the heavy typhoon, the brave soldier saved a trapped farmer from the rising river.',
+                translation: '在大颱風期間，那位勇敢的士兵將一名受困的農夫從暴漲的河水中拯救出來。'
+            },
+            {
+                id: 3,
+                type: 'word',
+                term: 'relative',
+                phonetic: "['rɛlətɪv]",
+                pos: '(n.)',
+                meaning: '親戚',
+                sentence: 'Even when her relatives made fun of her dream, Maya still believed in herself and kept practicing.',
+                translation: '即使親戚們取笑她的夢想，Maya 依然相信自己的能力並持續練習。'
+            },
+            {
+                id: 4,
+                type: 'word',
+                term: 'farmer',
+                phonetic: "['fɑrmɚ]",
+                pos: '(n.)',
+                meaning: '農夫',
+                sentence: 'The farmer wanted to grow organic vegetables in his country; however, heavy rain destroyed his farmland.',
+                translation: '那位農夫想在他的國家種植有機蔬菜；然而，大雨摧毀了他的農田。'
+            },
+            {
+                id: 5,
+                type: 'word',
+                term: 'factory',
+                phonetic: "['fækt(ə)rɪ]",
+                pos: '(n.)',
+                meaning: '工廠',
+                sentence: 'Many workers in that shoe factory gathered together to fight for their rights and ask for safer machines.',
+                translation: '那間鞋廠的許多工人聚集在一起為他們的權益而戰，並要求更安全的機器。'
+            },
+            {
+                id: 6,
+                type: 'word',
+                term: 'career',
+                phonetic: "[kə'rɪr]",
+                pos: '(n.)',
+                meaning: '職業生涯；事業',
+                sentence: 'Before starting her career as a movie star, she went to many auditions and never gave up.',
+                translation: '在開始她的電影明星生涯之前，她參加了許多試鏡，從未放棄。'
+            },
+            {
+                id: 7,
+                type: 'word',
+                term: 'audition',
+                phonetic: "[ɔ'dɪʃən]",
+                pos: '(n.)',
+                meaning: '試鏡；試音',
+                sentence: 'Emma got butterflies in her stomach right before the audition, however, she still acted wonderfully on stage.',
+                translation: 'Emma 在試鏡前非常緊張；然而，她在舞台上依然表現得非常精彩。'
+            },
+            {
+                id: 8,
+                type: 'word',
+                term: 'web',
+                phonetic: "[wɛb]",
+                pos: '(n.)',
+                meaning: '網子；網路',
+                sentence: 'He decided to make a video and share it on the web so that people all over the country could watch it.',
+                translation: '他決定製作一支影片並分享到網路上，讓全國各地的人都能觀看。'
+            },
+            {
+                id: 9,
+                type: 'word',
+                term: 'foreign',
+                phonetic: "['fɔrɪn]",
+                pos: '(adj.)',
+                meaning: '外國的',
+                sentence: 'The salesman practiced speaking foreign languages every night because he planned to drive business deals abroad.',
+                translation: '那位業務員每天晚上練習說外語，因為他計畫在海外推動商業交易。'
+            },
+            {
+                id: 10,
+                type: 'word',
+                term: 'hole',
+                phonetic: "[hol]",
+                pos: '(n.)',
+                meaning: '洞',
+                sentence: 'The soldier spotted a deep hole hidden under the leaves and saved his teammate from falling into it.',
+                translation: '那名士兵發現樹葉下藏著一個深洞，並及時救了隊友免於掉進去。'
+            },
+            {
+                id: 11,
+                type: 'word',
+                term: 'believe',
+                phonetic: "[bə'liv]",
+                pos: '(v.)',
+                meaning: '相信',
+                sentence: "The boss didn't believe the salesman at first, however, the sales report proved that his plan worked.",
+                translation: '老闆起初不相信那位業務員；然而，銷售報告證明了他的計畫奏效。'
+            },
+            {
+                id: 12,
+                type: 'word',
+                term: 'act',
+                phonetic: "[ækt]",
+                pos: '(v.)',
+                meaning: '表演；行動',
+                sentence: "Don't make fun of Lucas when he acts on stage; he is just trying his best for tomorrow's audition.",
+                translation: '當 Lucas 在台上表演時別取笑他；他只是在為明天的試鏡盡最大努力。'
+            },
+            {
+                id: 13,
+                type: 'word',
+                term: 'deliver',
+                phonetic: "[dɪ'lɪvɚ]",
+                pos: '(v.)',
+                meaning: '投遞；運送',
+                sentence: 'Someone called the factory this morning to ask if we could deliver the winter coats to a foreign port.',
+                translation: '今天早上有人打電話到工廠，詢問我們是否能將冬季外套運送到外國港口。'
+            },
+            {
+                id: 14,
+                type: 'word',
+                term: 'however',
+                phonetic: "[haʊ'ɛvɚ]",
+                pos: '(adv.)',
+                meaning: '然而；不過',
+                sentence: 'The fisherman wanted to sail out early; however, the storm warning saved him from a terrible accident.',
+                translation: '那位漁夫原本想提早出海；然而，暴風雨警報救了他免於一場可怕的意外。'
+            },
+            {
+                id: 15,
+                type: 'phrase',
+                term: 'save ... from ...',
+                phonetic: '',
+                pos: '(phr.)',
+                meaning: '將……從……拯救出來',
+                sentence: 'The local farmer built a strong fence to save his chickens from wild animals hiding in the hole.',
+                translation: '當地農夫建造了堅固的柵欄，保護他的雞群免受躲在洞裡的野生動物傷害。'
+            },
+            {
+                id: 16,
+                type: 'phrase',
+                term: 'make a video',
+                phonetic: '',
+                pos: '(phr.)',
+                meaning: '製作／拍攝影片',
+                sentence: 'Thinking it was a good idea, the students made a video to help those in need raise money on the web.',
+                translation: '學生們覺得這是個好主意，便拍攝了一支影片在網路上幫助需要幫助的人們募款。'
+            },
+            {
+                id: 17,
+                type: 'phrase',
+                term: "fight for one's rights",
+                phonetic: '',
+                pos: '(phr.)',
+                meaning: '為……爭取權益',
+                sentence: 'Although the boss refused to listen at first, the factory workers never gave up fighting for their rights.',
+                translation: '雖然老闆起初拒絕傾聽，但工廠工人們從未放棄為自己的權益奮鬥。'
+            },
+            {
+                id: 18,
+                type: 'phrase',
+                term: "get butterflies in one's stomach",
+                phonetic: '',
+                pos: '(phr.)',
+                meaning: '非常緊張；七上八下',
+                sentence: 'The brave soldier gets butterflies in his stomach when someone announces a new mission.',
+                translation: '每當有人宣布新任務時，這位勇敢的士兵心裡還是會感到非常緊張。'
+            },
+            {
+                id: 19,
+                type: 'phrase',
+                term: 'make fun of',
+                phonetic: '',
+                pos: '(phr.)',
+                meaning: '取笑；嘲弄',
+                sentence: 'It is rude to make fun of a foreign salesman just because he speaks with a different accent.',
+                translation: '僅僅因為外國業務員說話帶有不同口音就取笑他是很沒禮貌的。'
+            },
+            {
+                id: 20,
+                type: 'phrase',
+                term: 'those in need',
+                phonetic: '',
+                pos: '(phr.)',
+                meaning: '需要幫助的人們',
+                sentence: 'The truck driver volunteered to deliver warm blankets and food to those in need across the country.',
+                translation: '那位卡車司機自願將溫暖的毛毯和食物運送到全國各地需要幫助的人們手中。'
+            }
+        ];
+
+        // 所有 16 題測驗題庫 (Q1-8 Grammar, Q9-12 Reading, Q13-16 Listening)
+        const examQuestions = [
+            // --- Grammar (Q1 - Q8) ---
+            {
+                id: 1,
+                section: 'grammar',
+                displayNum: '1',
+                question: 'After ______ breakfast, William read the morning newspaper in the living room.',
+                options: { A: 'have', B: 'has', C: 'had', D: 'having' },
+                answer: 'D',
+                explanation: '【考點：介系詞後接動名詞】句首的 After 在此作為介系詞（後方無主詞），介系詞後方若接動詞必須改為動名詞（V-ing）形式，故選 (D) having。'
+            },
+            {
+                id: 2,
+                section: 'grammar',
+                displayNum: '2',
+                question: 'Chloe wanted to get better grades; therefore, she gave up ______ video games after school.',
+                options: { A: 'play', B: 'to play', C: 'playing', D: 'played' },
+                answer: 'C',
+                explanation: '【考點：必接 V-ing 的動詞片語】give up（放棄）後方必須接動名詞（V-ing）作為受詞，表示停止原本的習慣或動作，故選 (C) playing。'
+            },
+            {
+                id: 3,
+                section: 'grammar',
+                displayNum: '3',
+                question: 'The hardworking salesman plans ______ the branch manager at a quarter to eleven.',
+                options: { A: 'meet', B: 'to meet', C: 'meeting', D: 'met' },
+                answer: 'B',
+                explanation: '【考點：必接不定詞 to V 的動詞】plan（計畫）表達未來的意願與規劃，後方必須接不定詞（to V）作為受詞，故選 (B) to meet。（補充：a quarter to eleven 為 10:45）。'
+            },
+            {
+                id: 4,
+                section: 'grammar',
+                displayNum: '4',
+                question: 'The brave firefighters saved the crying little girl ______ the burning factory yesterday.',
+                options: { A: 'from', B: 'with', C: 'for', D: 'of' },
+                answer: 'A',
+                explanation: '【考點：固定介系詞片語】save A from B 意為「將 A 從 B（危險/困境）中拯救出來」，故選 (A) from。'
+            },
+            {
+                id: 5,
+                section: 'grammar',
+                displayNum: '5',
+                question: 'When the emergency earthquake alarm blinked on the screen, all employees decided ______ inside the building.',
+                options: { A: 'to not stay', B: 'not staying', C: 'not to stay', D: "don't stay" },
+                answer: 'C',
+                explanation: '【考點：不定詞的否定位置】decide 後方接不定詞 to V，而不定詞的否定形必須將 not 放在 to 的前面，即 not to V，故選 (C) not to stay。'
+            },
+            {
+                id: 6,
+                section: 'grammar',
+                displayNum: '6',
+                question: 'After driving for five long hours in heavy rain, the delivery driver stopped ______ a short break at the gas station.',
+                options: { A: 'taking', B: 'to take', C: 'took', D: 'take' },
+                answer: 'B',
+                explanation: '【考點：stop to V vs. stop V-ing】司機開了五小時車後，「停下開車的動作，去休息一下」，表示目的（去做另一件事）需用 stop to V，故選 (B) to take。'
+            },
+            {
+                id: 7,
+                section: 'grammar',
+                displayNum: '7',
+                question: "Don't worry! I clearly remember ______ the financial report to the boss's email yesterday afternoon.",
+                options: { A: 'send', B: 'to send', C: 'sending', D: 'sent' },
+                answer: 'C',
+                explanation: '【考點：remember to V vs. remember V-ing】句尾時間副詞為 yesterday afternoon（昨天下午），表示「記得昨天已經寄過報告了（已發生的動作）」，故用 remember + V-ing，選 (C) sending。'
+            },
+            {
+                id: 8,
+                section: 'grammar',
+                displayNum: '8',
+                question: 'The farmer worked hard in the field all year; ______, the terrible typhoon destroyed most of his crops.',
+                options: { A: 'therefore', B: 'however', C: 'because', D: 'in fact' },
+                answer: 'B',
+                explanation: '【考點：轉折連接副詞】前句「農夫整年辛苦耕作」與後句「颱風摧毀大部分農作物」形成強烈的語意轉折，且前後有分號與逗號隔開，應選副詞 (B) however（然而）。'
+            },
+
+            // --- Reading Comprehension (Q9 - Q12) ---
+            {
+                id: 9,
+                section: 'reading',
+                displayNum: '1 (Q9)',
+                question: "Why did Daniel's parents have a hard time making enough money in the past?",
+                options: {
+                    A: "Because Daniel's boss refused to buy any fruit from their village.",
+                    B: 'Because they sold their crops at low prices and sometimes insects damaged the leaves.',
+                    C: "Because they forgot to water the tea trees before five o'clock every morning.",
+                    D: 'Because they spent too much money buying cameras and computers.'
+                },
+                answer: 'B',
+                explanation: '【文章段落 A 定位】文中第一段明確指出，因為不知道如何直接賣到大城市，他們必須以極低價格賣給中盤商（at very low prices），且有時昆蟲會在葉子上咬出小洞（insects even made tiny holes in the leaves）導致買家拒收，故選 (B)。'
+            },
+            {
+                id: 10,
+                section: 'reading',
+                displayNum: '2 (Q10)',
+                question: "Why did Daniel film a spider's web in his video?",
+                options: {
+                    A: 'To teach students how spiders catch insects in the forest.',
+                    B: "To show that his parents' farm was natural and free of dangerous chemicals.",
+                    C: 'To ask his boss for a longer vacation in southern Taiwan.',
+                    D: 'To complain about the bad weather in his hometown.'
+                },
+                answer: 'B',
+                explanation: '【文章段落 C 定位】第三段提到 Daniel 在影片中拍攝兩棵茶樹之間的大蜘蛛網，是為了證明農場環境是多麼天然且健康、沒有使用危險化學藥劑（to prove how natural and healthy the farm environment was），故選 (B)。'
+            },
+            {
+                id: 11,
+                section: 'reading',
+                displayNum: '3 (Q11)',
+                question: 'What does the phrase "saved his family\'s farm from closing down" in the last paragraph mean?',
+                options: {
+                    A: 'Daniel helped the farm survive and make money again.',
+                    B: 'Daniel bought a bigger house for his parents in Taipei.',
+                    C: 'Daniel stopped his parents from growing pineapples forever.',
+                    D: 'Daniel asked his coworkers to work on the farm for free.'
+                },
+                answer: 'A',
+                explanation: '【詞義推論題】原本父母的農場因為低價與滯銷面臨困境，透過 Daniel 的網路影片吸引大量顧客直接線上訂購，成功挽救了農場免於倒閉（即幫助農場生存下來並重新獲利），故選 (A)。'
+            },
+            {
+                id: 12,
+                section: 'reading',
+                displayNum: '4 (Q12)',
+                question: 'Which of the following is TRUE about Daniel according to the passage?',
+                options: {
+                    A: 'He worked as a soldier before moving to Taipei.',
+                    B: 'His boss told him to quit his job and become a farmer.',
+                    C: 'He used online videos to help customers buy directly from his parents.',
+                    D: 'Nobody watched his video after he posted it on the internet.'
+                },
+                answer: 'C',
+                explanation: '【細節綜合判斷】Daniel 透過拍攝影片並上傳網路，讓成千上萬人觀看並直接線上訂購鳳梨與茶葉，成功結合傳統農業與數位工具，故 (C) 正確。(A) 他在台北當業務員 salesman；(B) 老闆未叫他辭職；(D) 有數千人觀看影片。'
+            },
+
+            // --- Listening Practice (Q13 - Q16) ---
+            {
+                id: 13,
+                section: 'listening',
+                track: 1,
+                displayNum: '1 (Q13)',
+                question: 'What was Ryan doing when his smartphone rang yesterday evening?',
+                options: {
+                    A: 'He was driving his car to the tech company.',
+                    B: 'He was helping his mother clean the dishes at home.',
+                    C: 'He was talking to two software engineers in the office.',
+                    D: 'He was downloading a new game on his computer screen.'
+                },
+                answer: 'B',
+                explanation: '【Recording 1 細節】聽力原文開頭提到："Yesterday evening at a quarter to eight, while Ryan was helping his mom do the dishes, his smartphone suddenly rang."（昨晚 7:45 當 Ryan 正在幫媽媽洗碗時手機響了），clean the dishes 同義於 do the dishes，故選 (B)。'
+            },
+            {
+                id: 14,
+                section: 'listening',
+                track: 1,
+                displayNum: '2 (Q14)',
+                question: 'How did Ryan feel at first, and what did he do next?',
+                options: {
+                    A: 'He felt completely bored, so he decided to go to sleep early.',
+                    B: 'He was very angry at his boss and refused to answer the phone.',
+                    C: 'He felt very nervous at first, but he decided to return to the office to help.',
+                    D: 'He was under the weather, so he asked a salesman to fix the server.'
+                },
+                answer: 'C',
+                explanation: '【Recording 1 慣用語轉換】原文說："Ryan got butterflies in his stomach at first; however, he quickly made up his mind to drive back to the office."（起初非常緊張 nervous，然而他很快下定決心開車回辦公室），故選 (C)。'
+            },
+            {
+                id: 15,
+                section: 'listening',
+                track: 2,
+                displayNum: '3 (Q15)',
+                question: "What was Mr. Chen's job in this story?",
+                options: {
+                    A: 'He was a pilot flying a rescue plane through a heavy storm.',
+                    B: 'He was a musician practicing the violin for a big audition.',
+                    C: 'He was a truck driver delivering an old violin to a museum.',
+                    D: 'He was a factory worker inspecting broken machines.'
+                },
+                answer: 'C',
+                explanation: '【Recording 2 職業辨識】聽力原文清楚指出："Mr. Chen, an experienced truck driver, needed to deliver a rare antique violin to a museum before noon."（經驗豐富的卡車司機，需運送一把稀有的古董小提琴到博物館），antique violin 同義於 old violin，故選 (C)。'
+            },
+            {
+                id: 16,
+                section: 'listening',
+                track: 2,
+                displayNum: '4 (Q16)',
+                question: 'Why did Mr. Chen stop his truck on the way?',
+                options: {
+                    A: 'Because he wanted to buy a cup of hot chocolate at a coffee shop.',
+                    B: 'Because falling rocks from an earthquake blocked the road, and he wanted to check the box.',
+                    C: 'Because he forgot to bring his password and needed to call his relative.',
+                    D: 'Because a soldier asked him to rescue a farmer from a flooded house.'
+                },
+                answer: 'B',
+                explanation: '【Recording 2 因果細節】原文提到地震導致落石擋住道路（falling rocks blocked the road），他停下來檢查易碎箱子的狀況是否完好（stopped to check the fragile box to make sure it was still in good condition），故選 (B)。'
+            }
+        ];
+
+        // 聽力原文音檔文字
+        const audioScripts = {
+            1: "Yesterday evening at a quarter to eight, while Ryan was helping his mom do the dishes, his smartphone suddenly rang. It was a call from his boss at the tech company. A dangerous hacker was trying to steal important data through a cyber attack! Ryan got butterflies in his stomach at first; however, he quickly made up his mind to drive back to the office. Together with two software engineers, Ryan fixed the broken server and saved the company's private files from the attack before midnight.",
+            2: "Last winter, a terrible typhoon hit the coast, bringing freezing rain and strong winds. Mr. Chen, an experienced truck driver, needed to deliver a rare antique violin to a museum before noon. While he was driving past an old factory, a small earthquake shook the ground, and falling rocks blocked the road. Instead of giving up, Mr. Chen stopped to check the fragile box to make sure it was still in good condition, and then he safely took another mountain path to finish his job."
+        };
+
+        // ==================== 2. 狀態管理 ====================
+        let currentTab = 'vocab';
+        let vocabFilter = 'all';
+        let masteredIds = new Set();
+        let expandedCardIds = new Set();
+        let userAnswers = {}; // { questionId: 'A' | 'B' | 'C' | 'D' }
+        let isSubmitted = false;
+        let scriptVisible = false;
+        let speechRate = 0.95;
+
+        // 計時器變數 (預設 25 分鐘 = 1500 秒)
+        let timeRemaining = 25 * 60;
+        let timerRunning = true;
+        let timerInterval = null;
+
+        // ==================== 3. 初始化頁面 ====================
+        window.onload = function () {
+            renderVocabCards();
+            renderQuestions();
+            renderQuestionPalette();
+            startTimer();
+        };
+
+        // ==================== 4. 分頁切換邏輯 ====================
+        function switchTab(tabName) {
+            currentTab = tabName;
+            // 隱藏所有 section
+            ['vocab', 'grammar', 'reading', 'listening'].forEach(sec => {
+                document.getElementById(`section-${sec}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-${sec}`);
+                btn.classList.remove('border-sky-400', 'text-white', 'bg-slate-800/60');
+                btn.classList.add('border-transparent', 'text-slate-300');
+            });
+
+            // 顯示目標 section
+            document.getElementById(`section-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.remove('border-transparent', 'text-slate-300');
+            activeBtn.classList.add('border-sky-400', 'text-white', 'bg-slate-800/60');
+        }
+
+        // ==================== 5. 模組一：單字與片語閃卡邏輯 ====================
+        function renderVocabCards() {
+            const grid = document.getElementById('vocab-grid');
+            grid.innerHTML = '';
+
+            const filtered = vocabData.filter(item => {
+                if (vocabFilter === 'word') return item.type === 'word';
+                if (vocabFilter === 'phrase') return item.type === 'phrase';
+                if (vocabFilter === 'unmastered') return !masteredIds.has(item.id);
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full bg-white rounded-xl p-10 text-center border border-slate-200">
+                        <i class="fa-solid fa-trophy text-4xl text-amber-400 mb-3"></i>
+                        <h3 class="text-lg font-bold text-slate-800">太棒了！目前沒有「待加強」的單字！</h3>
+                        <p class="text-sm text-slate-500 mt-1">你已經熟記所有單字與片語，可以切換到文法、閱讀或聽力測驗挑戰看看！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const isMastered = masteredIds.has(item.id);
+                const isExpanded = expandedCardIds.has(item.id);
+                const badgeColor = item.type === 'word'
+                    ? 'bg-blue-50 text-[#005eb8] border-blue-200'
+                    : 'bg-purple-50 text-purple-700 border-purple-200';
+                const badgeLabel = item.type === 'word' ? '單字' : '片語';
+
+                const card = document.createElement('div');
+                card.className = `flashcard-hover bg-white rounded-xl border ${isMastered ? 'border-emerald-300 bg-emerald-50/20' : 'border-slate-200'} p-4 flex flex-col justify-between shadow-2xs`;
+
+                card.innerHTML = `
+                    <div>
+                        <!-- 頂部標籤與熟記按鈕 -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="text-[11px] font-bold px-2 py-0.5 rounded border ${badgeColor}">
+                                #${item.id} ${badgeLabel}
+                            </span>
+                            <button onclick="toggleMastered(${item.id})" class="text-xs font-semibold px-2.5 py-1 rounded-full transition flex items-center gap-1 ${isMastered ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">
+                                <i class="fa-solid ${isMastered ? 'fa-circle-check' : 'fa-circle'}"></i>
+                                <span>${isMastered ? '已熟記' : '標記熟記'}</span>
+                            </button>
+                        </div>
+
+                        <!-- 單字標題與發音按鈕 -->
+                        <div class="flex items-start justify-between gap-2 mt-1">
+                            <div>
+                                <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">${item.term}</h3>
+                                <div class="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                    ${item.phonetic ? `<span class="font-mono text-slate-600">${item.phonetic}</span>` : ''}
+                                    <span class="font-semibold text-slate-700">${item.pos}</span>
+                                    <span class="text-slate-800 font-bold text-sm">${item.meaning}</span>
+                                </div>
+                            </div>
+                            <button onclick="speakText('${escapeQuotes(item.term)}')" class="w-9 h-9 rounded-full bg-sky-50 hover:bg-[#005eb8] text-[#005eb8] hover:text-white flex items-center justify-center shrink-0 transition" title="朗讀單字">
+                                <i class="fa-solid fa-volume-high text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 展開/收合例句區塊 -->
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <button onclick="toggleCardExpand(${item.id})" class="w-full text-left text-xs font-semibold text-[#005eb8] hover:text-blue-800 flex items-center justify-between">
+                            <span><i class="fa-solid fa-quote-left mr-1.5 opacity-70"></i>${isExpanded ? '收合混合情境例句' : '點擊查看混合情境例句'}</span>
+                            <i class="fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
+                        </button>
+
+                        <div class="${isExpanded ? 'block' : 'hidden'} mt-2.5 bg-slate-50 rounded-lg p-3 border border-slate-200/80">
+                            <div class="flex items-start justify-between gap-2">
+                                <p class="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">${highlightTermInSentence(item.sentence, item.term)}</p>
+                                <button onclick="speakText('${escapeQuotes(item.sentence)}')" class="text-slate-400 hover:text-[#005eb8] p-1 shrink-0" title="朗讀完整例句">
+                                    <i class="fa-solid fa-volume-low"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-200/70 leading-relaxed">
+                                ${item.translation}
+                            </p>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            updateMasteredProgress();
+        }
+
+        function highlightTermInSentence(sentence, term) {
+            // 針對單字做粗體標示
+            const cleanWord = term.split(' ')[0].replace(/[^a-zA-Z]/g, '');
+            if (cleanWord.length < 3) return sentence;
+            const regex = new RegExp(`(${cleanWord}[a-zA-Z]*)`, 'gi');
+            return sentence.replace(regex, '<span class="text-[#005eb8] font-bold underline decoration-sky-300">$1</span>');
+        }
+
+        function toggleCardExpand(id) {
+            if (expandedCardIds.has(id)) {
+                expandedCardIds.delete(id);
+            } else {
+                expandedCardIds.add(id);
+            }
+            renderVocabCards();
+        }
+
+        function toggleAllExamples() {
+            if (expandedCardIds.size === vocabData.length) {
+                expandedCardIds.clear();
+            } else {
+                vocabData.forEach(item => expandedCardIds.add(item.id));
+            }
+            renderVocabCards();
+        }
+
+        function filterVocab(type) {
+            vocabFilter = type;
+            document.querySelectorAll('.vocab-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-slate-800', 'shadow-xs');
+                btn.classList.add('text-slate-600');
+            });
+            const active = document.getElementById(`filter-${type}`);
+            active.classList.remove('text-slate-600');
+            active.classList.add('bg-white', 'text-slate-800', 'shadow-xs');
+            renderVocabCards();
+        }
+
+        function toggleMastered(id) {
+            if (masteredIds.has(id)) {
+                masteredIds.delete(id);
+            } else {
+                masteredIds.add(id);
+            }
+            renderVocabCards();
+        }
+
+        function updateMasteredProgress() {
+            const count = masteredIds.size;
+            document.getElementById('mastered-count').textContent = count;
+            const pct = (count / vocabData.length) * 100;
+            document.getElementById('mastered-progress-bar').style.width = `${pct}%`;
+        }
+
+        function resetMastered() {
+            masteredIds.clear();
+            renderVocabCards();
+        }
+
+        // ==================== 6. 模組二、三、四：雅思測驗題渲染與作答 ====================
+        function renderQuestions() {
+            const grammarList = document.getElementById('grammar-questions-list');
+            const readingList = document.getElementById('reading-questions-list');
+            const listeningList = document.getElementById('listening-questions-list');
+
+            grammarList.innerHTML = '';
+            readingList.innerHTML = '';
+            listeningList.innerHTML = '';
+
+            examQuestions.forEach(q => {
+                const userChoice = userAnswers[q.id];
+                const isCorrect = userChoice === q.answer;
+
+                // 如果是聽力題，在 Q13 和 Q15 前加上 Section 標題分隔
+                if (q.id === 13) {
+                    listeningList.insertAdjacentHTML('beforeend', `
+                        <div class="bg-blue-50/80 border-l-4 border-[#005eb8] px-3.5 py-2 rounded-r-lg">
+                            <span class="text-xs font-extrabold text-[#005eb8] uppercase">Section 1: Questions 13–14</span>
+                            <p class="text-xs text-slate-600">請播放左側 Recording 1 並回答下列兩題。</p>
+                        </div>
+                    `);
+                }
+                if (q.id === 15) {
+                    listeningList.insertAdjacentHTML('beforeend', `
+                        <div class="bg-rose-50/80 border-l-4 border-rose-600 px-3.5 py-2 rounded-r-lg mt-6">
+                            <span class="text-xs font-extrabold text-rose-700 uppercase">Section 2: Questions 15–16</span>
+                            <p class="text-xs text-slate-600">請播放左側 Recording 2 並回答下列兩題。</p>
+                        </div>
+                    `);
+                }
+
+                const qCard = document.createElement('div');
+                qCard.id = `question-card-${q.id}`;
+                qCard.className = 'p-4 sm:p-5 rounded-xl border border-slate-200 bg-[#fcfdfe] shadow-2xs transition';
+
+                let optionsHtml = '';
+                ['A', 'B', 'C', 'D'].forEach(optKey => {
+                    const isSelected = userChoice === optKey;
+                    const isRightAnswer = q.answer === optKey;
+
+                    let btnStyle = 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800';
+                    let badgeStyle = 'bg-slate-100 text-slate-700 border-slate-300';
+                    let statusIcon = '';
+
+                    if (!isSubmitted) {
+                        if (isSelected) {
+                            btnStyle = 'border-[#005eb8] bg-blue-50/80 text-slate-900 ring-1 ring-[#005eb8]';
+                            badgeStyle = 'bg-[#005eb8] text-white border-[#005eb8]';
+                        }
+                    } else {
+                        // 交卷後狀態
+                        if (isRightAnswer) {
+                            btnStyle = 'border-emerald-500 bg-emerald-50 text-emerald-950 font-semibold';
+                            badgeStyle = 'bg-emerald-600 text-white border-emerald-600';
+                            statusIcon = '<i class="fa-solid fa-circle-check text-emerald-600 ml-auto"></i>';
+                        } else if (isSelected && !isRightAnswer) {
+                            btnStyle = 'border-rose-500 bg-rose-50 text-rose-950';
+                            badgeStyle = 'bg-rose-600 text-white border-rose-600';
+                            statusIcon = '<i class="fa-solid fa-circle-xmark text-rose-600 ml-auto"></i>';
+                        } else {
+                            btnStyle = 'border-slate-200 bg-slate-50/60 text-slate-400';
+                        }
+                    }
+
+                    optionsHtml += `
+                        <button onclick="selectOption(${q.id}, '${optKey}')" ${isSubmitted ? 'disabled' : ''} class="w-full text-left p-3 rounded-lg border ${btnStyle} flex items-center gap-3 transition text-xs sm:text-sm">
+                            <span class="w-6 h-6 rounded-full border ${badgeStyle} flex items-center justify-center text-xs font-bold shrink-0">
+                                ${optKey}
+                            </span>
+                            <span class="leading-snug">${q.options[optKey]}</span>
+                            ${statusIcon}
+                        </button>
+                    `;
+                });
+
+                // 交卷後解析區塊
+                let explanationHtml = '';
+                if (isSubmitted) {
+                    const resultBadge = isCorrect
+                        ? '<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded"><i class="fa-solid fa-check mr-1"></i>答對</span>'
+                        : `<span class="bg-rose-100 text-rose-800 text-xs font-bold px-2 py-0.5 rounded"><i class="fa-solid fa-xmark mr-1"></i>${userChoice ? '答錯' : '未作答'}（正解：${q.answer}）</span>`;
+
+                    explanationHtml = `
+                        <div class="mt-4 pt-3 border-t border-slate-200 bg-slate-50 p-3.5 rounded-lg text-xs sm:text-sm">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="font-bold text-slate-800"><i class="fa-solid fa-lightbulb text-amber-500 mr-1.5"></i>詳細解析</span>
+                                ${resultBadge}
+                            </div>
+                            <p class="text-slate-700 leading-relaxed">${q.explanation}</p>
+                        </div>
+                    `;
+                }
+
+                qCard.innerHTML = `
+                    <div class="flex items-start gap-2.5 mb-3.5">
+                        <span class="bg-slate-800 text-white text-xs font-bold px-2 py-1 rounded shrink-0 mt-0.5">
+                            Q${q.id}
+                        </span>
+                        <p class="text-sm sm:text-[15px] font-bold text-slate-900 leading-relaxed">
+                            ${q.question}
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        ${optionsHtml}
+                    </div>
+                    ${explanationHtml}
+                `;
+
+                if (q.section === 'grammar') grammarList.appendChild(qCard);
+                if (q.section === 'reading') readingList.appendChild(qCard);
+                if (q.section === 'listening') listeningList.appendChild(qCard);
+            });
+        }
+
+        function selectOption(questionId, optionKey) {
+            if (isSubmitted) return;
+            userAnswers[questionId] = optionKey;
+            renderQuestions();
+            renderQuestionPalette();
+        }
+
+        // ==================== 7. 底部題號導覽列 (Question Palette) ====================
+        function renderQuestionPalette() {
+            const container = document.getElementById('question-palette-container');
+            container.innerHTML = '<span class="text-xs font-bold text-slate-400 mr-1 uppercase tracking-wider">題號導覽：</span>';
+
+            examQuestions.forEach(q => {
+                const userChoice = userAnswers[q.id];
+                const isAnswered = Boolean(userChoice);
+                const isCorrect = userChoice === q.answer;
+
+                let btnClass = 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600';
+                if (!isSubmitted) {
+                    if (isAnswered) {
+                        btnClass = 'bg-[#005eb8] text-white border-blue-400 font-bold';
+                    }
+                } else {
+                    if (isCorrect) {
+                        btnClass = 'bg-emerald-600 text-white border-emerald-400 font-bold';
+                    } else {
+                        btnClass = 'bg-rose-600 text-white border-rose-400 font-bold';
+                    }
+                }
+
+                const btn = document.createElement('button');
+                btn.className = `q-palette-btn w-7 h-7 rounded text-xs border flex items-center justify-center ${btnClass}`;
+                btn.textContent = q.id;
+                btn.title = `跳至第 ${q.id} 題 (${q.section.toUpperCase()})`;
+                btn.onclick = () => jumpToQuestion(q.id, q.section);
+                container.appendChild(btn);
+            });
+        }
+
+        function jumpToQuestion(questionId, sectionName) {
+            switchTab(sectionName);
+            setTimeout(() => {
+                const target = document.getElementById(`question-card-${questionId}`);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    target.classList.add('ring-2', 'ring-[#005eb8]');
+                    setTimeout(() => target.classList.remove('ring-2', 'ring-[#005eb8]'), 1200);
+                }
+            }, 60);
+        }
+
+        // ==================== 8. 交卷與計分解析 ====================
+        function submitExam() {
+            if (isSubmitted) {
+                showModal('測驗已交卷', '您已經完成交卷並顯示所有解析！若想重新練習，請點擊右上角的「重設」按鈕。', 'info');
+                return;
+            }
+
+            const answeredCount = Object.keys(userAnswers).length;
+            if (answeredCount < examQuestions.length) {
+                showModal(
+                    '確認提前交卷？',
+                    `您目前完成了 <strong>${answeredCount} / ${examQuestions.length}</strong> 題，還有 ${examQuestions.length - answeredCount} 題尚未作答。確定要現在交卷並查看詳細解析嗎？`,
+                    'confirm',
+                    () => finalizeSubmission()
+                );
+            } else {
+                finalizeSubmission();
+            }
+        }
+
+        function finalizeSubmission() {
+            isSubmitted = true;
+            clearInterval(timerInterval);
+            timerRunning = false;
+
+            // 計算各區得分
+            let totalCorrect = 0;
+            let grammarCorrect = 0;
+            let readingCorrect = 0;
+            let listeningCorrect = 0;
+
+            examQuestions.forEach(q => {
+                if (userAnswers[q.id] === q.answer) {
+                    totalCorrect++;
+                    if (q.section === 'grammar') grammarCorrect++;
+                    if (q.section === 'reading') readingCorrect++;
+                    if (q.section === 'listening') listeningCorrect++;
+                }
+            });
+
+            // 更新頂部總分徽章
+            const scoreBadge = document.getElementById('score-badge');
+            scoreBadge.classList.remove('hidden');
+            document.getElementById('total-score-text').textContent = `${totalCorrect} / ${examQuestions.length}`;
+
+            // 更新各區分數膠囊
+            const gPill = document.getElementById('grammar-score-pill');
+            gPill.classList.remove('hidden');
+            gPill.textContent = `文法得分：${grammarCorrect} / 8`;
+
+            const rPill = document.getElementById('reading-score-pill');
+            rPill.classList.remove('hidden');
+            rPill.textContent = `閱讀得分：${readingCorrect} / 4`;
+
+            const lPill = document.getElementById('listening-score-pill');
+            lPill.classList.remove('hidden');
+            lPill.textContent = `聽力得分：${listeningCorrect} / 4`;
+
+            // 閱讀文章自動標出關鍵證據句
+            document.querySelectorAll('.evidence-span').forEach(span => {
+                span.classList.add('bg-emerald-100', 'border-b-2', 'border-emerald-500', 'px-1', 'rounded-xs');
+            });
+
+            // 自動開啟聽力逐字稿方便檢討
+            if (!scriptVisible) {
+                toggleAudioScript();
+            }
+
+            renderQuestions();
+            renderQuestionPalette();
+
+            // 若目前在單字分頁，自動切換到文法分頁檢視成績
+            if (currentTab === 'vocab') {
+                switchTab('grammar');
+            }
+
+            const percentage = Math.round((totalCorrect / examQuestions.length) * 100);
+            showModal(
+                '段考模擬測驗成績單',
+                `
+                <div class="space-y-2">
+                    <p class="text-base font-bold text-slate-800">總答對題數：<span class="text-[#005eb8] text-xl">${totalCorrect} / 16</span>（正確率 ${percentage}%）</p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1">
+                        <p>• Grammar 文法練習：<strong>${grammarCorrect} / 8</strong></p>
+                        <p>• Reading 閱讀理解：<strong>${readingCorrect} / 4</strong></p>
+                        <p>• Listening 聽力練習：<strong>${listeningCorrect} / 4</strong></p>
+                    </div>
+                    <p class="text-xs text-slate-500 pt-1">所有題目的中文解析、閱讀文章出題依據以及聽力逐字稿皆已全面解鎖！</p>
+                </div>
+                `,
+                'success'
+            );
+        }
+
+        function confirmResetExam() {
+            showModal(
+                '重設所有測驗作答',
+                '確定要清除所有選擇題作答紀錄並將計時器重設為 25:00 嗎？（單字熟記進度將會保留）',
+                'confirm',
+                () => {
+                    userAnswers = {};
+                    isSubmitted = false;
+                    timeRemaining = 25 * 60;
+                    document.getElementById('score-badge').classList.add('hidden');
+                    document.getElementById('grammar-score-pill').classList.add('hidden');
+                    document.getElementById('reading-score-pill').classList.add('hidden');
+                    document.getElementById('listening-score-pill').classList.add('hidden');
+                    document.querySelectorAll('.evidence-span').forEach(span => {
+                        span.classList.remove('bg-emerald-100', 'border-b-2', 'border-emerald-500', 'px-1', 'rounded-xs');
+                    });
+                    if (scriptVisible) toggleAudioScript();
+                    renderQuestions();
+                    renderQuestionPalette();
+                    clearInterval(timerInterval);
+                    timerRunning = true;
+                    startTimer();
+                }
+            );
+        }
+
+        // ==================== 9. 雅思閱讀螢光筆標記功能 ====================
+        function highlightSelectedText() {
+            const selection = window.getSelection();
+            if (!selection || selection.isCollapsed) {
+                showModal('螢光筆使用提示', '請先在左側閱讀文章中用滑鼠「反白選取」一段英文文字，再點擊「螢光筆標記選取文字」按鈕。', 'info');
+                return;
+            }
+
+            const range = selection.getRangeAt(0);
+            const articleBody = document.getElementById('reading-article-body');
+            if (!articleBody.contains(range.commonAncestorContainer)) {
+                showModal('範圍提示', '螢光筆標記僅適用於左側的閱讀文章內容喔！', 'info');
+                return;
+            }
+
+            try {
+                const span = document.createElement('span');
+                span.className = 'ielts-highlight';
+                span.title = '點擊可移除此螢光筆標記';
+                span.onclick = function () {
+                    const parent = this.parentNode;
+                    while (this.firstChild) parent.insertBefore(this.firstChild, this);
+                    parent.removeChild(this);
+                };
+                range.surroundContents(span);
+                selection.removeAllRanges();
+            } catch (e) {
+                showModal('選取提示', '請在同一個段落內選取文字進行螢光筆標記（勿跨段落選取）。', 'info');
+            }
+        }
+
+        function clearAllHighlights() {
+            document.querySelectorAll('.ielts-highlight').forEach(span => {
+                const parent = span.parentNode;
+                while (span.firstChild) parent.insertBefore(span.firstChild, span);
+                parent.removeChild(span);
+            });
+        }
+
+        // ==================== 10. 語音合成朗讀器 (Web Speech API TTS) ====================
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) {
+                showModal('瀏覽器不支援語音', '您的瀏覽器不支援內建語音朗讀功能，建議使用 Chrome 或 Edge 瀏覽器。', 'info');
+                return;
+            }
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = speechRate;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function playListeningTrack(trackNum) {
+            if (!('speechSynthesis' in window)) {
+                showModal('瀏覽器不支援語音', '您的瀏覽器不支援內建語音朗讀功能，請開啟「聽力逐字稿」由老師親自朗讀。', 'info');
+                return;
+            }
+            window.speechSynthesis.cancel();
+
+            // 重設按鈕樣式
+            [1, 2].forEach(num => {
+                const btn = document.getElementById(`play-btn-${num}`);
+                btn.innerHTML = `<i class="fa-solid fa-play"></i><span>播放音檔 ${num} (Play Audio ${num})</span>`;
+                btn.classList.remove('bg-emerald-600');
+                btn.classList.add('bg-[#005eb8]');
+            });
+
+            const activeBtn = document.getElementById(`play-btn-${trackNum}`);
+            activeBtn.innerHTML = `<i class="fa-solid fa-volume-high animate-pulse"></i><span>正在朗讀音檔 ${trackNum}...</span>`;
+            activeBtn.classList.remove('bg-[#005eb8]');
+            activeBtn.classList.add('bg-emerald-600');
+
+            const utterance = new SpeechSynthesisUtterance(audioScripts[trackNum]);
+            utterance.lang = 'en-US';
+            utterance.rate = speechRate;
+
+            utterance.onend = () => {
+                activeBtn.innerHTML = `<i class="fa-solid fa-rotate-right"></i><span>重播音檔 ${trackNum} (Replay Audio ${trackNum})</span>`;
+                activeBtn.classList.remove('bg-emerald-600');
+                activeBtn.classList.add('bg-[#005eb8]');
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function stopSpeech() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            [1, 2].forEach(num => {
+                const btn = document.getElementById(`play-btn-${num}`);
+                btn.innerHTML = `<i class="fa-solid fa-play"></i><span>播放音檔 ${num} (Play Audio ${num})</span>`;
+                btn.classList.remove('bg-emerald-600');
+                btn.classList.add('bg-[#005eb8]');
+            });
+        }
+
+        function setSpeechRate(rate) {
+            speechRate = rate;
+            document.querySelectorAll('.rate-btn').forEach(btn => {
+                btn.classList.remove('bg-[#005eb8]', 'text-white', 'shadow-2xs');
+                btn.classList.add('text-slate-600');
+            });
+            const active = document.getElementById(`rate-${rate}`);
+            active.classList.remove('text-slate-600');
+            active.classList.add('bg-[#005eb8]', 'text-white', 'shadow-2xs');
+        }
+
+        function toggleAudioScript() {
+            scriptVisible = !scriptVisible;
+            const box1 = document.getElementById('script-box-1');
+            const box2 = document.getElementById('script-box-2');
+            const icon = document.getElementById('script-eye-icon');
+            const label = document.getElementById('script-btn-label');
+
+            if (scriptVisible) {
+                box1.classList.remove('hidden');
+                box2.classList.remove('hidden');
+                icon.className = 'fa-solid fa-eye text-emerald-400';
+                label.textContent = '檢討模式：隱藏聽力逐字稿 (目前顯示)';
+            } else {
+                box1.classList.add('hidden');
+                box2.classList.add('hidden');
+                icon.className = 'fa-solid fa-eye-slash text-amber-400';
+                label.textContent = '檢討模式：顯示聽力逐字稿 (目前隱藏)';
+            }
+        }
+
+        // ==================== 11. 計時器與自訂 Modal ====================
+        function startTimer() {
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                if (timerRunning && timeRemaining > 0) {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                    if (timeRemaining === 0) {
+                        clearInterval(timerInterval);
+                        finalizeSubmission();
+                    }
+                }
+            }, 1000);
+        }
+
+        function toggleTimer() {
+            if (isSubmitted) return;
+            timerRunning = !timerRunning;
+            const btn = document.getElementById('timer-toggle-btn');
+            btn.innerHTML = timerRunning ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play text-emerald-400"></i>';
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+            const secs = (timeRemaining % 60).toString().padStart(2, '0');
+            document.getElementById('exam-timer').textContent = `${mins}:${secs}`;
+        }
+
+        function showModal(title, htmlMessage, type = 'info', onConfirm = null) {
+            const modal = document.getElementById('custom-modal');
+            const titleEl = document.getElementById('modal-title');
+            const msgEl = document.getElementById('modal-message');
+            const iconEl = document.getElementById('modal-icon');
+            const actionsEl = document.getElementById('modal-actions');
+
+            titleEl.textContent = title;
+            msgEl.innerHTML = htmlMessage;
+            actionsEl.innerHTML = '';
+
+            if (type === 'success') {
+                iconEl.className = 'w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg';
+                iconEl.innerHTML = '<i class="fa-solid fa-award"></i>';
+            } else if (type === 'confirm') {
+                iconEl.className = 'w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg';
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-question"></i>';
+            } else {
+                iconEl.className = 'w-10 h-10 rounded-full bg-blue-100 text-[#005eb8] flex items-center justify-center text-lg';
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+            }
+
+            if (type === 'confirm' && onConfirm) {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition';
+                cancelBtn.textContent = '取消';
+                cancelBtn.onclick = closeModal;
+
+                const confirmBtn = document.createElement('button');
+                confirmBtn.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-white bg-[#005eb8] hover:bg-blue-700 transition';
+                confirmBtn.textContent = '確定';
+                confirmBtn.onclick = () => {
+                    closeModal();
+                    onConfirm();
+                };
+
+                actionsEl.appendChild(cancelBtn);
+                actionsEl.appendChild(confirmBtn);
+            } else {
+                const okBtn = document.createElement('button');
+                okBtn.className = 'px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-white bg-[#005eb8] hover:bg-blue-700 transition';
+                okBtn.textContent = '我知道了';
+                okBtn.onclick = closeModal;
+                actionsEl.appendChild(okBtn);
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('custom-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function escapeQuotes(str) {
+            return str.replace(/'/g, "\\'");
+        }
+    </script>
+</body>
+</html>
