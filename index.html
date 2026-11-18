@@ -3,41 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Private English Tutor - 段考總複習互動學習網</title>
+  <title>Private English Tutor</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
     body {
       font-family: 'Inter', 'Noto Sans TC', sans-serif;
-      background-color: #f3f4f6;
-      color: #1f2937;
-    }
-    .ielts-header {
-      background-color: #1e293b;
-      color: #ffffff;
-      border-bottom: 3px solid #0284c7;
+      background-color: #f8fafc;
+      color: #0f172a;
     }
     .ielts-pane {
-      height: calc(100vh - 132px);
+      height: calc(100vh - 108px);
       overflow-y: auto;
     }
     @media (max-width: 768px) {
       .ielts-pane {
         height: auto;
-        max-height: none;
       }
     }
 
-    /* 3D Flashcard Flip Styles */
+    /* Minimal 3D Flashcard */
     .flashcard-scene {
       perspective: 1000px;
-      height: 250px;
+      height: 210px;
     }
     .flashcard-inner {
       position: relative;
       width: 100%;
       height: 100%;
-      transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+      transition: transform 0.45s cubic-bezier(0.4, 0.2, 0.2, 1);
       transform-style: preserve-3d;
       cursor: pointer;
     }
@@ -50,23 +44,22 @@
       height: 100%;
       -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
-      border-radius: 0.75rem;
+      border-radius: 0.5rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       padding: 1.25rem;
-      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
     }
     .flashcard-front {
       background-color: #ffffff;
-      border: 2px solid #e2e8f0;
+      border: 1px solid #e2e8f0;
     }
     .flashcard-front:hover {
-      border-color: #38bdf8;
+      border-color: #94a3b8;
     }
     .flashcard-back {
-      background-color: #f8fafc;
-      border: 2px solid #0284c7;
+      background-color: #ffffff;
+      border: 1px solid #0284c7;
       transform: rotateY(180deg);
     }
 
@@ -77,23 +70,21 @@
       border-radius: 2px;
     }
     .evidence-mark {
-      background-color: #bbf7d0;
+      background-color: #dcfce7;
       border-bottom: 2px solid #16a34a;
-      padding: 1px 3px;
-      border-radius: 2px;
+      padding: 1px 2px;
     }
 
     /* Palette Buttons */
     .palette-btn {
-      width: 32px;
-      height: 32px;
-      font-size: 13px;
+      width: 28px;
+      height: 28px;
+      font-size: 12px;
       font-weight: 600;
       border-radius: 4px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s;
     }
     .palette-unanswered {
       background-color: #ffffff;
@@ -102,166 +93,118 @@
     }
     .palette-answered {
       background-color: #0284c7;
-      border: 1px solid #0284c7;
       color: #ffffff;
     }
     .palette-correct {
       background-color: #16a34a;
-      border: 1px solid #16a34a;
       color: #ffffff;
     }
     .palette-wrong {
       background-color: #dc2626;
-      border: 1px solid #dc2626;
       color: #ffffff;
     }
   </style>
 </head>
 <body class="flex flex-col min-h-screen">
 
-  <!-- Top Navigation Header -->
-  <header class="ielts-header px-4 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 shadow-md">
-    <div class="flex items-center gap-3">
-      <div class="bg-sky-600 text-white font-bold px-2.5 py-1 rounded text-xs md:text-sm tracking-wide">IELTS LAYOUT</div>
-      <div>
-        <h1 class="font-bold text-base md:text-lg leading-tight">Private English Tutor｜段考總複習</h1>
-        <p class="text-xs text-slate-300">Jasper Guo · Philosophy, THU</p>
-      </div>
-    </div>
+  <!-- Minimal Header -->
+  <header class="bg-slate-900 text-white px-5 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30">
+    <h1 class="font-semibold text-base tracking-tight">Private English Tutor</h1>
 
-    <!-- Strictly Separated Section Tabs -->
-    <nav class="flex items-center gap-1.5 bg-slate-800 p-1 rounded-lg flex-wrap">
-      <button onclick="switchTab('vocab')" id="tab-vocab" class="tab-btn px-3.5 py-1.5 rounded-md text-xs md:text-sm font-semibold bg-sky-600 text-white transition">
-        Section 1｜單字閃卡 (20)
+    <nav class="flex items-center gap-1">
+      <button onclick="switchTab('vocab')" id="tab-vocab" class="tab-btn px-3 py-1.5 rounded text-xs md:text-sm font-medium bg-sky-600 text-white transition">
+        Vocabulary
       </button>
-      <button onclick="switchTab('grammar')" id="tab-grammar" class="tab-btn px-3.5 py-1.5 rounded-md text-xs md:text-sm font-semibold text-slate-300 hover:text-white transition">
-        Section 2｜文法測驗 (8題)
+      <button onclick="switchTab('grammar')" id="tab-grammar" class="tab-btn px-3 py-1.5 rounded text-xs md:text-sm font-medium text-slate-300 hover:text-white transition">
+        Grammar
       </button>
-      <button onclick="switchTab('reading')" id="tab-reading" class="tab-btn px-3.5 py-1.5 rounded-md text-xs md:text-sm font-semibold text-slate-300 hover:text-white transition">
-        Section 3｜閱讀理解 (4題)
+      <button onclick="switchTab('reading')" id="tab-reading" class="tab-btn px-3 py-1.5 rounded text-xs md:text-sm font-medium text-slate-300 hover:text-white transition">
+        Reading
       </button>
-      <button onclick="switchTab('listening')" id="tab-listening" class="tab-btn px-3.5 py-1.5 rounded-md text-xs md:text-sm font-semibold text-slate-300 hover:text-white transition">
-        Section 4｜聽力測驗 (4題)
+      <button onclick="switchTab('listening')" id="tab-listening" class="tab-btn px-3 py-1.5 rounded text-xs md:text-sm font-medium text-slate-300 hover:text-white transition">
+        Listening
       </button>
     </nav>
   </header>
 
-  <!-- Main Content Area -->
+  <!-- Main Content -->
   <main class="flex-1">
 
-    <!-- ===================================================================== -->
-    <!-- SECTION 1: VOCABULARY FLASHCARDS (FRONT: EN / BACK: ZH + EXAMPLE)     -->
-    <!-- ===================================================================== -->
-    <section id="view-vocab" class="max-w-6xl mx-auto p-4 md:p-6">
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-5 flex flex-col gap-3">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <span class="bg-sky-100 text-sky-800 text-xs font-bold px-2.5 py-0.5 rounded">SECTION 1 · VOCABULARY FLASHCARDS</span>
-            <h2 class="text-lg font-bold text-slate-800 mt-1">核心單字與片語翻轉閃卡（共 20 組）</h2>
-            <p class="text-xs md:text-sm text-slate-500">正面顯示英文單字，點擊卡片可翻轉查看「中文翻譯」與「混合情境例句」。</p>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2">
-            <button onclick="flipAllCards(false)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition">
-              全部轉回正面 (英文)
-            </button>
-            <button onclick="flipAllCards(true)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-300 transition">
-              全部翻至背面 (中譯/例句)
-            </button>
-          </div>
+    <!-- SECTION 1: VOCABULARY FLASHCARDS -->
+    <section id="view-vocab" class="max-w-6xl mx-auto p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div class="flex items-center gap-1.5">
+          <button onclick="filterVocab('all')" class="v-filter px-3 py-1 rounded text-xs font-medium bg-slate-800 text-white" data-filter="all">All (20)</button>
+          <button onclick="filterVocab('word')" class="v-filter px-3 py-1 rounded text-xs font-medium bg-white border border-slate-200 text-slate-600" data-filter="word">Words (14)</button>
+          <button onclick="filterVocab('phrase')" class="v-filter px-3 py-1 rounded text-xs font-medium bg-white border border-slate-200 text-slate-600" data-filter="phrase">Phrases (6)</button>
+          <button onclick="filterVocab('unmastered')" class="v-filter px-3 py-1 rounded text-xs font-medium bg-white border border-slate-200 text-slate-600" data-filter="unmastered">Review</button>
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
-          <div class="flex flex-wrap items-center gap-1.5">
-            <button onclick="filterVocab('all')" class="v-filter px-3 py-1 rounded-full text-xs font-semibold bg-sky-600 text-white" data-filter="all">全部 (20)</button>
-            <button onclick="filterVocab('word')" class="v-filter px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter="word">單字 (14)</button>
-            <button onclick="filterVocab('phrase')" class="v-filter px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter="phrase">片語 (6)</button>
-            <button onclick="filterVocab('unmastered')" class="v-filter px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 hover:bg-amber-200" data-filter="unmastered">待加強</button>
-          </div>
-          <div class="flex items-center gap-2 text-xs text-slate-600 font-medium">
-            <span>熟記進度：<strong id="vocab-mastered-count">0</strong> / 20</span>
-            <div class="w-32 bg-slate-200 rounded-full h-2 overflow-hidden">
-              <div id="vocab-progress-bar" class="bg-emerald-500 h-2 transition-all duration-300" style="width: 0%"></div>
-            </div>
-          </div>
+        <div class="flex items-center gap-2">
+          <button onclick="flipAllCards(false)" class="px-2.5 py-1 rounded text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">Front</button>
+          <button onclick="flipAllCards(true)" class="px-2.5 py-1 rounded text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">Back</button>
         </div>
       </div>
 
-      <!-- Flashcard Grid -->
       <div id="vocab-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </section>
 
-    <!-- ===================================================================== -->
-    <!-- SECTION 2: GRAMMAR PRACTICE (ISOLATED IELTS SPLIT LAYOUT)             -->
-    <!-- ===================================================================== -->
+    <!-- SECTION 2: GRAMMAR -->
     <section id="view-grammar" class="hidden grid grid-cols-1 md:grid-cols-12">
-      <!-- Left Reference Pane -->
-      <div class="md:col-span-5 bg-white border-r border-slate-300 p-5 ielts-pane">
-        <div class="inline-block bg-sky-100 text-sky-800 text-xs font-bold px-2.5 py-1 rounded mb-2">SECTION 2 · GRAMMAR REFERENCE</div>
-        <h2 class="text-xl font-bold text-slate-800 mb-3">段考核心文法速查卡</h2>
+      <!-- Left Reference -->
+      <div class="md:col-span-5 bg-white border-r border-slate-200 p-6 ielts-pane">
+        <h2 class="text-base font-bold text-slate-900 mb-4">Grammar Notes</h2>
         <div class="space-y-4 text-sm text-slate-700 leading-relaxed">
-          <div class="p-3.5 bg-slate-50 rounded-lg border border-slate-200">
-            <h3 class="font-bold text-slate-900 mb-1">1. 介系詞與必接動名詞 (V-ing)</h3>
-            <p><strong>after / before</strong> 後方若無主詞（作介系詞），動詞需加 <strong>-ing</strong>。</p>
-            <p class="mt-1">常見必接 V-ing 動詞/片語：<strong>give up, enjoy, practice, keep, finish</strong>。</p>
+          <div class="pb-3 border-b border-slate-100">
+            <h3 class="font-semibold text-slate-900 mb-1">1. 介系詞與動名詞 (V-ing)</h3>
+            <p><strong>after / before</strong> 後無主詞時，動詞加 <strong>-ing</strong>。</p>
+            <p class="mt-1">必接 V-ing：<strong>give up, enjoy, practice, keep, finish</strong>。</p>
           </div>
-          <div class="p-3.5 bg-slate-50 rounded-lg border border-slate-200">
-            <h3 class="font-bold text-slate-900 mb-1">2. 必接不定詞 (to V) 與否定位置</h3>
-            <p>常見必接 to V 動詞：<strong>plan, decide, hope, want, need</strong>。</p>
-            <p class="mt-1 text-rose-700 font-medium">⚠️ 不定詞的否定：<strong>not</strong> 必須放在 <strong>to</strong> 前面（decide <strong>not to</strong> V）。</p>
+          <div class="pb-3 border-b border-slate-100">
+            <h3 class="font-semibold text-slate-900 mb-1">2. 不定詞 (to V) 與否定</h3>
+            <p>必接 to V：<strong>plan, decide, hope, want, need</strong>。</p>
+            <p class="mt-1">否定形式：<strong>not</strong> 置於 <strong>to</strong> 前（decide <strong>not to</strong> V）。</p>
           </div>
-          <div class="p-3.5 bg-slate-50 rounded-lg border border-slate-200">
-            <h3 class="font-bold text-slate-900 mb-1">3. 語意大不同：stop & remember</h3>
-            <ul class="list-disc pl-5 space-y-1 mt-1">
-              <li><strong>stop to V</strong>：停下原本的事，去做另一件事。</li>
-              <li><strong>stop V-ing</strong>：停止正在做的事。</li>
-              <li><strong>remember to V</strong>：記得「去做」未做的事。</li>
-              <li><strong>remember V-ing</strong>：記得「曾經做過」某事。</li>
+          <div class="pb-3 border-b border-slate-100">
+            <h3 class="font-semibold text-slate-900 mb-1">3. stop & remember</h3>
+            <ul class="list-disc pl-4 space-y-1 mt-1">
+              <li><strong>stop to V</strong>：停下原本的事，去做另一件事</li>
+              <li><strong>stop V-ing</strong>：停止正在做的事</li>
+              <li><strong>remember to V</strong>：記得「去做」未做的事</li>
+              <li><strong>remember V-ing</strong>：記得「曾經做過」某事</li>
             </ul>
           </div>
-          <div class="p-3.5 bg-slate-50 rounded-lg border border-slate-200">
-            <h3 class="font-bold text-slate-900 mb-1">4. 固定片語與轉折副詞</h3>
-            <p><strong>save A from B</strong>（將 A 從 B 中拯救出來）。</p>
-            <p class="mt-1"><strong>however</strong>（然而）表語氣轉折，前後常有標點符號隔開。</p>
+          <div>
+            <h3 class="font-semibold text-slate-900 mb-1">4. 片語與轉折詞</h3>
+            <p><strong>save A from B</strong>（將 A 從 B 中拯救出來）</p>
+            <p class="mt-1"><strong>however</strong>（然而）表語氣轉折。</p>
           </div>
         </div>
       </div>
 
-      <!-- Right Question Pane -->
-      <div class="md:col-span-7 bg-slate-50 p-5 ielts-pane">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200">
-          <div>
-            <h2 class="text-lg font-bold text-slate-800">Grammar Questions 1 – 8</h2>
-            <p class="text-xs text-slate-500">本區獨立計分，作答完畢請點擊右側批改按鈕</p>
-          </div>
+      <!-- Right Questions -->
+      <div class="md:col-span-7 bg-slate-50 p-6 ielts-pane">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+          <h2 class="text-base font-bold text-slate-900">Questions 1 – 8</h2>
           <div class="flex items-center gap-2">
-            <span id="score-grammar" class="hidden bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-md">得分：0 / 8</span>
-            <button id="submit-grammar" onclick="submitSection('grammar')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-md shadow transition">批改文法測驗</button>
-            <button id="reset-grammar" onclick="resetSection('grammar')" class="hidden bg-slate-600 hover:bg-slate-500 text-white text-xs font-semibold px-3 py-2 rounded-md transition">重做文法測驗</button>
+            <span id="score-grammar" class="hidden text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">0 / 8</span>
+            <button id="submit-grammar" onclick="submitSection('grammar')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-3.5 py-1.5 rounded transition">Submit</button>
+            <button id="reset-grammar" onclick="resetSection('grammar')" class="hidden bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1.5 rounded transition">Reset</button>
           </div>
         </div>
         <div id="grammar-questions" class="space-y-4"></div>
       </div>
     </section>
 
-    <!-- ===================================================================== -->
-    <!-- SECTION 3: READING COMPREHENSION (ISOLATED IELTS SPLIT LAYOUT)        -->
-    <!-- ===================================================================== -->
+    <!-- SECTION 3: READING -->
     <section id="view-reading" class="hidden grid grid-cols-1 md:grid-cols-12">
-      <!-- Left Passage Pane -->
-      <div class="md:col-span-6 bg-white border-r border-slate-300 p-5 md:p-7 ielts-pane">
-        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-200">
-          <div>
-            <span class="bg-sky-100 text-sky-800 text-xs font-bold px-2.5 py-0.5 rounded">SECTION 3 · READING PASSAGE</span>
-            <h2 class="text-xl font-bold text-slate-900 mt-1">From the Farm to the Screen</h2>
-          </div>
+      <!-- Left Passage -->
+      <div class="md:col-span-6 bg-white border-r border-slate-200 p-6 ielts-pane">
+        <div class="flex items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-200">
+          <h2 class="text-lg font-bold text-slate-900">From the Farm to the Screen</h2>
           <div class="flex items-center gap-1.5">
-            <button onclick="highlightSelection()" class="bg-yellow-200 hover:bg-yellow-300 text-yellow-950 text-xs font-semibold px-2.5 py-1.5 rounded border border-yellow-400 transition">
-              🖍️ 螢光筆標記
-            </button>
-            <button onclick="clearHighlights()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded border border-slate-300 transition">
-              清除標記
-            </button>
+            <button onclick="highlightSelection()" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-900 text-xs font-medium px-2.5 py-1 rounded transition">Highlight</button>
+            <button onclick="clearHighlights()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium px-2.5 py-1 rounded transition">Clear</button>
           </div>
         </div>
 
@@ -278,95 +221,74 @@
         </article>
       </div>
 
-      <!-- Right Question Pane -->
-      <div class="md:col-span-6 bg-slate-50 p-5 ielts-pane">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200">
-          <div>
-            <h2 class="text-lg font-bold text-slate-800">Reading Questions 1 – 4</h2>
-            <p class="text-xs text-slate-500">批改後左側文章將自動標出綠色答題依據</p>
-          </div>
+      <!-- Right Questions -->
+      <div class="md:col-span-6 bg-slate-50 p-6 ielts-pane">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+          <h2 class="text-base font-bold text-slate-900">Questions 1 – 4</h2>
           <div class="flex items-center gap-2">
-            <span id="score-reading" class="hidden bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-md">得分：0 / 4</span>
-            <button id="submit-reading" onclick="submitSection('reading')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-md shadow transition">批改閱讀測驗</button>
-            <button id="reset-reading" onclick="resetSection('reading')" class="hidden bg-slate-600 hover:bg-slate-500 text-white text-xs font-semibold px-3 py-2 rounded-md transition">重做閱讀測驗</button>
+            <span id="score-reading" class="hidden text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">0 / 4</span>
+            <button id="submit-reading" onclick="submitSection('reading')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-3.5 py-1.5 rounded transition">Submit</button>
+            <button id="reset-reading" onclick="resetSection('reading')" class="hidden bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1.5 rounded transition">Reset</button>
           </div>
         </div>
         <div id="reading-questions" class="space-y-4"></div>
       </div>
     </section>
 
-    <!-- ===================================================================== -->
-    <!-- SECTION 4: LISTENING COMPREHENSION (ISOLATED IELTS SPLIT LAYOUT)      -->
-    <!-- ===================================================================== -->
+    <!-- SECTION 4: LISTENING -->
     <section id="view-listening" class="hidden grid grid-cols-1 md:grid-cols-12">
-      <!-- Left Audio Player & Transcript Pane -->
-      <div class="md:col-span-5 bg-white border-r border-slate-300 p-5 ielts-pane">
-        <div class="inline-block bg-sky-100 text-sky-800 text-xs font-bold px-2.5 py-1 rounded mb-2">SECTION 4 · LISTENING AUDIO</div>
-        <h2 class="text-xl font-bold text-slate-800 mb-1">段考聽力模擬測驗（兩大題）</h2>
-        <p class="text-xs text-slate-500 mb-4">每段音檔約 30 秒，建議先盲聽作答，批改後自動顯示逐字稿。</p>
-
-        <!-- Speed Control -->
-        <div class="flex items-center gap-2 mb-4 bg-slate-100 p-2.5 rounded-lg">
-          <span class="text-xs font-bold text-slate-700">朗讀語速：</span>
-          <button onclick="setSpeechRate(0.8)" class="rate-btn px-2.5 py-1 rounded text-xs font-semibold bg-white border border-slate-300" data-rate="0.8">0.8x 慢速</button>
-          <button onclick="setSpeechRate(1.0)" class="rate-btn px-2.5 py-1 rounded text-xs font-semibold bg-sky-600 text-white" data-rate="1.0">1.0x 正常</button>
-          <button onclick="setSpeechRate(1.15)" class="rate-btn px-2.5 py-1 rounded text-xs font-semibold bg-white border border-slate-300" data-rate="1.15">1.15x 挑戰</button>
+      <!-- Left Audio -->
+      <div class="md:col-span-5 bg-white border-r border-slate-200 p-6 ielts-pane">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-bold text-slate-900">Audio</h2>
+          <div class="flex items-center gap-1">
+            <button onclick="setSpeechRate(0.8)" class="rate-btn px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-700" data-rate="0.8">0.8x</button>
+            <button onclick="setSpeechRate(1.0)" class="rate-btn px-2 py-1 rounded text-xs font-medium bg-slate-900 text-white" data-rate="1.0">1.0x</button>
+            <button onclick="setSpeechRate(1.15)" class="rate-btn px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-700" data-rate="1.15">1.15x</button>
+          </div>
         </div>
 
-        <!-- Audio Part 1 -->
-        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 mb-4">
+        <!-- Part 1 -->
+        <div class="p-4 rounded-lg border border-slate-200 mb-4">
           <div class="flex items-center justify-between mb-2">
-            <span class="font-bold text-slate-800 text-sm">Part 1：緊急應變與團隊合作 (Q1–Q2)</span>
-            <span class="text-xs text-slate-500">~30 sec</span>
+            <span class="font-semibold text-slate-800 text-sm">Part 1 (Q1–Q2)</span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="playListening(1)" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium px-3 py-1.5 rounded transition">Play</button>
+              <button onclick="stopSpeech()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded transition">Stop</button>
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <button onclick="playListening(1)" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition">
-              ▶️ 播放 Part 1
-            </button>
-            <button onclick="stopSpeech()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg transition">
-              ⏹️ 停止
-            </button>
-          </div>
-          <div id="transcript-1" class="hidden mt-3 p-3 bg-white rounded border border-slate-200 text-sm text-slate-700 leading-relaxed">
+          <div id="transcript-1" class="hidden mt-3 pt-3 border-t border-slate-100 text-sm text-slate-700 leading-relaxed">
             Yesterday evening at a quarter to eight, while Ryan was helping his mom do the dishes, his smartphone suddenly rang. It was a call from his boss at the tech company. A dangerous hacker was trying to steal important data through a cyber attack! Ryan got butterflies in his stomach at first; however, he quickly made up his mind to drive back to the office. Together with two software engineers, Ryan fixed the broken server and saved the company's private files from the attack before midnight.
           </div>
         </div>
 
-        <!-- Audio Part 2 -->
-        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 mb-4">
+        <!-- Part 2 -->
+        <div class="p-4 rounded-lg border border-slate-200 mb-4">
           <div class="flex items-center justify-between mb-2">
-            <span class="font-bold text-slate-800 text-sm">Part 2：暴風雨中的古董運送 (Q3–Q4)</span>
-            <span class="text-xs text-slate-500">~30 sec</span>
+            <span class="font-semibold text-slate-800 text-sm">Part 2 (Q3–Q4)</span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="playListening(2)" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium px-3 py-1.5 rounded transition">Play</button>
+              <button onclick="stopSpeech()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded transition">Stop</button>
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <button onclick="playListening(2)" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition">
-              ▶️ 播放 Part 2
-            </button>
-            <button onclick="stopSpeech()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg transition">
-              ⏹️ 停止
-            </button>
-          </div>
-          <div id="transcript-2" class="hidden mt-3 p-3 bg-white rounded border border-slate-200 text-sm text-slate-700 leading-relaxed">
+          <div id="transcript-2" class="hidden mt-3 pt-3 border-t border-slate-100 text-sm text-slate-700 leading-relaxed">
             Last winter, a terrible typhoon hit the coast, bringing freezing rain and strong winds. Mr. Chen, an experienced truck driver, needed to deliver a rare antique violin to a museum before noon. While he was driving past an old factory, a small earthquake shook the ground, and falling rocks blocked the road. Instead of giving up, Mr. Chen stopped to check the fragile box to make sure it was still in good condition, and then he safely took another mountain path to finish his job.
           </div>
         </div>
 
-        <button onclick="toggleTranscripts()" id="toggle-transcript-btn" class="w-full py-2 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700 transition">
-          👁️ 教師檢討：手動顯示／隱藏聽力逐字稿
+        <button onclick="toggleTranscripts()" class="w-full py-2 px-3 rounded border border-slate-200 hover:bg-slate-50 text-xs font-medium text-slate-600 transition">
+          Transcript
         </button>
       </div>
 
-      <!-- Right Question Pane -->
-      <div class="md:col-span-7 bg-slate-50 p-5 ielts-pane">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200">
-          <div>
-            <h2 class="text-lg font-bold text-slate-800">Listening Questions 1 – 4</h2>
-            <p class="text-xs text-slate-500">本區獨立計分，聽完音檔後選出正確敘述</p>
-          </div>
+      <!-- Right Questions -->
+      <div class="md:col-span-7 bg-slate-50 p-6 ielts-pane">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+          <h2 class="text-base font-bold text-slate-900">Questions 1 – 4</h2>
           <div class="flex items-center gap-2">
-            <span id="score-listening" class="hidden bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-md">得分：0 / 4</span>
-            <button id="submit-listening" onclick="submitSection('listening')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-md shadow transition">批改聽力測驗</button>
-            <button id="reset-listening" onclick="resetSection('listening')" class="hidden bg-slate-600 hover:bg-slate-500 text-white text-xs font-semibold px-3 py-2 rounded-md transition">重做聽力測驗</button>
+            <span id="score-listening" class="hidden text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">0 / 4</span>
+            <button id="submit-listening" onclick="submitSection('listening')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-3.5 py-1.5 rounded transition">Submit</button>
+            <button id="reset-listening" onclick="resetSection('listening')" class="hidden bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1.5 rounded transition">Reset</button>
           </div>
         </div>
         <div id="listening-questions" class="space-y-4"></div>
@@ -375,24 +297,14 @@
 
   </main>
 
-  <!-- Context-Aware Bottom Question Palette (Only visible in Quiz Sections) -->
-  <footer id="exam-footer" class="hidden bg-white border-t border-slate-300 px-4 py-2.5 sticky bottom-0 z-30 shadow-inner">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-      <div class="flex items-center gap-2 flex-wrap">
-        <span id="palette-section-label" class="text-xs font-bold text-slate-700">本區題號導覽：</span>
-        <div id="question-palette" class="flex items-center gap-1.5 flex-wrap"></div>
-      </div>
-      <div class="flex items-center gap-3 text-xs text-slate-500">
-        <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded-sm border border-slate-300 bg-white inline-block"></span> 未作答</span>
-        <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-sky-600 inline-block"></span> 已作答</span>
-        <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-emerald-600 inline-block"></span> 答對</span>
-        <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-rose-600 inline-block"></span> 答錯</span>
-      </div>
+  <!-- Minimal Question Palette (Quiz Sections Only) -->
+  <footer id="exam-footer" class="hidden bg-white border-t border-slate-200 px-5 py-2 sticky bottom-0 z-30">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div id="question-palette" class="flex items-center gap-1.5 flex-wrap"></div>
     </div>
   </footer>
 
   <script>
-    // --- VOCABULARY DATA (FROM SLIDES) ---
     const vocabData = [
       { id: 1, term: "salesman", ipa: "['sɛlzmən]", pos: "(n.)", zh: "業務員", type: "word", sentence: "The experienced salesman gave a good idea to his boss about how to deliver products to foreign customers faster." },
       { id: 2, term: "soldier", ipa: "['soldʒɚ]", pos: "(n.)", zh: "士兵", type: "word", sentence: "During the heavy typhoon, the brave soldier saved a trapped farmer from the rising river." },
@@ -416,44 +328,39 @@
       { id: 20, term: "those in need", ipa: "", pos: "(phr.)", zh: "需要幫助的人們", type: "phrase", sentence: "The truck driver volunteered to deliver warm blankets and food to those in need across the country." }
     ];
 
-    // --- QUESTIONS DATA (SEPARATED BY SECTION WITH LOCAL NUMBERING) ---
     const sectionQuestions = {
       grammar: [
-        { num: 1, q: "After ______ breakfast, William read the morning newspaper in the living room.", options: ["(A) have", "(B) has", "(C) had", "(D) having"], answer: 3, explanation: "after 在此後方沒有主詞，作為介系詞使用，後方動詞需改為動名詞 (V-ing) having。" },
-        { num: 2, q: "Chloe wanted to get better grades; therefore, she gave up ______ video games after school.", options: ["(A) play", "(B) to play", "(C) playing", "(D) played"], answer: 2, explanation: "片語 give up（放棄）後方固定接動名詞 (V-ing)，故選 playing。" },
-        { num: 3, q: "The hardworking salesman plans ______ the branch manager at a quarter to eleven.", options: ["(A) meet", "(B) to meet", "(C) meeting", "(D) met"], answer: 1, explanation: "動詞 plan（計畫）後方固定接不定詞 (to V)，故選 to meet。" },
-        { num: 4, q: "The brave firefighters saved the crying little girl ______ the burning factory yesterday.", options: ["(A) from", "(B) with", "(C) for", "(D) of"], answer: 0, explanation: "固定片語 save A from B 意為「將 A 從 B 中拯救出來」，介系詞用 from。" },
-        { num: 5, q: "When the emergency earthquake alarm blinked on the screen, all employees decided ______ inside the building.", options: ["(A) to not stay", "(B) not staying", "(C) not to stay", "(D) don't stay"], answer: 2, explanation: "decide 後接不定詞 to V，其否定形式必須將 not 放在 to 的前面，即 decide not to stay。" },
-        { num: 6, q: "After driving for five long hours in heavy rain, the delivery driver stopped ______ a short break at the gas station.", options: ["(A) taking", "(B) to take", "(C) took", "(D) take"], answer: 1, explanation: "stop to V 表示「停下原本正在做的事（開車），去進行另一個動作（休息）」，故選 to take。" },
-        { num: 7, q: "Don't worry! I clearly remember ______ the financial report to the boss's email yesterday afternoon.", options: ["(A) send", "(B) to send", "(C) sending", "(D) sent"], answer: 2, explanation: "句尾有 yesterday afternoon，表示「記得昨天已經做過（寄出）這件事」，remember + V-ing 表記得已發生的動作。" },
-        { num: 8, q: "The farmer worked hard in the field all year; ______, the terrible typhoon destroyed most of his crops.", options: ["(A) therefore", "(B) however", "(C) because", "(D) in fact"], answer: 1, explanation: "前半句「整年辛苦耕作」與後半句「颱風摧毀大多數農作物」語意轉折，且前後有分號與逗號隔開，選副詞 however。" }
+        { num: 1, q: "After ______ breakfast, William read the morning newspaper in the living room.", options: ["(A) have", "(B) has", "(C) had", "(D) having"], answer: 3, explanation: "after 後無主詞作介系詞，後方動詞改為動名詞 (V-ing) having。" },
+        { num: 2, q: "Chloe wanted to get better grades; therefore, she gave up ______ video games after school.", options: ["(A) play", "(B) to play", "(C) playing", "(D) played"], answer: 2, explanation: "give up 後固定接動名詞 (V-ing)，故選 playing。" },
+        { num: 3, q: "The hardworking salesman plans ______ the branch manager at a quarter to eleven.", options: ["(A) meet", "(B) to meet", "(C) meeting", "(D) met"], answer: 1, explanation: "plan 後固定接不定詞 (to V)，故選 to meet。" },
+        { num: 4, q: "The brave firefighters saved the crying little girl ______ the burning factory yesterday.", options: ["(A) from", "(B) with", "(C) for", "(D) of"], answer: 0, explanation: "固定片語 save A from B，介系詞用 from。" },
+        { num: 5, q: "When the emergency earthquake alarm blinked on the screen, all employees decided ______ inside the building.", options: ["(A) to not stay", "(B) not staying", "(C) not to stay", "(D) don't stay"], answer: 2, explanation: "decide 後接 to V，否定時 not 放在 to 前面，即 decide not to stay。" },
+        { num: 6, q: "After driving for five long hours in heavy rain, the delivery driver stopped ______ a short break at the gas station.", options: ["(A) taking", "(B) to take", "(C) took", "(D) take"], answer: 1, explanation: "stop to V 表示停下原本動作去做另一件事（休息），故選 to take。" },
+        { num: 7, q: "Don't worry! I clearly remember ______ the financial report to the boss's email yesterday afternoon.", options: ["(A) send", "(B) to send", "(C) sending", "(D) sent"], answer: 2, explanation: "yesterday afternoon 表記得昨天已經做過（寄出）這件事，用 remember + V-ing。" },
+        { num: 8, q: "The farmer worked hard in the field all year; ______, the terrible typhoon destroyed most of his crops.", options: ["(A) therefore", "(B) however", "(C) because", "(D) in fact"], answer: 1, explanation: "前後語意轉折，且有分號與逗號隔開，選副詞 however。" }
       ],
       reading: [
-        { num: 1, q: "Why did Daniel's parents have a hard time making enough money in the past?", options: ["(A) Because Daniel's boss refused to buy any fruit from their village.", "(B) Because they sold their crops at low prices and sometimes insects damaged the leaves.", "(C) Because they forgot to water the tea trees before five o'clock every morning.", "(D) Because they spent too much money buying cameras and computers."], answer: 1, explanation: "第一段提到他們只能低價賣給中盤商，且昆蟲有時會在葉子上咬出小洞導致買家拒收。" },
-        { num: 2, q: "Why did Daniel film a spider's web in his video?", options: ["(A) To teach students how spiders catch insects in the forest.", "(B) To show that his parents' farm was natural and free of dangerous chemicals.", "(C) To ask his boss for a longer vacation in southern Taiwan.", "(D) To complain about the bad weather in his hometown."], answer: 1, explanation: "第三段提到他拍攝蜘蛛網是為了證明農場環境非常自然健康、沒有使用危險化學農藥。" },
-        { num: 3, q: "What does the phrase \"saved his family's farm from closing down\" in the last paragraph mean?", options: ["(A) Daniel helped the farm survive and make money again.", "(B) Daniel bought a bigger house for his parents in Taipei.", "(C) Daniel stopped his parents from growing pineapples forever.", "(D) Daniel asked his coworkers to work on the farm for free."], answer: 0, explanation: "close down 意為「倒閉、歇業」，save ... from closing down 即幫助農場免於倒閉、重新營運獲利。" },
-        { num: 4, q: "Which of the following is TRUE about Daniel according to the passage?", options: ["(A) He worked as a soldier before moving to Taipei.", "(B) His boss told him to quit his job and become a farmer.", "(C) He used online videos to help customers buy directly from his parents.", "(D) Nobody watched his video after he posted it on the internet."], answer: 2, explanation: "第三段指出影片上傳後有數千人觀看，許多顧客直接在網路上向他父母訂購鳳梨與茶葉。" }
+        { num: 1, q: "Why did Daniel's parents have a hard time making enough money in the past?", options: ["(A) Because Daniel's boss refused to buy any fruit from their village.", "(B) Because they sold their crops at low prices and sometimes insects damaged the leaves.", "(C) Because they forgot to water the tea trees before five o'clock every morning.", "(D) Because they spent too much money buying cameras and computers."], answer: 1, explanation: "第一段提到他們只能低價賣給中盤商，且昆蟲有時會在葉子上咬出小洞。" },
+        { num: 2, q: "Why did Daniel film a spider's web in his video?", options: ["(A) To teach students how spiders catch insects in the forest.", "(B) To show that his parents' farm was natural and free of dangerous chemicals.", "(C) To ask his boss for a longer vacation in southern Taiwan.", "(D) To complain about the bad weather in his hometown."], answer: 1, explanation: "第三段提到拍攝蜘蛛網是為了證明農場環境自然健康、無危險化學農藥。" },
+        { num: 3, q: "What does the phrase \"saved his family's farm from closing down\" in the last paragraph mean?", options: ["(A) Daniel helped the farm survive and make money again.", "(B) Daniel bought a bigger house for his parents in Taipei.", "(C) Daniel stopped his parents from growing pineapples forever.", "(D) Daniel asked his coworkers to work on the farm for free."], answer: 0, explanation: "close down 為倒閉，save ... from closing down 即幫助農場免於倒閉、繼續營運。" },
+        { num: 4, q: "Which of the following is TRUE about Daniel according to the passage?", options: ["(A) He worked as a soldier before moving to Taipei.", "(B) His boss told him to quit his job and become a farmer.", "(C) He used online videos to help customers buy directly from his parents.", "(D) Nobody watched his video after he posted it on the internet."], answer: 2, explanation: "第三段指出影片上傳後，顧客直接在網路上向他父母訂購鳳梨與茶葉。" }
       ],
       listening: [
-        { num: 1, q: "[Part 1] What was Ryan doing when his smartphone rang yesterday evening?", options: ["(A) He was driving his car to the tech company.", "(B) He was helping his mother clean the dishes at home.", "(C) He was talking to two software engineers in the office.", "(D) He was downloading a new game on his computer screen."], answer: 1, explanation: "聽力第一段開頭提到：while Ryan was helping his mom do the dishes（正在幫媽媽洗碗）。" },
-        { num: 2, q: "[Part 1] How did Ryan feel at first, and what did he do next?", options: ["(A) He felt completely bored, so he decided to go to sleep early.", "(B) He was very angry at his boss and refused to answer the phone.", "(C) He felt very nervous at first, but he decided to return to the office to help.", "(D) He was under the weather, so he asked a salesman to fix the server."], answer: 2, explanation: "got butterflies in his stomach 意為「非常緊張」，隨後他 made up his mind to drive back to the office（下定決心開車回辦公室）。" },
-        { num: 3, q: "[Part 2] What was Mr. Chen's job in this story?", options: ["(A) He was a pilot flying a rescue plane through a heavy storm.", "(B) He was a musician practicing the violin for a big audition.", "(C) He was a truck driver delivering an old violin to a museum.", "(D) He was a factory worker inspecting broken machines."], answer: 2, explanation: "聽力第二段提到：Mr. Chen, an experienced truck driver, needed to deliver a rare antique violin to a museum。" },
-        { num: 4, q: "[Part 2] Why did Mr. Chen stop his truck on the way?", options: ["(A) Because he wanted to buy a cup of hot chocolate at a coffee shop.", "(B) Because falling rocks from an earthquake blocked the road, and he wanted to check the box.", "(C) Because he forgot to bring his password and needed to call his relative.", "(D) Because a soldier asked him to rescue a farmer from a flooded house."], answer: 1, explanation: "因為地震導致落石擋路（falling rocks blocked the road），他停下來檢查易碎箱子的狀況是否完好（check the fragile box）。" }
+        { num: 1, q: "[Part 1] What was Ryan doing when his smartphone rang yesterday evening?", options: ["(A) He was driving his car to the tech company.", "(B) He was helping his mother clean the dishes at home.", "(C) He was talking to two software engineers in the office.", "(D) He was downloading a new game on his computer screen."], answer: 1, explanation: "while Ryan was helping his mom do the dishes（正在幫媽媽洗碗）。" },
+        { num: 2, q: "[Part 1] How did Ryan feel at first, and what did he do next?", options: ["(A) He felt completely bored, so he decided to go to sleep early.", "(B) He was very angry at his boss and refused to answer the phone.", "(C) He felt very nervous at first, but he decided to return to the office to help.", "(D) He was under the weather, so he asked a salesman to fix the server."], answer: 2, explanation: "got butterflies in his stomach（非常緊張），隨後 made up his mind to drive back to the office。" },
+        { num: 3, q: "[Part 2] What was Mr. Chen's job in this story?", options: ["(A) He was a pilot flying a rescue plane through a heavy storm.", "(B) He was a musician practicing the violin for a big audition.", "(C) He was a truck driver delivering an old violin to a museum.", "(D) He was a factory worker inspecting broken machines."], answer: 2, explanation: "Mr. Chen, an experienced truck driver, needed to deliver a rare antique violin to a museum。" },
+        { num: 4, q: "[Part 2] Why did Mr. Chen stop his truck on the way?", options: ["(A) Because he wanted to buy a cup of hot chocolate at a coffee shop.", "(B) Because falling rocks from an earthquake blocked the road, and he wanted to check the box.", "(C) Because he forgot to bring his password and needed to call his relative.", "(D) Because a soldier asked him to rescue a farmer from a flooded house."], answer: 1, explanation: "落石擋路（falling rocks blocked the road），停下來檢查易碎箱子（check the fragile box）。" }
       ]
     };
 
-    // State per section (strictly isolated)
     let activeTab = 'vocab';
     let sectionAnswers = { grammar: {}, reading: {}, listening: {} };
     let sectionSubmitted = { grammar: false, reading: false, listening: false };
-
-    // Flashcard state
     let masteredVocab = JSON.parse(localStorage.getItem('masteredVocab') || '[]');
     let flippedCards = {};
     let currentVocabFilter = 'all';
     let speechRate = 1.0;
 
-    // --- INIT ---
     document.addEventListener('DOMContentLoaded', () => {
       renderVocab();
       renderSectionQuestions('grammar');
@@ -461,7 +368,6 @@
       renderSectionQuestions('listening');
     });
 
-    // --- TAB NAVIGATION & SECTION BOUNDARY ---
     function switchTab(tabName) {
       activeTab = tabName;
       stopSpeech();
@@ -478,18 +384,11 @@
       activeBtn.classList.add('bg-sky-600', 'text-white');
       activeBtn.classList.remove('text-slate-300');
 
-      // Show bottom question palette ONLY for quiz sections (isolated per section)
       const footer = document.getElementById('exam-footer');
       if (tabName === 'vocab') {
         footer.classList.add('hidden');
       } else {
         footer.classList.remove('hidden');
-        const labelMap = {
-          grammar: 'Section 2 文法題號：',
-          reading: 'Section 3 閱讀題號：',
-          listening: 'Section 4 聽力題號：'
-        };
-        document.getElementById('palette-section-label').textContent = labelMap[tabName];
         renderPalette(tabName);
       }
     }
@@ -499,7 +398,7 @@
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // --- FLASHCARD FUNCTIONS ---
+    // --- MINIMAL FLASHCARD ---
     function renderVocab() {
       const grid = document.getElementById('vocab-grid');
       grid.innerHTML = '';
@@ -519,74 +418,53 @@
         scene.innerHTML = `
           <div id="fc-inner-${item.id}" onclick="flipCard(${item.id})" class="flashcard-inner ${isFlipped ? 'is-flipped' : ''}">
             
-            <!-- FRONT: ENGLISH WORD / PHRASE ONLY -->
+            <!-- FRONT: ENGLISH ONLY -->
             <div class="flashcard-face flashcard-front">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded ${item.type === 'word' ? 'bg-slate-100 text-slate-600' : 'bg-indigo-50 text-indigo-700'}">
-                  #${item.id} · ${item.type === 'word' ? 'Vocabulary' : 'Phrase'}
-                </span>
-                <button onclick="event.stopPropagation(); toggleMastered(${item.id})" class="text-xs px-2.5 py-1 rounded-full font-semibold border transition ${isMastered ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-500 border-slate-300 hover:border-emerald-500'}">
-                  ${isMastered ? '✓ 已熟記' : '標記熟記'}
+              <div class="flex items-center justify-end">
+                <button onclick="event.stopPropagation(); toggleMastered(${item.id})" class="w-6 h-6 rounded-full border flex items-center justify-center text-xs transition ${isMastered ? 'bg-emerald-600 text-white border-emerald-600' : 'border-slate-300 text-slate-400 hover:border-slate-500'}">
+                  ✓
                 </button>
               </div>
 
               <div class="text-center my-auto px-2">
-                <h3 class="text-2xl font-extrabold text-slate-900 tracking-tight break-words">${item.term}</h3>
-                <p class="text-sm text-slate-500 mt-1.5 font-medium">${item.ipa} <span class="text-slate-600 font-semibold">${item.pos}</span></p>
-                <button onclick="event.stopPropagation(); speakText('${item.term.replace(/'/g, "\\'")}')" class="mt-3 inline-flex items-center gap-1 text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-3 py-1 rounded-full text-xs font-semibold transition">
-                  🔊 聽單字發音
-                </button>
+                <h3 class="text-2xl font-bold text-slate-900 tracking-tight break-words">${item.term}</h3>
+                <p class="text-xs text-slate-400 mt-1">${item.ipa} ${item.pos}</p>
               </div>
 
-              <div class="text-center text-[11px] text-slate-400 font-medium">
-                👆 點擊卡片翻看中文翻譯與例句
+              <div class="flex justify-center">
+                <button onclick="event.stopPropagation(); speakText('${item.term.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-sky-600 p-1.5 rounded transition" title="Listen">
+                  🔊
+                </button>
               </div>
             </div>
 
-            <!-- BACK: CHINESE MEANING + SLIDE EXAMPLE SENTENCE -->
+            <!-- BACK: CHINESE & EXAMPLE -->
             <div class="flashcard-face flashcard-back">
-              <div class="flex items-center justify-between border-b border-sky-200 pb-2">
-                <div>
-                  <span class="text-xs font-bold text-slate-500">${item.term}</span>
-                  <h4 class="text-lg font-extrabold text-sky-900 leading-tight">${item.zh}</h4>
-                </div>
-                <button onclick="event.stopPropagation(); speakText('${item.sentence.replace(/'/g, "\\'")}')" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shrink-0 transition">
-                  ▶️ 朗讀例句
+              <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h4 class="text-base font-bold text-sky-900">${item.zh}</h4>
+                <button onclick="event.stopPropagation(); speakText('${item.sentence.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-sky-600 p-1 rounded transition" title="Listen">
+                  🔊
                 </button>
               </div>
 
-              <div class="my-auto py-2">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-sky-700 block mb-1">簡報情境例句：</span>
-                <p class="text-sm text-slate-800 leading-relaxed font-medium">${item.sentence}</p>
-              </div>
-
-              <div class="text-center text-[11px] text-sky-600 font-medium">
-                🔄 點擊翻回英文正面
-              </div>
+              <p class="text-sm text-slate-700 leading-relaxed my-auto">${item.sentence}</p>
+              <div class="h-2"></div>
             </div>
 
           </div>
         `;
         grid.appendChild(scene);
       });
-
-      const pct = Math.round((masteredVocab.length / vocabData.length) * 100);
-      document.getElementById('vocab-mastered-count').textContent = masteredVocab.length;
-      document.getElementById('vocab-progress-bar').style.width = `${pct}%`;
     }
 
     function flipCard(id) {
       flippedCards[id] = !flippedCards[id];
       const el = document.getElementById(`fc-inner-${id}`);
-      if (el) {
-        el.classList.toggle('is-flipped', flippedCards[id]);
-      }
+      if (el) el.classList.toggle('is-flipped', flippedCards[id]);
     }
 
     function flipAllCards(toBack) {
-      vocabData.forEach(item => {
-        flippedCards[item.id] = toBack;
-      });
+      vocabData.forEach(item => { flippedCards[item.id] = toBack; });
       renderVocab();
     }
 
@@ -594,11 +472,11 @@
       currentVocabFilter = type;
       document.querySelectorAll('.v-filter').forEach(btn => {
         if (btn.dataset.filter === type) {
-          btn.classList.add('bg-sky-600', 'text-white');
-          btn.classList.remove('bg-slate-100', 'text-slate-700');
+          btn.classList.add('bg-slate-800', 'text-white');
+          btn.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
         } else {
-          btn.classList.remove('bg-sky-600', 'text-white');
-          btn.classList.add('bg-slate-100', 'text-slate-700');
+          btn.classList.remove('bg-slate-800', 'text-white');
+          btn.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
         }
       });
       renderVocab();
@@ -614,7 +492,7 @@
       renderVocab();
     }
 
-    // --- SECTION QUESTIONS RENDERING & ISOLATED GRADING ---
+    // --- SECTION QUESTIONS ---
     function renderSectionQuestions(sectionName) {
       const container = document.getElementById(`${sectionName}-questions`);
       container.innerHTML = '';
@@ -625,21 +503,21 @@
       list.forEach(item => {
         const card = document.createElement('div');
         card.id = `${sectionName}-q-${item.num}`;
-        card.className = 'bg-white rounded-xl border border-slate-200 p-4 shadow-sm';
+        card.className = 'bg-white rounded-lg border border-slate-200 p-4';
 
         let optionsHtml = item.options.map((opt, idx) => {
           const checked = ansMap[item.num] === idx ? 'checked' : '';
           let statusClass = 'border-slate-200 hover:bg-slate-50';
           if (isSub) {
             if (idx === item.answer) {
-              statusClass = 'border-emerald-500 bg-emerald-50 font-semibold text-emerald-900';
+              statusClass = 'border-emerald-500 bg-emerald-50 font-medium text-emerald-900';
             } else if (ansMap[item.num] === idx && idx !== item.answer) {
               statusClass = 'border-rose-500 bg-rose-50 text-rose-900';
             }
           }
           return `
-            <label class="flex items-center gap-2.5 p-2.5 rounded-lg border ${statusClass} cursor-pointer transition text-sm">
-              <input type="radio" name="${sectionName}-q-${item.num}" value="${idx}" ${checked} ${isSub ? 'disabled' : ''} onchange="selectSectionAnswer('${sectionName}', ${item.num}, ${idx})" class="accent-sky-600 w-4 h-4" />
+            <label class="flex items-center gap-2.5 p-2.5 rounded border ${statusClass} cursor-pointer transition text-sm">
+              <input type="radio" name="${sectionName}-q-${item.num}" value="${idx}" ${checked} ${isSub ? 'disabled' : ''} onchange="selectSectionAnswer('${sectionName}', ${item.num}, ${idx})" class="accent-sky-600" />
               <span>${opt}</span>
             </label>
           `;
@@ -649,8 +527,7 @@
         if (isSub) {
           const isCorrect = ansMap[item.num] === item.answer;
           explanationHtml = `
-            <div class="mt-3 p-3 rounded-lg text-xs leading-relaxed ${isCorrect ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' : 'bg-rose-50 text-rose-900 border border-rose-200'}">
-              <strong>${isCorrect ? '✅ 答對了！' : '❌ 答錯囉！正確答案為 ' + item.options[item.answer].slice(0, 3)}</strong><br/>
+            <div class="mt-3 pt-2.5 border-t border-slate-100 text-xs ${isCorrect ? 'text-emerald-700' : 'text-rose-700'}">
               ${item.explanation}
             </div>
           `;
@@ -658,8 +535,8 @@
 
         card.innerHTML = `
           <div class="flex items-start gap-2.5 mb-3">
-            <span class="bg-slate-800 text-white text-xs font-bold px-2 py-0.5 rounded mt-0.5">Q${item.num}</span>
-            <p class="font-semibold text-slate-800 text-sm md:text-base leading-snug">${item.q}</p>
+            <span class="text-xs font-bold text-slate-400 mt-0.5">${item.num}.</span>
+            <p class="font-medium text-slate-900 text-sm md:text-base leading-snug">${item.q}</p>
           </div>
           <div class="space-y-2">${optionsHtml}</div>
           ${explanationHtml}
@@ -699,21 +576,13 @@
     function submitSection(sectionName) {
       const list = sectionQuestions[sectionName];
       const ansMap = sectionAnswers[sectionName];
-      const answeredCount = Object.keys(ansMap).length;
-
-      if (answeredCount < list.length) {
-        const ok = confirm(`本區共有 ${list.length} 題，你目前完成了 ${answeredCount} 題，確定要直接批改嗎？`);
-        if (!ok) return;
-      }
-
       sectionSubmitted[sectionName] = true;
+
       let score = 0;
-      list.forEach(q => {
-        if (ansMap[q.num] === q.answer) score++;
-      });
+      list.forEach(q => { if (ansMap[q.num] === q.answer) score++; });
 
       const badge = document.getElementById(`score-${sectionName}`);
-      badge.textContent = `得分：${score} / ${list.length}`;
+      badge.textContent = `${score} / ${list.length}`;
       badge.classList.remove('hidden');
       document.getElementById(`submit-${sectionName}`).classList.add('hidden');
       document.getElementById(`reset-${sectionName}`).classList.remove('hidden');
@@ -750,7 +619,7 @@
       renderPalette(sectionName);
     }
 
-    // --- READING HIGHLIGHTER ---
+    // --- HIGHLIGHTER ---
     function highlightSelection() {
       const selection = window.getSelection();
       if (!selection.rangeCount || selection.isCollapsed) return;
@@ -763,9 +632,7 @@
       try {
         range.surroundContents(span);
         selection.removeAllRanges();
-      } catch (e) {
-        alert('請選取單一段落內的文字進行螢光筆標記。');
-      }
+      } catch (e) {}
     }
 
     function clearHighlights() {
@@ -776,12 +643,9 @@
       });
     }
 
-    // --- SPEECH SYNTHESIS (TTS) ---
+    // --- SPEECH ---
     function speakText(text) {
-      if (!('speechSynthesis' in window)) {
-        alert('您的瀏覽器不支援語音朗讀功能。');
-        return;
-      }
+      if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
@@ -802,11 +666,11 @@
       speechRate = rate;
       document.querySelectorAll('.rate-btn').forEach(btn => {
         if (parseFloat(btn.dataset.rate) === rate) {
-          btn.classList.add('bg-sky-600', 'text-white');
-          btn.classList.remove('bg-white', 'border', 'border-slate-300');
+          btn.classList.add('bg-slate-900', 'text-white');
+          btn.classList.remove('bg-slate-100', 'text-slate-700');
         } else {
-          btn.classList.remove('bg-sky-600', 'text-white');
-          btn.classList.add('bg-white', 'border', 'border-slate-300');
+          btn.classList.remove('bg-slate-900', 'text-white');
+          btn.classList.add('bg-slate-100', 'text-slate-700');
         }
       });
     }
