@@ -9,6 +9,7 @@
       --bg: #f8fafc;
       --surface: #ffffff;
       --text: #0f172a;
+      --text-secondary: #334155;
       --muted: #64748b;
       --border: #e2e8f0;
       --primary: #1e40af;
@@ -18,7 +19,7 @@
       --success-bg: #f0fdf4;
       --error: #b91c1c;
       --error-bg: #fef2f2;
-      --radius: 10px;
+      --radius: 12px;
     }
 
     * {
@@ -56,13 +57,18 @@
 
     .brand {
       font-weight: 700;
-      font-size: 1.1rem;
-      color: var(--text);
+      font-size: 1rem;
+      color: var(--muted);
       text-decoration: none;
       display: flex;
       align-items: center;
       gap: 8px;
       cursor: pointer;
+      letter-spacing: 0.02em;
+    }
+
+    .brand:hover {
+      color: var(--text);
     }
 
     .header-actions {
@@ -76,7 +82,7 @@
       align-items: center;
       justify-content: center;
       padding: 8px 14px;
-      font-size: 0.9rem;
+      font-size: 0.875rem;
       font-weight: 500;
       border-radius: 6px;
       border: 1px solid var(--border);
@@ -105,7 +111,7 @@
     main {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 32px 24px 64px;
+      padding: 40px 24px 72px;
     }
 
     /* Loading & Error States */
@@ -125,79 +131,99 @@
       margin: 40px auto;
     }
 
-    /* Folder Grid View (Home) */
+    /* Folder Grid View (Home) — 強化字級反差與層級 */
     .page-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 24px;
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 28px;
+      color: var(--text);
     }
 
     .folder-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
     }
 
     .folder-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 22px;
+      padding: 26px;
       cursor: pointer;
       transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      gap: 14px;
+      gap: 20px;
     }
 
     .folder-card:hover {
-      transform: translateY(-2px);
+      transform: translateY(-3px);
       border-color: var(--primary);
-      box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.08);
     }
 
+    /* 層級 1：日期（最大視覺焦點） */
     .folder-date {
-      display: inline-block;
-      font-size: 0.85rem;
-      font-weight: 600;
+      display: block;
+      font-size: 1.5rem;
+      font-weight: 800;
       color: var(--primary);
-      background: var(--primary-light);
-      padding: 4px 10px;
-      border-radius: 999px;
-      margin-bottom: 10px;
-    }
-
-    .folder-title {
-      font-size: 1.15rem;
-      font-weight: 700;
+      letter-spacing: -0.01em;
       margin-bottom: 6px;
     }
 
+    /* 層級 2：乾淨的大 Title */
+    .folder-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    /* 層級 3：底部 Description（縮小字級並降低對比度，形成清晰主從關係） */
     .folder-grammar {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      line-height: 1.55;
       color: var(--muted);
     }
 
     .folder-meta {
-      padding-top: 12px;
+      padding-top: 14px;
       border-top: 1px solid var(--border);
-      font-size: 0.85rem;
+      font-size: 0.8rem;
+      font-weight: 500;
       color: var(--muted);
       display: flex;
       gap: 16px;
     }
 
-    /* Lesson View */
+    /* Lesson Detail View */
     .lesson-header {
-      margin-bottom: 28px;
-      padding-bottom: 20px;
+      margin-bottom: 36px;
+      padding-bottom: 24px;
       border-bottom: 1px solid var(--border);
     }
 
+    .lesson-date-pill {
+      display: inline-block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 4px 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
     .lesson-header h1 {
-      font-size: 1.65rem;
-      margin: 8px 0;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      color: var(--text);
     }
 
     .grammar-tag {
@@ -207,15 +233,16 @@
 
     /* Section Boundaries */
     .section-block {
-      margin-bottom: 48px;
+      margin-bottom: 56px;
     }
 
     .section-heading {
-      font-size: 1.2rem;
+      font-size: 1.35rem;
       font-weight: 700;
-      margin-bottom: 18px;
-      padding-left: 12px;
+      margin-bottom: 20px;
+      padding-left: 14px;
       border-left: 4px solid var(--primary);
+      color: var(--text);
     }
 
     /* Vocabulary Flashcards */
@@ -227,7 +254,7 @@
 
     .flashcard {
       background-color: transparent;
-      height: 190px;
+      height: 195px;
       perspective: 1000px;
       cursor: pointer;
     }
@@ -253,7 +280,7 @@
       backface-visibility: hidden;
       border-radius: var(--radius);
       border: 1px solid var(--border);
-      padding: 20px;
+      padding: 22px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -266,7 +293,7 @@
     }
 
     .flashcard-word {
-      font-size: 1.35rem;
+      font-size: 1.45rem;
       font-weight: 700;
       color: var(--text);
     }
@@ -286,15 +313,15 @@
     }
 
     .flashcard-meaning {
-      font-size: 1.05rem;
+      font-size: 1.15rem;
       font-weight: 700;
       color: var(--primary);
       margin-bottom: 8px;
     }
 
     .flashcard-example {
-      font-size: 0.9rem;
-      color: var(--text);
+      font-size: 0.88rem;
+      color: var(--text-secondary);
       line-height: 1.5;
       overflow-y: auto;
     }
@@ -303,7 +330,7 @@
     .ielts-split {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 24px;
+      gap: 28px;
       align-items: start;
     }
 
@@ -317,7 +344,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 28px;
+      padding: 32px;
       position: sticky;
       top: 84px;
       max-height: calc(100vh - 110px);
@@ -332,30 +359,31 @@
     }
 
     .reading-title {
-      font-size: 1.3rem;
-      font-weight: 700;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
+      font-size: 1.45rem;
+      font-weight: 800;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
       border-bottom: 1px solid var(--border);
+      color: var(--text);
     }
 
     .reading-body {
-      font-size: 1.02rem;
-      line-height: 1.8;
-      color: #1e293b;
+      font-size: 1.05rem;
+      line-height: 1.85;
+      color: var(--text-secondary);
     }
 
     .quiz-pane {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 18px;
     }
 
     .question-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 20px;
+      padding: 22px;
     }
 
     .question-card.correct {
@@ -373,15 +401,16 @@
       font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
       color: var(--muted);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .question-text {
-      font-weight: 600;
-      font-size: 1rem;
-      margin-bottom: 14px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 16px;
+      color: var(--text);
     }
 
     .options-list {
@@ -394,12 +423,13 @@
       display: flex;
       align-items: flex-start;
       gap: 10px;
-      padding: 10px 12px;
+      padding: 10px 14px;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       background: var(--surface);
       cursor: pointer;
-      font-size: 0.95rem;
+      font-size: 0.925rem;
+      color: var(--text-secondary);
       transition: background 0.15s ease;
     }
 
@@ -413,10 +443,10 @@
     }
 
     .explanation-box {
-      margin-top: 14px;
-      padding-top: 12px;
+      margin-top: 16px;
+      padding-top: 14px;
       border-top: 1px dashed var(--border);
-      font-size: 0.9rem;
+      font-size: 0.875rem;
       display: none;
     }
 
@@ -430,7 +460,7 @@
       border-radius: var(--radius);
       padding: 18px 20px;
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       display: none;
       justify-content: space-between;
       align-items: center;
@@ -470,7 +500,7 @@
     <!-- Lesson Detail -->
     <section id="lesson-view" class="hidden">
       <div class="lesson-header">
-        <span class="folder-date" id="lesson-date-badge"></span>
+        <span class="lesson-date-pill" id="lesson-date-badge"></span>
         <h1 id="lesson-title"></h1>
         <div class="grammar-tag" id="lesson-grammar"></div>
       </div>
@@ -495,7 +525,7 @@
               <span id="score-text"></span>
               <button class="btn" id="reset-quiz-btn">重新作答</button>
             </div>
-            <div id="quiz-container" style="display: flex; flex-direction: column; gap: 16px;"></div>
+            <div id="quiz-container" style="display: flex; flex-direction: column; gap: 18px;"></div>
             <button class="btn btn-primary" id="submit-quiz-btn" style="padding: 12px; font-size: 1rem;">提交答案並查看解析</button>
           </div>
         </div>
@@ -504,7 +534,6 @@
   </main>
 
   <script>
-    // 綁定你的 Google 試算表 ID
     const SPREADSHEET_ID = "1DrKwyy-L9g_nHFBFJ0joLfsDE64vBb1ymjtKiaNQJ5U";
 
     let db = {
@@ -513,13 +542,11 @@
       quiz: []
     };
 
-    // 透過 Google Visualization API 讀取指定工作表分頁
     async function fetchSheetTab(sheetName) {
       const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`無法讀取工作表：${sheetName}`);
       const text = await res.text();
-      // 剥除 google.visualization.Query.setResponse(...) 包裝
       const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
       const data = JSON.parse(jsonStr);
 
@@ -535,7 +562,6 @@
         cols.forEach((colName, idx) => {
           if (!colName) return;
           const cell = row.c[idx];
-          // 優先使用 formatted value (f) 以保留 YYYY-MM-DD 日期格式，否則取 raw value (v)
           let val = "";
           if (cell) {
             val = (cell.f !== undefined && cell.f !== null) ? String(cell.f) : (cell.v !== undefined && cell.v !== null ? String(cell.v) : "");
@@ -543,10 +569,9 @@
           obj[colName] = val.trim();
         });
         return obj;
-      }).filter(item => item.Date); // 過濾空列
+      }).filter(item => item.Date);
     }
 
-    // 初始化載入所有資料
     async function init() {
       try {
         const [lessons, vocab, quiz] = await Promise.all([
@@ -555,7 +580,6 @@
           fetchSheetTab("Quiz")
         ]);
 
-        // 依日期由新到舊排序
         db.lessons = lessons.sort((a, b) => b.Date.localeCompare(a.Date));
         db.vocab = vocab;
         db.quiz = quiz;
@@ -570,7 +594,6 @@
       }
     }
 
-    // 路由控制（支援 ?date=YYYY-MM-DD 深層連結）
     function routeFromURL() {
       const params = new URLSearchParams(window.location.search);
       const targetDate = params.get("date");
@@ -594,7 +617,6 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // 渲染首頁課程資料夾
     function renderHome() {
       document.getElementById("lesson-view").classList.add("hidden");
       document.getElementById("lesson-actions").style.display = "none";
@@ -630,7 +652,6 @@
       homeView.classList.remove("hidden");
     }
 
-    // 渲染單堂課程頁面
     function renderLesson(dateStr) {
       const lesson = db.lessons.find(l => l.Date === dateStr);
       if (!lesson) return renderHome();
@@ -639,12 +660,10 @@
       document.getElementById("lesson-actions").style.display = "flex";
       const lessonView = document.getElementById("lesson-view");
 
-      // 標題資訊
       document.getElementById("lesson-date-badge").textContent = lesson.Date;
       document.getElementById("lesson-title").textContent = lesson.Title;
-      document.getElementById("lesson-grammar").textContent = lesson.Grammar_Focus ? `文法重點：${lesson.Grammar_Focus}` : "";
+      document.getElementById("lesson-grammar").textContent = lesson.Grammar_Focus || "";
 
-      // 1. 渲染單字翻轉卡
       const lessonVocab = db.vocab.filter(v => v.Date === dateStr);
       const vocabSection = document.getElementById("vocab-section");
       const vocabGrid = document.getElementById("vocab-grid");
@@ -674,10 +693,8 @@
         });
       }
 
-      // 2. 渲染閱讀文章與 IELTS 測驗
       const lessonQuiz = db.quiz.filter(q => q.Date === dateStr);
       document.getElementById("reading-title").textContent = lesson.Reading_Title || "Reading Passage";
-      // 允許 <br> 分段，同時對其餘文字做安全轉義
       const safePassage = escapeHtml(lesson.Reading_Passage || "").replace(/&lt;br\s*\/?&gt;/gi, "<br>");
       document.getElementById("reading-body").innerHTML = safePassage;
 
@@ -736,14 +753,12 @@
         quizContainer.appendChild(qCard);
       });
 
-      // 綁定提交批改事件
       submitBtn.onclick = () => gradeQuiz(lessonQuiz);
       document.getElementById("reset-quiz-btn").onclick = () => renderLesson(dateStr);
 
       lessonView.classList.remove("hidden");
     }
 
-    // 批改測驗並顯示解析
     function gradeQuiz(questions) {
       let correctCount = 0;
 
@@ -770,7 +785,6 @@
       scoreBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
-    // HTML 特殊字元轉義（防 XSS）
     function escapeHtml(str) {
       return String(str)
         .replace(/&/g, "&amp;")
@@ -780,7 +794,6 @@
         .replace(/'/g, "&#039;");
     }
 
-    // 導航按鈕綁定
     document.getElementById("home-btn").addEventListener("click", () => navigateTo(null));
     document.getElementById("back-btn").addEventListener("click", () => navigateTo(null));
     document.getElementById("copy-link-btn").addEventListener("click", async () => {
