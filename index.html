@@ -332,6 +332,15 @@
       align-items: center;
       justify-content: center;
       flex: 1;
+      width: 100%;
+    }
+
+    .flashcard-word-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      max-width: 100%;
     }
 
     .flashcard-word {
@@ -340,6 +349,38 @@
       color: var(--text);
       line-height: 1.25;
       overflow-wrap: anywhere;
+    }
+
+    /* 小巧低調的發音按鍵：保持老師主導權，不喧賓奪主 */
+    .pronounce-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #64748b;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+      opacity: 0.7;
+    }
+
+    .pronounce-btn:hover {
+      opacity: 1;
+      color: var(--primary);
+      border-color: var(--primary);
+      background: var(--primary-light);
+      transform: scale(1.05);
+    }
+
+    .pronounce-btn svg {
+      width: 13px;
+      height: 13px;
+      fill: currentColor;
     }
 
     .flashcard-pos {
@@ -491,16 +532,62 @@
       cursor: pointer;
       font-size: 1.06rem;
       color: var(--text-secondary);
-      transition: background 0.15s ease;
+      transition: all 0.15s ease;
     }
 
     .option-label:hover {
       background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .option-label.opt-correct {
+      border-color: #22c55e;
+      background: #f0fdf4;
+      color: #15803d;
+      font-weight: 600;
+    }
+
+    .option-label.opt-incorrect {
+      border-color: #ef4444;
+      background: #fef2f2;
+      color: #b91c1c;
     }
 
     .option-label input[type="radio"] {
       margin-top: 5px;
       accent-color: var(--primary);
+    }
+
+    .feedback-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .feedback-pill.correct {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .feedback-pill.incorrect {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    /* 全螢幕紙花 Canvas */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 9999;
     }
 
     .explanation-box {
@@ -754,7 +841,12 @@
               <div class="flashcard-front">
                 ${frontImgHtml}
                 <div class="flashcard-front-text">
-                  <div class="flashcard-word">${escapeHtml(v.Word)}</div>
+                  <div class="flashcard-word-row">
+                    <div class="flashcard-word">${escapeHtml(v.Word)}</div>
+                    <button type="button" class="pronounce-btn" aria-label="聆聽「${escapeHtml(v.Word)}」發音" title="發音（供輔助核對）">
+                      <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                    </button>
+                  </div>
                   ${v.POS ? `<div class="flashcard-pos">(${escapeHtml(v.POS)})</div>` : ""}
                 </div>
               </div>
@@ -778,7 +870,16 @@
             });
           }
 
-          card.addEventListener("click", () => {
+          const pronBtn = card.querySelector(".pronounce-btn");
+          if (pronBtn) {
+            pronBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              speakWord(v.Word);
+            });
+          }
+
+          card.addEventListener("click", (e) => {
+            if (e.target.closest(".pronounce-btn")) return;
             const flipped = card.classList.toggle("flipped");
             card.setAttribute("aria-pressed", String(flipped));
           });
@@ -796,7 +897,7 @@
       const submitBtn = document.getElementById("submit-quiz-btn");
       quizContainer.innerHTML = "";
       scoreBanner.classList.remove("visible");
-      submitBtn.style.display = lessonQuiz.length > 0 ? "inline-flex" : "none";
+      submitBtn.style.display = "none"; // 改由即時回饋與答題進度接管
 
       lessonQuiz.forEach((q, idx) => {
         const qCard = document.createElement("div");
@@ -810,7 +911,7 @@
         if (isTFNG) {
           ["TRUE", "FALSE", "NOT GIVEN"].forEach(val => {
             optionsHtml += `
-              <label class="option-label">
+              <label class="option-label" data-value="${val}">
                 <input type="radio" name="q_${idx}" value="${val}" />
                 <span>${val}</span>
               </label>
@@ -826,7 +927,7 @@
 
           opts.forEach(o => {
             optionsHtml += `
-              <label class="option-label">
+              <label class="option-label" data-value="${o.key}">
                 <input type="radio" name="q_${idx}" value="${o.key}" />
                 <span><strong>(${o.key})</strong> ${escapeHtml(o.text)}</span>
               </label>
@@ -839,43 +940,191 @@
           <div class="question-text">${escapeHtml(q.Question)}</div>
           <div class="options-list">${optionsHtml}</div>
           <div class="explanation-box" id="exp_${idx}">
+            <div id="feedback_pill_${idx}"></div>
             <div><strong>正確答案：</strong>${escapeHtml(q.Answer)}</div>
             <div style="margin-top: 4px; color: var(--muted);">${escapeHtml(q.Explanation || "")}</div>
           </div>
         `;
+
+        // 即時回饋：點選選項瞬間判定與微多巴胺慶祝
+        const radios = qCard.querySelectorAll(`input[name="q_${idx}"]`);
+        radios.forEach(radio => {
+          radio.addEventListener("change", (e) => {
+            handleInstantQuizFeedback(idx, q, e.target.value, qCard, lessonQuiz);
+          });
+        });
+
         quizContainer.appendChild(qCard);
       });
 
-      submitBtn.onclick = () => gradeQuiz(lessonQuiz);
       document.getElementById("reset-quiz-btn").onclick = () => renderLesson(dateStr);
 
       lessonView.classList.remove("hidden");
     }
 
-    function gradeQuiz(questions) {
+    function handleInstantQuizFeedback(idx, q, selectedVal, qCard, allQuestions) {
+      const userAns = (selectedVal || "").trim().toUpperCase();
+      const rightAns = (q.Answer || "").trim().toUpperCase();
+      const isCorrect = userAns === rightAns;
+
+      const labels = qCard.querySelectorAll(".option-label");
+      labels.forEach(lbl => {
+        lbl.classList.remove("opt-correct", "opt-incorrect");
+        const val = (lbl.dataset.value || "").trim().toUpperCase();
+        if (val === rightAns) {
+          lbl.classList.add("opt-correct");
+        } else if (val === userAns && !isCorrect) {
+          lbl.classList.add("opt-incorrect");
+        }
+      });
+
+      qCard.classList.remove("correct", "incorrect");
+      qCard.classList.add(isCorrect ? "correct" : "incorrect");
+
+      const pillBox = document.getElementById(`feedback_pill_${idx}`);
+      if (pillBox) {
+        pillBox.innerHTML = isCorrect
+          ? `<span class="feedback-pill correct">✓ 答對了！</span>`
+          : `<span class="feedback-pill incorrect">✕ 再看看解析與文章細節</span>`;
+      }
+      document.getElementById(`exp_${idx}`).classList.add("visible");
+
+      // 答對時噴發局部微型彩帶慶祝
+      if (isCorrect) {
+        const rect = qCard.getBoundingClientRect();
+        launchConfetti(rect.left + rect.width / 2, rect.top + 30, 26);
+      }
+
+      updateQuizProgress(allQuestions);
+    }
+
+    function updateQuizProgress(questions) {
+      let answeredCount = 0;
       let correctCount = 0;
 
       questions.forEach((q, idx) => {
-        const card = document.querySelector(`.question-card[data-index="${idx}"]`);
         const selected = document.querySelector(`input[name="q_${idx}"]:checked`);
-        const userAns = selected ? selected.value.trim().toUpperCase() : "";
-        const rightAns = (q.Answer || "").trim().toUpperCase();
-
-        card.classList.remove("correct", "incorrect");
-        if (userAns === rightAns) {
-          correctCount++;
-          card.classList.add("correct");
-        } else {
-          card.classList.add("incorrect");
+        if (selected) {
+          answeredCount++;
+          if (selected.value.trim().toUpperCase() === (q.Answer || "").trim().toUpperCase()) {
+            correctCount++;
+          }
         }
-
-        document.getElementById(`exp_${idx}`).classList.add("visible");
       });
 
       const scoreBanner = document.getElementById("score-banner");
-      document.getElementById("score-text").textContent = `測驗結果：${correctCount} / ${questions.length} 題答對`;
+      const scoreText = document.getElementById("score-text");
       scoreBanner.classList.add("visible");
-      scoreBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+      if (answeredCount < questions.length) {
+        scoreText.textContent = `闖關進度：已完成 ${answeredCount} / ${questions.length} 題（目前答對 ${correctCount} 題）`;
+      } else {
+        const allCorrect = correctCount === questions.length;
+        scoreText.textContent = allCorrect
+          ? `🏆 太厲害了！全對完成測驗（${correctCount} / ${questions.length} 題）`
+          : `測驗完成：答對 ${correctCount} / ${questions.length} 題`;
+        if (allCorrect) {
+          launchFullCelebration();
+        }
+      }
+    }
+
+    function speakWord(text) {
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      // 清理單字文本（拿掉省略號、括號等，只朗讀真實英文詞彙）
+      const cleaned = text
+        .replace(/\.{2,}/g, " ")
+        .replace(/\([^)]*\)/g, " ")
+        .replace(/one's/gi, "someone's")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!cleaned) return;
+      const utter = new SpeechSynthesisUtterance(cleaned);
+      utter.lang = "en-US";
+      utter.rate = 0.88; // 稍微放慢語速，讓國中生聽清細部發音
+      window.speechSynthesis.speak(utter);
+    }
+
+    /* 原生輕量 Canvas 紙花（Confetti）動畫系統 */
+    let confettiParticles = [];
+    let confettiAnimationId = null;
+
+    function getConfettiCanvas() {
+      let canvas = document.getElementById("confetti-canvas");
+      if (!canvas) {
+        canvas = document.createElement("canvas");
+        canvas.id = "confetti-canvas";
+        document.body.appendChild(canvas);
+      }
+      if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      return canvas;
+    }
+
+    function launchConfetti(originX, originY, count = 25) {
+      const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#06b6d4"];
+      for (let i = 0; i < count; i++) {
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.6;
+        const speed = 4 + Math.random() * 7;
+        confettiParticles.push({
+          x: originX,
+          y: originY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: 5 + Math.random() * 5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 12,
+          alpha: 1,
+          decay: 0.015 + Math.random() * 0.015
+        });
+      }
+      if (!confettiAnimationId) {
+        runConfettiLoop();
+      }
+    }
+
+    function launchFullCelebration() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      launchConfetti(w * 0.25, h * 0.4, 50);
+      launchConfetti(w * 0.75, h * 0.4, 50);
+    }
+
+    function runConfettiLoop() {
+      const canvas = getConfettiCanvas();
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      confettiParticles = confettiParticles.filter(p => p.alpha > 0);
+
+      confettiParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.25; // 重力
+        p.vx *= 0.98; // 阻力
+        p.rotation += p.rotationSpeed;
+        p.alpha -= p.decay;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+        ctx.restore();
+      });
+
+      if (confettiParticles.length > 0) {
+        confettiAnimationId = requestAnimationFrame(runConfettiLoop);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        confettiAnimationId = null;
+      }
     }
 
     function isSafeImageUrl(url) {
