@@ -254,9 +254,25 @@
 
     .flashcard {
       background-color: transparent;
+      border: 0;
+      padding: 0;
+      width: 100%;
+      font: inherit;
+      color: inherit;
       height: 195px;
       perspective: 1000px;
       cursor: pointer;
+      display: block;
+      border-radius: var(--radius);
+    }
+
+    .flashcard.has-image {
+      height: 320px;
+    }
+
+    .flashcard:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 3px;
     }
 
     .flashcard-inner {
@@ -274,28 +290,54 @@
     .flashcard-front,
     .flashcard-back {
       position: absolute;
-      width: 100%;
-      height: 100%;
+      inset: 0;
       -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
       border-radius: var(--radius);
       border: 1px solid var(--border);
-      padding: 22px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      overflow: hidden;
     }
 
     .flashcard-front {
       background: var(--surface);
       align-items: center;
       text-align: center;
+      gap: 12px;
+    }
+
+    .flashcard.has-image .flashcard-front {
+      padding: 14px;
+      justify-content: flex-start;
+    }
+
+    .flashcard-img {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #e2e8f0;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .flashcard-front-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
     }
 
     .flashcard-word {
       font-size: 1.45rem;
       font-weight: 700;
       color: var(--text);
+      line-height: 1.25;
     }
 
     .flashcard-pos {
@@ -310,17 +352,35 @@
       transform: rotateY(180deg);
       justify-content: space-between;
       text-align: left;
+      gap: 10px;
+    }
+
+    .flashcard.has-image .flashcard-back {
+      padding: 14px;
+      justify-content: flex-start;
+    }
+
+    .flashcard-back .flashcard-img {
+      aspect-ratio: 16 / 8;
+    }
+
+    .flashcard-back-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      justify-content: space-between;
     }
 
     .flashcard-meaning {
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: var(--primary);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .flashcard-example {
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       color: var(--text-secondary);
       line-height: 1.5;
       overflow-y: auto;
@@ -674,21 +734,54 @@
       } else {
         vocabSection.classList.remove("hidden");
         lessonVocab.forEach(v => {
-          const card = document.createElement("div");
-          card.className = "flashcard";
+          const imgUrl = isSafeImageUrl(v.Image_URL) ? v.Image_URL.trim() : "";
+          const hasImage = Boolean(imgUrl);
+
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = hasImage ? "flashcard has-image" : "flashcard";
+          card.setAttribute("aria-pressed", "false");
+
+          const frontImgHtml = hasImage
+            ? `<img class="flashcard-img" src="${escapeHtml(imgUrl)}" alt="${escapeHtml(v.Word)}" width="320" height="200" loading="lazy" />`
+            : "";
+          const backImgHtml = hasImage
+            ? `<img class="flashcard-img" src="${escapeHtml(imgUrl)}" alt="" width="320" height="160" loading="lazy" fetchpriority="low" />`
+            : "";
+
           card.innerHTML = `
             <div class="flashcard-inner">
               <div class="flashcard-front">
-                <div class="flashcard-word">${escapeHtml(v.Word)}</div>
-                ${v.POS ? `<div class="flashcard-pos">(${escapeHtml(v.POS)})</div>` : ""}
+                ${frontImgHtml}
+                <div class="flashcard-front-text">
+                  <div class="flashcard-word">${escapeHtml(v.Word)}</div>
+                  ${v.POS ? `<div class="flashcard-pos">(${escapeHtml(v.POS)})</div>` : ""}
+                </div>
               </div>
               <div class="flashcard-back">
-                <div class="flashcard-meaning">${escapeHtml(v.Meaning)}</div>
-                <div class="flashcard-example">${escapeHtml(v.Example)}</div>
+                ${backImgHtml}
+                <div class="flashcard-back-body">
+                  <div class="flashcard-meaning">${escapeHtml(v.Meaning)}</div>
+                  <div class="flashcard-example">${escapeHtml(v.Example)}</div>
+                </div>
               </div>
             </div>
           `;
-          card.addEventListener("click", () => card.classList.toggle("flipped"));
+
+          if (hasImage) {
+            const imgs = card.querySelectorAll(".flashcard-img");
+            imgs.forEach(img => {
+              img.addEventListener("error", () => {
+                imgs.forEach(el => el.remove());
+                card.classList.remove("has-image");
+              }, { once: true });
+            });
+          }
+
+          card.addEventListener("click", () => {
+            const flipped = card.classList.toggle("flipped");
+            card.setAttribute("aria-pressed", String(flipped));
+          });
           vocabGrid.appendChild(card);
         });
       }
@@ -783,6 +876,12 @@
       document.getElementById("score-text").textContent = `測驗結果：${correctCount} / ${questions.length} 題答對`;
       scoreBanner.classList.add("visible");
       scoreBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function isSafeImageUrl(url) {
+      if (!url) return false;
+      const trimmed = String(url).trim();
+      return /^https?:\/\/.+/i.test(trimmed) || /^images\/[a-zA-Z0-9._\-\/]+$/.test(trimmed);
     }
 
     function escapeHtml(str) {
