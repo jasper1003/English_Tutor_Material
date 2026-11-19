@@ -1965,6 +1965,10 @@ export class FreelancerRoomScene {
     bedGroup.add(pillow);
 
     [frame, headboard, mattress, blanket, pillow].forEach(m => this.addInteractive(m, "bed"));
+    // Rebind after addInteractive() because addInteractive clones per-mesh materials for hover glow
+    this.bedSheetMat = mattress.material;
+    this.bedBlanketMat = blanket.material;
+    this.bedPillowMat = pillow.material;
   }
 
   buildWorkDeskAndMac() {

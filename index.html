@@ -2141,6 +2141,11 @@
       font-size: 0.84rem;
     }
 
+    .shop-dialog-feedback {
+      margin: 0.7rem 1.35rem 0;
+      flex-shrink: 0;
+    }
+
     .shop-item-head {
       display: flex;
       align-items: center;
@@ -2906,8 +2911,8 @@
             aria-label="關閉商店"
           >✕</button>
         </div>
+        <div id="shop-feedback" class="feedback-banner hidden shop-dialog-feedback" role="status" aria-live="polite"></div>
         <div class="dialog-body">
-          <div id="shop-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
           <div class="shop-tabs" id="shop-tabs" role="tablist" aria-label="商店分類"></div>
           <div id="shop-textile-bar" class="shop-textile-bar hidden"></div>
           <div class="shop-grid" id="shop-grid"></div>
@@ -3234,7 +3239,7 @@
       HAIR_COLORS,
       OUTFIT_COLORS,
       DEFAULT_AVATAR
-    } from "./room-scene.js?v=20261119r";
+    } from "./room-scene.js?v=20261119s";
     import {
       SHOP_CATEGORIES,
       SHOP_CATALOG,
@@ -5329,11 +5334,16 @@
       return "";
     }
 
-    async function equipShopTextile(textileKind, nextId) {
+    async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
       if (!currentUser || !currentUserProfile || shopPurchaseBusy) return;
       if (textileKind !== "bedSheet" && textileKind !== "rugStyle") return;
       clearFeedback("shop-feedback");
       shopPurchaseBusy = true;
+      const prevBtnText = triggerBtn ? triggerBtn.textContent : "";
+      if (triggerBtn) {
+        triggerBtn.disabled = true;
+        triggerBtn.textContent = "切換中...";
+      }
       try {
         const nextRoomState = {
           ...(currentUserProfile.roomState || {
@@ -5362,6 +5372,10 @@
         showFeedback("shop-feedback", "success", `已免費切換為「${label}」！`);
         renderShopDialog();
       } catch (err) {
+        if (triggerBtn) {
+          triggerBtn.disabled = false;
+          triggerBtn.textContent = prevBtnText;
+        }
         showFeedback("shop-feedback", "error", err?.message || translateAuthError(err));
       } finally {
         shopPurchaseBusy = false;
@@ -5373,6 +5387,8 @@
       const tabsEl = document.getElementById("shop-tabs");
       const textileBarEl = document.getElementById("shop-textile-bar");
       const gridEl = document.getElementById("shop-grid");
+      const dialogBodyEl = gridEl.closest(".dialog-body");
+      const prevScrollTop = dialogBodyEl ? dialogBodyEl.scrollTop : 0;
       const isSuperAdmin = currentRole === "super_admin";
       const clams = Math.max(0, Math.trunc(Number(currentUserProfile?.clams ?? STARTER_CLAMS)));
       const owned = normalizeOwnedItems(currentUserProfile?.ownedItems);
@@ -5390,6 +5406,7 @@
         btn.onclick = () => {
           activeShopCategory = cat.id;
           renderShopDialog();
+          if (dialogBodyEl) dialogBodyEl.scrollTop = 0;
         };
         tabsEl.appendChild(btn);
       });
@@ -5408,7 +5425,7 @@
           resetSheetBtn.type = "button";
           resetSheetBtn.className = "btn";
           resetSheetBtn.textContent = "換回經典海鹽藍床組";
-          resetSheetBtn.onclick = () => equipShopTextile("bedSheet", DEFAULT_BED_SHEET);
+          resetSheetBtn.onclick = () => equipShopTextile("bedSheet", DEFAULT_BED_SHEET, resetSheetBtn);
           textileBarEl.appendChild(resetSheetBtn);
         }
         if (activeRugStyle !== DEFAULT_RUG_STYLE) {
@@ -5416,7 +5433,7 @@
           resetRugBtn.type = "button";
           resetRugBtn.className = "btn";
           resetRugBtn.textContent = "換回奶油燕麥地毯";
-          resetRugBtn.onclick = () => equipShopTextile("rugStyle", DEFAULT_RUG_STYLE);
+          resetRugBtn.onclick = () => equipShopTextile("rugStyle", DEFAULT_RUG_STYLE, resetRugBtn);
           textileBarEl.appendChild(resetRugBtn);
         }
       }
@@ -5529,7 +5546,7 @@
         } else if (isTextile && isPermanentOwned) {
           actionBtn.classList.add("btn-primary");
           actionBtn.textContent = "套用更換（免費）";
-          actionBtn.onclick = () => equipShopTextile(item.textileKind, item.id);
+          actionBtn.onclick = () => equipShopTextile(item.textileKind, item.id, actionBtn);
         } else if (isPermanentOwned) {
           actionBtn.textContent = "已擺進房間 ✓";
           actionBtn.disabled = true;
@@ -5543,21 +5560,29 @@
             : isTextile
               ? "購買並立刻換上"
               : "購買並放進房間";
-          actionBtn.onclick = () => purchaseShopItem(item.id);
+          actionBtn.onclick = () => purchaseShopItem(item.id, actionBtn);
         }
 
         card.append(previewBox, head, desc, actionBtn);
         gridEl.appendChild(card);
       });
+      if (dialogBodyEl) {
+        dialogBodyEl.scrollTop = prevScrollTop;
+      }
     }
 
-    async function purchaseShopItem(itemId) {
+    async function purchaseShopItem(itemId, triggerBtn = null) {
       if (!currentUser || shopPurchaseBusy) return;
       const item = getShopItem(itemId);
       if (!item || item.price <= 0) return;
 
       clearFeedback("shop-feedback");
       shopPurchaseBusy = true;
+      const prevBtnText = triggerBtn ? triggerBtn.textContent : "";
+      if (triggerBtn) {
+        triggerBtn.disabled = true;
+        triggerBtn.textContent = "購買中...";
+      }
       try {
         const userRef = doc(firestoreDb, "users", currentUser.uid);
         const result = await runTransaction(firestoreDb, async (tx) => {
@@ -5664,6 +5689,10 @@
         }
         renderShopDialog();
       } catch (err) {
+        if (triggerBtn) {
+          triggerBtn.disabled = false;
+          triggerBtn.textContent = prevBtnText;
+        }
         showFeedback("shop-feedback", "error", err?.message || translateAuthError(err));
       } finally {
         shopPurchaseBusy = false;
@@ -6265,6 +6294,14 @@
 
         const displayName = formatDisplayName(currentUser, data);
         updateHeaderAccountUI(currentUser, currentRole, displayName, data.clams ?? STARTER_CLAMS);
+        if (roomScene) {
+          const rs = data.roomState || {};
+          roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
+          roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
+          roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
+          roomScene.setVinylOn(Boolean(rs.vinylOn ?? false));
+          roomScene.applyOwnedItems(normalizeOwnedItems(data.ownedItems));
+        }
         if (shopDialog.open) {
           renderShopDialog();
         }
