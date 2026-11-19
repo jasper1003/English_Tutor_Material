@@ -220,6 +220,77 @@ function makeDeskScreenTexture(mode = "art") {
   return tex;
 }
 
+function makePosterTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 192;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+
+  const sky = ctx.createLinearGradient(0, 0, 0, 175);
+  sky.addColorStop(0, "#fce7d2");
+  sky.addColorStop(1, "#f7bfa0");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, 192, 256);
+
+  ctx.fillStyle = "#ff8552";
+  ctx.beginPath();
+  ctx.arc(96, 94, 34, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#6d8da6";
+  ctx.beginPath();
+  ctx.moveTo(0, 185);
+  ctx.lineTo(66, 122);
+  ctx.lineTo(132, 176);
+  ctx.lineTo(192, 134);
+  ctx.lineTo(192, 256);
+  ctx.lineTo(0, 256);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#3f5d73";
+  ctx.beginPath();
+  ctx.moveTo(0, 206);
+  ctx.lineTo(92, 152);
+  ctx.lineTo(192, 196);
+  ctx.lineTo(192, 256);
+  ctx.lineTo(0, 256);
+  ctx.closePath();
+  ctx.fill();
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function makeTvScreenTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 144;
+  const ctx = canvas.getContext("2d");
+
+  const bg = ctx.createLinearGradient(0, 0, 256, 144);
+  bg.addColorStop(0, "#1e293b");
+  bg.addColorStop(0.55, "#334155");
+  bg.addColorStop(1, "#1e1b4b");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 256, 144);
+
+  const cards = ["#fb923c", "#38bdf8", "#34d399", "#f472b6"];
+  cards.forEach((c, idx) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(22 + idx * 54, 42, 44, 56);
+  });
+  ctx.fillStyle = "#e2e8f0";
+  ctx.fillRect(22, 22, 92, 8);
+  ctx.fillStyle = "#94a3b8";
+  ctx.fillRect(22, 112, 156, 6);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 function createCharacterRig(config) {
   const cfg = { ...DEFAULT_AVATAR, ...(config || {}) };
 
@@ -577,6 +648,7 @@ export class FreelancerRoomScene {
     this.container = container;
     this.onEnterWork = options.onEnterWork || (() => {});
     this.onLampToggle = options.onLampToggle || (() => {});
+    this.onBedLampToggle = options.onBedLampToggle || (() => {});
     this.onActivityChange = options.onActivityChange || (() => {});
     this.onTimeUpdate = options.onTimeUpdate || (() => {});
     this.onHoverChange = options.onHoverChange || (() => {});
@@ -591,7 +663,9 @@ export class FreelancerRoomScene {
     this.currentAngle = this.targetQuarter * (Math.PI / 2) + Math.PI / 4;
 
     this.deskLampOn = Boolean(options.deskLampOn ?? true);
+    this.bedLampOn = Boolean(options.bedLampOn ?? false);
     this.wallColorHex = options.wallColor || "#f3eadc";
+    this.ownedItems = { ...(options.ownedItems || {}) };
     this.avatarConfig = { ...DEFAULT_AVATAR, ...(options.avatar || {}) };
 
     // Room bounds & obstacle-free routing anchors
@@ -606,7 +680,7 @@ export class FreelancerRoomScene {
     this.chillSpots = [
       { id: "phone", label: "在床邊滑手機放鬆中", pos: new THREE.Vector3(1.94, 0, 1.95), rotY: -Math.PI / 2 },
       { id: "exercise", label: "做伏地挺身保持體力", pos: new THREE.Vector3(-0.55, 0, 0.72), rotY: -0.6 },
-      { id: "read", label: "翻閱靈感畫冊", pos: new THREE.Vector3(-2.35, 0, -0.55), rotY: 1.1 },
+      { id: "read", label: "翻閱靈感畫冊", pos: new THREE.Vector3(-0.85, 0, 1.45), rotY: 0.7 },
       { id: "eat", label: "享用熱食補充靈感", pos: new THREE.Vector3(0.85, 0, 2.45), rotY: -2.2 },
       { id: "gaming", label: "偷玩方塊沙盒遊戲", pos: new THREE.Vector3(-0.2, 0, -2.02), rotY: Math.PI },
       // Parallel along the bed (+Z is headboard/pillow at 2.83; charBody rotation.x=-PI/2 + root rotY=PI puts head at +Z)
@@ -739,6 +813,11 @@ export class FreelancerRoomScene {
     this.screenGlowLight = new THREE.PointLight("#7cc4ff", 0.75, 3.2, 1.8);
     this.screenGlowLight.position.set(-0.2, 1.48, -2.85);
     this.scene.add(this.screenGlowLight);
+
+    // Optional shop-bought bedside night lamp PointLight
+    this.bedLampLight = new THREE.PointLight("#ffb86c", 0, 5.2, 1.8);
+    this.bedLampLight.position.set(1.46, 0.96, 3.12);
+    this.scene.add(this.bedLampLight);
   }
 
   buildRoomShell() {
@@ -849,6 +928,24 @@ export class FreelancerRoomScene {
     glass.position.set(-0.25, 1.84, -4.11);
     upperGroup.add(glass);
 
+    // Shop item: Wall Art Poster mounted on blank North wall left of window
+    const posterGroup = new THREE.Group();
+    posterGroup.position.set(-2.72, 1.92, -3.99);
+    const frameOuter = new THREE.Mesh(new RoundedBoxGeometry(0.92, 1.18, 0.04, 2, 0.015), makeMat("#7a553a", 0.52));
+    frameOuter.castShadow = true;
+    posterGroup.add(frameOuter);
+    const matBoard = new THREE.Mesh(new RoundedBoxGeometry(0.8, 1.06, 0.045, 2, 0.01), makeMat("#faf5ed", 0.85));
+    posterGroup.add(matBoard);
+    const posterArt = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.66, 0.9),
+      new THREE.MeshBasicMaterial({ map: makePosterTexture() })
+    );
+    posterArt.position.z = 0.025;
+    posterGroup.add(posterArt);
+    posterGroup.visible = Boolean(this.ownedItems.wall_poster);
+    this.wallPosterGroup = posterGroup;
+    upperGroup.add(posterGroup);
+
     // Low floor baseboard always left visible during cutaway
     const baseboard = new THREE.Mesh(new RoundedBoxGeometry(8.48, 0.14, 0.24, 2, 0.03), trimMat);
     baseboard.position.set(0, 0.07, -4.12);
@@ -917,6 +1014,33 @@ export class FreelancerRoomScene {
     handle.position.set(-3.86, 1.05, 1.62);
     upperGroup.add(handle);
 
+    // Shop item: Wall-mounted flat TV on the wall to the right of the door (-Z side of West wall)
+    const tvGroup = new THREE.Group();
+    tvGroup.position.set(-3.98, 1.56, -0.35);
+    tvGroup.rotation.y = Math.PI / 2;
+    const tvChassis = new THREE.Mesh(new RoundedBoxGeometry(1.44, 0.86, 0.055, 3, 0.02), makeMat("#1e2430", 0.35, 0.2));
+    tvChassis.castShadow = true;
+    tvGroup.add(tvChassis);
+    const tvScreen = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.32, 0.74),
+      new THREE.MeshBasicMaterial({ map: makeTvScreenTexture() })
+    );
+    tvScreen.position.z = 0.03;
+    tvGroup.add(tvScreen);
+    const tvLed = new THREE.Mesh(
+      new THREE.SphereGeometry(0.016, 8, 8),
+      new THREE.MeshBasicMaterial({ color: "#34d399" })
+    );
+    tvLed.position.set(0.58, -0.39, 0.03);
+    tvGroup.add(tvLed);
+    const tvShelf = new THREE.Mesh(new RoundedBoxGeometry(1.56, 0.06, 0.24, 2, 0.02), makeMat("#9c6b45", 0.55));
+    tvShelf.position.set(0, -0.56, 0.11);
+    tvShelf.castShadow = true;
+    tvGroup.add(tvShelf);
+    tvGroup.visible = Boolean(this.ownedItems.wall_tv);
+    this.wallTvGroup = tvGroup;
+    upperGroup.add(tvGroup);
+
     const baseboard = new THREE.Mesh(new RoundedBoxGeometry(0.24, 0.14, 8.24, 2, 0.03), trimMat);
     baseboard.position.set(-4.12, 0.07, 0);
     baseboard.receiveShadow = true;
@@ -933,6 +1057,114 @@ export class FreelancerRoomScene {
     this.buildBathroomCorner();
     this.buildSingleBed();
     this.buildWorkDeskAndMac();
+    this.buildShopSofaAndBedLamp();
+  }
+
+  buildShopSofaAndBedLamp() {
+    // 1. Shop item: Cozy Two-Seater Sofa facing the West-wall TV (-X)
+    const sofaGroup = new THREE.Group();
+    sofaGroup.position.set(-1.78, 0, -0.35);
+    sofaGroup.rotation.y = -Math.PI / 2;
+
+    const sofaLegMat = makeMat("#8b5a3c", 0.55);
+    const sofaFabricMat = makeMat("#8da399", 0.88);
+    const cushionMat = makeMat("#a2b8ae", 0.86);
+    const pillowAccentMat = makeMat("#e07a5f", 0.84);
+
+    [[-0.72, -0.32], [0.72, -0.32], [-0.72, 0.32], [0.72, 0.32]].forEach(([lx, lz]) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.14, 10), sofaLegMat);
+      leg.position.set(lx, 0.07, lz);
+      leg.castShadow = true;
+      sofaGroup.add(leg);
+    });
+
+    const sofaBase = new THREE.Mesh(new RoundedBoxGeometry(1.72, 0.24, 0.84, 4, 0.06), sofaFabricMat);
+    sofaBase.position.set(0, 0.24, 0);
+    sofaBase.castShadow = true;
+    sofaBase.receiveShadow = true;
+    sofaGroup.add(sofaBase);
+
+    [-0.36, 0.36].forEach(cx => {
+      const seat = new THREE.Mesh(new RoundedBoxGeometry(0.68, 0.14, 0.68, 4, 0.06), cushionMat);
+      seat.position.set(cx, 0.4, 0.05);
+      seat.castShadow = true;
+      seat.receiveShadow = true;
+      sofaGroup.add(seat);
+    });
+
+    const backrest = new THREE.Mesh(new RoundedBoxGeometry(1.72, 0.52, 0.2, 4, 0.07), sofaFabricMat);
+    backrest.position.set(0, 0.56, -0.32);
+    backrest.rotation.x = -0.08;
+    backrest.castShadow = true;
+    sofaGroup.add(backrest);
+
+    [-0.77, 0.77].forEach(ax => {
+      const arm = new THREE.Mesh(new RoundedBoxGeometry(0.18, 0.38, 0.84, 4, 0.06), sofaFabricMat);
+      arm.position.set(ax, 0.44, 0);
+      arm.castShadow = true;
+      sofaGroup.add(arm);
+    });
+
+    [-0.44, 0.44].forEach((px, idx) => {
+      const throwPillow = new THREE.Mesh(new RoundedBoxGeometry(0.28, 0.24, 0.12, 3, 0.04), pillowAccentMat);
+      throwPillow.position.set(px, 0.58, -0.15);
+      throwPillow.rotation.set(-0.22, idx === 0 ? 0.25 : -0.25, 0);
+      throwPillow.castShadow = true;
+      sofaGroup.add(throwPillow);
+    });
+
+    sofaGroup.visible = Boolean(this.ownedItems.cozy_sofa);
+    this.sofaGroup = sofaGroup;
+    this.furnitureGroup.add(sofaGroup);
+
+    // 2. Shop item: Bedside Nightstand + Clickable Warm Night Lamp beside Bed Headboard
+    const bedLampGroup = new THREE.Group();
+    bedLampGroup.position.set(1.46, 0, 3.12);
+
+    const standMat = makeMat("#b98456", 0.55);
+    const standBody = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.5, 0.46, 4, 0.05), standMat);
+    standBody.position.set(0, 0.25, 0);
+    standBody.castShadow = true;
+    standBody.receiveShadow = true;
+    bedLampGroup.add(standBody);
+
+    const drawerFront = new THREE.Mesh(new RoundedBoxGeometry(0.36, 0.16, 0.03, 2, 0.01), makeMat("#cfa072", 0.5));
+    drawerFront.position.set(0, 0.34, -0.225);
+    bedLampGroup.add(drawerFront);
+
+    const nBase = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.05, 16), makeMat("#e2e8f0", 0.35));
+    nBase.position.set(0, 0.525, 0);
+    bedLampGroup.add(nBase);
+
+    const nStem = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.18, 12), makeMat("#d97757", 0.45));
+    nStem.position.set(0, 0.62, 0);
+    bedLampGroup.add(nStem);
+
+    this.bedLampShadeMat = new THREE.MeshStandardMaterial({
+      color: "#fde68a",
+      emissive: "#ffb347",
+      emissiveIntensity: this.bedLampOn ? 0.55 : 0.0,
+      roughness: 0.45
+    });
+    const nShade = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 0.18, 18), this.bedLampShadeMat);
+    nShade.position.set(0, 0.77, 0);
+    nShade.castShadow = true;
+    bedLampGroup.add(nShade);
+
+    this.bedLampBulbMat = new THREE.MeshStandardMaterial({
+      color: "#fff7d6",
+      emissive: "#ffb347",
+      emissiveIntensity: this.bedLampOn ? 1.5 : 0.0,
+      roughness: 0.2
+    });
+    const nBulb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 12), this.bedLampBulbMat);
+    nBulb.position.set(0, 0.72, 0);
+    bedLampGroup.add(nBulb);
+
+    [standBody, nBase, nStem, nShade, nBulb].forEach(m => this.addInteractive(m, "bedLamp"));
+    bedLampGroup.visible = Boolean(this.ownedItems.bed_lamp);
+    this.bedLampGroup = bedLampGroup;
+    this.furnitureGroup.add(bedLampGroup);
   }
 
   buildDoormat() {
@@ -1169,13 +1401,69 @@ export class FreelancerRoomScene {
     workArea.add(macDisplay);
     this.addInteractive(macDisplay, "computer");
 
-    // Compact rounded Mac keyboard + mouse
+    // Compact rounded Mac keyboard + Shop Mechanical RGB Keyboard + mouse
     const keyMat = makeMat("#eef2f6", 0.45);
     const keyboard = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.025, 0.16, 2, 0.01), keyMat);
     keyboard.position.set(-0.08, 0.99, 0.12);
     keyboard.castShadow = true;
+    keyboard.visible = !this.ownedItems.cool_keyboard;
+    this.basicKeyboard = keyboard;
     workArea.add(keyboard);
     this.addInteractive(keyboard, "computer");
+
+    const coolKb = new THREE.Group();
+    coolKb.position.set(-0.08, 0.992, 0.12);
+    const kbCase = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.028, 0.17, 2, 0.01), makeMat("#1e293b", 0.35, 0.2));
+    kbCase.castShadow = true;
+    coolKb.add(kbCase);
+    const rgbStrip = new THREE.Mesh(
+      new RoundedBoxGeometry(0.49, 0.008, 0.176, 1, 0.003),
+      makeMat("#38bdf8", 0.2, 0.1, { emissive: "#ec4899", emissiveIntensity: 0.9 })
+    );
+    rgbStrip.position.y = -0.006;
+    coolKb.add(rgbStrip);
+    const keycapBed = new THREE.Mesh(new RoundedBoxGeometry(0.42, 0.014, 0.13, 2, 0.005), makeMat("#e2e8f0", 0.4));
+    keycapBed.position.y = 0.014;
+    coolKb.add(keycapBed);
+    const keyAccent = new THREE.Mesh(
+      new RoundedBoxGeometry(0.11, 0.016, 0.04, 1, 0.004),
+      makeMat("#38bdf8", 0.3, 0.1, { emissive: "#38bdf8", emissiveIntensity: 0.35 })
+    );
+    keyAccent.position.set(-0.14, 0.015, -0.02);
+    coolKb.add(keyAccent);
+    coolKb.visible = Boolean(this.ownedItems.cool_keyboard);
+    this.coolKeyboardGroup = coolKb;
+    workArea.add(coolKb);
+    [kbCase, keycapBed, keyAccent].forEach(m => this.addInteractive(m, "computer"));
+
+    // Shop item: Cute Desk Monstera Plant on back-right corner of desk
+    const plantGroup = new THREE.Group();
+    plantGroup.position.set(0.88, 0.975, -0.24);
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.085, 0.16, 16), makeMat("#d97757", 0.65));
+    pot.position.y = 0.08;
+    pot.castShadow = true;
+    plantGroup.add(pot);
+    const soil = new THREE.Mesh(new THREE.CylinderGeometry(0.098, 0.098, 0.02, 14), makeMat("#5c4033", 0.95));
+    soil.position.y = 0.155;
+    plantGroup.add(soil);
+    const leafMat = makeMat("#4d8c57", 0.45);
+    [
+      [0, 0.25, 0, 0.15, 0.25, 0],
+      [-0.06, 0.22, 0.05, 0.42, 0.4, 0.48],
+      [0.07, 0.23, 0.04, 0.35, -0.3, -0.52],
+      [-0.04, 0.23, -0.06, -0.45, 0.2, 0.4],
+      [0.05, 0.21, -0.06, -0.38, -0.25, -0.42]
+    ].forEach(([lx, ly, lz, rx, ry, rz]) => {
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.068, 10, 10), leafMat);
+      leaf.scale.set(0.9, 1.45, 0.28);
+      leaf.position.set(lx, ly, lz);
+      leaf.rotation.set(rx, ry, rz);
+      leaf.castShadow = true;
+      plantGroup.add(leaf);
+    });
+    plantGroup.visible = Boolean(this.ownedItems.desk_plant);
+    this.deskPlantGroup = plantGroup;
+    workArea.add(plantGroup);
 
     const mouse = new THREE.Mesh(new RoundedBoxGeometry(0.08, 0.028, 0.12, 3, 0.014), keyMat);
     mouse.position.set(0.26, 0.99, 0.12);
@@ -1334,6 +1622,35 @@ export class FreelancerRoomScene {
     if (this.lampBulbMat) {
       this.lampBulbMat.emissiveIntensity = this.deskLampOn ? 1.6 : 0.0;
     }
+  }
+
+  setBedLamp(isOn) {
+    this.bedLampOn = Boolean(isOn);
+    if (this.bedLampBulbMat) {
+      this.bedLampBulbMat.emissiveIntensity = this.bedLampOn ? 1.5 : 0.0;
+    }
+    if (this.bedLampShadeMat) {
+      this.bedLampShadeMat.emissiveIntensity = this.bedLampOn ? 0.55 : 0.0;
+    }
+  }
+
+  setWallColor(hex) {
+    if (!hex) return;
+    this.wallColorHex = hex;
+    if (this.wallMat) {
+      this.wallMat.color.set(hex);
+    }
+  }
+
+  applyOwnedItems(ownedItems = {}) {
+    this.ownedItems = { ...(ownedItems || {}) };
+    if (this.wallPosterGroup) this.wallPosterGroup.visible = Boolean(this.ownedItems.wall_poster);
+    if (this.wallTvGroup) this.wallTvGroup.visible = Boolean(this.ownedItems.wall_tv);
+    if (this.sofaGroup) this.sofaGroup.visible = Boolean(this.ownedItems.cozy_sofa);
+    if (this.bedLampGroup) this.bedLampGroup.visible = Boolean(this.ownedItems.bed_lamp);
+    if (this.deskPlantGroup) this.deskPlantGroup.visible = Boolean(this.ownedItems.desk_plant);
+    if (this.coolKeyboardGroup) this.coolKeyboardGroup.visible = Boolean(this.ownedItems.cool_keyboard);
+    if (this.basicKeyboard) this.basicKeyboard.visible = !this.ownedItems.cool_keyboard;
   }
 
   setQuarter(quarter) {
@@ -1701,6 +2018,11 @@ export class FreelancerRoomScene {
       const darknessBoost = isDay ? (phase > 0.4 ? (phase - 0.4) * 14 : 1.0) : 3.2;
       this.deskLampLight.intensity = this.deskLampOn ? 1.8 + darknessBoost : 0;
     }
+    if (this.bedLampLight) {
+      const lampOwned = Boolean(this.bedLampGroup?.visible);
+      const bedBoost = isDay ? (phase > 0.4 ? (phase - 0.4) * 10 + 1.2 : 1.0) : 2.6;
+      this.bedLampLight.intensity = (lampOwned && this.bedLampOn) ? bedBoost : 0;
+    }
 
     // Map 0..1 phase to 24h clock starting at 06:00 sunrise
     const totalMinutes = Math.floor(((phase + 0.25) % 1.0) * 1440);
@@ -1932,12 +2254,22 @@ export class FreelancerRoomScene {
       this.camera.updateMatrixWorld();
       this.raycaster.setFromCamera(this.pointerNDC, this.camera);
       const hits = this.raycaster.intersectObjects(this.allInteractTargets, false);
-      if (hits.length > 0) {
-        const type = hits[0].object.userData.interactType;
+      const visibleHit = hits.find(h => {
+        let obj = h.object;
+        while (obj) {
+          if (!obj.visible) return false;
+          obj = obj.parent;
+        }
+        return true;
+      });
+      if (visibleHit) {
+        const type = visibleHit.object.userData.interactType;
         this.hoveredTarget = type;
         dom.style.cursor = "pointer";
         if (type === "lamp") {
           this.onHoverChange("點擊開關檯燈");
+        } else if (type === "bedLamp") {
+          this.onHoverChange("點擊開關床邊小夜燈");
         } else if (type === "computer") {
           this.onHoverChange("點擊電腦／電繪板開始接案學習");
         } else {
@@ -1959,6 +2291,9 @@ export class FreelancerRoomScene {
       if (this.hoveredTarget === "lamp") {
         this.setDeskLamp(!this.deskLampOn);
         this.onLampToggle(this.deskLampOn);
+      } else if (this.hoveredTarget === "bedLamp") {
+        this.setBedLamp(!this.bedLampOn);
+        this.onBedLampToggle(this.bedLampOn);
       } else if (this.hoveredTarget === "computer") {
         this.goToWork();
       } else if (this.hoveredTarget === "bed") {
@@ -2021,7 +2356,7 @@ export class FreelancerRoomScene {
     const hoverColorHex = 0xffe2a8;
     for (const mesh of this.allInteractTargets) {
       const mat = mesh.material;
-      if (!mat || !("emissive" in mat) || mat === this.lampBulbMat) continue;
+      if (!mat || !("emissive" in mat) || mat === this.lampBulbMat || mat === this.bedLampBulbMat) continue;
       const isHovered = Boolean(this.hoveredTarget && mesh.userData.interactType === this.hoveredTarget);
       const targetGlow = isHovered ? 1 : 0;
       const prevGlow = mesh.userData.hoverGlow || 0;

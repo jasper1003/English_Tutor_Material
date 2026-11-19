@@ -2034,6 +2034,101 @@
       font-weight: 600;
     }
 
+    /* Online Room Shop Modal */
+    .shop-dialog {
+      max-width: min(680px, calc(100vw - 2rem));
+    }
+
+    .shop-tabs {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+
+    .shop-tab-btn {
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      color: var(--text-muted);
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .shop-tab-btn.is-active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .shop-item-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface-alt);
+      padding: 0.95rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .shop-item-card.is-owned {
+      border-color: light-dark(#93c5fd, #1d4ed8);
+    }
+
+    .shop-item-head {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .shop-item-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .shop-item-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.2);
+    }
+
+    .shop-item-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .shop-item-price {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: light-dark(#b45309, #fcd34d);
+    }
+
+    .shop-item-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      flex: 1;
+    }
+
     /* Submitted / Pending Review Quest State */
     .quest-step.is-submitted .quest-node-circle {
       background: #f59e0b;
@@ -2512,6 +2607,44 @@
       </div>
     </dialog>
 
+    <!-- Online Shop Dialog for Rentable Studio Upgrades -->
+    <dialog id="shop-dialog" class="settings-dialog shop-dialog" closedby="any" aria-labelledby="shop-dialog-title">
+      <div class="dialog-shell">
+        <div class="dialog-header">
+          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <h2 class="dialog-title" id="shop-dialog-title">🛒 租屋生活商店</h2>
+            <div class="wallet-chip" aria-label="目前英蚌餘額">
+              <span id="shop-clams-balance">100</span>
+              <span>英蚌</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="dialog-close-btn"
+            id="close-shop-btn"
+            command="close"
+            commandfor="shop-dialog"
+            aria-label="關閉商店"
+          >✕</button>
+        </div>
+        <div class="dialog-body">
+          <div id="shop-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
+          <div class="shop-tabs" id="shop-tabs" role="tablist" aria-label="商店分類"></div>
+          <div class="shop-grid" id="shop-grid"></div>
+        </div>
+        <div class="dialog-footer">
+          <span class="form-hint" style="margin-inline-end: auto;">購買後會直接佈置進你的單人租屋處</span>
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="footer-close-shop-btn"
+            command="close"
+            commandfor="shop-dialog"
+          >完成逛街</button>
+        </div>
+      </div>
+    </dialog>
+
     <!-- Character Creation / Editor Onboarding -->
     <section id="onboarding-view" class="onboarding-shell hidden" aria-labelledby="onboarding-title">
       <div class="onboarding-card">
@@ -2597,7 +2730,8 @@
 
         <div class="room-canvas-wrap" id="room-canvas-wrap"></div>
 
-        <div class="room-hud-bottom" style="justify-content: flex-end;">
+        <div class="room-hud-bottom" style="justify-content: flex-end; gap: 0.5rem;">
+          <button type="button" class="room-hud-btn" id="room-shop-btn">🛒 生活商店</button>
           <button type="button" class="room-hud-btn" id="room-edit-avatar-btn">✏️ 調整角色外觀</button>
         </div>
       </div>
@@ -2706,7 +2840,14 @@
       HAIR_COLORS,
       OUTFIT_COLORS,
       DEFAULT_AVATAR
-    } from "./room-scene.js?v=20261119k";
+    } from "./room-scene.js?v=20261119l";
+    import {
+      SHOP_CATEGORIES,
+      SHOP_CATALOG,
+      DEFAULT_WALL_COLOR,
+      getShopItem,
+      normalizeOwnedItems
+    } from "./shop-catalog.js?v=20261119l";
 
     if (window.location.search) {
       const cleanUrl = new URL(window.location.href);
@@ -2935,11 +3076,12 @@
         clams: STARTER_CLAMS,
         totalEarnedClams: 0,
         avatar: null,
+        ownedItems: {},
         roomState: {
           cameraQuarter: 0,
           deskLampOn: true,
           bedLampOn: false,
-          wallColor: "#f3eadc"
+          wallColor: DEFAULT_WALL_COLOR
         },
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -3042,18 +3184,24 @@
 
       const wrap = document.getElementById("room-canvas-wrap");
       const rs = currentUserProfile.roomState || {};
+      const owned = normalizeOwnedItems(currentUserProfile.ownedItems);
 
       if (!roomScene) {
         roomScene = new FreelancerRoomScene(wrap, {
           avatar: currentUserProfile.avatar,
           cameraQuarter: Number.isInteger(rs.cameraQuarter) ? rs.cameraQuarter : 0,
           deskLampOn: typeof rs.deskLampOn === "boolean" ? rs.deskLampOn : true,
-          wallColor: rs.wallColor || "#f3eadc",
+          bedLampOn: typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false,
+          wallColor: rs.wallColor || DEFAULT_WALL_COLOR,
+          ownedItems: owned,
           onEnterWork: () => {
             openWorkDesktop();
           },
           onLampToggle: (isOn) => {
             persistRoomState({ deskLampOn: isOn });
+          },
+          onBedLampToggle: (isOn) => {
+            persistRoomState({ bedLampOn: isOn });
           },
           onTimeUpdate: ({ clockText }) => {
             document.getElementById("room-clock-pill").textContent = `🕒 ${clockText}`;
@@ -3062,6 +3210,9 @@
       } else {
         roomScene.updateAvatarConfig(currentUserProfile.avatar);
         roomScene.setDeskLamp(typeof rs.deskLampOn === "boolean" ? rs.deskLampOn : true);
+        roomScene.setBedLamp(typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false);
+        roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
+        roomScene.applyOwnedItems(owned);
         if (Number.isInteger(rs.cameraQuarter)) roomScene.setQuarter(rs.cameraQuarter);
         roomScene.resume();
         if (fromWorkDesktop) {
@@ -4595,13 +4746,207 @@
       persistRoomState({ cameraQuarter: q });
     });
 
+    const shopDialog = document.getElementById("shop-dialog");
+    let activeShopCategory = "all";
+    let shopPurchaseBusy = false;
+
+    function renderShopDialog() {
+      const balanceEl = document.getElementById("shop-clams-balance");
+      const tabsEl = document.getElementById("shop-tabs");
+      const gridEl = document.getElementById("shop-grid");
+      const clams = Math.max(0, Math.trunc(Number(currentUserProfile?.clams ?? STARTER_CLAMS)));
+      const owned = normalizeOwnedItems(currentUserProfile?.ownedItems);
+      const activeWallColor = (currentUserProfile?.roomState?.wallColor || DEFAULT_WALL_COLOR).toLowerCase();
+
+      balanceEl.textContent = String(clams);
+      tabsEl.innerHTML = "";
+      SHOP_CATEGORIES.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `shop-tab-btn${cat.id === activeShopCategory ? " is-active" : ""}`;
+        btn.textContent = cat.label;
+        btn.onclick = () => {
+          activeShopCategory = cat.id;
+          renderShopDialog();
+        };
+        tabsEl.appendChild(btn);
+      });
+
+      gridEl.innerHTML = "";
+      const visibleItems = activeShopCategory === "all"
+        ? SHOP_CATALOG
+        : SHOP_CATALOG.filter(item => item.category === activeShopCategory);
+
+      visibleItems.forEach(item => {
+        const isOwned = item.price === 0 || Boolean(owned[item.id]);
+        const isActivePaint = Boolean(item.wallColor && item.wallColor.toLowerCase() === activeWallColor);
+
+        const card = document.createElement("div");
+        card.className = `shop-item-card${isOwned ? " is-owned" : ""}`;
+
+        const head = document.createElement("div");
+        head.className = "shop-item-head";
+
+        const iconBox = document.createElement("div");
+        iconBox.className = "shop-item-icon";
+        if (item.wallColor) {
+          const dot = document.createElement("span");
+          dot.className = "shop-item-swatch";
+          dot.style.background = item.wallColor;
+          iconBox.appendChild(dot);
+        } else {
+          iconBox.textContent = item.icon || "🎁";
+        }
+
+        const meta = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "shop-item-name";
+        title.textContent = item.name;
+        const priceEl = document.createElement("div");
+        priceEl.className = "shop-item-price";
+        priceEl.textContent = item.price === 0 ? "預設附帶（免費）" : `${item.price} 英蚌`;
+        meta.append(title, priceEl);
+        head.append(iconBox, meta);
+
+        const desc = document.createElement("div");
+        desc.className = "shop-item-desc";
+        desc.textContent = item.desc;
+
+        const actionBtn = document.createElement("button");
+        actionBtn.type = "button";
+        actionBtn.className = "btn";
+        actionBtn.style.width = "100%";
+
+        if (isOwned) {
+          if (item.wallColor) {
+            if (isActivePaint) {
+              actionBtn.textContent = "目前使用中 ✓";
+              actionBtn.disabled = true;
+            } else {
+              actionBtn.textContent = "套用這個牆色";
+              actionBtn.onclick = () => applyOwnedWallPaint(item);
+            }
+          } else {
+            actionBtn.textContent = "已擺進房間 ✓";
+            actionBtn.disabled = true;
+          }
+        } else if (clams < item.price) {
+          actionBtn.textContent = `還差 ${item.price - clams} 英蚌`;
+          actionBtn.disabled = true;
+        } else {
+          actionBtn.classList.add("btn-primary");
+          actionBtn.textContent = "購買並放進房間";
+          actionBtn.onclick = () => purchaseShopItem(item.id);
+        }
+
+        card.append(head, desc, actionBtn);
+        gridEl.appendChild(card);
+      });
+    }
+
+    async function applyOwnedWallPaint(item) {
+      if (!currentUser || !item?.wallColor || shopPurchaseBusy) return;
+      clearFeedback("shop-feedback");
+      shopPurchaseBusy = true;
+      try {
+        await persistRoomState({ wallColor: item.wallColor });
+        roomScene?.setWallColor(item.wallColor);
+        showFeedback("shop-feedback", "success", `已將牆面換成「${item.name}」！`);
+        renderShopDialog();
+      } catch (err) {
+        showFeedback("shop-feedback", "error", translateAuthError(err));
+      } finally {
+        shopPurchaseBusy = false;
+      }
+    }
+
+    async function purchaseShopItem(itemId) {
+      if (!currentUser || shopPurchaseBusy) return;
+      const item = getShopItem(itemId);
+      if (!item || item.price <= 0) return;
+
+      clearFeedback("shop-feedback");
+      shopPurchaseBusy = true;
+      try {
+        const userRef = doc(firestoreDb, "users", currentUser.uid);
+        const result = await runTransaction(firestoreDb, async (tx) => {
+          const snap = await tx.get(userRef);
+          if (!snap.exists()) throw new Error("找不到使用者檔案。");
+          const data = snap.data() || {};
+          const currentClams = Math.trunc(Number(data.clams ?? STARTER_CLAMS));
+          const prevOwned = (data.ownedItems && typeof data.ownedItems === "object" && !Array.isArray(data.ownedItems))
+            ? { ...data.ownedItems }
+            : {};
+
+          if (prevOwned[item.id] === true) {
+            return { alreadyOwned: true, nextClams: currentClams, nextOwned: prevOwned, nextRoomState: data.roomState || {} };
+          }
+          if (currentClams < item.price) {
+            throw new Error("英蚌餘額不足，先去電腦完成接案學習賺錢吧！");
+          }
+
+          const nextClams = currentClams - item.price;
+          const nextOwned = { ...prevOwned, [item.id]: true };
+          const prevRoomState = (data.roomState && typeof data.roomState === "object")
+            ? { ...data.roomState }
+            : { cameraQuarter: 0, deskLampOn: true, bedLampOn: false, wallColor: DEFAULT_WALL_COLOR };
+          const nextRoomState = item.wallColor
+            ? { ...prevRoomState, wallColor: item.wallColor }
+            : (item.id === "bed_lamp" ? { ...prevRoomState, bedLampOn: true } : prevRoomState);
+
+          const patch = {
+            clams: nextClams,
+            ownedItems: nextOwned,
+            updatedAt: serverTimestamp()
+          };
+          if (item.wallColor || item.id === "bed_lamp") {
+            patch.roomState = nextRoomState;
+          }
+          tx.update(userRef, patch);
+          return { alreadyOwned: false, nextClams, nextOwned, nextRoomState };
+        });
+
+        if (currentUserProfile) {
+          currentUserProfile.clams = result.nextClams;
+          currentUserProfile.ownedItems = result.nextOwned;
+          currentUserProfile.roomState = result.nextRoomState;
+        }
+        updateHeaderAccountUI(
+          currentUser,
+          currentRole,
+          currentUserProfile?.displayName || resolveFallbackName(currentUser),
+          result.nextClams
+        );
+        const normalizedOwned = normalizeOwnedItems(result.nextOwned);
+        roomScene?.applyOwnedItems(normalizedOwned);
+        if (item.wallColor) {
+          roomScene?.setWallColor(item.wallColor);
+        }
+        if (item.id === "bed_lamp") {
+          roomScene?.setBedLamp(true);
+        }
+        showFeedback("shop-feedback", "success", `已購買「${item.name}」並直接放進租屋處！`);
+        renderShopDialog();
+      } catch (err) {
+        showFeedback("shop-feedback", "error", err?.message || translateAuthError(err));
+      } finally {
+        shopPurchaseBusy = false;
+      }
+    }
+
+    document.getElementById("room-shop-btn").addEventListener("click", () => {
+      clearFeedback("shop-feedback");
+      renderShopDialog();
+      shopDialog.showModal();
+    });
+
     document.getElementById("room-edit-avatar-btn").addEventListener("click", () => {
       showOnboardingScreen(true);
     });
 
     window.addEventListener("keydown", (e) => {
       if (currentScreen !== "room" || !roomScene) return;
-      if (settingsDialog.open || adminReviewDialog.open) return;
+      if (settingsDialog.open || adminReviewDialog.open || shopDialog.open) return;
       if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
       if (e.key === "q" || e.key === "Q") {
         const q = roomScene.rotateLeft();
