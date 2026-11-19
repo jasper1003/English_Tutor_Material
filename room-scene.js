@@ -557,7 +557,8 @@ export class FreelancerRoomScene {
     if (mesh.material && "emissive" in mesh.material && mesh.material !== this.lampBulbMat) {
       mesh.material = mesh.material.clone();
       mesh.userData.baseEmissive = mesh.material.emissive.clone();
-      mesh.userData.baseEmissiveIntensity = mesh.material.emissiveIntensity || 0;
+      mesh.userData.baseEmissiveIntensity = mesh.material.emissiveIntensity;
+      mesh.userData.hoverGlow = 0;
     }
     this.allInteractTargets.push(mesh);
   }
@@ -1868,17 +1869,33 @@ export class FreelancerRoomScene {
   }
 
   updateInteractGlow() {
+    const hoverColorHex = 0xffe2a8;
     for (const mesh of this.allInteractTargets) {
       const mat = mesh.material;
       if (!mat || !("emissive" in mat) || mat === this.lampBulbMat) continue;
-      const isHovered = this.hoveredTarget && mesh.userData.interactType === this.hoveredTarget;
-      const targetIntensity = isHovered ? 0.28 : (mesh.userData.baseEmissiveIntensity || 0);
-      if (isHovered) {
-        mat.emissive.setHex(0xffd073);
-      } else if (mat.emissiveIntensity < 0.01 && mesh.userData.baseEmissive) {
-        mat.emissive.copy(mesh.userData.baseEmissive);
+      const isHovered = Boolean(this.hoveredTarget && mesh.userData.interactType === this.hoveredTarget);
+      const targetGlow = isHovered ? 1 : 0;
+      const prevGlow = mesh.userData.hoverGlow || 0;
+      const nextGlow = prevGlow + (targetGlow - prevGlow) * 0.22;
+      mesh.userData.hoverGlow = nextGlow < 0.004 && !isHovered ? 0 : nextGlow;
+
+      const baseEmissive = mesh.userData.baseEmissive;
+      const baseIntensity = mesh.userData.baseEmissiveIntensity ?? 1;
+      const g = mesh.userData.hoverGlow;
+
+      if (g <= 0) {
+        if (baseEmissive) mat.emissive.copy(baseEmissive);
+        mat.emissiveIntensity = baseIntensity;
+      } else {
+        const hasBaseEmissive = baseEmissive && (baseEmissive.r + baseEmissive.g + baseEmissive.b) > 0.001;
+        if (hasBaseEmissive) {
+          mat.emissive.copy(baseEmissive).lerp(new THREE.Color(hoverColorHex), g * 0.45);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(baseIntensity, Math.max(baseIntensity, 0.2), g);
+        } else {
+          mat.emissive.setHex(hoverColorHex);
+          mat.emissiveIntensity = g * 0.11;
+        }
       }
-      mat.emissiveIntensity += (targetIntensity - mat.emissiveIntensity) * 0.22;
     }
   }
 
@@ -1896,9 +1913,9 @@ export class FreelancerRoomScene {
     this.updateCharacter(dt, elapsedSec, isNight);
     this.updateInteractGlow();
 
-    // Subtle hover pulse on work desk ring
+    // Subtle hover-only highlight ring under desk setup
     if (this.workHoverRingMat) {
-      const targetOpacity = this.hoveredTarget === "computer" ? 0.85 : 0.2 + Math.sin(elapsedSec * 3) * 0.08;
+      const targetOpacity = this.hoveredTarget === "computer" ? 0.36 : 0;
       this.workHoverRingMat.opacity += (targetOpacity - this.workHoverRingMat.opacity) * 0.18;
     }
 
