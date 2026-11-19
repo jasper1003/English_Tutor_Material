@@ -2479,10 +2479,61 @@
       color: light-dark(#b45309, #fbbf24);
     }
 
+    .room-ledger-btn {
+      position: relative;
+      overflow: visible;
+      gap: 0.42rem;
+    }
+
+    .room-ledger-icon {
+      width: 16px;
+      height: 16px;
+      flex: none;
+      color: #93c5fd;
+    }
+
+    .room-ledger-sep {
+      opacity: 0.45;
+    }
+
+    .room-ledger-countdown {
+      color: #e2e8f0;
+      font-weight: 500;
+    }
+
     .room-hud-btn.is-rent-alert {
-      border-color: rgba(251, 191, 36, 0.85);
-      background: rgba(146, 64, 14, 0.88);
-      color: #fef3c7;
+      border-color: rgba(248, 113, 113, 0.72);
+      background: rgba(15, 23, 42, 0.88);
+    }
+
+    .room-hud-btn.is-rent-alert .room-ledger-icon {
+      color: #fca5a5;
+    }
+
+    .room-hud-btn.is-rent-alert .room-ledger-countdown {
+      color: #fecaca;
+      font-weight: 600;
+    }
+
+    .rent-msg-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      min-width: 19px;
+      height: 19px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: #ef4444;
+      color: #ffffff;
+      border: 2px solid #0f172a;
+      font-size: 0.72rem;
+      font-weight: 800;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.55);
+      pointer-events: none;
     }
 
     /* Submitted / Pending Review Quest State */
@@ -3130,7 +3181,15 @@
       <div class="dialog-shell">
         <div class="dialog-header">
           <div>
-            <h2 class="dialog-title" id="finance-dialog-title">📊 個人租屋財務報表</h2>
+            <h2 class="dialog-title" id="finance-dialog-title" style="display: inline-flex; align-items: center; gap: 0.45rem;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color: var(--primary);">
+                <path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H19v18H7.5A2.5 2.5 0 0 0 5 22Z"></path>
+                <path d="M5 18.5A2.5 2.5 0 0 1 7.5 16H19"></path>
+                <line x1="9.5" y1="7" x2="15.5" y2="7"></line>
+                <line x1="9.5" y1="11" x2="14" y2="11"></line>
+              </svg>
+              <span>記帳</span>
+            </h2>
             <div class="form-hint" style="margin-top: 0.15rem;">看懂每月賺了多少、花了多少，記得先留住每月 100 英蚌的房租喔！</div>
           </div>
           <button
@@ -3139,7 +3198,7 @@
             id="close-finance-btn"
             command="close"
             commandfor="finance-dialog"
-            aria-label="關閉財務報表"
+            aria-label="關閉記帳"
           >✕</button>
         </div>
         <div class="dialog-body">
@@ -3286,7 +3345,18 @@
         <div class="room-canvas-wrap" id="room-canvas-wrap"></div>
 
         <div class="room-hud-bottom" style="justify-content: space-between; gap: 0.5rem;">
-          <button type="button" class="room-hud-btn" id="room-finance-btn" style="font-variant-numeric: tabular-nums;">📊 財務報表 · 🏠 繳租倒數 --</button>
+          <button type="button" class="room-hud-btn room-ledger-btn" id="room-finance-btn" style="font-variant-numeric: tabular-nums;">
+            <svg class="room-ledger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H19v18H7.5A2.5 2.5 0 0 0 5 22Z"></path>
+              <path d="M5 18.5A2.5 2.5 0 0 1 7.5 16H19"></path>
+              <line x1="9.5" y1="7" x2="15.5" y2="7"></line>
+              <line x1="9.5" y1="11" x2="14" y2="11"></line>
+            </svg>
+            <span>記帳</span>
+            <span class="room-ledger-sep" aria-hidden="true">·</span>
+            <span class="room-ledger-countdown" id="room-rent-countdown-text">-- 天</span>
+            <span class="rent-msg-badge hidden" id="room-rent-msg-badge">1</span>
+          </button>
           <div class="room-hud-group" style="gap: 0.5rem;">
             <button type="button" class="room-hud-btn" id="room-shop-btn">🛒 生活商店</button>
             <button type="button" class="room-hud-btn" id="room-edit-avatar-btn">✏️ 調整角色外觀</button>
@@ -3622,20 +3692,10 @@
 
     function formatRentCountdown(msRemaining, compact = false) {
       if (msRemaining <= 0) {
-        return compact ? "已到期 (100 英蚌)" : "已到期（應繳 100 英蚌）";
+        return compact ? "已到期" : `已到期（應繳 ${MONTHLY_RENT_CLAMS} 英蚌）`;
       }
-      const totalSec = Math.floor(msRemaining / 1000);
-      const days = Math.floor(totalSec / 86400);
-      const hours = Math.floor((totalSec % 86400) / 3600);
-      const mins = Math.floor((totalSec % 3600) / 60);
-      const secs = totalSec % 60;
-      const pad = n => String(n).padStart(2, "0");
-      if (compact) {
-        return days > 0
-          ? `${days}天 ${pad(hours)}:${pad(mins)}:${pad(secs)}`
-          : `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
-      }
-      return `${days} 天 ${pad(hours)} 時 ${pad(mins)} 分 ${pad(secs)} 秒`;
+      const days = Math.max(1, Math.ceil(msRemaining / 86400000));
+      return compact ? `剩 ${days} 天` : `${days} 天`;
     }
 
     async function logUserTransaction(targetUid, txData) {
@@ -6405,6 +6465,8 @@
 
     function updateRentCountdownUI() {
       const btn = document.getElementById("room-finance-btn");
+      const countdownEl = document.getElementById("room-rent-countdown-text");
+      const msgBadgeEl = document.getElementById("room-rent-msg-badge");
       const badge = document.getElementById("finance-countdown-badge");
       const payBtn = document.getElementById("finance-pay-rent-btn");
       const testBtn = document.getElementById("finance-test-rent-btn");
@@ -6414,12 +6476,22 @@
       const isDue = msLeft <= 0;
       const clams = Math.max(0, Math.trunc(Number(profile?.clams ?? STARTER_CLAMS)));
       const isSuperAdmin = currentRole === "super_admin";
+      const hasRentAlert = Boolean(isDue && !isSuperAdmin);
 
       if (btn) {
-        btn.textContent = isDue && !isSuperAdmin
-          ? `📊 財務報表 · ⚠️ 房租到期 (${MONTHLY_RENT_CLAMS} 英蚌)`
-          : `📊 財務報表 · 🏠 ${formatRentCountdown(msLeft, true)}`;
-        btn.classList.toggle("is-rent-alert", Boolean(isDue && !isSuperAdmin));
+        btn.classList.toggle("is-rent-alert", hasRentAlert);
+        btn.setAttribute(
+          "aria-label",
+          hasRentAlert
+            ? `記帳（1 則待繳房租通知，應繳 ${MONTHLY_RENT_CLAMS} 英蚌）`
+            : `記帳 · ${formatRentCountdown(msLeft, true)}`
+        );
+      }
+      if (countdownEl) {
+        countdownEl.textContent = hasRentAlert ? "待繳房租" : formatRentCountdown(msLeft, true);
+      }
+      if (msgBadgeEl) {
+        msgBadgeEl.classList.toggle("hidden", !hasRentAlert);
       }
 
       if (financeDialog.open) {
