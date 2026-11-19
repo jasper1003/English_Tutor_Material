@@ -70,7 +70,7 @@ import {
   translateAuthError
 } from "./app-helpers.js?v=20261119z";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261119z";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261120d";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -1334,11 +1334,11 @@ function renderLesson(dateStr) {
   const syncLessonXpBadge = () => {
     if (!xpBadgeEl) return;
     if (isLessonCompleted(dateStr)) {
-      xpBadgeEl.textContent = "✓ 單元已驗收";
+      xpBadgeEl.textContent = "✓ 已驗收";
     } else if (hasEarnedLessonXp(dateStr)) {
-      xpBadgeEl.textContent = "🥋 XP 已自動入帳 ✓";
+      xpBadgeEl.textContent = "⚡ XP 已領";
     } else {
-      xpBadgeEl.textContent = `🥋 完成即領 +${lessonXp} XP`;
+      xpBadgeEl.textContent = `⚡ +${lessonXp} XP`;
     }
   };
   syncLessonXpBadge();

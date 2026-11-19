@@ -1,7 +1,7 @@
 import { escapeHtml, speakWord } from "./app-helpers.js?v=20261119z";
 
 const HINTS_PREF_KEY = "reading_vocab_hints_on";
-const PEN_COLORS = ["yellow", "mint", "blue"];
+const VALID_MARK_VALUES = ["yellow", "mint", "blue"];
 
 const IRREGULAR_FIRST_WORDS = {
   be: "am|is|are|was|were|been|being",
@@ -169,8 +169,8 @@ function loadReadingMarks(storageKey) {
     if (!parsed || typeof parsed !== "object") return {};
     const clean = {};
     Object.entries(parsed).forEach(([k, v]) => {
-      if (/^\d+$/.test(k) && PEN_COLORS.includes(v)) {
-        clean[k] = v;
+      if (/^\d+$/.test(k) && VALID_MARK_VALUES.includes(v)) {
+        clean[k] = "yellow";
       }
     });
     return clean;
@@ -285,7 +285,7 @@ export function renderInteractiveReadingPassage({
 
   const storageKey = `reading_marks:${uid || "guest"}:${dateStr || "default"}`;
   let marks = loadReadingMarks(storageKey);
-  let activePen = "yellow";
+  let penEnabled = true;
   let hintsEnabled = readHintsEnabledPref();
   let activeChipEl = null;
   let closeTimer = null;
@@ -297,9 +297,9 @@ export function renderInteractiveReadingPassage({
     .map(p => p.trim())
     .filter(Boolean);
 
-  const matchedVocabIndices = new Set();
   bodyEl.innerHTML = "";
   bodyEl.dataset.vocabHints = hintsEnabled ? "on" : "off";
+  bodyEl.dataset.penMode = penEnabled ? "yellow" : "off";
 
   let sentenceCounter = 0;
   paragraphs.forEach(paraText => {
@@ -334,7 +334,6 @@ export function renderInteractiveReadingPassage({
             }
           }
           if (matchedEntry) {
-            matchedVocabIndices.add(matchedEntry.vocabIdx);
             const chip = document.createElement("button");
             chip.type = "button";
             chip.className = "reading-vocab-chip";
@@ -462,39 +461,42 @@ export function renderInteractiveReadingPassage({
   if (toolsEl) {
     toolsEl.innerHTML = `
       <div class="reading-tools-bar" role="toolbar" focusgroup="toolbar wrap" aria-label="閱讀劃記與單字提示工具" aria-controls="reading-body">
-        <div class="reading-tool-group" role="group" aria-label="證據畫線螢光筆">
-          <span class="reading-tool-caption">點擊句子畫線：</span>
-          <button type="button" class="reading-pen-btn is-yellow" data-pen="yellow" aria-pressed="true" aria-label="黃色螢光筆" title="點選句子畫上黃色證據線">黃</button>
-          <button type="button" class="reading-pen-btn is-mint" data-pen="mint" aria-pressed="false" aria-label="薄荷綠螢光筆" title="點選句子畫上薄荷綠證據線">綠</button>
-          <button type="button" class="reading-pen-btn is-blue" data-pen="blue" aria-pressed="false" aria-label="天空藍螢光筆" title="點選句子畫上天空藍證據線">藍</button>
-        </div>
+        <button type="button" class="reading-icon-btn" data-action="toggle-pen" aria-pressed="true" aria-label="黃色螢光筆畫線" title="黃色螢光筆（點擊句子畫線／取消）">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m9 11-6 6v3h9l3-3"></path>
+            <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path>
+            <path d="M3 21h9" stroke="#eab308" stroke-width="2.6"></path>
+          </svg>
+        </button>
+        <button type="button" class="reading-icon-btn" data-action="toggle-vocab" aria-pressed="${hintsEnabled ? "true" : "false"}" aria-label="切換核心單字提示" title="核心單字提示（開／關）">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
+            <path d="M9 18h6"></path>
+            <path d="M10 22h4"></path>
+          </svg>
+        </button>
         <span class="reading-tool-sep" role="separator" aria-orientation="vertical"></span>
-        <div class="reading-tool-group" role="group" aria-label="閱讀輔助功能">
-          <button type="button" class="reading-action-btn" data-action="toggle-vocab" aria-pressed="${hintsEnabled ? "true" : "false"}">💡 核心單字提示</button>
-          <button type="button" class="reading-action-btn" data-action="clear-marks">🧹 清除畫線</button>
-        </div>
+        <button type="button" class="reading-icon-btn" data-action="clear-marks" aria-label="清除全部畫線" title="清除全部畫線">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
+            <path d="M22 21H7"></path>
+            <path d="m5 11 9 9"></path>
+          </svg>
+        </button>
       </div>
-      <div class="reading-tools-meta">
-        <span class="reading-tools-hint" id="reading-vocab-count-hint">${
-          matchedVocabIndices.size > 0
-            ? `已自動標出 ${matchedVocabIndices.size} 個本週核心單字（點按可看中文與發音）`
-            : "點擊短文內任何一句即可加上螢光畫線找線索"
-        }</span>
-        <span class="reading-tools-status" id="reading-tools-status" role="status" aria-live="polite"></span>
-      </div>
+      <span class="visually-hidden" id="reading-tools-status" role="status" aria-live="polite"></span>
     `;
 
     const toolbarEl = toolsEl.querySelector('[role="toolbar"]');
     statusEl = toolsEl.querySelector("#reading-tools-status");
     installToolbarRovingFallback(toolbarEl);
 
-    toolsEl.querySelectorAll("[data-pen]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        activePen = btn.dataset.pen || "yellow";
-        toolsEl.querySelectorAll("[data-pen]").forEach(b => {
-          b.setAttribute("aria-pressed", String(b === btn));
-        });
-      });
+    const togglePenBtn = toolsEl.querySelector('[data-action="toggle-pen"]');
+    togglePenBtn?.addEventListener("click", () => {
+      penEnabled = !penEnabled;
+      bodyEl.dataset.penMode = penEnabled ? "yellow" : "off";
+      togglePenBtn.setAttribute("aria-pressed", String(penEnabled));
+      announceStatus(penEnabled ? "已開啟黃色螢光筆" : "已暫停螢光筆畫線");
     });
 
     const toggleVocabBtn = toolsEl.querySelector('[data-action="toggle-vocab"]');
@@ -531,17 +533,18 @@ export function renderInteractiveReadingPassage({
       return;
     }
 
+    if (!penEnabled) return;
     const sentence = e.target.closest(".reading-sentence");
     if (sentence && bodyEl.contains(sentence)) {
       hidePopover();
       const idx = sentence.dataset.sentenceIdx;
       if (!idx) return;
-      if (marks[idx] === activePen) {
+      if (marks[idx] === "yellow") {
         delete marks[idx];
         sentence.removeAttribute("data-mark");
       } else {
-        marks[idx] = activePen;
-        sentence.dataset.mark = activePen;
+        marks[idx] = "yellow";
+        sentence.dataset.mark = "yellow";
       }
       saveReadingMarks(storageKey, marks);
     }
