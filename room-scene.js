@@ -1,5 +1,11 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import {
+  DEFAULT_BED_SHEET,
+  DEFAULT_RUG_STYLE,
+  resolveBedSheetStyle,
+  resolveRugStyle
+} from "./shop-catalog.js?v=20261119q";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -130,6 +136,54 @@ const THOUGHT_BANK = {
     "Art on the wall feels just like a gallery.",
     "Simple shapes, yet so unique and bright!",
     "Okay, I feel inspired to draw again!"
+  ],
+  check_coat: [
+    "Gotta grab my tote bag before going out.",
+    "This knit scarf feels super soft today.",
+    "Where did I put my favorite cap? Oh, right here!",
+    "Everything by the door is neat and ready.",
+    "Maybe I'll take a short walk outside later.",
+    "A tidy coat rack saves so much time!"
+  ],
+  coffee_break: [
+    "Nothing beats fresh pour-over coffee!",
+    "Ooh, that dark roast aroma is heavenly.",
+    "One warm cup of coffee wakes up my creativity.",
+    "I'll take it easy and sip slowly first.",
+    "Careful, the gooseneck kettle is still hot!",
+    "Coffee time means fresh ideas are coming!"
+  ],
+  listen_vinyl: [
+    "This warm vinyl crackle sounds amazing!",
+    "Nothing like classic jazz while taking a break.",
+    "Music always puts me in a better mood.",
+    "Should I flip this record to side B next?",
+    "Warm bass and lo-fi beats fill the studio!",
+    "Listening to records helps me slow down."
+  ],
+  pet_cat: [
+    "Aww, such a fluffy orange purr machine!",
+    "Who's the sweetest studio assistant? You are!",
+    "Look at those tiny paws—my heart is melting!",
+    "Giving chin scratches makes me so happy.",
+    "Taking a break to pet the cat is essential.",
+    "Purring right next to me is pure magic!"
+  ],
+  water_floor_plant: [
+    "Big shiny leaves make the room feel alive!",
+    "Let's wipe the dust off these green leaves.",
+    "Growing taller every week, little fiddle fig!",
+    "Plants really brighten up this bedroom corner.",
+    "A sip of water and plenty of sunlight for you.",
+    "Caring for indoor plants feels so peaceful."
+  ],
+  smart_toilet: [
+    "Whoa, a heated toilet seat feels like heaven!",
+    "This smart bidet was worth every single clam!",
+    "Warm water and cozy seat—so high-tech!",
+    "That glowing nightlight inside the bath is neat!",
+    "Upgrade complete: total five-star comfort!",
+    "Clean, warm, and surprisingly relaxing!"
   ]
 };
 
@@ -331,6 +385,37 @@ function makeTvScreenTexture() {
   return tex;
 }
 
+function makeRefScreenTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 160;
+  canvas.height = 240;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#1e293b";
+  ctx.fillRect(0, 0, 160, 240);
+
+  // Pastel Pantone swatches grid
+  const swatches = ["#f4a261", "#6b9080", "#e76f51", "#38bdf8", "#a78bfa", "#f472b6"];
+  swatches.forEach((c, idx) => {
+    const col = idx % 2;
+    const row = Math.floor(idx / 2);
+    ctx.fillStyle = c;
+    ctx.fillRect(14 + col * 68, 18 + row * 48, 60, 38);
+  });
+  // Brief lines & color wheel bar
+  ctx.fillStyle = "#f8fafc";
+  ctx.fillRect(14, 172, 132, 48);
+  ctx.fillStyle = "#94a3b8";
+  ctx.fillRect(22, 184, 88, 6);
+  ctx.fillRect(22, 198, 110, 6);
+  ctx.fillStyle = "#fb923c";
+  ctx.fillRect(22, 208, 64, 5);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 function createCharacterRig(config) {
   const cfg = { ...DEFAULT_AVATAR, ...(config || {}) };
 
@@ -459,6 +544,21 @@ function createCharacterRig(config) {
   snackProp.visible = false;
   rightArmPivot.add(snackProp);
 
+  const coffeeProp = new THREE.Group();
+  const mugBody = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.055, 0.05, 0.1, 12),
+    makeMat("#fff7ed", 0.45)
+  );
+  const mugCoffee = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.046, 0.046, 0.015, 12),
+    makeMat("#4a2c18", 0.25)
+  );
+  mugCoffee.position.y = 0.045;
+  coffeeProp.add(mugBody, mugCoffee);
+  coffeeProp.position.set(0, -0.43, 0.08);
+  coffeeProp.visible = false;
+  rightArmPivot.add(coffeeProp);
+
   const headGroup = new THREE.Group();
   headGroup.position.set(0, 1.32, 0);
 
@@ -526,6 +626,7 @@ function createCharacterRig(config) {
     phoneProp,
     bookProp,
     snackProp,
+    coffeeProp,
     config: cfg
   };
 }
@@ -689,6 +790,7 @@ export class FreelancerRoomScene {
     this.onEnterWork = options.onEnterWork || (() => {});
     this.onLampToggle = options.onLampToggle || (() => {});
     this.onBedLampToggle = options.onBedLampToggle || (() => {});
+    this.onVinylToggle = options.onVinylToggle || (() => {});
     this.onOpenTv = options.onOpenTv || (() => {});
     this.onActivityChange = options.onActivityChange || (() => {});
     this.onTimeUpdate = options.onTimeUpdate || (() => {});
@@ -705,7 +807,10 @@ export class FreelancerRoomScene {
 
     this.deskLampOn = Boolean(options.deskLampOn ?? true);
     this.bedLampOn = Boolean(options.bedLampOn ?? false);
+    this.vinylOn = Boolean(options.vinylOn ?? false);
     this.wallColorHex = options.wallColor || "#f3eadc";
+    this.bedSheetId = options.bedSheet || DEFAULT_BED_SHEET;
+    this.rugStyleId = options.rugStyle || DEFAULT_RUG_STYLE;
     this.ownedItems = { ...(options.ownedItems || {}) };
     this.avatarConfig = { ...DEFAULT_AVATAR, ...(options.avatar || {}) };
 
@@ -737,8 +842,13 @@ export class FreelancerRoomScene {
       sofa_read: { id: "sofa_read", label: "躺在沙發看書放鬆中", pos: new THREE.Vector3(-1.78, 0, -0.35), rotY: -Math.PI / 2 },
       sofa_tv: { id: "sofa_tv", label: "躺在沙發看電視中", pos: new THREE.Vector3(-1.78, 0, -0.35), rotY: -Math.PI / 2 },
       watch_tv: { id: "watch_tv", label: "站在電視前看節目中", pos: new THREE.Vector3(-2.78, 0, -0.35), rotY: -Math.PI / 2 },
-      water_plant: { id: "water_plant", label: "照顧桌上小盆栽中", pos: new THREE.Vector3(0.85, 0, -2.12), rotY: Math.PI },
-      admire_poster: { id: "admire_poster", label: "欣賞北牆插畫掛畫找靈感", pos: new THREE.Vector3(-2.72, 0, -2.95), rotY: Math.PI }
+      water_plant: { id: "water_plant", label: "照顧桌上小盆栽中", pos: new THREE.Vector3(0.95, 0, -2.12), rotY: Math.PI },
+      admire_poster: { id: "admire_poster", label: "欣賞北牆插畫掛畫找靈感", pos: new THREE.Vector3(-2.72, 0, -2.95), rotY: Math.PI },
+      check_coat: { id: "check_coat", label: "在門旁整理外套與隨身帆布袋", pos: new THREE.Vector3(-2.78, 0, 3.12), rotY: -Math.PI * 0.65 },
+      coffee_break: { id: "coffee_break", label: "在手沖吧台泡一杯熱美式咖啡", pos: new THREE.Vector3(-2.62, 0, -2.28), rotY: -Math.PI / 2 },
+      listen_vinyl: { id: "listen_vinyl", label: "播放黑膠唱片跟著音樂搖擺中", pos: new THREE.Vector3(-0.75, 0, 2.75), rotY: 0 },
+      pet_cat: { id: "pet_cat", label: "蹲下來摸摸橘貓室友「阿橘」", pos: new THREE.Vector3(0.95, 0, 2.82), rotY: 0 },
+      water_floor_plant: { id: "water_floor_plant", label: "替琴葉榕落地盆栽擦葉澆水中", pos: new THREE.Vector3(2.75, 0, -0.55), rotY: Math.PI / 2 }
     };
 
     // Character AI state machine:
@@ -1109,6 +1219,7 @@ export class FreelancerRoomScene {
     this.buildSingleBed();
     this.buildWorkDeskAndMac();
     this.buildShopSofaAndBedLamp();
+    this.buildShopDecorItems();
   }
 
   buildShopSofaAndBedLamp() {
@@ -1219,6 +1330,308 @@ export class FreelancerRoomScene {
     this.furnitureGroup.add(bedLampGroup);
   }
 
+  buildShopDecorItems() {
+    // 1. Coat Rack beside the entrance door (SW corner)
+    const coatRack = new THREE.Group();
+    coatRack.position.set(-3.48, 0, 3.38);
+
+    const walnutMat = makeMat("#8a5837", 0.56);
+    const rackBaseMat = makeMat("#ede8df", 0.42);
+    const crBase = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.3, 0.05, 20), rackBaseMat);
+    crBase.position.y = 0.025;
+    crBase.castShadow = true;
+    crBase.receiveShadow = true;
+    coatRack.add(crBase);
+
+    const crPole = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.044, 1.72, 14), walnutMat);
+    crPole.position.y = 0.88;
+    crPole.castShadow = true;
+    coatRack.add(crPole);
+
+    const pegs = [
+      { y: 1.56, rotY: 0.4 },
+      { y: 1.44, rotY: 2.2 },
+      { y: 1.32, rotY: -1.1 },
+      { y: 1.18, rotY: 1.1 }
+    ];
+    pegs.forEach(p => {
+      const pegPivot = new THREE.Group();
+      pegPivot.position.y = p.y;
+      pegPivot.rotation.y = p.rotY;
+      const peg = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.19, 10), walnutMat);
+      peg.rotation.z = -0.55;
+      peg.position.set(0.08, 0.06, 0);
+      peg.castShadow = true;
+      pegPivot.add(peg);
+      coatRack.add(pegPivot);
+    });
+
+    // Hanging sage-green tote bag + cream scarf + caramel cap
+    const toteMat = makeMat("#84a98c", 0.85);
+    const toteBag = new THREE.Mesh(new RoundedBoxGeometry(0.24, 0.28, 0.08, 3, 0.025), toteMat);
+    toteBag.position.set(0.14, 1.02, 0.08);
+    toteBag.rotation.y = 0.45;
+    toteBag.castShadow = true;
+    coatRack.add(toteBag);
+
+    const scarfMat = makeMat("#f5efe2", 0.9);
+    const scarf = new THREE.Mesh(new RoundedBoxGeometry(0.11, 0.44, 0.07, 3, 0.03), scarfMat);
+    scarf.position.set(-0.12, 1.18, 0.09);
+    scarf.rotation.set(0.05, 0.3, 0.08);
+    scarf.castShadow = true;
+    coatRack.add(scarf);
+
+    const capDome = new THREE.Mesh(
+      new THREE.SphereGeometry(0.115, 14, 12, 0, Math.PI * 2, 0, Math.PI * 0.55),
+      makeMat("#c98a55", 0.72)
+    );
+    capDome.position.set(0.08, 1.65, -0.08);
+    capDome.rotation.z = -0.22;
+    capDome.castShadow = true;
+    coatRack.add(capDome);
+
+    coatRack.visible = Boolean(this.ownedItems.coat_rack);
+    this.coatRackGroup = coatRack;
+    this.furnitureGroup.add(coatRack);
+    coatRack.children.forEach(m => this.addInteractive(m, "coatRack"));
+
+    // 2. Floor Fiddle-Leaf Fig in Woven Basket (East side between bath & bed)
+    const floorPlant = new THREE.Group();
+    floorPlant.position.set(3.52, 0, -0.55);
+
+    const woodStandMat = makeMat("#b98456", 0.58);
+    [[-0.14, -0.14], [0.14, -0.14], [-0.14, 0.14], [0.14, 0.14]].forEach(([lx, lz]) => {
+      const sLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.02, 0.28, 10), woodStandMat);
+      sLeg.position.set(lx, 0.14, lz);
+      sLeg.castShadow = true;
+      floorPlant.add(sLeg);
+    });
+
+    const basketMat = makeMat("#c89f6d", 0.85);
+    const basket = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.19, 0.34, 18), basketMat);
+    basket.position.y = 0.3;
+    basket.castShadow = true;
+    floorPlant.add(basket);
+
+    const fpSoil = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.02, 16), makeMat("#4a3728", 0.95));
+    fpSoil.position.y = 0.465;
+    floorPlant.add(fpSoil);
+
+    const trunkMat = makeMat("#6d4c3d", 0.8);
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.036, 0.92, 10), trunkMat);
+    trunk.position.y = 0.9;
+    trunk.castShadow = true;
+    floorPlant.add(trunk);
+
+    const fiddleMat = makeMat("#3b7a4a", 0.42);
+    const leafSpecs = [
+      [0, 1.38, 0, 0.18, 0.2, 0, 0.15],
+      [-0.18, 1.24, 0.12, 0.52, 0.6, 0.55, 0.14],
+      [0.2, 1.18, 0.1, 0.48, -0.45, -0.52, 0.14],
+      [-0.16, 1.04, -0.14, -0.45, 0.4, 0.48, 0.13],
+      [0.18, 0.95, -0.12, -0.42, -0.3, -0.45, 0.13],
+      [-0.22, 0.84, 0.04, 0.25, 0.2, 0.72, 0.12]
+    ];
+    leafSpecs.forEach(([lx, ly, lz, rx, ry, rz, size]) => {
+      const fLeaf = new THREE.Mesh(new THREE.SphereGeometry(size, 12, 12), fiddleMat);
+      fLeaf.scale.set(0.95, 1.48, 0.22);
+      fLeaf.position.set(lx, ly, lz);
+      fLeaf.rotation.set(rx, ry, rz);
+      fLeaf.castShadow = true;
+      floorPlant.add(fLeaf);
+    });
+
+    floorPlant.visible = Boolean(this.ownedItems.floor_plant);
+    this.floorPlantGroup = floorPlant;
+    this.furnitureGroup.add(floorPlant);
+    floorPlant.children.forEach(m => this.addInteractive(m, "floorPlant"));
+
+    // 3. Coffee Bar Station (West wall north of TV)
+    const coffeeBar = new THREE.Group();
+    coffeeBar.position.set(-3.48, 0, -2.28);
+    coffeeBar.rotation.y = Math.PI / 2;
+
+    const cbCab = new THREE.Mesh(new RoundedBoxGeometry(0.96, 0.74, 0.52, 4, 0.05), walnutMat);
+    cbCab.position.y = 0.43;
+    cbCab.castShadow = true;
+    cbCab.receiveShadow = true;
+    coffeeBar.add(cbCab);
+
+    [[-0.38, -0.18], [0.38, -0.18], [-0.38, 0.18], [0.38, 0.18]].forEach(([lx, lz]) => {
+      const cLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.02, 0.08, 10), walnutMat);
+      cLeg.position.set(lx, 0.04, lz);
+      coffeeBar.add(cLeg);
+    });
+
+    const machineBody = new THREE.Mesh(
+      new RoundedBoxGeometry(0.32, 0.36, 0.28, 3, 0.04),
+      makeMat("#8fa893", 0.38, 0.12)
+    );
+    machineBody.position.set(-0.22, 0.98, -0.04);
+    machineBody.castShadow = true;
+    coffeeBar.add(machineBody);
+
+    const dripTray = new THREE.Mesh(
+      new RoundedBoxGeometry(0.24, 0.03, 0.16, 2, 0.01),
+      makeMat("#cbd5e1", 0.25, 0.75)
+    );
+    dripTray.position.set(-0.22, 0.815, 0.11);
+    coffeeBar.add(dripTray);
+
+    const kettle = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.065, 0.08, 0.16, 14),
+      makeMat("#c97343", 0.28, 0.65)
+    );
+    kettle.position.set(0.26, 0.88, -0.06);
+    kettle.castShadow = true;
+    coffeeBar.add(kettle);
+
+    const barMug = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.052, 0.048, 0.095, 14),
+      makeMat("#fff8ee", 0.35)
+    );
+    barMug.position.set(0.06, 0.848, 0.1);
+    coffeeBar.add(barMug);
+
+    coffeeBar.visible = Boolean(this.ownedItems.coffee_bar);
+    this.coffeeBarGroup = coffeeBar;
+    this.furnitureGroup.add(coffeeBar);
+    coffeeBar.children.forEach(m => this.addInteractive(m, "coffeeBar"));
+
+    // 4. Mid-century Vinyl Turntable & Record Console (South wall)
+    const vinylGroup = new THREE.Group();
+    vinylGroup.position.set(-0.75, 0, 3.55);
+    vinylGroup.rotation.y = Math.PI;
+
+    const consoleCab = new THREE.Mesh(new RoundedBoxGeometry(1.36, 0.56, 0.48, 4, 0.05), walnutMat);
+    consoleCab.position.y = 0.38;
+    consoleCab.castShadow = true;
+    consoleCab.receiveShadow = true;
+    vinylGroup.add(consoleCab);
+
+    [[-0.56, -0.16], [0.56, -0.16], [-0.56, 0.16], [0.56, 0.16]].forEach(([lx, lz]) => {
+      const vLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.02, 0.12, 10), walnutMat);
+      vLeg.position.set(lx, 0.06, lz);
+      vinylGroup.add(vLeg);
+    });
+
+    const cubbyDark = new THREE.Mesh(new RoundedBoxGeometry(1.18, 0.32, 0.44, 2, 0.02), makeMat("#3b271c", 0.85));
+    cubbyDark.position.set(0, 0.34, 0.03);
+    vinylGroup.add(cubbyDark);
+
+    // Colorful LP spines in lower cubby
+    const spineColors = ["#e76f51", "#f4a261", "#2a9d8f", "#60a5fa", "#e9c46a", "#a78bfa", "#f472b6"];
+    spineColors.forEach((hex, idx) => {
+      const lp = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.28, 0.34), makeMat(hex, 0.65));
+      lp.position.set(-0.46 + idx * 0.045, 0.34, 0.08);
+      vinylGroup.add(lp);
+    });
+
+    // Two stereo speakers flanking turntable
+    [-0.5, 0.5].forEach(sx => {
+      const spk = new THREE.Mesh(new RoundedBoxGeometry(0.24, 0.3, 0.24, 3, 0.03), walnutMat);
+      spk.position.set(sx, 0.81, 0);
+      spk.castShadow = true;
+      vinylGroup.add(spk);
+
+      const spkGrill = new THREE.Mesh(new RoundedBoxGeometry(0.2, 0.25, 0.02, 2, 0.01), makeMat("#dfd3be", 0.9));
+      spkGrill.position.set(sx, 0.81, 0.12);
+      vinylGroup.add(spkGrill);
+    });
+
+    const plinth = new THREE.Mesh(new RoundedBoxGeometry(0.56, 0.08, 0.38, 3, 0.02), makeMat("#6e4429", 0.45));
+    plinth.position.set(0, 0.7, 0);
+    plinth.castShadow = true;
+    vinylGroup.add(plinth);
+
+    const discGroup = new THREE.Group();
+    discGroup.position.set(-0.04, 0.75, 0);
+    const lpDisc = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.012, 24), makeMat("#111827", 0.22, 0.45));
+    const lpLabel = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.014, 16), makeMat("#e76f51", 0.5));
+    const lpStripe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.016, 0.014), makeMat("#475569", 0.4));
+    discGroup.add(lpDisc, lpLabel, lpStripe);
+    this.vinylDiscGroup = discGroup;
+    vinylGroup.add(discGroup);
+
+    const toneArm = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.18, 8), makeMat("#eab308", 0.25, 0.85));
+    toneArm.rotation.x = Math.PI / 2;
+    toneArm.rotation.z = 0.28;
+    toneArm.position.set(0.18, 0.76, -0.04);
+    vinylGroup.add(toneArm);
+
+    this.vinylLedMat = new THREE.MeshBasicMaterial({ color: this.vinylOn ? "#fbbf24" : "#475569" });
+    const vinylLed = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), this.vinylLedMat);
+    vinylLed.position.set(0.22, 0.745, 0.14);
+    vinylGroup.add(vinylLed);
+
+    vinylGroup.visible = Boolean(this.ownedItems.vinyl_player);
+    this.vinylPlayerGroup = vinylGroup;
+    this.furnitureGroup.add(vinylGroup);
+    vinylGroup.children.forEach(m => this.addInteractive(m, "vinyl"));
+
+    // 5. Orange Tabby Cat Roommate + Fleece Pet Bed (South corner near bed)
+    const catGroup = new THREE.Group();
+    catGroup.position.set(0.95, 0, 3.52);
+    catGroup.rotation.y = Math.PI * 0.85;
+
+    const rimMat = makeMat("#d97757", 0.86);
+    const fleeceMat = makeMat("#faf3e8", 0.96);
+    const petBedRim = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.09, 12, 24), rimMat);
+    petBedRim.rotation.x = Math.PI / 2;
+    petBedRim.position.y = 0.09;
+    petBedRim.castShadow = true;
+    catGroup.add(petBedRim);
+
+    const petCushion = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.31, 0.08, 22), fleeceMat);
+    petCushion.position.y = 0.05;
+    petCushion.receiveShadow = true;
+    catGroup.add(petCushion);
+
+    const catMat = makeMat("#ed8936", 0.76);
+    const stripeMat = makeMat("#c05621", 0.82);
+    const catBody = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 14), catMat);
+    catBody.scale.set(1.22, 0.72, 1.0);
+    catBody.position.set(0.02, 0.16, 0.02);
+    catBody.castShadow = true;
+    this.catBodyMesh = catBody;
+    catGroup.add(catBody);
+
+    const catHead = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 14), catMat);
+    catHead.position.set(-0.14, 0.25, -0.06);
+    catHead.castShadow = true;
+    catGroup.add(catHead);
+
+    [-0.07, 0.07].forEach(ex => {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.042, 0.08, 4), catMat);
+      ear.position.set(-0.14 + ex * 0.7, 0.36, -0.06 + ex * 0.55);
+      ear.rotation.z = -ex * 1.4;
+      catGroup.add(ear);
+    });
+
+    const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), makeMat("#fffaf0", 0.85));
+    muzzle.scale.set(1.1, 0.7, 0.8);
+    muzzle.position.set(-0.22, 0.22, -0.1);
+    catGroup.add(muzzle);
+
+    const cStripe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 0.04), stripeMat);
+    cStripe.position.set(0.04, 0.28, 0.02);
+    catGroup.add(cStripe);
+
+    const tailPivot = new THREE.Group();
+    tailPivot.position.set(0.18, 0.16, 0.06);
+    const catTail = new THREE.Mesh(new THREE.CapsuleGeometry(0.032, 0.18, 6, 8), catMat);
+    catTail.rotation.z = Math.PI / 2 - 0.35;
+    catTail.position.set(0.09, 0.04, 0);
+    tailPivot.add(catTail);
+    this.catTailPivot = tailPivot;
+    catGroup.add(tailPivot);
+
+    catGroup.visible = Boolean(this.ownedItems.orange_cat);
+    this.orangeCatGroup = catGroup;
+    this.furnitureGroup.add(catGroup);
+    catGroup.children.forEach(m => this.addInteractive(m, "cat"));
+  }
+
   buildDoormat() {
     const matMesh = new THREE.Mesh(
       new RoundedBoxGeometry(0.85, 0.04, 1.28, 2, 0.02),
@@ -1230,21 +1643,95 @@ export class FreelancerRoomScene {
   }
 
   buildCozyRug() {
-    const rug = new THREE.Mesh(
-      new RoundedBoxGeometry(2.65, 0.03, 2.25, 3, 0.015),
-      makeMat("#ebe1d2", 0.95)
-    );
-    rug.position.set(-0.55, 0.015, 0.72);
-    rug.receiveShadow = true;
-    this.furnitureGroup.add(rug);
+    this.rugGroup = new THREE.Group();
+    this.rugGroup.position.set(-0.55, 0, 0.72);
+    this.furnitureGroup.add(this.rugGroup);
+    this.rebuildRugMeshes();
+  }
 
-    const innerStripe = new THREE.Mesh(
-      new RoundedBoxGeometry(2.25, 0.034, 1.85, 3, 0.015),
-      makeMat("#dfcbb5", 0.95)
-    );
-    innerStripe.position.set(-0.55, 0.017, 0.72);
+  rebuildRugMeshes() {
+    if (!this.rugGroup) return;
+    while (this.rugGroup.children.length > 0) {
+      const child = this.rugGroup.children.pop();
+      this.rugGroup.remove(child);
+    }
+
+    const style = resolveRugStyle(this.rugStyleId);
+    const baseMat = makeMat(style.baseColor, 0.95);
+    const accentMat = makeMat(style.accentColor, 0.93);
+
+    if (style.pattern === "round") {
+      const outer = new THREE.Mesh(new THREE.CylinderGeometry(1.32, 1.32, 0.032, 36), baseMat);
+      outer.position.y = 0.016;
+      outer.receiveShadow = true;
+      const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.036, 32), accentMat);
+      inner.position.y = 0.018;
+      inner.receiveShadow = true;
+      this.rugGroup.add(outer, inner);
+      return;
+    }
+
+    const rug = new THREE.Mesh(new RoundedBoxGeometry(2.65, 0.03, 2.25, 3, 0.015), baseMat);
+    rug.position.y = 0.015;
+    rug.receiveShadow = true;
+    this.rugGroup.add(rug);
+
+    if (style.pattern === "checker") {
+      const cols = 5;
+      const rows = 4;
+      const tileW = 0.48;
+      const tileD = 0.5;
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+          if ((c + r) % 2 === 1) {
+            const tile = new THREE.Mesh(new THREE.BoxGeometry(tileW, 0.008, tileD), accentMat);
+            tile.position.set((c - (cols - 1) / 2) * tileW, 0.031, (r - (rows - 1) / 2) * tileD);
+            tile.receiveShadow = true;
+            this.rugGroup.add(tile);
+          }
+        }
+      }
+      return;
+    }
+
+    if (style.pattern === "nordic") {
+      [-0.78, 0.78].forEach(zPos => {
+        const line = new THREE.Mesh(new THREE.BoxGeometry(2.25, 0.008, 0.09), accentMat);
+        line.position.set(0, 0.032, zPos);
+        line.receiveShadow = true;
+        this.rugGroup.add(line);
+      });
+      const diamond = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.008, 0.75), accentMat);
+      diamond.position.y = 0.032;
+      diamond.rotation.y = Math.PI / 4;
+      diamond.receiveShadow = true;
+      this.rugGroup.add(diamond);
+      return;
+    }
+
+    if (style.pattern === "boho") {
+      const inner = new THREE.Mesh(new RoundedBoxGeometry(2.2, 0.034, 1.8, 3, 0.015), accentMat);
+      inner.position.y = 0.017;
+      inner.receiveShadow = true;
+      const centerPatch = new THREE.Mesh(new RoundedBoxGeometry(1.35, 0.038, 1.05, 2, 0.012), baseMat);
+      centerPatch.position.y = 0.019;
+      centerPatch.receiveShadow = true;
+      this.rugGroup.add(inner, centerPatch);
+      for (let i = -1.1; i <= 1.11; i += 0.22) {
+        [-1.18, 1.18].forEach(zEdge => {
+          const tassel = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.014, 0.14), accentMat);
+          tassel.position.set(i, 0.008, zEdge);
+          this.rugGroup.add(tassel);
+        });
+      }
+      return;
+    }
+
+    // Default classic border
+    const innerStripe = new THREE.Mesh(new RoundedBoxGeometry(2.25, 0.034, 1.85, 3, 0.015), accentMat);
+    innerStripe.position.y = 0.017;
     innerStripe.receiveShadow = true;
-    this.furnitureGroup.add(innerStripe);
+    this.rugGroup.add(innerStripe);
   }
 
   buildBathroomCorner() {
@@ -1287,7 +1774,7 @@ export class FreelancerRoomScene {
     southCap.position.set(3.26, 1.19, -1.52);
     bathGroup.add(southCap);
 
-    // Cute rounded porcelain toilet
+    // Cute rounded porcelain toilet + Upgradeable Japanese Smart Bidet Toilet
     const ceramicMat = makeMat("#f8fafc", 0.22, 0.04);
     const chromeMat = makeMat("#cbd5e1", 0.2, 0.85);
     const toilet = new THREE.Group();
@@ -1317,8 +1804,52 @@ export class FreelancerRoomScene {
     flushBtn.position.set(0, 0.87, -0.2);
     toilet.add(flushBtn);
 
+    toilet.visible = !this.ownedItems.smart_toilet;
+    this.basicToiletGroup = toilet;
     bathGroup.add(toilet);
     [ped, bowl, lid, tank, flushBtn].forEach(m => this.addInteractive(m, "toilet"));
+
+    // Smart Tankless Bidet Toilet upgrade
+    const smartToilet = new THREE.Group();
+    smartToilet.position.set(3.32, 0, -3.35);
+
+    const smartBase = new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.38, 0.72, 4, 0.14), ceramicMat);
+    smartBase.position.set(0, 0.2, 0.02);
+    smartBase.castShadow = true;
+    smartToilet.add(smartBase);
+
+    const smartRimGlow = new THREE.Mesh(
+      new RoundedBoxGeometry(0.51, 0.035, 0.73, 3, 0.015),
+      makeMat("#67e8f9", 0.25, 0.05, { emissive: "#38bdf8", emissiveIntensity: 0.75 })
+    );
+    smartRimGlow.position.set(0, 0.4, 0.02);
+    smartToilet.add(smartRimGlow);
+
+    const smartLid = new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.07, 0.68, 4, 0.035), makeMat("#ffffff", 0.14));
+    smartLid.position.set(0, 0.45, 0.02);
+    smartLid.castShadow = true;
+    smartToilet.add(smartLid);
+
+    const smartChrome = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.025, 0.05, 2, 0.01), chromeMat);
+    smartChrome.position.set(0, 0.49, -0.22);
+    smartToilet.add(smartChrome);
+
+    const bidetPanel = new THREE.Mesh(new RoundedBoxGeometry(0.11, 0.04, 0.28, 2, 0.015), makeMat("#e2e8f0", 0.35));
+    bidetPanel.position.set(-0.31, 0.42, 0.02);
+    bidetPanel.castShadow = true;
+    smartToilet.add(bidetPanel);
+
+    const bidetLed = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, 0.012, 0.16),
+      new THREE.MeshBasicMaterial({ color: "#2dd4bf" })
+    );
+    bidetLed.position.set(-0.31, 0.445, 0.02);
+    smartToilet.add(bidetLed);
+
+    smartToilet.visible = Boolean(this.ownedItems.smart_toilet);
+    this.smartToiletGroup = smartToilet;
+    bathGroup.add(smartToilet);
+    [smartBase, smartLid, bidetPanel].forEach(m => this.addInteractive(m, "toilet"));
 
     // Compact corner wash basin
     const sinkGroup = new THREE.Group();
@@ -1346,10 +1877,14 @@ export class FreelancerRoomScene {
     bedGroup.position.set(2.65, 0, 2.05);
     this.furnitureGroup.add(bedGroup);
 
+    const preset = resolveBedSheetStyle(this.bedSheetId);
     const woodMat = makeMat("#b98456", 0.58);
-    const sheetMat = makeMat("#f5f0e8", 0.86);
-    const blanketMat = makeMat("#6d8da6", 0.88);
-    const pillowMat = makeMat("#fff9f0", 0.9);
+    this.bedSheetMat = makeMat(preset.sheetColor, 0.86);
+    this.bedBlanketMat = makeMat(preset.blanketColor, 0.88);
+    this.bedPillowMat = makeMat(preset.pillowColor, 0.9);
+    const sheetMat = this.bedSheetMat;
+    const blanketMat = this.bedBlanketMat;
+    const pillowMat = this.bedPillowMat;
 
     // Wooden bed frame
     const frame = new THREE.Mesh(new RoundedBoxGeometry(1.62, 0.28, 2.52, 4, 0.07), woodMat);
@@ -1490,9 +2025,39 @@ export class FreelancerRoomScene {
     workArea.add(coolKb);
     [kbCase, keycapBed, keyAccent].forEach(m => this.addInteractive(m, "computer"));
 
+    // Shop item: Secondary Vertical Reference Monitor right beside iMac
+    const dualGroup = new THREE.Group();
+    dualGroup.position.set(0.68, 0.975, -0.22);
+    dualGroup.rotation.y = -0.28;
+
+    const dmBase = new THREE.Mesh(new RoundedBoxGeometry(0.18, 0.025, 0.16, 2, 0.01), aluMat);
+    dmBase.position.set(0, 0.012, -0.02);
+    dualGroup.add(dmBase);
+
+    const dmPole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.42, 10), aluMat);
+    dmPole.position.set(0, 0.22, -0.04);
+    dualGroup.add(dmPole);
+
+    const dmFrame = new THREE.Mesh(new RoundedBoxGeometry(0.38, 0.56, 0.04, 3, 0.02), bezelMat);
+    dmFrame.position.set(0, 0.46, 0.02);
+    dmFrame.castShadow = true;
+    dualGroup.add(dmFrame);
+
+    const dmScreen = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.34, 0.51),
+      new THREE.MeshBasicMaterial({ map: makeRefScreenTexture() })
+    );
+    dmScreen.position.set(0, 0.46, 0.042);
+    dualGroup.add(dmScreen);
+
+    dualGroup.visible = Boolean(this.ownedItems.dual_monitor);
+    this.dualMonitorGroup = dualGroup;
+    workArea.add(dualGroup);
+    [dmFrame, dmScreen].forEach(m => this.addInteractive(m, "computer"));
+
     // Shop item: Cute Desk Monstera Plant on back-right corner of desk
     const plantGroup = new THREE.Group();
-    plantGroup.position.set(0.88, 0.975, -0.24);
+    plantGroup.position.set(0.98, 0.975, -0.28);
     const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.085, 0.16, 16), makeMat("#d97757", 0.65));
     pot.position.y = 0.08;
     pot.castShadow = true;
@@ -1621,10 +2186,54 @@ export class FreelancerRoomScene {
     chairBase.position.set(0, 0.04, 0);
     chair.add(chairBase);
 
+    chair.visible = !this.ownedItems.ergo_chair;
     this.chairGroup = chair;
     this.furnitureGroup.add(chair);
     this.addInteractive(chairSeat, "computer");
     this.addInteractive(chairBack, "computer");
+
+    // Shop item: Ergonomic Studio Artist High-Back Chair
+    const ergoChair = new THREE.Group();
+    ergoChair.position.set(-0.2, 0, -2.02);
+    const ergoMeshMat = makeMat("#4a6580", 0.72);
+    const ergoLeatherMat = makeMat("#c98a55", 0.65);
+
+    const eBase = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.36, 0.05, 5), chairMetal);
+    eBase.position.y = 0.04;
+    ergoChair.add(eBase);
+    const ePole = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.42, 12), chairMetal);
+    ePole.position.y = 0.24;
+    ergoChair.add(ePole);
+
+    const eSeat = new THREE.Mesh(new RoundedBoxGeometry(0.66, 0.14, 0.6, 4, 0.05), ergoLeatherMat);
+    eSeat.position.set(0, 0.48, 0);
+    eSeat.castShadow = true;
+    ergoChair.add(eSeat);
+
+    const eBack = new THREE.Mesh(new RoundedBoxGeometry(0.56, 0.68, 0.11, 4, 0.05), ergoMeshMat);
+    eBack.position.set(0, 0.84, 0.26);
+    eBack.rotation.x = 0.09;
+    eBack.castShadow = true;
+    ergoChair.add(eBack);
+
+    const eHeadrest = new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.17, 0.1, 3, 0.04), ergoLeatherMat);
+    eHeadrest.position.set(0, 1.24, 0.29);
+    eHeadrest.castShadow = true;
+    ergoChair.add(eHeadrest);
+
+    [-0.36, 0.36].forEach(ax => {
+      const armPost = new THREE.Mesh(new RoundedBoxGeometry(0.05, 0.22, 0.06, 2, 0.015), chairMetal);
+      armPost.position.set(ax, 0.56, 0);
+      const armPad = new THREE.Mesh(new RoundedBoxGeometry(0.09, 0.05, 0.34, 2, 0.02), ergoMeshMat);
+      armPad.position.set(ax, 0.68, -0.02);
+      armPad.castShadow = true;
+      ergoChair.add(armPost, armPad);
+    });
+
+    ergoChair.visible = Boolean(this.ownedItems.ergo_chair);
+    this.ergoChairGroup = ergoChair;
+    this.furnitureGroup.add(ergoChair);
+    [eSeat, eBack, eHeadrest].forEach(m => this.addInteractive(m, "computer"));
   }
 
   buildCharacter(config) {
@@ -1645,6 +2254,7 @@ export class FreelancerRoomScene {
     this.phoneProp = rig.phoneProp;
     this.bookProp = rig.bookProp;
     this.snackProp = rig.snackProp;
+    this.coffeeProp = rig.coffeeProp;
 
     this.roomGroup.add(this.charRoot);
 
@@ -1697,6 +2307,28 @@ export class FreelancerRoomScene {
     }
   }
 
+  setBedSheet(bedSheetId) {
+    this.bedSheetId = bedSheetId || DEFAULT_BED_SHEET;
+    const preset = resolveBedSheetStyle(this.bedSheetId);
+    if (this.bedSheetMat) this.bedSheetMat.color.set(preset.sheetColor);
+    if (this.bedBlanketMat) this.bedBlanketMat.color.set(preset.blanketColor);
+    if (this.bedPillowMat) this.bedPillowMat.color.set(preset.pillowColor);
+  }
+
+  setRugStyle(rugStyleId) {
+    const nextId = rugStyleId || DEFAULT_RUG_STYLE;
+    if (this.rugStyleId === nextId && this.rugGroup?.children?.length > 0) return;
+    this.rugStyleId = nextId;
+    this.rebuildRugMeshes();
+  }
+
+  setVinylOn(isOn) {
+    this.vinylOn = Boolean(isOn);
+    if (this.vinylLedMat) {
+      this.vinylLedMat.color.set(this.vinylOn ? "#fbbf24" : "#475569");
+    }
+  }
+
   applyOwnedItems(ownedItems = {}) {
     this.ownedItems = { ...(ownedItems || {}) };
     if (this.wallPosterGroup) this.wallPosterGroup.visible = Boolean(this.ownedItems.wall_poster);
@@ -1706,6 +2338,16 @@ export class FreelancerRoomScene {
     if (this.deskPlantGroup) this.deskPlantGroup.visible = Boolean(this.ownedItems.desk_plant);
     if (this.coolKeyboardGroup) this.coolKeyboardGroup.visible = Boolean(this.ownedItems.cool_keyboard);
     if (this.basicKeyboard) this.basicKeyboard.visible = !this.ownedItems.cool_keyboard;
+    if (this.coatRackGroup) this.coatRackGroup.visible = Boolean(this.ownedItems.coat_rack);
+    if (this.floorPlantGroup) this.floorPlantGroup.visible = Boolean(this.ownedItems.floor_plant);
+    if (this.coffeeBarGroup) this.coffeeBarGroup.visible = Boolean(this.ownedItems.coffee_bar);
+    if (this.vinylPlayerGroup) this.vinylPlayerGroup.visible = Boolean(this.ownedItems.vinyl_player);
+    if (this.orangeCatGroup) this.orangeCatGroup.visible = Boolean(this.ownedItems.orange_cat);
+    if (this.smartToiletGroup) this.smartToiletGroup.visible = Boolean(this.ownedItems.smart_toilet);
+    if (this.basicToiletGroup) this.basicToiletGroup.visible = !this.ownedItems.smart_toilet;
+    if (this.dualMonitorGroup) this.dualMonitorGroup.visible = Boolean(this.ownedItems.dual_monitor);
+    if (this.ergoChairGroup) this.ergoChairGroup.visible = Boolean(this.ownedItems.ergo_chair);
+    if (this.chairGroup) this.chairGroup.visible = !this.ownedItems.ergo_chair;
   }
 
   setQuarter(quarter) {
@@ -1794,23 +2436,26 @@ export class FreelancerRoomScene {
   }
 
   pickRandomThought(activityKey) {
-    const bank = THOUGHT_BANK[activityKey];
+    const resolvedKey = (activityKey === "toilet" && this.ownedItems?.smart_toilet)
+      ? "smart_toilet"
+      : activityKey;
+    const bank = THOUGHT_BANK[resolvedKey];
     if (!bank || bank.length === 0) return "";
-    let bag = this.thoughtBags[activityKey];
+    let bag = this.thoughtBags[resolvedKey];
     if (!bag || bag.length === 0) {
       bag = [...bank];
       for (let i = bag.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [bag[i], bag[j]] = [bag[j], bag[i]];
       }
-      const prevLine = this.lastThoughtByActivity[activityKey];
+      const prevLine = this.lastThoughtByActivity[resolvedKey];
       if (bag.length > 1 && bag[bag.length - 1] === prevLine) {
         [bag[0], bag[bag.length - 1]] = [bag[bag.length - 1], bag[0]];
       }
-      this.thoughtBags[activityKey] = bag;
+      this.thoughtBags[resolvedKey] = bag;
     }
     const chosen = bag.pop();
-    this.lastThoughtByActivity[activityKey] = chosen;
+    this.lastThoughtByActivity[resolvedKey] = chosen;
     return chosen;
   }
 
@@ -1833,6 +2478,7 @@ export class FreelancerRoomScene {
     if (this.phoneProp) this.phoneProp.visible = false;
     if (this.bookProp) this.bookProp.visible = false;
     if (this.snackProp) this.snackProp.visible = false;
+    if (this.coffeeProp) this.coffeeProp.visible = false;
   }
 
   isInBathroom(pos = this.charRoot?.position) {
@@ -2013,6 +2659,21 @@ export class FreelancerRoomScene {
     }
     if (owned.wall_poster) {
       candidates.push("admire_poster");
+    }
+    if (owned.coat_rack) {
+      candidates.push("check_coat");
+    }
+    if (owned.coffee_bar) {
+      candidates.push("coffee_break");
+    }
+    if (owned.vinyl_player) {
+      candidates.push("listen_vinyl");
+    }
+    if (owned.orange_cat) {
+      candidates.push("pet_cat");
+    }
+    if (owned.floor_plant) {
+      candidates.push("water_floor_plant");
     }
 
     const choices = candidates.filter(id => id !== this.currentActivity);
@@ -2358,6 +3019,44 @@ export class FreelancerRoomScene {
         this.headGroup.rotation.x = -0.18 + Math.sin(elapsedSec * 1.1) * 0.03;
         this.headGroup.rotation.y = Math.sin(elapsedSec * 0.9) * 0.08;
         break;
+      case "check_coat":
+        // Checking tote bag / scarf / cap by the door coat rack
+        this.leftArmPivot.rotation.x = -0.45;
+        this.rightArmPivot.rotation.x = -0.95 + Math.sin(elapsedSec * 2.4) * 0.14;
+        this.rightArmPivot.rotation.z = 0.2;
+        this.headGroup.rotation.x = -0.05;
+        this.headGroup.rotation.y = Math.sin(elapsedSec * 1.4) * 0.12;
+        break;
+      case "coffee_break":
+        // Holding warm coffee mug and taking gentle sips
+        this.coffeeProp.visible = true;
+        this.leftArmPivot.rotation.x = -0.22;
+        this.rightArmPivot.rotation.x = -0.82 + Math.max(0, Math.sin(elapsedSec * 2.2)) * -0.42;
+        this.headGroup.rotation.x = 0.12;
+        break;
+      case "listen_vinyl":
+        // Bobbing gently to warm vinyl turntable beats
+        this.torsoGroup.rotation.z = Math.sin(elapsedSec * 4.2) * 0.07;
+        this.leftArmPivot.rotation.x = -0.45 + Math.sin(elapsedSec * 4.2) * 0.18;
+        this.rightArmPivot.rotation.x = -0.45 - Math.sin(elapsedSec * 4.2) * 0.18;
+        this.headGroup.rotation.z = Math.sin(elapsedSec * 4.2) * 0.08;
+        this.headGroup.rotation.x = Math.abs(Math.sin(elapsedSec * 4.2)) * 0.08;
+        break;
+      case "pet_cat":
+        // Bending gently to pet the cozy orange tabby cat
+        this.torsoGroup.rotation.x = 0.38;
+        this.leftArmPivot.rotation.x = -0.85;
+        this.rightArmPivot.rotation.x = -0.98 + Math.sin(elapsedSec * 5.2) * 0.16;
+        this.rightArmPivot.rotation.y = Math.cos(elapsedSec * 4.0) * 0.12;
+        this.headGroup.rotation.x = 0.34;
+        break;
+      case "water_floor_plant":
+        // Caring for / wiping glossy fiddle-leaf fig leaves
+        this.torsoGroup.rotation.x = 0.12;
+        this.rightArmPivot.rotation.x = -1.12 + Math.sin(elapsedSec * 3.6) * 0.16;
+        this.rightArmPivot.rotation.z = 0.18;
+        this.headGroup.rotation.x = 0.05 + Math.sin(elapsedSec * 1.5) * 0.05;
+        break;
       case "eat":
         this.snackProp.visible = true;
         this.rightArmPivot.rotation.x = -0.85 + Math.max(0, Math.sin(elapsedSec * 3.2)) * -0.45;
@@ -2428,10 +3127,16 @@ export class FreelancerRoomScene {
           this.onHoverChange("點擊開關床邊小夜燈");
         } else if (type === "tv") {
           this.onHoverChange("點擊看電視（隨機播放 YouTube 影片）");
+        } else if (type === "vinyl") {
+          this.onHoverChange("點擊開關黑膠唱片機與聽音樂");
+        } else if (type === "coffeeBar") {
+          this.onHoverChange("點擊沖一杯手沖熱美式咖啡");
+        } else if (type === "cat") {
+          this.onHoverChange("點擊摸摸橘貓室友「阿橘」");
         } else if (type === "computer") {
           this.onHoverChange("點擊電腦／電繪板開始接案學習");
         } else {
-          // Silent discovery for bed / sink / toilet / sofa / plant / poster
+          // Silent discovery for bed / sink / toilet / sofa / plant / poster / coatRack / floorPlant
           this.onHoverChange("");
         }
         return;
@@ -2458,6 +3163,20 @@ export class FreelancerRoomScene {
         const spot = this.ownedItems.cozy_sofa ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
         this.commandActivity(spot, 180);
         this.onOpenTv();
+      } else if (this.hoveredTarget === "vinyl") {
+        this.setVinylOn(!this.vinylOn);
+        this.onVinylToggle(this.vinylOn);
+        if (this.vinylOn) {
+          this.commandActivity(this.actionSpots.listen_vinyl, 45);
+        }
+      } else if (this.hoveredTarget === "coffeeBar") {
+        this.commandActivity(this.actionSpots.coffee_break, 30);
+      } else if (this.hoveredTarget === "cat") {
+        this.commandActivity(this.actionSpots.pet_cat, 25);
+      } else if (this.hoveredTarget === "coatRack") {
+        this.commandActivity(this.actionSpots.check_coat, 16);
+      } else if (this.hoveredTarget === "floorPlant") {
+        this.commandActivity(this.actionSpots.water_floor_plant, 14);
       } else if (this.hoveredTarget === "sofa") {
         const spot = (this.ownedItems.wall_tv && Math.random() < 0.5)
           ? this.actionSpots.sofa_tv
@@ -2572,6 +3291,24 @@ export class FreelancerRoomScene {
     if (this.coolRgbStripMat && this.coolKeyboardGroup?.visible) {
       const hue = (elapsedSec * 0.14) % 1;
       this.coolRgbStripMat.emissive.setHSL(hue, 0.85, 0.55);
+    }
+
+    // Spin vinyl record when player is on or character is listening
+    if (this.vinylDiscGroup && this.vinylPlayerGroup?.visible) {
+      if (this.vinylOn || this.currentActivity === "listen_vinyl") {
+        this.vinylDiscGroup.rotation.y += dt * 1.9;
+      }
+    }
+
+    // Gentle wagging tail + breathing on orange tabby cat
+    if (this.orangeCatGroup?.visible) {
+      if (this.catTailPivot) {
+        this.catTailPivot.rotation.y = Math.sin(elapsedSec * 2.6) * 0.28;
+      }
+      if (this.catBodyMesh) {
+        const breath = 1 + Math.sin(elapsedSec * 1.9) * 0.035;
+        this.catBodyMesh.scale.set(1.22, 0.72 * breath, 1.0 * breath);
+      }
     }
 
     // Subtle hover-only highlight ring under desk setup

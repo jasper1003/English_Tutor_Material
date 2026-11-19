@@ -2128,6 +2128,19 @@
       display: block;
     }
 
+    .shop-textile-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem;
+      margin-bottom: 0.85rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: 12px;
+      background: light-dark(#faf6f0, #161d2b);
+      border: 1px solid var(--border);
+      font-size: 0.84rem;
+    }
+
     .shop-item-head {
       display: flex;
       align-items: center;
@@ -2896,6 +2909,7 @@
         <div class="dialog-body">
           <div id="shop-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
           <div class="shop-tabs" id="shop-tabs" role="tablist" aria-label="商店分類"></div>
+          <div id="shop-textile-bar" class="shop-textile-bar hidden"></div>
           <div class="shop-grid" id="shop-grid"></div>
         </div>
       </div>
@@ -3220,14 +3234,16 @@
       HAIR_COLORS,
       OUTFIT_COLORS,
       DEFAULT_AVATAR
-    } from "./room-scene.js?v=20261119o";
+    } from "./room-scene.js?v=20261119q";
     import {
       SHOP_CATEGORIES,
       SHOP_CATALOG,
       DEFAULT_WALL_COLOR,
+      DEFAULT_BED_SHEET,
+      DEFAULT_RUG_STYLE,
       getShopItem,
       normalizeOwnedItems
-    } from "./shop-catalog.js?v=20261119p";
+    } from "./shop-catalog.js?v=20261119q";
 
     if (window.location.search) {
       const cleanUrl = new URL(window.location.href);
@@ -3630,7 +3646,10 @@
           cameraQuarter: Number.isInteger(rs.cameraQuarter) ? rs.cameraQuarter : 0,
           deskLampOn: typeof rs.deskLampOn === "boolean" ? rs.deskLampOn : true,
           bedLampOn: typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false,
+          vinylOn: typeof rs.vinylOn === "boolean" ? rs.vinylOn : false,
           wallColor: rs.wallColor || DEFAULT_WALL_COLOR,
+          bedSheet: rs.bedSheet || DEFAULT_BED_SHEET,
+          rugStyle: rs.rugStyle || DEFAULT_RUG_STYLE,
           ownedItems: owned,
           onEnterWork: () => {
             openWorkDesktop();
@@ -3640,6 +3659,9 @@
           },
           onBedLampToggle: (isOn) => {
             persistRoomState({ bedLampOn: isOn });
+          },
+          onVinylToggle: (isOn) => {
+            persistRoomState({ vinylOn: isOn });
           },
           onOpenTv: () => {
             openTvPlayer();
@@ -3652,7 +3674,10 @@
         roomScene.updateAvatarConfig(currentUserProfile.avatar);
         roomScene.setDeskLamp(typeof rs.deskLampOn === "boolean" ? rs.deskLampOn : true);
         roomScene.setBedLamp(typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false);
+        roomScene.setVinylOn(typeof rs.vinylOn === "boolean" ? rs.vinylOn : false);
         roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
+        roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
+        roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
         roomScene.applyOwnedItems(owned);
         if (Number.isInteger(rs.cameraQuarter)) roomScene.setQuarter(rs.cameraQuarter);
         roomScene.resume();
@@ -5215,14 +5240,145 @@
     let activeShopCategory = "all";
     let shopPurchaseBusy = false;
 
+    function buildTextilePreviewSvg(item) {
+      if (item.sheetStyle) {
+        const s = item.sheetStyle;
+        return `
+          <svg class="shop-paint-preview-svg" viewBox="0 0 240 180" aria-hidden="true">
+            <defs>
+              <linearGradient id="bg-${item.id}" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#f7f2ea" />
+                <stop offset="100%" stop-color="#e9e0d3" />
+              </linearGradient>
+            </defs>
+            <rect width="240" height="180" fill="url(#bg-${item.id})" />
+            <!-- Floor shadow -->
+            <ellipse cx="122" cy="144" rx="74" ry="24" fill="#d6c5b0" opacity="0.55" />
+            <!-- Wooden Headboard -->
+            <polygon points="122,42 184,70 184,104 122,76" fill="#a87448" />
+            <polygon points="116,46 122,42 122,76 116,80" fill="#8f5f39" />
+            <!-- Wooden Frame Base -->
+            <polygon points="56,112 124,145 184,114 118,82" fill="#b98456" />
+            <polygon points="56,112 124,145 124,154 56,121" fill="#9c6b45" />
+            <polygon points="124,145 184,114 184,123 124,154" fill="#835736" />
+            <!-- Plump Fitted Sheet / Mattress -->
+            <polygon points="60,104 124,135 180,106 118,76" fill="${s.sheetColor}" stroke="#e2d9cc" stroke-width="1" />
+            <polygon points="60,104 124,135 124,144 60,113" fill="${s.sheetColor}" />
+            <polygon points="124,135 180,106 180,115 124,144" fill="${s.sheetColor}" opacity="0.92" />
+            <!-- Folded Duvet Blanket -->
+            <polygon points="58,105 112,131 154,110 100,84" fill="${s.blanketColor}" />
+            <polygon points="58,105 112,131 112,141 58,115" fill="${s.blanketColor}" />
+            <polygon points="112,131 154,110 154,120 112,141" fill="${s.blanketColor}" opacity="0.88" />
+            <!-- Fluffy Pillow -->
+            <ellipse cx="144" cy="92" rx="22" ry="11" transform="rotate(24 144 92)" fill="${s.pillowColor}" stroke="#dfd6c8" stroke-width="1.2" />
+          </svg>
+        `;
+      }
+      if (item.rugStyle) {
+        const r = item.rugStyle;
+        let rugDrawing = "";
+        if (r.pattern === "round") {
+          rugDrawing = `
+            <ellipse cx="120" cy="112" rx="68" ry="36" fill="${r.baseColor}" stroke="#4e6e56" stroke-width="1.4" />
+            <ellipse cx="120" cy="112" rx="46" ry="24" fill="${r.accentColor}" />
+          `;
+        } else if (r.pattern === "checker") {
+          rugDrawing = `
+            <polygon points="120,66 192,108 120,150 48,108" fill="${r.baseColor}" stroke="#cfc2ae" stroke-width="1.2" />
+            <polygon points="120,76 144,90 120,104 96,90" fill="${r.accentColor}" />
+            <polygon points="96,90 120,104 96,118 72,104" fill="${r.accentColor}" />
+            <polygon points="144,90 168,104 144,118 120,104" fill="${r.accentColor}" />
+            <polygon points="120,104 144,118 120,132 96,118" fill="${r.accentColor}" />
+          `;
+        } else if (r.pattern === "nordic") {
+          rugDrawing = `
+            <polygon points="120,66 192,108 120,150 48,108" fill="${r.baseColor}" stroke="#cbd5e1" stroke-width="1.2" />
+            <polygon points="120,90 148,108 120,126 92,108" fill="${r.accentColor}" />
+            <line x1="74" y1="93" x2="104" y2="76" stroke="${r.accentColor}" stroke-width="3.2" stroke-linecap="round" />
+            <line x1="136" y1="139" x2="166" y2="122" stroke="${r.accentColor}" stroke-width="3.2" stroke-linecap="round" />
+          `;
+        } else {
+          rugDrawing = `
+            <polygon points="120,66 192,108 120,150 48,108" fill="${r.baseColor}" />
+            <polygon points="120,76 176,108 120,140 64,108" fill="${r.accentColor}" />
+            <polygon points="120,86 158,108 120,130 82,108" fill="${r.baseColor}" />
+            <line x1="56" y1="115" x2="48" y2="119" stroke="${r.accentColor}" stroke-width="2.2" />
+            <line x1="72" y1="124" x2="64" y2="128" stroke="${r.accentColor}" stroke-width="2.2" />
+            <line x1="88" y1="133" x2="80" y2="137" stroke="${r.accentColor}" stroke-width="2.2" />
+            <line x1="104" y1="142" x2="96" y2="146" stroke="${r.accentColor}" stroke-width="2.2" />
+          `;
+        }
+        return `
+          <svg class="shop-paint-preview-svg" viewBox="0 0 240 180" aria-hidden="true">
+            <defs>
+              <linearGradient id="bg-${item.id}" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#f7f2ea" />
+                <stop offset="100%" stop-color="#e9e0d3" />
+              </linearGradient>
+            </defs>
+            <rect width="240" height="180" fill="url(#bg-${item.id})" />
+            <!-- Wood Floor Surface -->
+            <polygon points="120,38 220,96 120,164 20,96" fill="#d8a774" />
+            <line x1="45" y1="81" x2="145" y2="148" stroke="#c4905c" stroke-width="1" opacity="0.65" />
+            <line x1="75" y1="64" x2="175" y2="130" stroke="#c4905c" stroke-width="1" opacity="0.65" />
+            <line x1="105" y1="47" x2="205" y2="112" stroke="#c4905c" stroke-width="1" opacity="0.65" />
+            ${rugDrawing}
+          </svg>
+        `;
+      }
+      return "";
+    }
+
+    async function equipShopTextile(textileKind, nextId) {
+      if (!currentUser || !currentUserProfile || shopPurchaseBusy) return;
+      if (textileKind !== "bedSheet" && textileKind !== "rugStyle") return;
+      clearFeedback("shop-feedback");
+      shopPurchaseBusy = true;
+      try {
+        const nextRoomState = {
+          ...(currentUserProfile.roomState || {
+            cameraQuarter: 0,
+            deskLampOn: true,
+            bedLampOn: false,
+            wallColor: DEFAULT_WALL_COLOR
+          }),
+          [textileKind]: nextId
+        };
+        await updateDoc(doc(firestoreDb, "users", currentUser.uid), {
+          roomState: nextRoomState,
+          updatedAt: serverTimestamp()
+        });
+        currentUserProfile.roomState = nextRoomState;
+        if (textileKind === "bedSheet") {
+          roomScene?.setBedSheet(nextId);
+        } else {
+          roomScene?.setRugStyle(nextId);
+        }
+        const label = nextId === DEFAULT_BED_SHEET
+          ? "經典海鹽藍床組"
+          : nextId === DEFAULT_RUG_STYLE
+            ? "奶油燕麥原味地毯"
+            : (getShopItem(nextId)?.name || nextId);
+        showFeedback("shop-feedback", "success", `已免費切換為「${label}」！`);
+        renderShopDialog();
+      } catch (err) {
+        showFeedback("shop-feedback", "error", err?.message || translateAuthError(err));
+      } finally {
+        shopPurchaseBusy = false;
+      }
+    }
+
     function renderShopDialog() {
       const balanceEl = document.getElementById("shop-clams-balance");
       const tabsEl = document.getElementById("shop-tabs");
+      const textileBarEl = document.getElementById("shop-textile-bar");
       const gridEl = document.getElementById("shop-grid");
       const isSuperAdmin = currentRole === "super_admin";
       const clams = Math.max(0, Math.trunc(Number(currentUserProfile?.clams ?? STARTER_CLAMS)));
       const owned = normalizeOwnedItems(currentUserProfile?.ownedItems);
       const activeWallColor = (currentUserProfile?.roomState?.wallColor || DEFAULT_WALL_COLOR).toLowerCase();
+      const activeBedSheet = currentUserProfile?.roomState?.bedSheet || DEFAULT_BED_SHEET;
+      const activeRugStyle = currentUserProfile?.roomState?.rugStyle || DEFAULT_RUG_STYLE;
 
       balanceEl.textContent = isSuperAdmin ? "∞" : String(clams);
       tabsEl.innerHTML = "";
@@ -5238,6 +5394,33 @@
         tabsEl.appendChild(btn);
       });
 
+      const showResetBar = (activeShopCategory === "textile" || activeShopCategory === "all")
+        && (activeBedSheet !== DEFAULT_BED_SHEET || activeRugStyle !== DEFAULT_RUG_STYLE);
+      textileBarEl.innerHTML = "";
+      textileBarEl.classList.toggle("hidden", !showResetBar);
+      if (showResetBar) {
+        const note = document.createElement("span");
+        note.style.marginInlineEnd = "auto";
+        note.textContent = "目前使用自訂織品中，可隨時換回預設：";
+        textileBarEl.appendChild(note);
+        if (activeBedSheet !== DEFAULT_BED_SHEET) {
+          const resetSheetBtn = document.createElement("button");
+          resetSheetBtn.type = "button";
+          resetSheetBtn.className = "btn";
+          resetSheetBtn.textContent = "換回經典海鹽藍床組";
+          resetSheetBtn.onclick = () => equipShopTextile("bedSheet", DEFAULT_BED_SHEET);
+          textileBarEl.appendChild(resetSheetBtn);
+        }
+        if (activeRugStyle !== DEFAULT_RUG_STYLE) {
+          const resetRugBtn = document.createElement("button");
+          resetRugBtn.type = "button";
+          resetRugBtn.className = "btn";
+          resetRugBtn.textContent = "換回奶油燕麥地毯";
+          resetRugBtn.onclick = () => equipShopTextile("rugStyle", DEFAULT_RUG_STYLE);
+          textileBarEl.appendChild(resetRugBtn);
+        }
+      }
+
       gridEl.innerHTML = "";
       const visibleItems = activeShopCategory === "all"
         ? SHOP_CATALOG
@@ -5245,17 +5428,22 @@
 
       visibleItems.forEach(item => {
         const isPaint = Boolean(item.consumable && item.wallColor);
+        const isTextile = Boolean(item.textileKind);
         const isActivePaint = isPaint && item.wallColor.toLowerCase() === activeWallColor;
         const isPermanentOwned = !isPaint && Boolean(owned[item.id]);
+        const isActiveTextile = isTextile && (
+          (item.textileKind === "bedSheet" && activeBedSheet === item.id) ||
+          (item.textileKind === "rugStyle" && activeRugStyle === item.id)
+        );
 
         const card = document.createElement("div");
-        card.className = `shop-item-card${(isPermanentOwned || isActivePaint) ? " is-owned" : ""}`;
+        card.className = `shop-item-card${(isActivePaint || (isTextile ? isActiveTextile : isPermanentOwned)) ? " is-owned" : ""}`;
 
         const previewBox = document.createElement("div");
         previewBox.className = "shop-item-preview";
         if (item.previewImage) {
           const img = document.createElement("img");
-          img.src = `${item.previewImage}?v=20261119p`;
+          img.src = `${item.previewImage}?v=20261119q`;
           img.alt = item.name;
           img.loading = "lazy";
           previewBox.appendChild(img);
@@ -5290,6 +5478,8 @@
               <path d="M106,89 L114,104 L106,120" fill="none" stroke="#64748b" stroke-width="2.4" stroke-linecap="round" />
             </svg>
           `;
+        } else if (item.sheetStyle || item.rugStyle) {
+          previewBox.innerHTML = buildTextilePreviewSvg(item);
         }
 
         const head = document.createElement("div");
@@ -5297,10 +5487,11 @@
 
         const iconBox = document.createElement("div");
         iconBox.className = "shop-item-icon";
-        if (item.wallColor) {
+        const swatchHex = item.wallColor || item.sheetStyle?.blanketColor || item.rugStyle?.baseColor;
+        if (swatchHex) {
           const dot = document.createElement("span");
           dot.className = "shop-item-swatch";
-          dot.style.background = item.wallColor;
+          dot.style.background = swatchHex;
           iconBox.appendChild(dot);
         } else {
           iconBox.textContent = item.icon || "🎁";
@@ -5312,7 +5503,11 @@
         title.textContent = item.name;
         const priceEl = document.createElement("div");
         priceEl.className = "shop-item-price";
-        priceEl.textContent = isPaint ? `${item.price} 英蚌（每次重刷計費）` : `${item.price} 英蚌`;
+        priceEl.textContent = isPaint
+          ? `${item.price} 英蚌（每次重刷計費）`
+          : (isTextile && isPermanentOwned)
+            ? `${item.price} 英蚌（已購買，可免費更換）`
+            : `${item.price} 英蚌`;
         meta.append(title, priceEl);
         head.append(iconBox, meta);
 
@@ -5328,6 +5523,13 @@
         if (isActivePaint) {
           actionBtn.textContent = "目前牆色 ✓";
           actionBtn.disabled = true;
+        } else if (isActiveTextile) {
+          actionBtn.textContent = "目前使用中 ✓";
+          actionBtn.disabled = true;
+        } else if (isTextile && isPermanentOwned) {
+          actionBtn.classList.add("btn-primary");
+          actionBtn.textContent = "套用更換（免費）";
+          actionBtn.onclick = () => equipShopTextile(item.textileKind, item.id);
         } else if (isPermanentOwned) {
           actionBtn.textContent = "已擺進房間 ✓";
           actionBtn.disabled = true;
@@ -5336,7 +5538,11 @@
           actionBtn.disabled = true;
         } else {
           actionBtn.classList.add("btn-primary");
-          actionBtn.textContent = isPaint ? "購買並重新粉刷" : "購買並放進房間";
+          actionBtn.textContent = isPaint
+            ? "購買並重新粉刷"
+            : isTextile
+              ? "購買並立刻換上"
+              : "購買並放進房間";
           actionBtn.onclick = () => purchaseShopItem(item.id);
         }
 
@@ -5393,16 +5599,22 @@
 
           const nextClams = isSuperAdmin ? currentClams : (currentClams - item.price);
           const nextOwned = { ...prevOwned, [item.id]: true };
-          const nextRoomState = item.id === "bed_lamp"
-            ? { ...prevRoomState, bedLampOn: true }
-            : prevRoomState;
+          let nextRoomState = prevRoomState;
+          let shouldUpdateRoomState = false;
+          if (item.id === "bed_lamp") {
+            nextRoomState = { ...prevRoomState, bedLampOn: true };
+            shouldUpdateRoomState = true;
+          } else if (item.textileKind === "bedSheet" || item.textileKind === "rugStyle") {
+            nextRoomState = { ...prevRoomState, [item.textileKind]: item.id };
+            shouldUpdateRoomState = true;
+          }
 
           const patch = {
             clams: nextClams,
             ownedItems: nextOwned,
             updatedAt: serverTimestamp()
           };
-          if (item.id === "bed_lamp") {
+          if (shouldUpdateRoomState) {
             patch.roomState = nextRoomState;
           }
           tx.update(userRef, patch);
@@ -5426,6 +5638,12 @@
           roomScene?.setWallColor(item.wallColor);
           const feeNote = currentRole === "super_admin" ? "超級管理員測試免扣款" : `扣除粉刷費 ${item.price} 英蚌`;
           showFeedback("shop-feedback", "success", `已重新粉刷為「${item.name}」（${feeNote}）！`);
+        } else if (item.textileKind === "bedSheet") {
+          roomScene?.setBedSheet(item.id);
+          showFeedback("shop-feedback", "success", `已購入「${item.name}」並立即換上！`);
+        } else if (item.textileKind === "rugStyle") {
+          roomScene?.setRugStyle(item.id);
+          showFeedback("shop-feedback", "success", `已購入「${item.name}」並立即鋪好！`);
         } else {
           if (item.id === "bed_lamp") {
             roomScene?.setBedLamp(true);
@@ -5436,7 +5654,11 @@
           logUserTransaction(currentUser.uid, {
             type: "purchase",
             category: item.category,
-            title: item.wallColor ? `重刷牆面：${item.name}` : `購買家具：${item.name}`,
+            title: item.wallColor
+              ? `重刷牆面：${item.name}`
+              : item.textileKind
+                ? `購入織品：${item.name}`
+                : `購買家具：${item.name}`,
             amount: -item.price
           });
         }
@@ -5673,9 +5895,11 @@
                 ? "🌟"
                 : tx.category === "paint"
                   ? "🎨"
-                  : tx.category === "gear"
-                    ? "⌨️"
-                    : "🛋️";
+                  : tx.category === "textile"
+                    ? "🛏️"
+                    : tx.category === "gear"
+                      ? "⌨️"
+                      : "🛋️";
           const dateText = tx.createdAt?.toDate
             ? tx.createdAt.toDate().toLocaleString("zh-TW", { hour12: false })
             : (tx.monthKey || "");
