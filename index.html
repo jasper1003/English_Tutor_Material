@@ -2699,7 +2699,13 @@
       HAIR_COLORS,
       OUTFIT_COLORS,
       DEFAULT_AVATAR
-    } from "./room-scene.js";
+    } from "./room-scene.js?v=20261119e";
+
+    if (window.location.search) {
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("date");
+      window.history.replaceState({}, "", cleanUrl);
+    }
 
     const firebaseConfig = {
       projectId: "tutor-material-automation",

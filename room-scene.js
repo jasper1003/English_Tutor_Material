@@ -502,10 +502,14 @@ export class FreelancerRoomScene {
     this.wallColorHex = options.wallColor || "#f3eadc";
     this.avatarConfig = { ...DEFAULT_AVATAR, ...(options.avatar || {}) };
 
-    // Room bounds & anchors
+    // Room bounds & obstacle-free routing anchors
     this.deskWorkAnchor = new THREE.Vector3(-0.2, 0, -2.02);
-    this.bedSideAnchor = new THREE.Vector3(1.55, 0, 2.05);
-    this.bathDoorAnchor = new THREE.Vector3(1.68, 0, -1.55);
+    this.deskExitAnchor = new THREE.Vector3(-0.2, 0, -1.45);
+    this.bedSideAnchor = new THREE.Vector3(1.48, 0, 2.05);
+    this.bathOutsideAnchor = new THREE.Vector3(2.05, 0, -1.15);
+    this.bathInsideAnchor = new THREE.Vector3(2.05, 0, -2.05);
+    this.toiletApproachAnchor = new THREE.Vector3(3.32, 0, -2.52);
+    this.centerAnchor = new THREE.Vector3(0.55, 0, -0.35);
 
     this.chillSpots = [
       { id: "phone", label: "滑手機放鬆中", pos: new THREE.Vector3(-1.35, 0, 0.95), rotY: 0.45 },
@@ -519,7 +523,7 @@ export class FreelancerRoomScene {
 
     this.actionSpots = {
       wash: { id: "wash", label: "洗手台洗手中", pos: new THREE.Vector3(2.22, 0, -2.92), rotY: Math.PI },
-      toilet: { id: "toilet", label: "使用洗手間中", pos: new THREE.Vector3(3.32, 0, -2.92), rotY: 0 }
+      toilet: { id: "toilet", label: "使用洗手間中", pos: new THREE.Vector3(3.32, 0, -3.16), rotY: 0 }
     };
 
     // Character AI state machine:
@@ -1277,9 +1281,10 @@ export class FreelancerRoomScene {
 
     // Immediate snappy walk straight to desk chair
     this.charState = "WALK_TO_WORK";
+    this.currentActivity = "walking";
     this.onActivityChange("快步前往書桌準備接案...");
     const dist = this.charRoot.position.distanceTo(this.deskWorkAnchor);
-    if (dist < 0.35) {
+    if (dist < 0.35 && this.isNearDesk(this.charRoot.position)) {
       this.charRoot.position.copy(this.deskWorkAnchor);
       this.enterWorkingPose();
       this.onEnterWork();
@@ -1333,34 +1338,99 @@ export class FreelancerRoomScene {
 
   isInBathroom(pos = this.charRoot?.position) {
     if (!pos) return false;
-    return pos.x > 1.45 && pos.z < -1.45;
+    return pos.x > 1.50 && pos.z < -1.50;
+  }
+
+  isOnBed(pos = this.charRoot?.position) {
+    if (!pos) return false;
+    return pos.x >= 1.75 && pos.x <= 3.55 && pos.z >= 0.75 && pos.z <= 3.35;
+  }
+
+  isNearDesk(pos = this.charRoot?.position) {
+    if (!pos) return false;
+    return pos.z < -1.7 && pos.x < 1.3;
   }
 
   buildPathTo(spotId, targetPos) {
-    const waypoints = [];
-    const curPos = this.charRoot.position;
+    const rawWaypoints = [];
+    const curPos = this.charRoot.position.clone();
     const currentlyInBath = this.isInBathroom(curPos);
+    const currentlyOnBed = this.isOnBed(curPos);
+    const currentlyNearDesk = this.isNearDesk(curPos);
+    const currentlyNearToilet = currentlyInBath && curPos.x > 2.85 && curPos.z < -2.45;
+
+    if (curPos.distanceTo(targetPos) < 0.25) {
+      return [targetPos.clone()];
+    }
+
     const targetInBath = spotId === "wash" || spotId === "toilet";
+    const targetOnBed = spotId === "sleep";
+    const targetNearDesk = spotId === "work" || spotId === "gaming";
 
-    // Stepping off bed cleanly before crossing room
-    if (this.currentActivity === "sleep" && spotId !== "sleep") {
-      waypoints.push(this.bedSideAnchor.clone());
+    // 1. Exit any enclosed or furniture-occupied zone cleanly based on 3D coords
+    if (currentlyOnBed && !targetOnBed) {
+      rawWaypoints.push(this.bedSideAnchor.clone());
+    } else if (currentlyInBath && !targetInBath) {
+      if (currentlyNearToilet) {
+        rawWaypoints.push(this.toiletApproachAnchor.clone());
+      }
+      rawWaypoints.push(this.bathInsideAnchor.clone());
+      rawWaypoints.push(this.bathOutsideAnchor.clone());
+    } else if (currentlyInBath && targetInBath && currentlyNearToilet && spotId !== "toilet") {
+      rawWaypoints.push(this.toiletApproachAnchor.clone());
+    } else if (currentlyNearDesk && !targetNearDesk) {
+      rawWaypoints.push(this.deskExitAnchor.clone());
     }
 
-    if (currentlyInBath !== targetInBath) {
-      waypoints.push(this.bathDoorAnchor.clone());
+    // 2. Route across open room hub when crossing between opposite corners
+    if (!(currentlyInBath && targetInBath) && !(currentlyOnBed && targetOnBed)) {
+      const fromPt = rawWaypoints.length > 0 ? rawWaypoints[rawWaypoints.length - 1] : curPos;
+      let entryPt = targetPos;
+      if (targetInBath && !currentlyInBath) entryPt = this.bathOutsideAnchor;
+      else if (targetNearDesk && !currentlyNearDesk) entryPt = this.deskExitAnchor;
+      else if (targetOnBed && !currentlyOnBed) entryPt = this.bedSideAnchor;
+
+      if (
+        fromPt.distanceTo(entryPt) > 2.5 &&
+        fromPt.distanceTo(this.centerAnchor) > 0.6 &&
+        entryPt.distanceTo(this.centerAnchor) > 0.6
+      ) {
+        rawWaypoints.push(this.centerAnchor.clone());
+      }
     }
 
-    if (spotId === "sleep" && this.currentActivity !== "sleep") {
-      waypoints.push(this.bedSideAnchor.clone());
+    // 3. Enter target zone cleanly
+    if (targetInBath && !currentlyInBath) {
+      rawWaypoints.push(this.bathOutsideAnchor.clone());
+      rawWaypoints.push(this.bathInsideAnchor.clone());
+    }
+    if (spotId === "toilet" && !currentlyNearToilet) {
+      rawWaypoints.push(this.toiletApproachAnchor.clone());
+    } else if (targetNearDesk && !currentlyNearDesk) {
+      rawWaypoints.push(this.deskExitAnchor.clone());
+    } else if (targetOnBed && !currentlyOnBed) {
+      rawWaypoints.push(this.bedSideAnchor.clone());
     }
 
-    waypoints.push(targetPos.clone());
+    // 4. Deduplicate consecutive points near curPos / each other, then append final target
+    const waypoints = [];
+    let prev = curPos;
+    for (const wp of rawWaypoints) {
+      if (wp.distanceTo(prev) >= 0.25) {
+        waypoints.push(wp);
+        prev = wp;
+      }
+    }
+    if (waypoints.length === 0 || targetPos.distanceTo(prev) >= 0.15) {
+      waypoints.push(targetPos.clone());
+    } else {
+      waypoints[waypoints.length - 1].copy(targetPos);
+    }
     return waypoints;
   }
 
   commandActivity(spot, durationSec) {
-    if (!spot || this.charState === "WALK_TO_WORK") return;
+    if (!spot) return;
     this.hideAllProps();
     this.postWorkCooldown = 0;
 
@@ -1370,6 +1440,7 @@ export class FreelancerRoomScene {
     }
 
     this.charState = "WALK_TO_ACTIVITY";
+    this.currentActivity = "walking";
     this.walkWaypoints = this.buildPathTo(spot.id, spot.pos);
     this.walkCallback = () => {
       this.charState = "IDLE";
@@ -1653,7 +1724,7 @@ export class FreelancerRoomScene {
         break;
       case "toilet":
         // Sitting calmly on porcelain toilet facing +Z
-        this.charBody.position.set(0, -0.14, -0.18);
+        this.charBody.position.set(0, -0.05, 0);
         this.leftLegPivot.rotation.x = -Math.PI / 2.2;
         this.rightLegPivot.rotation.x = -Math.PI / 2.2;
         this.leftArmPivot.rotation.x = -0.52;
@@ -1708,6 +1779,7 @@ export class FreelancerRoomScene {
       this.pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       this.pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
+      this.camera.updateMatrixWorld();
       this.raycaster.setFromCamera(this.pointerNDC, this.camera);
       const hits = this.raycaster.intersectObjects(this.allInteractTargets, false);
       if (hits.length > 0) {
