@@ -99,7 +99,7 @@ const SPREADSHEET_ID = "1DrKwyy-L9g_nHFBFJ0joLfsDE64vBb1ymjtKiaNQJ5U";
 let UNIT_REWARD_CLAMS = 200;
 let STARTER_CLAMS = 100;
 let MONTHLY_RENT_CLAMS = 100;
-let DEFAULT_LESSON_XP = 100;
+let DEFAULT_LESSON_XP = 40;
 let XP_PER_LEVEL = 100;
 let pendingThoughtRows = null;
 
