@@ -184,6 +184,14 @@ const THOUGHT_BANK = {
     "That glowing nightlight inside the bath is neat!",
     "Upgrade complete: total five-star comfort!",
     "Clean, warm, and surprisingly relaxing!"
+  ],
+  floor_stand: [
+    "Nice angle to look around my studio!",
+    "I really like how cozy this room feels.",
+    "Hmm, what should I upgrade in this corner next?",
+    "Taking a short stroll helps refresh my mind!",
+    "Plenty of open floor space right here.",
+    "Walking around the room gives me fresh ideas!"
   ]
 };
 
@@ -995,7 +1003,35 @@ export class FreelancerRoomScene {
     const floor = new THREE.Mesh(new RoundedBoxGeometry(8.2, 0.08, 8.2, 2, 0.03), floorMat);
     floor.position.set(0, -0.04, 0);
     floor.receiveShadow = true;
+    this.floorMesh = floor;
+    this.floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    this.hoveredFloorPoint = null;
+    this.walkRippleActive = false;
+    this.walkRippleAge = 0;
     this.roomGroup.add(floor);
+
+    // Subtle floor hover indicator & click-to-move ripple marker
+    this.walkHoverRingMat = new THREE.MeshBasicMaterial({
+      color: "#f59e0b",
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0
+    });
+    this.walkHoverRing = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.22, 28), this.walkHoverRingMat);
+    this.walkHoverRing.rotation.x = -Math.PI / 2;
+    this.walkHoverRing.position.set(0, 0.042, 0);
+    this.roomGroup.add(this.walkHoverRing);
+
+    this.walkTargetRingMat = new THREE.MeshBasicMaterial({
+      color: "#fbbf24",
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0
+    });
+    this.walkTargetRing = new THREE.Mesh(new THREE.RingGeometry(0.14, 0.23, 28), this.walkTargetRingMat);
+    this.walkTargetRing.rotation.x = -Math.PI / 2;
+    this.walkTargetRing.position.set(0, 0.044, 0);
+    this.roomGroup.add(this.walkTargetRing);
 
     // Subtle wooden plank grooves
     const plankLineMat = makeMat("#c4905c", 0.72);
@@ -2501,6 +2537,70 @@ export class FreelancerRoomScene {
     return pos.z < -1.7 && pos.x < 1.3 && pos.x > -1.6;
   }
 
+  clampWalkableFloorPoint(rawPt) {
+    let x = THREE.MathUtils.clamp(rawPt.x, -3.55, 3.55);
+    let z = THREE.MathUtils.clamp(rawPt.z, -3.55, 3.55);
+    const owned = this.ownedItems || {};
+
+    // Active furniture/wall obstacle footprints with character clearance
+    const blockers = [
+      { minX: -1.52, maxX: 1.16, minZ: -3.95, maxZ: -1.72 }, // Desk & swivel chair
+      { minX: 1.66, maxX: 3.95, minZ: 0.65, maxZ: 3.85 },   // Single bed
+      { minX: 1.32, maxX: 1.74, minZ: -3.95, maxZ: -2.28 }, // Bath frosted West partition
+      { minX: 2.38, maxX: 3.95, minZ: -1.72, maxZ: -1.30 }, // Bath frosted South partition
+      { minX: 1.80, maxX: 2.66, minZ: -3.95, maxZ: -3.02 }, // Sink
+      { minX: 2.88, maxX: 3.88, minZ: -3.95, maxZ: -2.84 }  // Toilet
+    ];
+    if (owned.bed_lamp) blockers.push({ minX: 1.10, maxX: 1.76, minZ: 2.75, maxZ: 3.55 });
+    if (owned.cozy_sofa) blockers.push({ minX: -2.35, maxX: -1.20, minZ: -1.35, maxZ: 0.65 });
+    if (owned.coat_rack) blockers.push({ minX: -3.95, maxX: -3.05, minZ: 2.95, maxZ: 3.95 });
+    if (owned.coffee_bar) blockers.push({ minX: -3.95, maxX: -2.98, minZ: -2.95, maxZ: -1.68 });
+    if (owned.vinyl_player) blockers.push({ minX: -1.55, maxX: 0.05, minZ: 3.10, maxZ: 3.95 });
+    if (owned.orange_cat) blockers.push({ minX: 0.50, maxX: 1.45, minZ: 3.05, maxZ: 3.95 });
+    if (owned.floor_plant) blockers.push({ minX: 3.10, maxX: 3.95, minZ: -1.05, maxZ: -0.05 });
+
+    for (let pass = 0; pass < 2; pass++) {
+      for (const b of blockers) {
+        if (x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ) {
+          const candidates = [
+            { nx: b.minX, nz: z, d: Math.abs(x - b.minX) },
+            { nx: b.maxX, nz: z, d: Math.abs(b.maxX - x) },
+            { nx: x, nz: b.minZ, d: Math.abs(z - b.minZ) },
+            { nx: x, nz: b.maxZ, d: Math.abs(b.maxZ - z) }
+          ].sort((a, c) => a.d - c.d);
+          x = THREE.MathUtils.clamp(candidates[0].nx, -3.55, 3.55);
+          z = THREE.MathUtils.clamp(candidates[0].nz, -3.55, 3.55);
+        }
+      }
+    }
+    return new THREE.Vector3(x, 0, z);
+  }
+
+  walkToFloorPoint(rawPt) {
+    if (!rawPt || !this.charRoot) return;
+    const dest = this.clampWalkableFloorPoint(rawPt);
+    if (this.walkTargetRing && this.walkTargetRingMat) {
+      this.walkTargetRing.position.set(dest.x, 0.044, dest.z);
+      this.walkTargetRing.scale.set(1, 1, 1);
+      this.walkTargetRingMat.opacity = 0.85;
+      this.walkRippleActive = true;
+      this.walkRippleAge = 0;
+    }
+
+    const dx = dest.x - this.charRoot.position.x;
+    const dz = dest.z - this.charRoot.position.z;
+    const rotY = (Math.hypot(dx, dz) > 0.08)
+      ? Math.atan2(dx, dz)
+      : this.charRoot.rotation.y;
+
+    this.commandActivity({
+      id: "floor_stand",
+      label: "走到指定地板位置中",
+      pos: dest,
+      rotY
+    }, 52);
+  }
+
   buildPathTo(spotId, targetPos) {
     const rawWaypoints = [];
     const curPos = this.charRoot.position.clone();
@@ -2514,7 +2614,7 @@ export class FreelancerRoomScene {
       return [targetPos.clone()];
     }
 
-    const targetInBath = spotId === "wash" || spotId === "toilet";
+    const targetInBath = spotId === "wash" || spotId === "toilet" || this.isInBathroom(targetPos);
     const targetOnBed = spotId === "sleep" || spotId === "phone";
     const targetOnSofa = spotId === "sofa_read" || spotId === "sofa_tv";
     const targetNearDesk = spotId === "work" || spotId === "gaming" || spotId === "water_plant" || spotId === "read";
@@ -3062,6 +3162,14 @@ export class FreelancerRoomScene {
         this.rightArmPivot.rotation.x = -0.85 + Math.max(0, Math.sin(elapsedSec * 3.2)) * -0.45;
         this.headGroup.rotation.x = 0.15;
         break;
+      case "floor_stand":
+        // Calm relaxed standing stance looking gently around the studio
+        this.torsoGroup.rotation.y = Math.sin(elapsedSec * 0.9) * 0.04;
+        this.leftArmPivot.rotation.z = -0.06;
+        this.rightArmPivot.rotation.z = 0.06;
+        this.headGroup.rotation.y = Math.sin(elapsedSec * 1.1) * 0.14;
+        this.headGroup.rotation.x = Math.sin(elapsedSec * 1.6) * 0.03;
+        break;
       case "phone":
       default:
         // Sitting on the edge of the bed holding phone tilted up toward face
@@ -3120,6 +3228,8 @@ export class FreelancerRoomScene {
       if (visibleHit) {
         const type = visibleHit.object.userData.interactType;
         this.hoveredTarget = type;
+        this.hoveredFloorPoint = null;
+        if (this.walkHoverRingMat) this.walkHoverRingMat.opacity = 0;
         dom.style.cursor = "pointer";
         if (type === "lamp") {
           this.onHoverChange("點擊開關檯燈");
@@ -3144,8 +3254,24 @@ export class FreelancerRoomScene {
 
       if (this.hoveredTarget !== null) {
         this.hoveredTarget = null;
-        dom.style.cursor = "default";
         this.onHoverChange("");
+      }
+
+      // Check floor click-to-move hover inside interior bounds
+      const hitPt = new THREE.Vector3();
+      const hitFloor = this.floorPlane && this.raycaster.ray.intersectPlane(this.floorPlane, hitPt);
+      if (hitFloor && Math.abs(hitPt.x) <= 3.9 && Math.abs(hitPt.z) <= 3.9) {
+        const snapped = this.clampWalkableFloorPoint(hitPt);
+        this.hoveredFloorPoint = snapped;
+        if (this.walkHoverRing && this.walkHoverRingMat) {
+          this.walkHoverRing.position.set(snapped.x, 0.042, snapped.z);
+          this.walkHoverRingMat.opacity = 0.42;
+        }
+        dom.style.cursor = "pointer";
+      } else {
+        this.hoveredFloorPoint = null;
+        if (this.walkHoverRingMat) this.walkHoverRingMat.opacity = 0;
+        dom.style.cursor = "default";
       }
     };
 
@@ -3193,6 +3319,8 @@ export class FreelancerRoomScene {
         this.commandActivity(this.actionSpots.wash, COMMANDED_WASH_SEC);
       } else if (this.hoveredTarget === "toilet") {
         this.commandActivity(this.actionSpots.toilet, COMMANDED_TOILET_SEC);
+      } else if (this.hoveredFloorPoint) {
+        this.walkToFloorPoint(this.hoveredFloorPoint);
       }
     };
 
@@ -3210,11 +3338,13 @@ export class FreelancerRoomScene {
     };
 
     this.onPointerLeave = () => {
+      this.hoveredFloorPoint = null;
+      if (this.walkHoverRingMat) this.walkHoverRingMat.opacity = 0;
       if (this.hoveredTarget !== null) {
         this.hoveredTarget = null;
-        dom.style.cursor = "default";
         this.onHoverChange("");
       }
+      dom.style.cursor = "default";
     };
 
     dom.addEventListener("pointermove", this.onPointerMove);
@@ -3315,6 +3445,19 @@ export class FreelancerRoomScene {
     if (this.workHoverRingMat) {
       const targetOpacity = this.hoveredTarget === "computer" ? 0.36 : 0;
       this.workHoverRingMat.opacity += (targetOpacity - this.workHoverRingMat.opacity) * 0.18;
+    }
+
+    // Expanding pulse ripple when floor location is clicked
+    if (this.walkRippleActive && this.walkTargetRing && this.walkTargetRingMat) {
+      this.walkRippleAge += dt;
+      const p = Math.min(1, this.walkRippleAge / 0.72);
+      const scale = 1 + p * 1.45;
+      this.walkTargetRing.scale.set(scale, scale, 1);
+      this.walkTargetRingMat.opacity = (1 - p) * 0.82;
+      if (p >= 1) {
+        this.walkRippleActive = false;
+        this.walkTargetRingMat.opacity = 0;
+      }
     }
 
     this.renderer.render(this.scene, this.camera);
