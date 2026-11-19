@@ -115,6 +115,7 @@ let currentUserProfile = null;
 let userCompletionOverrides = {};
 let userSubmittedLessons = {};
 let userApprovedLessons = {};
+let userXpAwardedLessons = {};
 let pendingSignUpName = "";
 let authResolved = false;
 let sheetsLoaded = false;
@@ -216,6 +217,10 @@ function isLessonCompleted(dateStr) {
 function isLessonSubmitted(dateStr) {
   if (isLessonCompleted(dateStr)) return false;
   return Boolean(userSubmittedLessons[dateStr]);
+}
+
+function hasEarnedLessonXp(dateStr) {
+  return Boolean(userXpAwardedLessons[dateStr]);
 }
 
 function getCompletedLessons() {
@@ -424,25 +429,51 @@ function syncXpProgressUI({ allowCelebrate = false } = {}) {
 }
 
 async function setLessonSubmitted(dateStr, nextSubmitted) {
-  if (!currentUser || isLessonCompleted(dateStr)) return false;
-  const updatedMap = {
-    ...userSubmittedLessons,
-    [dateStr]: Boolean(nextSubmitted)
-  };
-  userSubmittedLessons = updatedMap;
-  if (currentUserProfile) {
-    currentUserProfile.submittedLessons = updatedMap;
-  }
+  if (!currentUser || isLessonCompleted(dateStr)) return { submitted: false, xpGranted: 0 };
+  const targetSubmitted = Boolean(nextSubmitted);
+  const userRef = doc(firestoreDb, "users", currentUser.uid);
 
-  const sanitized = {};
-  Object.entries(updatedMap).slice(0, 500).forEach(([k, v]) => {
-    if (typeof k === "string" && k) sanitized[k] = Boolean(v);
+  const result = await runTransaction(firestoreDb, async (tx) => {
+    const snap = await tx.get(userRef);
+    const data = snap.exists() ? (snap.data() || {}) : {};
+    const submittedMap = sanitizeBoolMap(data.submittedLessons);
+    const xpAwardedMap = sanitizeBoolMap(data.xpAwardedLessons);
+    submittedMap[dateStr] = targetSubmitted;
+
+    const patch = {
+      submittedLessons: submittedMap,
+      updatedAt: serverTimestamp()
+    };
+
+    let xpGranted = 0;
+    let nextXp = Math.max(0, Math.trunc(Number(data.xp ?? currentUserProfile?.xp ?? 0)));
+    if (targetSubmitted && !xpAwardedMap[dateStr]) {
+      const lessonMeta = db.lessons.find(l => l.Date === dateStr);
+      const unitXp = Math.max(0, Math.min(1000, getLessonXp(lessonMeta)));
+      if (unitXp > 0) {
+        xpAwardedMap[dateStr] = true;
+        nextXp = Math.min(10000000, nextXp + unitXp);
+        xpGranted = unitXp;
+        patch.xp = nextXp;
+        patch.xpAwardedLessons = xpAwardedMap;
+      }
+    }
+
+    tx.update(userRef, patch);
+    return { submitted: targetSubmitted, submittedMap, xpAwardedMap, nextXp, xpGranted };
   });
-  await updateDoc(doc(firestoreDb, "users", currentUser.uid), {
-    submittedLessons: sanitized,
-    updatedAt: serverTimestamp()
-  });
-  return Boolean(nextSubmitted);
+
+  userSubmittedLessons = result.submittedMap;
+  userXpAwardedLessons = result.xpAwardedMap;
+  if (currentUserProfile) {
+    currentUserProfile.submittedLessons = result.submittedMap;
+    currentUserProfile.xpAwardedLessons = result.xpAwardedMap;
+    currentUserProfile.xp = result.nextXp;
+  }
+  if (result.xpGranted > 0) {
+    syncXpProgressUI({ allowCelebrate: true });
+  }
+  return result;
 }
 
 function getRoleLabel(role) {
@@ -522,6 +553,7 @@ async function loadOrCreateUserProfile(user) {
     if (!("clams" in data)) migrationPatch.clams = STARTER_CLAMS;
     if (!("totalEarnedClams" in data)) migrationPatch.totalEarnedClams = 0;
     if (!("xp" in data)) migrationPatch.xp = 0;
+    if (!("xpAwardedLessons" in data)) migrationPatch.xpAwardedLessons = {};
     if (!("approvedLessons" in data)) migrationPatch.approvedLessons = {};
     if (!("submittedLessons" in data)) migrationPatch.submittedLessons = {};
     if (!("roomState" in data) || !data.roomState) {
@@ -545,7 +577,8 @@ async function loadOrCreateUserProfile(user) {
       data,
       overrides: sanitizeBoolMap(data.completionOverrides),
       submitted: sanitizeBoolMap(data.submittedLessons),
-      approved: sanitizeBoolMap(data.approvedLessons)
+      approved: sanitizeBoolMap(data.approvedLessons),
+      xpAwarded: sanitizeBoolMap(data.xpAwardedLessons)
     };
   }
 
@@ -560,6 +593,7 @@ async function loadOrCreateUserProfile(user) {
     clams: STARTER_CLAMS,
     totalEarnedClams: 0,
     xp: 0,
+    xpAwardedLessons: {},
     avatar: null,
     ownedItems: {},
     nextRentDueAt: getNextMonthFirstEpoch(),
@@ -578,7 +612,8 @@ async function loadOrCreateUserProfile(user) {
     data: { ...initialDoc, displayName: initialName },
     overrides: {},
     submitted: {},
-    approved: {}
+    approved: {},
+    xpAwarded: {}
   };
 }
 
@@ -842,7 +877,7 @@ function applyRemoteSettings(rows = []) {
   }
   const homeRewardHint = document.getElementById("home-reward-hint");
   if (homeRewardHint) {
-    homeRewardHint.textContent = `完成練習並送交甲方老師驗收通過後，每單元可獲得 +${UNIT_REWARD_CLAMS} 英蚌報酬與對應 XP`;
+    homeRewardHint.textContent = `完成任務即可自動獲得對應 XP；送交甲方老師驗收通過後，每單元再領 +${UNIT_REWARD_CLAMS} 英蚌報酬`;
   }
   syncXpProgressUI({ allowCelebrate: false });
 }
@@ -1110,6 +1145,12 @@ function renderHome() {
     cardBtn.className = "quest-node-card";
     cardBtn.style.textAlign = "center";
     const lessonXp = getLessonXp(lesson);
+    const xpAlreadyClaimed = hasEarnedLessonXp(lesson.Date);
+    const xpBadgeHtml = isCompleted
+      ? ""
+      : xpAlreadyClaimed
+      ? ` · <span class="quest-xp-pill">XP 已領 ✓</span>`
+      : ` · <span class="quest-xp-pill">+${lessonXp} XP</span>`;
     cardBtn.innerHTML = `
       <div class="quest-node-top">
         <span class="quest-unit-tag">${unitLabel}${statusSuffix}</span>
@@ -1118,7 +1159,7 @@ function renderHome() {
       <div class="quest-node-title">${escapeHtml(lesson.Title || "Untitled Lesson")}</div>
       ${lesson.Grammar_Focus ? `<div class="quest-node-grammar">${escapeHtml(lesson.Grammar_Focus)}</div>` : ""}
       <div class="quest-node-meta">
-        單字：${vocabCount} 個${isCompleted ? "" : ` · <span class="quest-xp-pill">+${lessonXp} XP</span> · <span class="quest-reward-pill">報酬 +${UNIT_REWARD_CLAMS} 英蚌</span>`}
+        單字：${vocabCount} 個${xpBadgeHtml}${isCompleted ? "" : ` · <span class="quest-reward-pill">報酬 +${UNIT_REWARD_CLAMS} 英蚌</span>`}
       </div>
     `;
     cardBtn.addEventListener("click", () => openLesson(lesson.Date));
@@ -1290,11 +1331,17 @@ function renderLesson(dateStr) {
 
   const lessonXp = getLessonXp(lesson);
   const xpBadgeEl = document.getElementById("lesson-xp-badge");
-  if (xpBadgeEl) {
-    xpBadgeEl.textContent = isLessonCompleted(dateStr)
-      ? "✓ 單元已驗收"
-      : `🥋 完成驗收 +${lessonXp} XP`;
-  }
+  const syncLessonXpBadge = () => {
+    if (!xpBadgeEl) return;
+    if (isLessonCompleted(dateStr)) {
+      xpBadgeEl.textContent = "✓ 單元已驗收";
+    } else if (hasEarnedLessonXp(dateStr)) {
+      xpBadgeEl.textContent = "🥋 XP 已自動入帳 ✓";
+    } else {
+      xpBadgeEl.textContent = `🥋 完成即領 +${lessonXp} XP`;
+    }
+  };
+  syncLessonXpBadge();
 
   const lessonQuiz = db.quiz.filter(q => q.Date === dateStr);
   document.getElementById("reading-title").textContent = lesson.Reading_Title || "Reading Passage";
@@ -1402,7 +1449,9 @@ function renderLesson(dateStr) {
     const submitBtn = document.getElementById("toggle-complete-btn");
     const approved = isLessonCompleted(dateStr);
     const submitted = isLessonSubmitted(dateStr);
+    const xpClaimedHere = hasEarnedLessonXp(dateStr);
     const unitXp = getLessonXp(lesson);
+    syncLessonXpBadge();
 
     submitBtn.classList.remove("is-completed", "is-submitted");
     if (approved) {
@@ -1412,13 +1461,13 @@ function renderLesson(dateStr) {
       submitBtn.classList.add("is-completed");
       submitBtn.disabled = true;
     } else if (submitted) {
-      statusEl.textContent = `⏳ 已交稿！請等待甲方老師於課堂驗收後發放 +${UNIT_REWARD_CLAMS} 英蚌與 +${unitXp} XP`;
+      statusEl.textContent = `⏳ 已交稿！${xpClaimedHere ? "經驗值 XP 已自動入帳，" : ""}請等待甲方老師驗收後發放 +${UNIT_REWARD_CLAMS} 英蚌`;
       statusEl.classList.remove("is-completed");
       submitBtn.textContent = "待案主驗收中（點此可收回修改）";
       submitBtn.classList.add("is-submitted");
       submitBtn.disabled = false;
     } else {
-      statusEl.textContent = `完成單字與閱讀練習後，提交給甲方（老師）驗收即可領取 +${UNIT_REWARD_CLAMS} 英蚌與 +${unitXp} XP`;
+      statusEl.textContent = `完成單字與閱讀練習後按下完成任務，系統將自動發放 ${xpClaimedHere ? "（XP 已領）" : `+${unitXp} XP 並`}申請 +${UNIT_REWARD_CLAMS} 英蚌`;
       statusEl.classList.remove("is-completed");
       submitBtn.textContent = "完成任務";
       submitBtn.disabled = false;
@@ -3533,6 +3582,7 @@ function startUserRealtimeListener(uid, nonce) {
     userCompletionOverrides = sanitizeBoolMap(data.completionOverrides);
     userSubmittedLessons = sanitizeBoolMap(data.submittedLessons);
     userApprovedLessons = nextApproved;
+    userXpAwardedLessons = sanitizeBoolMap(data.xpAwardedLessons);
 
     if (newlyApproved && (currentScreen === "desktop" || currentScreen === "lesson")) {
       pendingWorkCelebration = "approved";
@@ -3622,6 +3672,7 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount)
     const data = snap.data() || {};
     const approvedMap = sanitizeBoolMap(data.approvedLessons);
     const submittedMap = sanitizeBoolMap(data.submittedLessons);
+    const xpAwardedMap = sanitizeBoolMap(data.xpAwardedLessons);
 
     if (approvedMap[dateStr]) {
       return {
@@ -3637,7 +3688,11 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount)
     const currentXp = Math.max(0, Math.trunc(Number(data.xp ?? 0)));
     const nextClams = currentClams + safeReward;
     const nextTotal = currentTotal + safeReward;
-    const nextXp = Math.min(10000000, currentXp + safeXp);
+    const xpGranted = xpAwardedMap[dateStr] ? 0 : safeXp;
+    const nextXp = Math.min(10000000, currentXp + xpGranted);
+    if (xpGranted > 0) {
+      xpAwardedMap[dateStr] = true;
+    }
 
     approvedMap[dateStr] = true;
     submittedMap[dateStr] = false;
@@ -3648,6 +3703,7 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount)
       clams: nextClams,
       totalEarnedClams: nextTotal,
       xp: nextXp,
+      xpAwardedLessons: xpAwardedMap,
       updatedAt: serverTimestamp()
     });
     if (safeReward > 0) {
@@ -3664,21 +3720,24 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount)
       nextClams,
       nextTotal,
       nextXp,
-      xpGranted: safeXp,
+      xpGranted,
       approvedMap,
-      submittedMap
+      submittedMap,
+      xpAwardedMap
     };
   });
 
   if (studentUid === currentUser?.uid && !result.alreadyApproved) {
     userApprovedLessons = result.approvedMap;
     userSubmittedLessons = result.submittedMap;
+    userXpAwardedLessons = result.xpAwardedMap;
     if (currentUserProfile) {
       currentUserProfile.clams = result.nextClams;
       currentUserProfile.totalEarnedClams = result.nextTotal;
       currentUserProfile.xp = result.nextXp;
       currentUserProfile.approvedLessons = result.approvedMap;
       currentUserProfile.submittedLessons = result.submittedMap;
+      currentUserProfile.xpAwardedLessons = result.xpAwardedMap;
     }
     updateHeaderAccountUI(
       currentUser,
@@ -3951,6 +4010,7 @@ onAuthStateChanged(auth, async (user) => {
   userCompletionOverrides = {};
   userSubmittedLessons = {};
   userApprovedLessons = {};
+  userXpAwardedLessons = {};
   pendingWorkCelebration = null;
   lastKnownXpRankIndex = null;
   hasInitializedXpBaseline = false;
@@ -3976,6 +4036,7 @@ onAuthStateChanged(auth, async (user) => {
     userCompletionOverrides = profileResult.overrides || {};
     userSubmittedLessons = profileResult.submitted || {};
     userApprovedLessons = profileResult.approved || {};
+    userXpAwardedLessons = profileResult.xpAwarded || {};
     const displayName = formatDisplayName(user, profileResult.data);
     updateHeaderAccountUI(user, role, displayName, profileResult.data?.clams ?? STARTER_CLAMS);
     startUserRealtimeListener(user.uid, nonce);
