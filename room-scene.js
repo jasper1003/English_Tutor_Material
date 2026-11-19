@@ -800,6 +800,7 @@ export class FreelancerRoomScene {
     this.onBedLampToggle = options.onBedLampToggle || (() => {});
     this.onVinylToggle = options.onVinylToggle || (() => {});
     this.onOpenTv = options.onOpenTv || (() => {});
+    this.onOpenPoster = options.onOpenPoster || (() => {});
     this.onActivityChange = options.onActivityChange || (() => {});
     this.onTimeUpdate = options.onTimeUpdate || (() => {});
     this.onHoverChange = options.onHoverChange || (() => {});
@@ -819,6 +820,11 @@ export class FreelancerRoomScene {
     this.wallColorHex = options.wallColor || "#f3eadc";
     this.bedSheetId = options.bedSheet || DEFAULT_BED_SHEET;
     this.rugStyleId = options.rugStyle || DEFAULT_RUG_STYLE;
+    this.posterImageDataUrl = typeof options.posterImage === "string" ? options.posterImage.trim() : "";
+    this.posterLoadSeq = 0;
+    this.customPosterTex = null;
+    this.defaultPosterTex = null;
+    this.posterArtMesh = null;
     this.ownedItems = { ...(options.ownedItems || {}) };
     this.avatarConfig = { ...DEFAULT_AVATAR, ...(options.avatar || {}) };
 
@@ -1137,16 +1143,24 @@ export class FreelancerRoomScene {
     posterGroup.add(frameOuter);
     const matBoard = new THREE.Mesh(new RoundedBoxGeometry(0.8, 1.06, 0.045, 2, 0.01), makeMat("#faf5ed", 0.85));
     posterGroup.add(matBoard);
+    const defaultTex = makePosterTexture();
     const posterArt = new THREE.Mesh(
       new THREE.PlaneGeometry(0.66, 0.9),
-      new THREE.MeshBasicMaterial({ map: makePosterTexture() })
+      new THREE.MeshBasicMaterial({ map: defaultTex })
     );
     posterArt.position.z = 0.025;
     posterGroup.add(posterArt);
+    this.defaultPosterTex = defaultTex;
+    this.posterArtMesh = posterArt;
     posterGroup.visible = Boolean(this.ownedItems.wall_poster);
     this.wallPosterGroup = posterGroup;
     upperGroup.add(posterGroup);
     [frameOuter, matBoard, posterArt].forEach(m => this.addInteractive(m, "poster"));
+    if (this.posterImageDataUrl) {
+      const savedUrl = this.posterImageDataUrl;
+      this.posterImageDataUrl = "";
+      this.setPosterImage(savedUrl);
+    }
 
     // Low floor baseboard always left visible during cutaway
     const baseboard = new THREE.Mesh(new RoundedBoxGeometry(8.48, 0.14, 0.24, 2, 0.03), trimMat);
@@ -2375,6 +2389,58 @@ export class FreelancerRoomScene {
     }
   }
 
+  setPosterImage(dataUrl) {
+    const nextUrl = typeof dataUrl === "string" ? dataUrl.trim() : "";
+    const hasCustomApplied = Boolean(this.customPosterTex && this.posterArtMesh?.material?.map === this.customPosterTex);
+    const hasDefaultApplied = Boolean(this.defaultPosterTex && this.posterArtMesh?.material?.map === this.defaultPosterTex);
+    if (nextUrl === this.posterImageDataUrl && ((nextUrl && hasCustomApplied) || (!nextUrl && hasDefaultApplied))) {
+      return;
+    }
+    this.posterImageDataUrl = nextUrl;
+    const seq = ++this.posterLoadSeq;
+
+    if (!nextUrl) {
+      if (this.posterArtMesh && this.defaultPosterTex) {
+        this.posterArtMesh.material.map = this.defaultPosterTex;
+        this.posterArtMesh.material.needsUpdate = true;
+      }
+      if (this.customPosterTex) {
+        this.customPosterTex.dispose();
+        this.customPosterTex = null;
+      }
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      if (this.disposed || seq !== this.posterLoadSeq || !this.posterArtMesh) return;
+      const tex = new THREE.Texture(img);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      const oldCustom = this.customPosterTex;
+      this.customPosterTex = tex;
+      this.posterArtMesh.material.map = tex;
+      this.posterArtMesh.material.needsUpdate = true;
+      if (oldCustom) oldCustom.dispose();
+    };
+    img.onerror = () => {
+      if (this.disposed || seq !== this.posterLoadSeq || !this.posterArtMesh) return;
+      if (this.defaultPosterTex) {
+        this.posterArtMesh.material.map = this.defaultPosterTex;
+        this.posterArtMesh.material.needsUpdate = true;
+      }
+      if (this.customPosterTex) {
+        this.customPosterTex.dispose();
+        this.customPosterTex = null;
+      }
+    };
+    img.src = nextUrl;
+  }
+
+  admirePoster() {
+    this.commandActivity(this.actionSpots.admire_poster, 12);
+  }
+
   applyOwnedItems(ownedItems = {}) {
     this.ownedItems = { ...(ownedItems || {}) };
     if (this.wallPosterGroup) this.wallPosterGroup.visible = Boolean(this.ownedItems.wall_poster);
@@ -3275,10 +3341,12 @@ export class FreelancerRoomScene {
           this.onHoverChange("點擊沖一杯手沖熱美式咖啡");
         } else if (type === "cat") {
           this.onHoverChange("點擊摸摸橘貓室友「阿橘」");
+        } else if (type === "poster") {
+          this.onHoverChange("點擊更換掛畫圖案／裁切自訂照片");
         } else if (type === "computer") {
           this.onHoverChange("點擊電腦／電繪板開始接案學習");
         } else {
-          // Silent discovery for bed / sink / toilet / sofa / plant / poster / coatRack / floorPlant
+          // Silent discovery for bed / sink / toilet / sofa / plant / coatRack / floorPlant
           this.onHoverChange("");
         }
         return;
@@ -3343,7 +3411,7 @@ export class FreelancerRoomScene {
       } else if (this.hoveredTarget === "plant") {
         this.commandActivity(this.actionSpots.water_plant, 10);
       } else if (this.hoveredTarget === "poster") {
-        this.commandActivity(this.actionSpots.admire_poster, 12);
+        this.onOpenPoster();
       } else if (this.hoveredTarget === "bed") {
         const sleepSpot = this.chillSpots.find(s => s.id === "sleep");
         this.commandActivity(sleepSpot, COMMANDED_SLEEP_SEC);
@@ -3507,6 +3575,14 @@ export class FreelancerRoomScene {
     }
     window.removeEventListener("resize", this.onResize);
     clearTimeout(this.bubbleTimer);
+    if (this.customPosterTex) {
+      this.customPosterTex.dispose();
+      this.customPosterTex = null;
+    }
+    if (this.defaultPosterTex) {
+      this.defaultPosterTex.dispose();
+      this.defaultPosterTex = null;
+    }
     this.renderer?.dispose();
   }
 }

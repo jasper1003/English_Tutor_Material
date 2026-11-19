@@ -2213,6 +2213,109 @@
       border: 0;
     }
 
+    .poster-dialog {
+      max-width: min(520px, calc(100vw - 2rem));
+    }
+
+    .poster-crop-layout {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .poster-frame-stage {
+      position: relative;
+      padding: 14px;
+      border-radius: 10px;
+      background: #faf5ed;
+      border: 8px solid #7a553a;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.28), inset 0 1px 2px rgba(0, 0, 0, 0.14);
+      transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+    }
+
+    .poster-frame-stage.is-dragover {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.24), 0 14px 30px rgba(15, 23, 42, 0.28);
+      transform: scale(1.01);
+    }
+
+    #poster-crop-canvas {
+      display: block;
+      width: min(264px, 66vw);
+      aspect-ratio: 11 / 15;
+      height: auto;
+      border-radius: 2px;
+      background: #faf5ed;
+      touch-action: none;
+      user-select: none;
+    }
+
+    #poster-crop-canvas.is-draggable {
+      cursor: grab;
+    }
+
+    #poster-crop-canvas.is-dragging {
+      cursor: grabbing;
+    }
+
+    .poster-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .poster-controls-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 0.65rem 0.8rem;
+      border-radius: 12px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+    }
+
+    .poster-zoom-wrap {
+      flex: 1 1 175px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .poster-zoom-wrap input[type="range"] {
+      flex: 1;
+      min-width: 90px;
+      accent-color: var(--primary);
+    }
+
+    .poster-zoom-value {
+      min-width: 2.6rem;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+
+    .poster-upload-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
     /* Simple & Clear Financial Report Modal */
     .finance-dialog {
       max-width: min(740px, calc(100vw - 2rem));
@@ -2963,6 +3066,65 @@
       </div>
     </dialog>
 
+    <!-- Wall Art Poster Customizer & Interactive Cropper Dialog -->
+    <dialog id="poster-dialog" class="settings-dialog poster-dialog" closedby="any" aria-labelledby="poster-dialog-title">
+      <div class="dialog-shell">
+        <div class="dialog-header">
+          <div>
+            <h2 class="dialog-title" id="poster-dialog-title">🖼️ 更換房間掛畫圖案</h2>
+            <div class="form-hint" style="margin-top: 0.15rem;">可匯入自己的照片並自由裁切構圖，或隨時取消恢復預設山水畫</div>
+          </div>
+          <button
+            type="button"
+            class="dialog-close-btn"
+            id="close-poster-btn"
+            command="close"
+            commandfor="poster-dialog"
+            aria-label="關閉掛畫設定"
+          >✕</button>
+        </div>
+        <div class="dialog-body">
+          <div id="poster-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
+
+          <div class="poster-crop-layout">
+            <div class="poster-status-pill" id="poster-mode-pill">🎨 目前顯示：預設山水畫</div>
+
+            <div class="poster-frame-stage" id="poster-frame-stage" title="可直接拖曳圖片檔案到此處匯入">
+              <canvas id="poster-crop-canvas" width="330" height="450" aria-label="掛畫預覽與裁切框"></canvas>
+            </div>
+
+            <div class="poster-upload-row">
+              <input type="file" id="poster-file-input" accept="image/*" class="hidden">
+              <button type="button" class="btn" id="poster-pick-btn">📂 匯入照片</button>
+              <span class="form-hint">支援拖曳照片到畫框，拖曳畫面與滑桿裁切（11:15 直幅）</span>
+            </div>
+
+            <div class="poster-controls-bar" id="poster-controls-bar">
+              <label class="poster-zoom-wrap" for="poster-zoom-range">
+                <span>縮放</span>
+                <input type="range" id="poster-zoom-range" min="100" max="350" step="2" value="100" disabled>
+                <span class="poster-zoom-value" id="poster-zoom-value">1.0×</span>
+              </label>
+              <button type="button" class="btn btn-sm" id="poster-rotate-btn" disabled>↻ 旋轉 90°</button>
+              <button type="button" class="btn btn-sm" id="poster-center-btn" disabled>置中重設</button>
+            </div>
+          </div>
+        </div>
+        <div class="dialog-footer" style="flex-wrap: wrap; gap: 0.5rem;">
+          <button type="button" class="btn" id="poster-reset-btn">🎨 取消照片／變回山水畫</button>
+          <button
+            type="button"
+            class="btn"
+            id="footer-close-poster-btn"
+            command="close"
+            commandfor="poster-dialog"
+            style="margin-inline-start: auto;"
+          >取消</button>
+          <button type="button" class="btn btn-primary" id="poster-confirm-btn" disabled>✅ 確認掛上牆面</button>
+        </div>
+      </div>
+    </dialog>
+
     <!-- Easy-to-Understand Monthly Financial Report & Rent Countdown Dialog -->
     <dialog id="finance-dialog" class="settings-dialog finance-dialog" closedby="any" aria-labelledby="finance-dialog-title">
       <div class="dialog-shell">
@@ -3239,7 +3401,7 @@
       HAIR_COLORS,
       OUTFIT_COLORS,
       DEFAULT_AVATAR
-    } from "./room-scene.js?v=20261119u";
+    } from "./room-scene.js?v=20261119v";
     import {
       SHOP_CATEGORIES,
       SHOP_CATALOG,
@@ -3670,6 +3832,7 @@
           wallColor: rs.wallColor || DEFAULT_WALL_COLOR,
           bedSheet: rs.bedSheet || DEFAULT_BED_SHEET,
           rugStyle: rs.rugStyle || DEFAULT_RUG_STYLE,
+          posterImage: rs.posterImage || "",
           ownedItems: owned,
           customThoughts: pendingThoughtRows,
           onEnterWork: () => {
@@ -3687,6 +3850,9 @@
           onOpenTv: () => {
             openTvPlayer();
           },
+          onOpenPoster: () => {
+            openPosterCustomizer();
+          },
           onTimeUpdate: ({ clockText }) => {
             document.getElementById("room-clock-pill").textContent = `🕒 ${clockText}`;
           }
@@ -3699,6 +3865,7 @@
         roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
         roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
         roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
+        roomScene.setPosterImage(rs.posterImage || "");
         roomScene.applyOwnedItems(owned);
         if (pendingThoughtRows) {
           roomScene.applyCustomThoughts(pendingThoughtRows);
@@ -4832,6 +4999,16 @@
     );
 
     setupModalDialogFallbacks(
+      document.getElementById("poster-dialog"),
+      [],
+      [document.getElementById("close-poster-btn"), document.getElementById("footer-close-poster-btn")],
+      () => {
+        clearFeedback("poster-feedback");
+        cleanupPosterObjectUrl();
+      }
+    );
+
+    setupModalDialogFallbacks(
       document.getElementById("finance-dialog"),
       [],
       [document.getElementById("close-finance-btn"), document.getElementById("footer-close-finance-btn")],
@@ -5808,6 +5985,410 @@
       tvIframe.src = "";
     });
 
+    // Wall Art Poster Customizer & Interactive Cropper
+    const POSTER_CANON_W = 330;
+    const POSTER_CANON_H = 450;
+    const POSTER_MAX_DATA_URL_LEN = 120000;
+    const posterDialog = document.getElementById("poster-dialog");
+    const posterCropCanvas = document.getElementById("poster-crop-canvas");
+    const posterFrameStage = document.getElementById("poster-frame-stage");
+    const posterFileInput = document.getElementById("poster-file-input");
+    const posterPickBtn = document.getElementById("poster-pick-btn");
+    const posterZoomRange = document.getElementById("poster-zoom-range");
+    const posterZoomValue = document.getElementById("poster-zoom-value");
+    const posterRotateBtn = document.getElementById("poster-rotate-btn");
+    const posterCenterBtn = document.getElementById("poster-center-btn");
+    const posterResetBtn = document.getElementById("poster-reset-btn");
+    const posterConfirmBtn = document.getElementById("poster-confirm-btn");
+    const posterModePill = document.getElementById("poster-mode-pill");
+
+    const posterCropState = {
+      img: null,
+      objectUrl: null,
+      isSavedCustom: false,
+      isNewDraft: false,
+      zoom: 1,
+      rotationDeg: 0,
+      panX: 0,
+      panY: 0,
+      dragging: false,
+      dragPointerId: null,
+      lastClientX: 0,
+      lastClientY: 0,
+      busy: false
+    };
+
+    function cleanupPosterObjectUrl() {
+      if (posterCropState.objectUrl) {
+        URL.revokeObjectURL(posterCropState.objectUrl);
+        posterCropState.objectUrl = null;
+      }
+    }
+
+    function drawDefaultLandscapePoster(ctx, w, h) {
+      const sx = w / 192;
+      const sy = h / 256;
+      const sky = ctx.createLinearGradient(0, 0, 0, 175 * sy);
+      sky.addColorStop(0, "#fce7d2");
+      sky.addColorStop(1, "#f7bfa0");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.fillStyle = "#ff8552";
+      ctx.beginPath();
+      ctx.arc(96 * sx, 94 * sy, 34 * Math.min(sx, sy), 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#6d8da6";
+      ctx.beginPath();
+      ctx.moveTo(0, 185 * sy);
+      ctx.lineTo(66 * sx, 122 * sy);
+      ctx.lineTo(132 * sx, 176 * sy);
+      ctx.lineTo(w, 134 * sy);
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#3f5d73";
+      ctx.beginPath();
+      ctx.moveTo(0, 206 * sy);
+      ctx.lineTo(92 * sx, 152 * sy);
+      ctx.lineTo(w, 196 * sy);
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function getPosterCropMetrics() {
+      const img = posterCropState.img;
+      if (!img || !img.naturalWidth || !img.naturalHeight) return null;
+      const rotQuarters = (((posterCropState.rotationDeg / 90) % 4) + 4) % 4;
+      const effW = rotQuarters % 2 === 1 ? img.naturalHeight : img.naturalWidth;
+      const effH = rotQuarters % 2 === 1 ? img.naturalWidth : img.naturalHeight;
+      const baseScale = Math.max(POSTER_CANON_W / effW, POSTER_CANON_H / effH);
+      const totalScale = baseScale * posterCropState.zoom;
+      const maxPanX = Math.max(0, (effW * totalScale - POSTER_CANON_W) / 2);
+      const maxPanY = Math.max(0, (effH * totalScale - POSTER_CANON_H) / 2);
+      return { totalScale, maxPanX, maxPanY };
+    }
+
+    function clampPosterCropPan() {
+      const metrics = getPosterCropMetrics();
+      if (!metrics) {
+        posterCropState.panX = 0;
+        posterCropState.panY = 0;
+        return;
+      }
+      posterCropState.panX = Math.max(-metrics.maxPanX, Math.min(metrics.maxPanX, posterCropState.panX));
+      posterCropState.panY = Math.max(-metrics.maxPanY, Math.min(metrics.maxPanY, posterCropState.panY));
+    }
+
+    function renderPosterCropToCtx(ctx, targetW, targetH, showGrid) {
+      ctx.save();
+      ctx.clearRect(0, 0, targetW, targetH);
+      if (!posterCropState.img) {
+        drawDefaultLandscapePoster(ctx, targetW, targetH);
+        ctx.restore();
+        return;
+      }
+      clampPosterCropPan();
+      const metrics = getPosterCropMetrics();
+      const img = posterCropState.img;
+      const k = targetW / POSTER_CANON_W;
+
+      ctx.fillStyle = "#faf5ed";
+      ctx.fillRect(0, 0, targetW, targetH);
+
+      ctx.save();
+      ctx.translate(targetW / 2 + posterCropState.panX * k, targetH / 2 + posterCropState.panY * k);
+      ctx.rotate((posterCropState.rotationDeg * Math.PI) / 180);
+      const drawScale = metrics.totalScale * k;
+      ctx.drawImage(
+        img,
+        (-img.naturalWidth * drawScale) / 2,
+        (-img.naturalHeight * drawScale) / 2,
+        img.naturalWidth * drawScale,
+        img.naturalHeight * drawScale
+      );
+      ctx.restore();
+
+      if (showGrid) {
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.36)";
+        ctx.lineWidth = 1;
+        for (let i = 1; i <= 2; i++) {
+          const gx = Math.round((targetW * i) / 3) + 0.5;
+          const gy = Math.round((targetH * i) / 3) + 0.5;
+          ctx.beginPath();
+          ctx.moveTo(gx, 0);
+          ctx.lineTo(gx, targetH);
+          ctx.moveTo(0, gy);
+          ctx.lineTo(targetW, gy);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    function syncPosterControlsUI() {
+      const hasImg = Boolean(posterCropState.img);
+      const busy = posterCropState.busy;
+      posterZoomRange.value = String(Math.round(posterCropState.zoom * 100));
+      posterZoomValue.textContent = `${posterCropState.zoom.toFixed(1)}×`;
+
+      posterZoomRange.disabled = !hasImg || busy;
+      posterRotateBtn.disabled = !hasImg || busy;
+      posterCenterBtn.disabled = !hasImg || busy;
+      posterPickBtn.disabled = busy;
+      posterConfirmBtn.disabled = !hasImg || busy;
+      posterResetBtn.disabled = busy || (!hasImg && !posterCropState.isSavedCustom);
+
+      posterCropCanvas.classList.toggle("is-draggable", hasImg && !busy);
+      posterCropCanvas.classList.toggle("is-dragging", posterCropState.dragging);
+
+      if (posterCropState.isNewDraft) {
+        posterModePill.textContent = "✂️ 裁切自訂照片中（確認後將掛上牆面）";
+      } else if (hasImg && posterCropState.isSavedCustom) {
+        posterModePill.textContent = "🖼️ 目前使用：你的自訂掛畫照片";
+      } else {
+        posterModePill.textContent = "🎨 目前顯示：預設山水畫";
+      }
+
+      const ctx = posterCropCanvas.getContext("2d");
+      if (ctx) {
+        renderPosterCropToCtx(ctx, posterCropCanvas.width, posterCropCanvas.height, hasImg);
+      }
+    }
+
+    function loadPosterPreviewSrc(src, { objectUrl = null, isNewDraft = false, isSavedCustom = false } = {}) {
+      cleanupPosterObjectUrl();
+      posterCropState.objectUrl = objectUrl;
+      if (!src) {
+        posterCropState.img = null;
+        posterCropState.isNewDraft = false;
+        posterCropState.isSavedCustom = Boolean(isSavedCustom);
+        posterCropState.zoom = 1;
+        posterCropState.rotationDeg = 0;
+        posterCropState.panX = 0;
+        posterCropState.panY = 0;
+        syncPosterControlsUI();
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        if (posterCropState.objectUrl && objectUrl !== posterCropState.objectUrl) return;
+        posterCropState.img = img;
+        posterCropState.isNewDraft = isNewDraft;
+        posterCropState.isSavedCustom = isSavedCustom;
+        posterCropState.zoom = 1;
+        posterCropState.rotationDeg = 0;
+        posterCropState.panX = 0;
+        posterCropState.panY = 0;
+        syncPosterControlsUI();
+      };
+      img.onerror = () => {
+        cleanupPosterObjectUrl();
+        showFeedback("poster-feedback", "error", "無法讀取這張圖片檔案，請改選 JPG、PNG 或 WebP 格式的照片。");
+      };
+      img.src = src;
+    }
+
+    function handlePosterFileSelection(file) {
+      if (!file) return;
+      clearFeedback("poster-feedback");
+      if (file.type && !file.type.startsWith("image/")) {
+        showFeedback("poster-feedback", "error", "請選擇圖片檔案（JPG、PNG、WebP 等）。");
+        return;
+      }
+      const nextUrl = URL.createObjectURL(file);
+      loadPosterPreviewSrc(nextUrl, {
+        objectUrl: nextUrl,
+        isNewDraft: true,
+        isSavedCustom: Boolean(currentUserProfile?.roomState?.posterImage)
+      });
+    }
+
+    function exportCroppedPosterDataUrl() {
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = POSTER_CANON_W;
+      exportCanvas.height = POSTER_CANON_H;
+      const ctx = exportCanvas.getContext("2d");
+      renderPosterCropToCtx(ctx, POSTER_CANON_W, POSTER_CANON_H, false);
+      const qualities = [0.86, 0.74, 0.62, 0.5];
+      let out = "";
+      for (const q of qualities) {
+        out = exportCanvas.toDataURL("image/jpeg", q);
+        if (out.length <= POSTER_MAX_DATA_URL_LEN) return out;
+      }
+      if (out.length <= 145000) return out;
+      throw new Error("裁切後照片體積過大，請換一張照片或稍微縮小再試。");
+    }
+
+    async function savePosterCustomization(nextPosterUrl) {
+      if (!currentUser || !currentUserProfile || posterCropState.busy) return;
+      posterCropState.busy = true;
+      clearFeedback("poster-feedback");
+      syncPosterControlsUI();
+      try {
+        const nextRoomState = {
+          ...(currentUserProfile.roomState || {
+            cameraQuarter: 0,
+            deskLampOn: true,
+            bedLampOn: false,
+            wallColor: DEFAULT_WALL_COLOR,
+            bedSheet: DEFAULT_BED_SHEET,
+            rugStyle: DEFAULT_RUG_STYLE,
+            vinylOn: false
+          }),
+          posterImage: nextPosterUrl
+        };
+        await updateDoc(doc(firestoreDb, "users", currentUser.uid), {
+          roomState: nextRoomState,
+          updatedAt: serverTimestamp()
+        });
+        currentUserProfile.roomState = nextRoomState;
+        roomScene?.setPosterImage(nextPosterUrl);
+        roomScene?.admirePoster();
+        if (posterDialog.open) {
+          posterDialog.close();
+        }
+      } catch (err) {
+        showFeedback("poster-feedback", "error", err?.message || translateAuthError(err));
+      } finally {
+        posterCropState.busy = false;
+        syncPosterControlsUI();
+      }
+    }
+
+    function openPosterCustomizer() {
+      clearFeedback("poster-feedback");
+      posterFileInput.value = "";
+      const savedUrl = typeof currentUserProfile?.roomState?.posterImage === "string"
+        ? currentUserProfile.roomState.posterImage.trim()
+        : "";
+      if (savedUrl) {
+        loadPosterPreviewSrc(savedUrl, { isNewDraft: false, isSavedCustom: true });
+      } else {
+        loadPosterPreviewSrc("", { isNewDraft: false, isSavedCustom: false });
+      }
+      if (!posterDialog.open) {
+        posterDialog.showModal();
+      }
+    }
+
+    posterPickBtn.addEventListener("click", () => {
+      posterFileInput.value = "";
+      posterFileInput.click();
+    });
+
+    posterFileInput.addEventListener("change", (e) => {
+      const file = e.target.files?.[0];
+      if (file) handlePosterFileSelection(file);
+    });
+
+    posterFrameStage.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      posterFrameStage.classList.add("is-dragover");
+    });
+
+    posterFrameStage.addEventListener("dragleave", () => {
+      posterFrameStage.classList.remove("is-dragover");
+    });
+
+    posterFrameStage.addEventListener("drop", (e) => {
+      e.preventDefault();
+      posterFrameStage.classList.remove("is-dragover");
+      const file = e.dataTransfer?.files?.[0];
+      if (file) handlePosterFileSelection(file);
+    });
+
+    posterZoomRange.addEventListener("input", () => {
+      posterCropState.zoom = Math.max(1, Math.min(3.5, Number(posterZoomRange.value) / 100));
+      syncPosterControlsUI();
+    });
+
+    posterRotateBtn.addEventListener("click", () => {
+      if (!posterCropState.img || posterCropState.busy) return;
+      posterCropState.rotationDeg = (posterCropState.rotationDeg + 90) % 360;
+      posterCropState.panX = 0;
+      posterCropState.panY = 0;
+      syncPosterControlsUI();
+    });
+
+    posterCenterBtn.addEventListener("click", () => {
+      if (!posterCropState.img || posterCropState.busy) return;
+      posterCropState.zoom = 1;
+      posterCropState.rotationDeg = 0;
+      posterCropState.panX = 0;
+      posterCropState.panY = 0;
+      syncPosterControlsUI();
+    });
+
+    posterCropCanvas.addEventListener("pointerdown", (e) => {
+      if (!posterCropState.img || posterCropState.busy) return;
+      posterCropState.dragging = true;
+      posterCropState.dragPointerId = e.pointerId;
+      posterCropState.lastClientX = e.clientX;
+      posterCropState.lastClientY = e.clientY;
+      posterCropCanvas.setPointerCapture?.(e.pointerId);
+      syncPosterControlsUI();
+    });
+
+    posterCropCanvas.addEventListener("pointermove", (e) => {
+      if (!posterCropState.dragging || e.pointerId !== posterCropState.dragPointerId) return;
+      const rect = posterCropCanvas.getBoundingClientRect();
+      if (!rect.width) return;
+      const scaleToCanon = POSTER_CANON_W / rect.width;
+      posterCropState.panX += (e.clientX - posterCropState.lastClientX) * scaleToCanon;
+      posterCropState.panY += (e.clientY - posterCropState.lastClientY) * scaleToCanon;
+      posterCropState.lastClientX = e.clientX;
+      posterCropState.lastClientY = e.clientY;
+      const ctx = posterCropCanvas.getContext("2d");
+      if (ctx) {
+        renderPosterCropToCtx(ctx, posterCropCanvas.width, posterCropCanvas.height, true);
+      }
+    });
+
+    const endPosterDrag = (e) => {
+      if (!posterCropState.dragging || (e && e.pointerId !== posterCropState.dragPointerId)) return;
+      posterCropState.dragging = false;
+      posterCropState.dragPointerId = null;
+      syncPosterControlsUI();
+    };
+    posterCropCanvas.addEventListener("pointerup", endPosterDrag);
+    posterCropCanvas.addEventListener("pointercancel", endPosterDrag);
+
+    posterCropCanvas.addEventListener("wheel", (e) => {
+      if (!posterCropState.img || posterCropState.busy) return;
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.1 : -0.1;
+      posterCropState.zoom = Math.max(1, Math.min(3.5, Math.round((posterCropState.zoom + delta) * 50) / 50));
+      syncPosterControlsUI();
+    }, { passive: false });
+
+    posterConfirmBtn.addEventListener("click", async () => {
+      if (!posterCropState.img || posterCropState.busy) return;
+      try {
+        const dataUrl = exportCroppedPosterDataUrl();
+        await savePosterCustomization(dataUrl);
+      } catch (err) {
+        showFeedback("poster-feedback", "error", err?.message || "照片匯出失敗，請重試。");
+      }
+    });
+
+    posterResetBtn.addEventListener("click", async () => {
+      if (posterCropState.busy) return;
+      const hasSaved = Boolean(currentUserProfile?.roomState?.posterImage);
+      if (hasSaved) {
+        await savePosterCustomization("");
+      } else {
+        loadPosterPreviewSrc("", { isNewDraft: false, isSavedCustom: false });
+        showFeedback("poster-feedback", "success", "已恢復為預設山水畫預覽。");
+      }
+    });
+
     document.getElementById("room-shop-btn").addEventListener("click", () => {
       clearFeedback("shop-feedback");
       renderShopDialog();
@@ -6370,6 +6951,7 @@
           roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
           roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
           roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
+          roomScene.setPosterImage(rs.posterImage || "");
           roomScene.setVinylOn(Boolean(rs.vinylOn ?? false));
           roomScene.applyOwnedItems(normalizeOwnedItems(data.ownedItems));
         }
