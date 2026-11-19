@@ -1004,40 +1004,69 @@
     }
 
     const COMPLETED_STORAGE_KEY = "vic_completed_lessons_v1";
+    const COMPLETION_OVERRIDES_KEY = "vic_lesson_completion_overrides_v1";
+    const DEFAULT_COMPLETED_BEFORE = "2026-10-28";
     const LOCKED_NODES_AHEAD = 4;
     const WAVE_OFFSETS_PX = [0, -76, -108, -76, 0, 76, 108, 76];
     let questResizeObserver = null;
 
-    function getCompletedLessons() {
+    function getCompletionOverrides() {
+      const map = {};
       try {
-        const raw = localStorage.getItem(COMPLETED_STORAGE_KEY);
-        const parsed = raw ? JSON.parse(raw) : [];
-        return new Set(Array.isArray(parsed) ? parsed : []);
-      } catch {
-        return new Set();
-      }
-    }
-
-    function saveCompletedLessons(completedSet) {
-      try {
-        localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify([...completedSet]));
+        // Migrate legacy completed-only list if present
+        const legacyRaw = localStorage.getItem(COMPLETED_STORAGE_KEY);
+        if (legacyRaw) {
+          const legacyArr = JSON.parse(legacyRaw);
+          if (Array.isArray(legacyArr)) {
+            legacyArr.forEach(d => {
+              if (typeof d === "string" && d) map[d] = true;
+            });
+          }
+        }
+        const raw = localStorage.getItem(COMPLETION_OVERRIDES_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            Object.entries(parsed).forEach(([k, v]) => {
+              map[k] = Boolean(v);
+            });
+          }
+        }
       } catch {
         // Ignore storage errors in restricted environments
       }
+      return map;
+    }
+
+    function isLessonCompleted(dateStr) {
+      const overrides = getCompletionOverrides();
+      if (Object.prototype.hasOwnProperty.call(overrides, dateStr)) {
+        return overrides[dateStr];
+      }
+      // 歷史歸檔單元（早於 2026-10-28）預設自動標記為已完成
+      return dateStr < DEFAULT_COMPLETED_BEFORE;
+    }
+
+    function getCompletedLessons() {
+      const completed = new Set();
+      db.lessons.forEach(l => {
+        if (isLessonCompleted(l.Date)) {
+          completed.add(l.Date);
+        }
+      });
+      return completed;
     }
 
     function toggleLessonCompleted(dateStr) {
-      const completed = getCompletedLessons();
-      let nowCompleted;
-      if (completed.has(dateStr)) {
-        completed.delete(dateStr);
-        nowCompleted = false;
-      } else {
-        completed.add(dateStr);
-        nowCompleted = true;
+      const overrides = getCompletionOverrides();
+      const nextState = !isLessonCompleted(dateStr);
+      overrides[dateStr] = nextState;
+      try {
+        localStorage.setItem(COMPLETION_OVERRIDES_KEY, JSON.stringify(overrides));
+      } catch {
+        // Ignore storage errors in restricted environments
       }
-      saveCompletedLessons(completed);
-      return nowCompleted;
+      return nextState;
     }
 
     async function init() {
