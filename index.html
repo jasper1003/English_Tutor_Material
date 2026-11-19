@@ -624,20 +624,46 @@
       color: var(--text-secondary);
     }
 
-    .score-banner {
-      background: var(--surface);
-      border: 2px solid var(--primary);
-      border-radius: var(--radius);
-      padding: 18px 20px;
-      font-weight: 700;
-      font-size: 1.15rem;
-      display: none;
-      justify-content: space-between;
+    /* 極簡線條進度條：不顯示數字分母，消除題數壓力 */
+    .quiz-header-bar {
+      display: flex;
       align-items: center;
+      gap: 14px;
+      margin-bottom: 6px;
+      padding: 4px 0;
     }
 
-    .score-banner.visible {
-      display: flex;
+    .quiz-progress-track {
+      flex: 1;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .quiz-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--primary);
+      border-radius: 999px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-ghost-sm {
+      background: transparent;
+      border: 1px solid transparent;
+      font-size: 0.82rem;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-ghost-sm:hover {
+      background: #f1f5f9;
+      color: var(--text);
+      border-color: var(--border);
     }
 
     .hidden {
@@ -691,12 +717,13 @@
           </article>
 
           <div class="quiz-pane">
-            <div class="score-banner" id="score-banner">
-              <span id="score-text"></span>
-              <button class="btn" id="reset-quiz-btn">重新作答</button>
+            <div class="quiz-header-bar" id="quiz-header-bar">
+              <div class="quiz-progress-track" aria-label="測驗進度" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+              </div>
+              <button type="button" class="btn-ghost-sm" id="reset-quiz-btn">重新作答</button>
             </div>
             <div id="quiz-container" style="display: flex; flex-direction: column; gap: 18px;"></div>
-            <button class="btn btn-primary" id="submit-quiz-btn" style="padding: 12px; font-size: 1rem;">提交答案並查看解析</button>
           </div>
         </div>
       </div>
@@ -914,11 +941,13 @@
       document.getElementById("reading-body").innerHTML = safePassage;
 
       const quizContainer = document.getElementById("quiz-container");
-      const scoreBanner = document.getElementById("score-banner");
-      const submitBtn = document.getElementById("submit-quiz-btn");
+      const progressFill = document.getElementById("quiz-progress-fill");
       quizContainer.innerHTML = "";
-      scoreBanner.classList.remove("visible");
-      submitBtn.style.display = "none"; // 改由即時回饋與答題進度接管
+      if (progressFill) {
+        progressFill.style.width = "0%";
+        const track = progressFill.parentElement;
+        if (track) track.setAttribute("aria-valuenow", "0");
+      }
 
       lessonQuiz.forEach((q, idx) => {
         const qCard = document.createElement("div");
@@ -1009,7 +1038,7 @@
       if (pillBox) {
         pillBox.innerHTML = isCorrect
           ? `<span class="feedback-pill correct">✓ 答對了！</span>`
-          : `<span class="feedback-pill incorrect">✕ 答案不是這個喔，老師帶你看文章</span>`;
+          : ""; // 答錯時不顯示任何文字，由老師口頭引導
       }
 
       // 注意：解析 details 保持關閉，絕不自動展開，完全由老師視教學需要手動點開
@@ -1041,20 +1070,18 @@
         }
       });
 
-      const scoreBanner = document.getElementById("score-banner");
-      const scoreText = document.getElementById("score-text");
-      scoreBanner.classList.add("visible");
+      // 極簡線條進度：純視覺線條推進，不顯示任何數字分母
+      const progressFill = document.getElementById("quiz-progress-fill");
+      if (progressFill && questions.length > 0) {
+        const pct = Math.round((answeredCount / questions.length) * 100);
+        progressFill.style.width = `${pct}%`;
+        const track = progressFill.parentElement;
+        if (track) track.setAttribute("aria-valuenow", String(pct));
+      }
 
-      if (answeredCount < questions.length) {
-        scoreText.textContent = `闖關進度：已完成 ${answeredCount} / ${questions.length} 題（目前答對 ${correctCount} 題）`;
-      } else {
-        const allCorrect = correctCount === questions.length;
-        scoreText.textContent = allCorrect
-          ? `🏆 太厲害了！全對完成測驗（${correctCount} / ${questions.length} 題）`
-          : `測驗完成：答對 ${correctCount} / ${questions.length} 題`;
-        if (allCorrect) {
-          launchFullCelebration();
-        }
+      // 全部答對時觸發大慶祝盛典
+      if (answeredCount === questions.length && correctCount === questions.length) {
+        launchFullCelebration();
       }
     }
 
