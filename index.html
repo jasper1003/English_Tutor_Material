@@ -1693,7 +1693,7 @@
 
     /* Character Creation & Appearance Customization */
     .onboarding-shell {
-      max-width: 720px;
+      max-width: 980px;
       margin: 1.5rem auto 4rem;
     }
 
@@ -1703,6 +1703,67 @@
       border-radius: 18px;
       padding: 2rem;
       box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+    }
+
+    .onboarding-layout {
+      display: grid;
+      grid-template-columns: minmax(270px, 340px) 1fr;
+      gap: 1.75rem;
+      align-items: start;
+      margin-top: 1.25rem;
+    }
+
+    @media (max-width: 820px) {
+      .onboarding-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .onboarding-preview-card {
+      position: sticky;
+      top: 86px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at 50% 35%, light-dark(#fff6ea, #1f2738), light-dark(#ece0cf, #101521));
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 820px) {
+      .onboarding-preview-card {
+        position: static;
+      }
+    }
+
+    .preview-name-pill {
+      padding: 0.25rem 0.85rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.78);
+      color: #ffffff;
+      font-size: 0.88rem;
+      font-weight: 700;
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .avatar-preview-stage {
+      width: 100%;
+      height: 310px;
+      border-radius: 12px;
+      overflow: hidden;
+      touch-action: pan-y;
+    }
+
+    .preview-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
     }
 
     .onboarding-section {
@@ -2451,7 +2512,18 @@
         <p class="auth-subtitle">在入住單人租屋處之前，幫這位靠畫畫接案維持生活的主角取個名字並設定外觀吧！</p>
         <div id="onboarding-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
 
-        <form id="avatar-form">
+        <div class="onboarding-layout">
+          <aside class="onboarding-preview-card" aria-label="角色即時 3D 預覽">
+            <div class="preview-name-pill" id="avatar-preview-name">接案繪師</div>
+            <div class="avatar-preview-stage" id="avatar-preview-stage"></div>
+            <div class="preview-controls">
+              <button type="button" class="btn btn-sm" id="preview-rot-left">↺ 向左轉</button>
+              <span class="form-hint">可左右拖曳檢視</span>
+              <button type="button" class="btn btn-sm" id="preview-rot-right">↻ 向右轉</button>
+            </div>
+          </aside>
+
+          <form id="avatar-form">
           <div class="onboarding-section">
             <div class="onboarding-label">
               <label for="avatar-name-input">角色名稱（中／英文皆可，最多 8 字元）</label>
@@ -2498,7 +2570,8 @@
             <button type="button" class="btn hidden" id="cancel-avatar-edit-btn">取消返回房間</button>
             <button type="submit" class="btn btn-primary btn-full" id="save-avatar-btn" style="flex: 1;">入住單人租屋處</button>
           </div>
-        </form>
+          </form>
+        </div>
       </div>
     </section>
 
@@ -2521,7 +2594,7 @@
         <div class="room-canvas-wrap" id="room-canvas-wrap"></div>
 
         <div class="room-hud-bottom">
-          <div class="room-prompt-pill" id="room-hover-prompt">點擊書桌上的 Mac 電腦或電繪板，立即進入英語接案工作台</div>
+          <div class="room-prompt-pill" id="room-hover-prompt">自由探索房間物件，或點擊書桌電腦進入英語接案工作台</div>
           <button type="button" class="room-hud-btn" id="room-edit-avatar-btn">✏️ 調整角色外觀</button>
         </div>
       </div>
@@ -2623,6 +2696,7 @@
     } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
     import {
       FreelancerRoomScene,
+      AvatarPreviewScene,
       SKIN_TONES,
       BODY_BUILDS,
       HAIR_STYLES,
@@ -2673,6 +2747,7 @@
     let currentScreen = "loading"; // "auth" | "onboarding" | "room" | "desktop" | "lesson"
     let activeLessonDate = null;
     let roomScene = null;
+    let avatarPreviewScene = null;
     let isEditingAvatarFromRoom = false;
 
     async function fetchSheetTab(sheetName) {
@@ -2898,6 +2973,7 @@
       });
       document.getElementById("lesson-actions").style.display = "none";
       roomScene?.pause();
+      avatarPreviewScene?.pause();
     }
 
     function showOnboardingScreen(isEditing = false) {
@@ -2906,6 +2982,15 @@
       hideAllPrimaryScreens();
       populateOnboardingForm(currentUserProfile?.avatar || null, isEditing);
       document.getElementById("onboarding-view").classList.remove("hidden");
+
+      const stageEl = document.getElementById("avatar-preview-stage");
+      const currentValues = readAvatarFormValues();
+      if (!avatarPreviewScene) {
+        avatarPreviewScene = new AvatarPreviewScene(stageEl, currentValues);
+      } else {
+        avatarPreviewScene.updateAvatar(currentValues);
+        avatarPreviewScene.resume();
+      }
     }
 
     function syncRoomHUD() {
@@ -2976,7 +3061,7 @@
           },
           onHoverChange: (hint) => {
             document.getElementById("room-hover-prompt").textContent =
-              hint || "點擊書桌上的 Mac 電腦或電繪板，立即進入英語接案工作台";
+              hint || "自由探索房間物件，或點擊書桌電腦進入英語接案工作台";
           }
         });
       } else {
@@ -3027,6 +3112,10 @@
         if (roomScene) {
           roomScene.dispose();
           roomScene = null;
+        }
+        if (avatarPreviewScene) {
+          avatarPreviewScene.dispose();
+          avatarPreviewScene = null;
         }
         hideAllPrimaryScreens();
         updateHeaderAccountUI(null);
@@ -4385,6 +4474,28 @@
       });
     }
 
+    function readAvatarFormValues() {
+      const getChecked = (radioName, fallback) =>
+        document.querySelector(`input[name="${radioName}"]:checked`)?.value || fallback;
+
+      return {
+        name: document.getElementById("avatar-name-input").value.trim(),
+        build: getChecked("avatarBuild", "balanced"),
+        skinTone: getChecked("avatarSkin", "peach"),
+        hairStyle: getChecked("avatarHairStyle", "short"),
+        hairColor: getChecked("avatarHairColor", "ink"),
+        outfitColor: getChecked("avatarOutfit", "terracotta")
+      };
+    }
+
+    function syncLiveAvatarPreview() {
+      const cfg = readAvatarFormValues();
+      document.getElementById("avatar-preview-name").textContent = cfg.name || "接案繪師";
+      if (avatarPreviewScene) {
+        avatarPreviewScene.updateAvatar(cfg);
+      }
+    }
+
     function populateOnboardingForm(existingAvatar, isEditing = false) {
       const cfg = { ...DEFAULT_AVATAR, ...(existingAvatar || {}) };
       const nameInput = document.getElementById("avatar-name-input");
@@ -4396,6 +4507,7 @@
       clearFeedback("onboarding-feedback");
       nameInput.value = cfg.name || "";
       countEl.textContent = `${[...nameInput.value.trim()].length} / 8 字`;
+      document.getElementById("avatar-preview-name").textContent = cfg.name || "接案繪師";
       cancelBtn.classList.toggle("hidden", !isEditing);
       titleEl.textContent = isEditing ? "調整角色造型與名字" : "建立你的接案繪師角色";
       saveBtn.textContent = isEditing ? "儲存變更並回到房間" : "入住單人租屋處";
@@ -4412,6 +4524,7 @@
       const trimmed = input.value.trim();
       const charCount = [...trimmed].length;
       document.getElementById("avatar-name-count").textContent = `${charCount} / 8 字`;
+      document.getElementById("avatar-preview-name").textContent = trimmed || "接案繪師";
       if (charCount > 8) {
         input.setCustomValidity("角色名稱最多只能輸入 8 個字元。");
       } else if (charCount === 0) {
@@ -4419,6 +4532,20 @@
       } else {
         input.setCustomValidity("");
       }
+    });
+
+    document.getElementById("avatar-form").addEventListener("change", (e) => {
+      if (e.target.matches('input[type="radio"]')) {
+        syncLiveAvatarPreview();
+      }
+    });
+
+    document.getElementById("preview-rot-left").addEventListener("click", () => {
+      avatarPreviewScene?.rotateBy(-Math.PI / 4);
+    });
+
+    document.getElementById("preview-rot-right").addEventListener("click", () => {
+      avatarPreviewScene?.rotateBy(Math.PI / 4);
     });
 
     document.getElementById("cancel-avatar-edit-btn").addEventListener("click", () => {
@@ -4440,17 +4567,7 @@
       }
       nameInput.setCustomValidity("");
 
-      const getChecked = (radioName, fallback) =>
-        document.querySelector(`input[name="${radioName}"]:checked`)?.value || fallback;
-
-      const avatarPayload = {
-        name: rawName,
-        build: getChecked("avatarBuild", "balanced"),
-        skinTone: getChecked("avatarSkin", "peach"),
-        hairStyle: getChecked("avatarHairStyle", "short"),
-        hairColor: getChecked("avatarHairColor", "ink"),
-        outfitColor: getChecked("avatarOutfit", "terracotta")
-      };
+      const avatarPayload = readAvatarFormValues();
 
       const btn = document.getElementById("save-avatar-btn");
       btn.disabled = true;

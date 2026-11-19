@@ -3,6 +3,11 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
+const IDLE_MIN_SEC = 105; // ~2 minutes calm autonomous activity duration
+const IDLE_SPAN_SEC = 35;
+const COMMANDED_SLEEP_SEC = 300;  // 5 minutes sleep when clicked
+const COMMANDED_WASH_SEC = 10;    // 10 seconds hand wash
+const COMMANDED_TOILET_SEC = 15;  // 15 seconds toilet use
 
 export const SKIN_TONES = [
   { id: "porcelain", label: "白皙暖調", hex: "#f9dcc4" },
@@ -131,6 +136,350 @@ function makeDeskScreenTexture(mode = "art") {
   return tex;
 }
 
+function createCharacterRig(config) {
+  const cfg = { ...DEFAULT_AVATAR, ...(config || {}) };
+
+  const skinMat = makeMat(findHex(SKIN_TONES, cfg.skinTone, "#f1c29b"), 0.58);
+  const hairMat = makeMat(findHex(HAIR_COLORS, cfg.hairColor, "#1f2430"), 0.72);
+  const shirtMat = makeMat(findHex(OUTFIT_COLORS, cfg.outfitColor, "#d96b43"), 0.78);
+  const pantsMat = makeMat("#374151", 0.85);
+  const shoeMat = makeMat("#f8fafc", 0.65);
+  const eyeMat = makeMat("#1e293b", 0.2);
+  const blushMat = makeMat("#f48c8c", 0.8);
+
+  // Non-binary physical silhouette traits via build selector ("slim" | "balanced" | "athletic")
+  const dims = {
+    slim:     { shoulderW: 0.42, torsoD: 0.25, hipW: 0.40, limbR: 0.072, chestBump: true },
+    balanced: { shoulderW: 0.48, torsoD: 0.28, hipW: 0.43, limbR: 0.082, chestBump: false },
+    athletic: { shoulderW: 0.56, torsoD: 0.31, hipW: 0.44, limbR: 0.092, chestBump: false }
+  }[cfg.build] || { shoulderW: 0.48, torsoD: 0.28, hipW: 0.43, limbR: 0.082, chestBump: false };
+
+  const root = new THREE.Group();
+  const body = new THREE.Group();
+  root.add(body);
+
+  const leftLegPivot = new THREE.Group();
+  leftLegPivot.position.set(-0.11, 0.52, 0);
+  const rightLegPivot = new THREE.Group();
+  rightLegPivot.position.set(0.11, 0.52, 0);
+
+  [leftLegPivot, rightLegPivot].forEach(pivot => {
+    const leg = new THREE.Mesh(
+      new THREE.CapsuleGeometry(dims.limbR, 0.34, 8, 12),
+      pantsMat
+    );
+    leg.position.set(0, -0.22, 0);
+    leg.castShadow = true;
+    pivot.add(leg);
+
+    const shoe = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.1, 0.23, 3, 0.04), shoeMat);
+    shoe.position.set(0, -0.46, 0.04);
+    shoe.castShadow = true;
+    pivot.add(shoe);
+    body.add(pivot);
+  });
+
+  const torsoGroup = new THREE.Group();
+  torsoGroup.position.set(0, 0.78, 0);
+
+  const torso = new THREE.Mesh(
+    new RoundedBoxGeometry(dims.shoulderW, 0.54, dims.torsoD, 5, 0.11),
+    shirtMat
+  );
+  torso.castShadow = true;
+  torsoGroup.add(torso);
+
+  const hips = new THREE.Mesh(
+    new RoundedBoxGeometry(dims.hipW, 0.18, dims.torsoD * 0.96, 4, 0.07),
+    pantsMat
+  );
+  hips.position.set(0, -0.25, 0);
+  hips.castShadow = true;
+  torsoGroup.add(hips);
+
+  if (dims.chestBump) {
+    const contour = new THREE.Mesh(
+      new RoundedBoxGeometry(dims.shoulderW * 0.82, 0.16, 0.08, 4, 0.04),
+      shirtMat
+    );
+    contour.position.set(0, 0.06, dims.torsoD * 0.45);
+    torsoGroup.add(contour);
+  }
+
+  body.add(torsoGroup);
+
+  const leftArmPivot = new THREE.Group();
+  leftArmPivot.position.set(-(dims.shoulderW / 2 + 0.06), 0.98, 0);
+  const rightArmPivot = new THREE.Group();
+  rightArmPivot.position.set(dims.shoulderW / 2 + 0.06, 0.98, 0);
+
+  [leftArmPivot, rightArmPivot].forEach(pivot => {
+    const sleeve = new THREE.Mesh(
+      new THREE.CapsuleGeometry(dims.limbR * 0.92, 0.22, 8, 12),
+      shirtMat
+    );
+    sleeve.position.set(0, -0.14, 0);
+    sleeve.castShadow = true;
+    pivot.add(sleeve);
+
+    const forearm = new THREE.Mesh(
+      new THREE.CapsuleGeometry(dims.limbR * 0.78, 0.16, 8, 12),
+      skinMat
+    );
+    forearm.position.set(0, -0.32, 0);
+    forearm.castShadow = true;
+    pivot.add(forearm);
+    body.add(pivot);
+  });
+
+  const phoneProp = new THREE.Mesh(
+    new RoundedBoxGeometry(0.09, 0.15, 0.02, 2, 0.008),
+    makeMat("#1e293b", 0.25, 0.4, { emissive: "#60a5fa", emissiveIntensity: 0.75 })
+  );
+  phoneProp.position.set(0, -0.44, 0.08);
+  phoneProp.visible = false;
+  rightArmPivot.add(phoneProp);
+
+  const bookProp = new THREE.Mesh(
+    new RoundedBoxGeometry(0.24, 0.05, 0.3, 2, 0.015),
+    makeMat("#f97316", 0.7)
+  );
+  bookProp.position.set(-0.1, -0.42, 0.14);
+  bookProp.visible = false;
+  rightArmPivot.add(bookProp);
+
+  const snackProp = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.09, 0.06, 0.11, 14),
+    makeMat("#fef3c7", 0.5)
+  );
+  snackProp.position.set(0, -0.44, 0.08);
+  snackProp.visible = false;
+  rightArmPivot.add(snackProp);
+
+  const headGroup = new THREE.Group();
+  headGroup.position.set(0, 1.32, 0);
+
+  const head = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.44, 0.44, 6, 0.17), skinMat);
+  head.castShadow = true;
+  headGroup.add(head);
+
+  const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 10), eyeMat);
+  leftEye.position.set(-0.09, -0.01, 0.21);
+  const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 10), eyeMat);
+  rightEye.position.set(0.09, -0.01, 0.21);
+  headGroup.add(leftEye, rightEye);
+
+  const cheekL = new THREE.Mesh(new THREE.SphereGeometry(0.038, 10, 10), blushMat);
+  cheekL.scale.set(1.2, 0.6, 0.4);
+  cheekL.position.set(-0.14, -0.07, 0.195);
+  const cheekR = cheekL.clone();
+  cheekR.position.x = 0.14;
+  headGroup.add(cheekL, cheekR);
+
+  const hairCap = new THREE.Mesh(new RoundedBoxGeometry(0.49, 0.24, 0.47, 5, 0.12), hairMat);
+  hairCap.position.set(0, 0.14, -0.01);
+  hairCap.castShadow = true;
+  headGroup.add(hairCap);
+
+  const hairBack = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.34, 0.16, 4, 0.08), hairMat);
+  hairBack.position.set(0, 0.04, -0.17);
+  hairBack.castShadow = true;
+  headGroup.add(hairBack);
+
+  if (cfg.hairStyle === "parted") {
+    const bang = new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.11, 0.15, 4, 0.05), hairMat);
+    bang.position.set(0.06, 0.15, 0.18);
+    bang.rotation.z = -0.18;
+    headGroup.add(bang);
+  } else if (cfg.hairStyle === "bob") {
+    const sideL = new THREE.Mesh(new RoundedBoxGeometry(0.11, 0.36, 0.32, 4, 0.05), hairMat);
+    sideL.position.set(-0.22, -0.01, -0.02);
+    const sideR = sideL.clone();
+    sideR.position.x = 0.22;
+    headGroup.add(sideL, sideR);
+  } else if (cfg.hairStyle === "bun") {
+    const bun = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 14), hairMat);
+    bun.position.set(0, 0.29, -0.14);
+    bun.castShadow = true;
+    headGroup.add(bun);
+  } else if (cfg.hairStyle === "long") {
+    const longTail = new THREE.Mesh(new RoundedBoxGeometry(0.44, 0.48, 0.14, 4, 0.06), hairMat);
+    longTail.position.set(0, -0.16, -0.19);
+    longTail.castShadow = true;
+    headGroup.add(longTail);
+  }
+
+  body.add(headGroup);
+
+  return {
+    root,
+    body,
+    leftLegPivot,
+    rightLegPivot,
+    leftArmPivot,
+    rightArmPivot,
+    torsoGroup,
+    headGroup,
+    phoneProp,
+    bookProp,
+    snackProp,
+    config: cfg
+  };
+}
+
+export class AvatarPreviewScene {
+  constructor(container, initialConfig = DEFAULT_AVATAR) {
+    this.container = container;
+    this.disposed = false;
+    this.paused = false;
+    this.animFrameId = null;
+    this.targetRotY = 0.28;
+    this.currentRotY = 0.28;
+    this.isDragging = false;
+    this.lastPointerX = 0;
+
+    this.initScene();
+    this.updateAvatar(initialConfig);
+    this.bindEvents();
+    this.animate();
+  }
+
+  initScene() {
+    const w = Math.max(240, this.container.clientWidth || 300);
+    const h = Math.max(260, this.container.clientHeight || 320);
+
+    this.scene = new THREE.Scene();
+    this.scene.background = null;
+
+    this.camera = new THREE.PerspectiveCamera(34, w / h, 0.1, 30);
+    this.camera.position.set(0, 1.38, 3.35);
+    this.camera.lookAt(0, 0.85, 0);
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    this.renderer.setSize(w, h);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.08;
+
+    this.container.innerHTML = "";
+    this.renderer.domElement.style.display = "block";
+    this.renderer.domElement.style.width = "100%";
+    this.renderer.domElement.style.height = "100%";
+    this.renderer.domElement.style.cursor = "grab";
+    this.container.appendChild(this.renderer.domElement);
+
+    const hemi = new THREE.HemisphereLight("#fff7eb", "#b08b6f", 0.95);
+    this.scene.add(hemi);
+
+    const key = new THREE.DirectionalLight("#fff1d6", 1.9);
+    key.position.set(2.5, 4.2, 3.2);
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.bias = -0.001;
+    this.scene.add(key);
+
+    const rim = new THREE.DirectionalLight("#ffd9b3", 0.75);
+    rim.position.set(-2.8, 2.2, -2.5);
+    this.scene.add(rim);
+
+    const pedestal = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.72, 0.78, 0.12, 32),
+      makeMat("#e6d8c5", 0.65)
+    );
+    pedestal.position.set(0, -0.06, 0);
+    pedestal.receiveShadow = true;
+    this.scene.add(pedestal);
+  }
+
+  updateAvatar(config) {
+    if (this.rig) {
+      this.scene.remove(this.rig.root);
+    }
+    this.rig = createCharacterRig(config);
+    this.rig.root.rotation.y = this.currentRotY;
+    this.scene.add(this.rig.root);
+  }
+
+  rotateBy(deltaRad) {
+    this.targetRotY += deltaRad;
+  }
+
+  bindEvents() {
+    const dom = this.renderer.domElement;
+    this.onPointerDown = (e) => {
+      this.isDragging = true;
+      this.lastPointerX = e.clientX;
+      dom.style.cursor = "grabbing";
+    };
+    this.onPointerMove = (e) => {
+      if (!this.isDragging) return;
+      const dx = e.clientX - this.lastPointerX;
+      this.lastPointerX = e.clientX;
+      this.targetRotY += dx * 0.012;
+    };
+    this.onPointerUp = () => {
+      this.isDragging = false;
+      dom.style.cursor = "grab";
+    };
+    this.onResize = () => {
+      if (this.disposed) return;
+      const w = Math.max(240, this.container.clientWidth || 300);
+      const h = Math.max(260, this.container.clientHeight || 320);
+      this.camera.aspect = w / h;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(w, h);
+    };
+
+    dom.addEventListener("pointerdown", this.onPointerDown);
+    window.addEventListener("pointermove", this.onPointerMove);
+    window.addEventListener("pointerup", this.onPointerUp);
+    window.addEventListener("resize", this.onResize);
+  }
+
+  pause() {
+    this.paused = true;
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+  }
+
+  resume() {
+    if (this.disposed) return;
+    const wasPaused = this.paused;
+    this.paused = false;
+    this.onResize();
+    if (wasPaused || !this.animFrameId) this.animate();
+  }
+
+  animate = () => {
+    if (this.disposed || this.paused) return;
+    this.animFrameId = requestAnimationFrame(this.animate);
+    this.currentRotY += (this.targetRotY - this.currentRotY) * 0.14;
+    if (this.rig) {
+      this.rig.root.rotation.y = this.currentRotY;
+      const t = performance.now() / 1000;
+      this.rig.body.position.y = Math.sin(t * 2.2) * 0.015;
+      this.rig.leftArmPivot.rotation.z = -0.05;
+      this.rig.rightArmPivot.rotation.z = 0.05;
+    }
+    this.renderer.render(this.scene, this.camera);
+  };
+
+  dispose() {
+    this.disposed = true;
+    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+    const dom = this.renderer?.domElement;
+    if (dom) dom.removeEventListener("pointerdown", this.onPointerDown);
+    window.removeEventListener("pointermove", this.onPointerMove);
+    window.removeEventListener("pointerup", this.onPointerUp);
+    window.removeEventListener("resize", this.onResize);
+    this.renderer?.dispose();
+  }
+}
+
 export class FreelancerRoomScene {
   constructor(container, options = {}) {
     this.container = container;
@@ -141,46 +490,52 @@ export class FreelancerRoomScene {
     this.onHoverChange = options.onHoverChange || (() => {});
 
     this.disposed = false;
+    this.paused = false;
     this.animFrameId = null;
     this.lastFrameTime = performance.now();
 
     // Camera quarter 0..3 (rotated by 90 deg)
     this.targetQuarter = ((options.cameraQuarter ?? 0) % 4 + 4) % 4;
     this.currentAngle = this.targetQuarter * (Math.PI / 2) + Math.PI / 4;
-    this.zoomScale = 1.0;
 
     this.deskLampOn = Boolean(options.deskLampOn ?? true);
     this.wallColorHex = options.wallColor || "#f3eadc";
     this.avatarConfig = { ...DEFAULT_AVATAR, ...(options.avatar || {}) };
 
-    // Room bounds & interactives
+    // Room bounds & anchors
     this.deskWorkAnchor = new THREE.Vector3(-0.2, 0, -2.02);
-    this.bedAnchor = new THREE.Vector3(2.45, 0, 2.05);
+    this.bedSideAnchor = new THREE.Vector3(1.55, 0, 2.05);
+    this.bathDoorAnchor = new THREE.Vector3(1.68, 0, -1.55);
+
     this.chillSpots = [
       { id: "phone", label: "滑手機放鬆中", pos: new THREE.Vector3(-1.35, 0, 0.95), rotY: 0.45 },
       { id: "exercise", label: "做伏地挺身保持體力", pos: new THREE.Vector3(0.45, 0, 0.55), rotY: -0.6 },
       { id: "read", label: "翻閱靈感畫冊", pos: new THREE.Vector3(-2.35, 0, -0.55), rotY: 1.1 },
       { id: "eat", label: "享用熱食補充靈感", pos: new THREE.Vector3(0.85, 0, 2.45), rotY: -2.2 },
       { id: "gaming", label: "偷玩方塊沙盒遊戲", pos: new THREE.Vector3(-0.2, 0, -2.02), rotY: Math.PI },
-      { id: "sleep", label: "在床上休息補眠", pos: new THREE.Vector3(2.55, 0, 2.05), rotY: -Math.PI / 2 }
+      // Parallel along the bed (+Z is headboard/pillow at 2.83; charBody rotation.x=-PI/2 + root rotY=PI puts head at +Z)
+      { id: "sleep", label: "在床上休息睡眠中", pos: new THREE.Vector3(2.65, 0, 1.48), rotY: Math.PI }
     ];
+
+    this.actionSpots = {
+      wash: { id: "wash", label: "洗手台洗手中", pos: new THREE.Vector3(2.22, 0, -2.92), rotY: Math.PI },
+      toilet: { id: "toilet", label: "使用洗手間中", pos: new THREE.Vector3(3.32, 0, -2.92), rotY: 0 }
+    };
 
     // Character AI state machine:
     // "IDLE" | "WALK_TO_ACTIVITY" | "WALK_TO_WORK" | "WORKING"
     this.charState = "IDLE";
     this.currentActivity = "phone";
-    this.activityTimer = 7.0;
+    this.activityTimer = IDLE_MIN_SEC;
     this.postWorkCooldown = 0;
     this.walkWaypoints = [];
     this.walkCallback = null;
-    this.walkSpeed = 5.8; // Snappy, brisk walk so entering desktop feels instant
 
     // Interactive hover/raycast
     this.raycaster = new THREE.Raycaster();
     this.pointerNDC = new THREE.Vector2(-99, -99);
     this.hoveredTarget = null;
-    this.workClickTargets = [];
-    this.lampClickTargets = [];
+    this.allInteractTargets = [];
 
     this.initScene();
     this.buildLights();
@@ -191,6 +546,11 @@ export class FreelancerRoomScene {
     this.bindEvents();
     this.updateCameraTransform(true);
     this.animate();
+  }
+
+  addInteractive(mesh, interactType) {
+    mesh.userData.interactType = interactType;
+    this.allInteractTargets.push(mesh);
   }
 
   initScene() {
@@ -575,6 +935,7 @@ export class FreelancerRoomScene {
     toilet.add(flushBtn);
 
     bathGroup.add(toilet);
+    [ped, bowl, lid, tank, flushBtn].forEach(m => this.addInteractive(m, "toilet"));
 
     // Compact corner wash basin
     const sinkGroup = new THREE.Group();
@@ -594,6 +955,7 @@ export class FreelancerRoomScene {
     sinkGroup.add(faucet);
 
     bathGroup.add(sinkGroup);
+    [sinkPed, basin, faucet].forEach(m => this.addInteractive(m, "sink"));
   }
 
   buildSingleBed() {
@@ -613,7 +975,7 @@ export class FreelancerRoomScene {
     frame.receiveShadow = true;
     bedGroup.add(frame);
 
-    // Rounded headboard against +X side
+    // Rounded headboard (+Z side)
     const headboard = new THREE.Mesh(new RoundedBoxGeometry(1.62, 0.85, 0.16, 4, 0.06), woodMat);
     headboard.position.set(0, 0.48, 1.2);
     headboard.castShadow = true;
@@ -647,6 +1009,8 @@ export class FreelancerRoomScene {
     pillow.rotation.x = -0.12;
     pillow.castShadow = true;
     bedGroup.add(pillow);
+
+    [frame, headboard, mattress, blanket, pillow].forEach(m => this.addInteractive(m, "bed"));
   }
 
   buildWorkDeskAndMac() {
@@ -663,7 +1027,7 @@ export class FreelancerRoomScene {
     tableTop.castShadow = true;
     tableTop.receiveShadow = true;
     workArea.add(tableTop);
-    this.workClickTargets.push(tableTop);
+    this.addInteractive(tableTop, "computer");
 
     // 4 clean legs
     [[-1.02, -0.44], [1.02, -0.44], [-1.02, 0.44], [1.02, 0.44]].forEach(([lx, lz]) => {
@@ -691,12 +1055,12 @@ export class FreelancerRoomScene {
     macChassis.position.set(0, 1.46, -0.2);
     macChassis.castShadow = true;
     workArea.add(macChassis);
-    this.workClickTargets.push(macChassis);
+    this.addInteractive(macChassis, "computer");
 
     const macBezel = new THREE.Mesh(new RoundedBoxGeometry(0.96, 0.56, 0.055, 3, 0.02), bezelMat);
     macBezel.position.set(0, 1.47, -0.195);
     workArea.add(macBezel);
-    this.workClickTargets.push(macBezel);
+    this.addInteractive(macBezel, "computer");
 
     this.artScreenTex = makeDeskScreenTexture("art");
     this.gameScreenTex = makeDeskScreenTexture("game");
@@ -704,7 +1068,7 @@ export class FreelancerRoomScene {
     const macDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.5), this.macScreenMat);
     macDisplay.position.set(0, 1.475, -0.165);
     workArea.add(macDisplay);
-    this.workClickTargets.push(macDisplay);
+    this.addInteractive(macDisplay, "computer");
 
     // Compact rounded Mac keyboard + mouse
     const keyMat = makeMat("#eef2f6", 0.45);
@@ -712,13 +1076,13 @@ export class FreelancerRoomScene {
     keyboard.position.set(-0.08, 0.99, 0.12);
     keyboard.castShadow = true;
     workArea.add(keyboard);
-    this.workClickTargets.push(keyboard);
+    this.addInteractive(keyboard, "computer");
 
     const mouse = new THREE.Mesh(new RoundedBoxGeometry(0.08, 0.028, 0.12, 3, 0.014), keyMat);
     mouse.position.set(0.26, 0.99, 0.12);
     workArea.add(mouse);
 
-    // Drawing Tablet + Stylus (電繪板!) right in front/side for freelance illustrator identity
+    // Drawing Tablet + Stylus (電繪板!)
     const tabletMat = makeMat("#2a3242", 0.38, 0.15);
     const tabletScreenMat = makeMat("#3b4a66", 0.25);
     const tablet = new THREE.Mesh(new RoundedBoxGeometry(0.52, 0.032, 0.34, 3, 0.016), tabletMat);
@@ -727,14 +1091,14 @@ export class FreelancerRoomScene {
     tablet.rotation.y = -0.22;
     tablet.castShadow = true;
     workArea.add(tablet);
-    this.workClickTargets.push(tablet);
+    this.addInteractive(tablet, "computer");
 
     const tabletActiveArea = new THREE.Mesh(new RoundedBoxGeometry(0.44, 0.01, 0.26, 2, 0.004), tabletScreenMat);
     tabletActiveArea.position.set(0.56, 1.02, 0.2);
     tabletActiveArea.rotation.x = 0.12;
     tabletActiveArea.rotation.y = -0.22;
     workArea.add(tabletActiveArea);
-    this.workClickTargets.push(tabletActiveArea);
+    this.addInteractive(tabletActiveArea, "computer");
 
     const stylus = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.22, 10), makeMat("#f59e0b", 0.4));
     stylus.position.set(0.86, 1.0, 0.24);
@@ -775,7 +1139,7 @@ export class FreelancerRoomScene {
     lampGroup.add(lampBulb);
 
     workArea.add(lampGroup);
-    this.lampClickTargets.push(lampBase, lampArm, lampShade, lampBulb);
+    [lampBase, lampArm, lampShade, lampBulb].forEach(m => this.addInteractive(m, "lamp"));
 
     // Hover highlight ring around desk setup
     const ringGeo = new THREE.RingGeometry(0.95, 1.06, 36);
@@ -817,7 +1181,8 @@ export class FreelancerRoomScene {
 
     this.chairGroup = chair;
     this.furnitureGroup.add(chair);
-    this.workClickTargets.push(chairSeat, chairBack);
+    this.addInteractive(chairSeat, "computer");
+    this.addInteractive(chairBack, "computer");
   }
 
   buildCharacter(config) {
@@ -825,191 +1190,23 @@ export class FreelancerRoomScene {
       this.roomGroup.remove(this.charRoot);
     }
 
-    this.avatarConfig = { ...DEFAULT_AVATAR, ...config };
-    const cfg = this.avatarConfig;
+    const rig = createCharacterRig(config);
+    this.avatarConfig = rig.config;
+    this.charRoot = rig.root;
+    this.charBody = rig.body;
+    this.leftLegPivot = rig.leftLegPivot;
+    this.rightLegPivot = rig.rightLegPivot;
+    this.leftArmPivot = rig.leftArmPivot;
+    this.rightArmPivot = rig.rightArmPivot;
+    this.torsoGroup = rig.torsoGroup;
+    this.headGroup = rig.headGroup;
+    this.phoneProp = rig.phoneProp;
+    this.bookProp = rig.bookProp;
+    this.snackProp = rig.snackProp;
 
-    const skinMat = makeMat(findHex(SKIN_TONES, cfg.skinTone, "#f1c29b"), 0.58);
-    const hairMat = makeMat(findHex(HAIR_COLORS, cfg.hairColor, "#1f2430"), 0.72);
-    const shirtMat = makeMat(findHex(OUTFIT_COLORS, cfg.outfitColor, "#d96b43"), 0.78);
-    const pantsMat = makeMat("#374151", 0.85);
-    const shoeMat = makeMat("#f8fafc", 0.65);
-    const eyeMat = makeMat("#1e293b", 0.2);
-    const blushMat = makeMat("#f48c8c", 0.8);
-
-    // Non-binary physical silhouette traits via build selector ("slim" | "balanced" | "athletic")
-    const dims = {
-      slim:     { shoulderW: 0.42, torsoD: 0.25, hipW: 0.40, limbR: 0.072, chestBump: true },
-      balanced: { shoulderW: 0.48, torsoD: 0.28, hipW: 0.43, limbR: 0.082, chestBump: false },
-      athletic: { shoulderW: 0.56, torsoD: 0.31, hipW: 0.44, limbR: 0.092, chestBump: false }
-    }[cfg.build] || { shoulderW: 0.48, torsoD: 0.28, hipW: 0.43, limbR: 0.082, chestBump: false };
-
-    this.charRoot = new THREE.Group();
-    this.charBody = new THREE.Group(); // inner rig tilted for sleeping/pushups
-    this.charRoot.add(this.charBody);
-
-    // Legs (pivoted around hips y = 0.52)
-    this.leftLegPivot = new THREE.Group();
-    this.leftLegPivot.position.set(-0.11, 0.52, 0);
-    this.rightLegPivot = new THREE.Group();
-    this.rightLegPivot.position.set(0.11, 0.52, 0);
-
-    [this.leftLegPivot, this.rightLegPivot].forEach(pivot => {
-      const leg = new THREE.Mesh(
-        new THREE.CapsuleGeometry(dims.limbR, 0.34, 8, 12),
-        pantsMat
-      );
-      leg.position.set(0, -0.22, 0);
-      leg.castShadow = true;
-      pivot.add(leg);
-
-      const shoe = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.1, 0.23, 3, 0.04), shoeMat);
-      shoe.position.set(0, -0.46, 0.04);
-      shoe.castShadow = true;
-      pivot.add(shoe);
-      this.charBody.add(pivot);
-    });
-
-    // Rounded Torso
-    this.torsoGroup = new THREE.Group();
-    this.torsoGroup.position.set(0, 0.78, 0);
-
-    const torso = new THREE.Mesh(
-      new RoundedBoxGeometry(dims.shoulderW, 0.54, dims.torsoD, 5, 0.11),
-      shirtMat
-    );
-    torso.castShadow = true;
-    this.torsoGroup.add(torso);
-
-    const hips = new THREE.Mesh(
-      new RoundedBoxGeometry(dims.hipW, 0.18, dims.torsoD * 0.96, 4, 0.07),
-      pantsMat
-    );
-    hips.position.set(0, -0.25, 0);
-    hips.castShadow = true;
-    this.torsoGroup.add(hips);
-
-    // Subtle chest silhouette contour when slim build is chosen
-    if (dims.chestBump) {
-      const contour = new THREE.Mesh(
-        new RoundedBoxGeometry(dims.shoulderW * 0.82, 0.16, 0.08, 4, 0.04),
-        shirtMat
-      );
-      contour.position.set(0, 0.06, dims.torsoD * 0.45);
-      this.torsoGroup.add(contour);
-    }
-
-    this.charBody.add(this.torsoGroup);
-
-    // Arms (pivoted around shoulders)
-    this.leftArmPivot = new THREE.Group();
-    this.leftArmPivot.position.set(-(dims.shoulderW / 2 + 0.06), 0.98, 0);
-    this.rightArmPivot = new THREE.Group();
-    this.rightArmPivot.position.set(dims.shoulderW / 2 + 0.06, 0.98, 0);
-
-    [this.leftArmPivot, this.rightArmPivot].forEach(pivot => {
-      const sleeve = new THREE.Mesh(
-        new THREE.CapsuleGeometry(dims.limbR * 0.92, 0.22, 8, 12),
-        shirtMat
-      );
-      sleeve.position.set(0, -0.14, 0);
-      sleeve.castShadow = true;
-      pivot.add(sleeve);
-
-      const forearm = new THREE.Mesh(
-        new THREE.CapsuleGeometry(dims.limbR * 0.78, 0.16, 8, 12),
-        skinMat
-      );
-      forearm.position.set(0, -0.32, 0);
-      forearm.castShadow = true;
-      pivot.add(forearm);
-      this.charBody.add(pivot);
-    });
-
-    // Small hand-held props for idle states (phone / book / snack bowl)
-    this.phoneProp = new THREE.Mesh(
-      new RoundedBoxGeometry(0.09, 0.15, 0.02, 2, 0.008),
-      makeMat("#1e293b", 0.25, 0.4, { emissive: "#60a5fa", emissiveIntensity: 0.75 })
-    );
-    this.phoneProp.position.set(0, -0.44, 0.08);
-    this.phoneProp.visible = false;
-    this.rightArmPivot.add(this.phoneProp);
-
-    this.bookProp = new THREE.Mesh(
-      new RoundedBoxGeometry(0.24, 0.05, 0.3, 2, 0.015),
-      makeMat("#f97316", 0.7)
-    );
-    this.bookProp.position.set(-0.1, -0.42, 0.14);
-    this.bookProp.visible = false;
-    this.rightArmPivot.add(this.bookProp);
-
-    this.snackProp = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.09, 0.06, 0.11, 14),
-      makeMat("#fef3c7", 0.5)
-    );
-    this.snackProp.position.set(0, -0.44, 0.08);
-    this.snackProp.visible = false;
-    this.rightArmPivot.add(this.snackProp);
-
-    // Cute Oversized Stylized Clay Head
-    this.headGroup = new THREE.Group();
-    this.headGroup.position.set(0, 1.32, 0);
-
-    const head = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.44, 0.44, 6, 0.17), skinMat);
-    head.castShadow = true;
-    this.headGroup.add(head);
-
-    // Eyes & rosy cheeks
-    const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 10), eyeMat);
-    leftEye.position.set(-0.09, -0.01, 0.21);
-    const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 10), eyeMat);
-    rightEye.position.set(0.09, -0.01, 0.21);
-    this.headGroup.add(leftEye, rightEye);
-
-    const cheekL = new THREE.Mesh(new THREE.SphereGeometry(0.038, 10, 10), blushMat);
-    cheekL.scale.set(1.2, 0.6, 0.4);
-    cheekL.position.set(-0.14, -0.07, 0.195);
-    const cheekR = cheekL.clone();
-    cheekR.position.x = 0.14;
-    this.headGroup.add(cheekL, cheekR);
-
-    // Modular Hair Style
-    const hairCap = new THREE.Mesh(new RoundedBoxGeometry(0.49, 0.24, 0.47, 5, 0.12), hairMat);
-    hairCap.position.set(0, 0.14, -0.01);
-    hairCap.castShadow = true;
-    this.headGroup.add(hairCap);
-
-    const hairBack = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.34, 0.16, 4, 0.08), hairMat);
-    hairBack.position.set(0, 0.04, -0.17);
-    hairBack.castShadow = true;
-    this.headGroup.add(hairBack);
-
-    if (cfg.hairStyle === "parted") {
-      const bang = new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.11, 0.15, 4, 0.05), hairMat);
-      bang.position.set(0.06, 0.15, 0.18);
-      bang.rotation.z = -0.18;
-      this.headGroup.add(bang);
-    } else if (cfg.hairStyle === "bob") {
-      const sideL = new THREE.Mesh(new RoundedBoxGeometry(0.11, 0.36, 0.32, 4, 0.05), hairMat);
-      sideL.position.set(-0.22, -0.01, -0.02);
-      const sideR = sideL.clone();
-      sideR.position.x = 0.22;
-      this.headGroup.add(sideL, sideR);
-    } else if (cfg.hairStyle === "bun") {
-      const bun = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 14), hairMat);
-      bun.position.set(0, 0.29, -0.14);
-      bun.castShadow = true;
-      this.headGroup.add(bun);
-    } else if (cfg.hairStyle === "long") {
-      const longTail = new THREE.Mesh(new RoundedBoxGeometry(0.44, 0.48, 0.14, 4, 0.06), hairMat);
-      longTail.position.set(0, -0.16, -0.19);
-      longTail.castShadow = true;
-      this.headGroup.add(longTail);
-    }
-
-    this.charBody.add(this.headGroup);
     this.roomGroup.add(this.charRoot);
 
-    this.nameTagEl.textContent = (cfg.name || "接案繪師").trim();
+    this.nameTagEl.textContent = (this.avatarConfig.name || "接案繪師").trim();
     if (this.charState === "WORKING") {
       this.charRoot.position.copy(this.deskWorkAnchor);
       this.charRoot.rotation.y = Math.PI;
@@ -1084,7 +1281,7 @@ export class FreelancerRoomScene {
       return;
     }
 
-    this.walkWaypoints = [this.deskWorkAnchor.clone()];
+    this.walkWaypoints = this.buildPathTo("work", this.deskWorkAnchor);
     this.walkCallback = () => {
       this.enterWorkingPose();
       this.onEnterWork();
@@ -1129,6 +1326,55 @@ export class FreelancerRoomScene {
     if (this.snackProp) this.snackProp.visible = false;
   }
 
+  isInBathroom(pos = this.charRoot?.position) {
+    if (!pos) return false;
+    return pos.x > 1.45 && pos.z < -1.45;
+  }
+
+  buildPathTo(spotId, targetPos) {
+    const waypoints = [];
+    const curPos = this.charRoot.position;
+    const currentlyInBath = this.isInBathroom(curPos);
+    const targetInBath = spotId === "wash" || spotId === "toilet";
+
+    // Stepping off bed cleanly before crossing room
+    if (this.currentActivity === "sleep" && spotId !== "sleep") {
+      waypoints.push(this.bedSideAnchor.clone());
+    }
+
+    if (currentlyInBath !== targetInBath) {
+      waypoints.push(this.bathDoorAnchor.clone());
+    }
+
+    if (spotId === "sleep" && this.currentActivity !== "sleep") {
+      waypoints.push(this.bedSideAnchor.clone());
+    }
+
+    waypoints.push(targetPos.clone());
+    return waypoints;
+  }
+
+  commandActivity(spot, durationSec) {
+    if (!spot || this.charState === "WALK_TO_WORK") return;
+    this.hideAllProps();
+    this.postWorkCooldown = 0;
+
+    if (this.macScreenMat) {
+      this.macScreenMat.map = spot.id === "gaming" ? this.gameScreenTex : this.artScreenTex;
+      this.macScreenMat.needsUpdate = true;
+    }
+
+    this.charState = "WALK_TO_ACTIVITY";
+    this.walkWaypoints = this.buildPathTo(spot.id, spot.pos);
+    this.walkCallback = () => {
+      this.charState = "IDLE";
+      this.currentActivity = spot.id;
+      this.activityTimer = durationSec;
+      this.charRoot.rotation.y = spot.rotY;
+      this.onActivityChange(spot.label);
+    };
+  }
+
   pickNextIdleActivity(isNightTime) {
     const candidates = isNightTime
       ? ["sleep", "sleep", "phone", "gaming", "read"]
@@ -1138,21 +1384,7 @@ export class FreelancerRoomScene {
     const chosenId = choices[Math.floor(Math.random() * choices.length)] || "phone";
     const spot = this.chillSpots.find(s => s.id === chosenId) || this.chillSpots[0];
 
-    this.hideAllProps();
-    if (this.macScreenMat) {
-      this.macScreenMat.map = chosenId === "gaming" ? this.gameScreenTex : this.artScreenTex;
-      this.macScreenMat.needsUpdate = true;
-    }
-
-    this.charState = "WALK_TO_ACTIVITY";
-    this.walkWaypoints = [spot.pos.clone()];
-    this.walkCallback = () => {
-      this.charState = "IDLE";
-      this.currentActivity = spot.id;
-      this.activityTimer = chosenId === "sleep" ? 14 : 8 + Math.random() * 6;
-      this.charRoot.rotation.y = spot.rotY;
-      this.onActivityChange(spot.label);
-    };
+    this.commandActivity(spot, IDLE_MIN_SEC + Math.random() * IDLE_SPAN_SEC);
   }
 
   updateDayNightLighting() {
@@ -1304,6 +1536,7 @@ export class FreelancerRoomScene {
   resetLimbs() {
     this.charBody.position.set(0, 0, 0);
     this.charBody.rotation.set(0, 0, 0);
+    this.torsoGroup.rotation.set(0, 0, 0);
     this.leftLegPivot.rotation.set(0, 0, 0);
     this.rightLegPivot.rotation.set(0, 0, 0);
     this.leftArmPivot.rotation.set(0, 0, 0);
@@ -1393,12 +1626,32 @@ export class FreelancerRoomScene {
         this.headGroup.rotation.x = -0.6;
         break;
       case "sleep":
-        // Lying cozy on bed mattress
-        this.charBody.position.set(0, 0.66, 0.12);
+        // Lying flat & parallel along single bed (head at +Z pillow, facing ceiling)
+        this.charBody.position.set(0, 0.76 + Math.sin(elapsedSec * 1.4) * 0.012, 0);
         this.charBody.rotation.x = -Math.PI / 2;
-        this.leftArmPivot.rotation.z = 0.2;
-        this.rightArmPivot.rotation.z = -0.2;
-        this.headGroup.rotation.y = Math.sin(elapsedSec * 1.2) * 0.08;
+        this.leftArmPivot.rotation.z = 0.16;
+        this.rightArmPivot.rotation.z = -0.16;
+        this.headGroup.rotation.x = -0.14;
+        this.headGroup.rotation.y = Math.sin(elapsedSec * 1.1) * 0.06;
+        break;
+      case "wash":
+        // Standing at sink rubbing hands gently under faucet
+        this.charBody.position.set(0, 0, 0);
+        this.torsoGroup.rotation.x = 0.12;
+        this.leftArmPivot.rotation.x = -0.95 + Math.sin(elapsedSec * 10) * 0.12;
+        this.rightArmPivot.rotation.x = -0.95 - Math.sin(elapsedSec * 10) * 0.12;
+        this.leftArmPivot.rotation.z = -0.22;
+        this.rightArmPivot.rotation.z = 0.22;
+        this.headGroup.rotation.x = 0.22;
+        break;
+      case "toilet":
+        // Sitting calmly on porcelain toilet facing +Z
+        this.charBody.position.set(0, -0.14, -0.18);
+        this.leftLegPivot.rotation.x = -Math.PI / 2.2;
+        this.rightLegPivot.rotation.x = -Math.PI / 2.2;
+        this.leftArmPivot.rotation.x = -0.52;
+        this.rightArmPivot.rotation.x = -0.52;
+        this.headGroup.rotation.x = 0.12 + Math.sin(elapsedSec * 1.3) * 0.04;
         break;
       case "read":
         this.bookProp.visible = true;
@@ -1449,19 +1702,19 @@ export class FreelancerRoomScene {
       this.pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
       this.raycaster.setFromCamera(this.pointerNDC, this.camera);
-      const lampHits = this.raycaster.intersectObjects(this.lampClickTargets, false);
-      if (lampHits.length > 0) {
-        this.hoveredTarget = "lamp";
+      const hits = this.raycaster.intersectObjects(this.allInteractTargets, false);
+      if (hits.length > 0) {
+        const type = hits[0].object.userData.interactType;
+        this.hoveredTarget = type;
         dom.style.cursor = "pointer";
-        this.onHoverChange("點擊開關檯燈");
-        return;
-      }
-
-      const workHits = this.raycaster.intersectObjects(this.workClickTargets, false);
-      if (workHits.length > 0) {
-        this.hoveredTarget = "computer";
-        dom.style.cursor = "pointer";
-        this.onHoverChange("點擊電腦／電繪板開始接案學習");
+        if (type === "lamp") {
+          this.onHoverChange("點擊開關檯燈");
+        } else if (type === "computer") {
+          this.onHoverChange("點擊電腦／電繪板開始接案學習");
+        } else {
+          // Silent discovery for bed / sink / toilet (no action spoiler text)
+          this.onHoverChange("");
+        }
         return;
       }
 
@@ -1479,6 +1732,13 @@ export class FreelancerRoomScene {
         this.onLampToggle(this.deskLampOn);
       } else if (this.hoveredTarget === "computer") {
         this.goToWork();
+      } else if (this.hoveredTarget === "bed") {
+        const sleepSpot = this.chillSpots.find(s => s.id === "sleep");
+        this.commandActivity(sleepSpot, COMMANDED_SLEEP_SEC);
+      } else if (this.hoveredTarget === "sink") {
+        this.commandActivity(this.actionSpots.wash, COMMANDED_WASH_SEC);
+      } else if (this.hoveredTarget === "toilet") {
+        this.commandActivity(this.actionSpots.toilet, COMMANDED_TOILET_SEC);
       }
     };
 
