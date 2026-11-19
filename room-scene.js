@@ -799,11 +799,21 @@ export class AvatarPreviewScene {
     window.addEventListener("resize", this.onResize);
   }
 
+  renderIfPaused() {
+    if (this.paused && !this.disposed && this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
+    }
+  }
+
   pause() {
+    const wasRunning = !this.paused;
     this.paused = true;
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
+    }
+    if (wasRunning) {
+      this.renderIfPaused();
     }
   }
 
@@ -2398,6 +2408,7 @@ export class FreelancerRoomScene {
     if (this.lampBulbMat) {
       this.lampBulbMat.emissiveIntensity = this.deskLampOn ? 1.6 : 0.0;
     }
+    this.renderIfPaused();
   }
 
   setBedLamp(isOn) {
@@ -2408,6 +2419,7 @@ export class FreelancerRoomScene {
     if (this.bedLampShadeMat) {
       this.bedLampShadeMat.emissiveIntensity = this.bedLampOn ? 0.55 : 0.0;
     }
+    this.renderIfPaused();
   }
 
   setWallColor(hex) {
@@ -2416,6 +2428,7 @@ export class FreelancerRoomScene {
     if (this.wallMat) {
       this.wallMat.color.set(hex);
     }
+    this.renderIfPaused();
   }
 
   setBedSheet(bedSheetId) {
@@ -2424,6 +2437,7 @@ export class FreelancerRoomScene {
     if (this.bedSheetMat) this.bedSheetMat.color.set(preset.sheetColor);
     if (this.bedBlanketMat) this.bedBlanketMat.color.set(preset.blanketColor);
     if (this.bedPillowMat) this.bedPillowMat.color.set(preset.pillowColor);
+    this.renderIfPaused();
   }
 
   setRugStyle(rugStyleId) {
@@ -2431,6 +2445,7 @@ export class FreelancerRoomScene {
     if (this.rugStyleId === nextId && this.rugGroup?.children?.length > 0) return;
     this.rugStyleId = nextId;
     this.rebuildRugMeshes();
+    this.renderIfPaused();
   }
 
   setVinylOn(isOn) {
@@ -2438,6 +2453,7 @@ export class FreelancerRoomScene {
     if (this.vinylLedMat) {
       this.vinylLedMat.color.set(this.vinylOn ? "#fbbf24" : "#475569");
     }
+    this.renderIfPaused();
   }
 
   setPosterImage(dataUrl) {
@@ -2459,6 +2475,7 @@ export class FreelancerRoomScene {
         this.customPosterTex.dispose();
         this.customPosterTex = null;
       }
+      this.renderIfPaused();
       return;
     }
 
@@ -2473,6 +2490,7 @@ export class FreelancerRoomScene {
       this.posterArtMesh.material.map = tex;
       this.posterArtMesh.material.needsUpdate = true;
       if (oldCustom) oldCustom.dispose();
+      this.renderIfPaused();
     };
     img.onerror = () => {
       if (this.disposed || seq !== this.posterLoadSeq || !this.posterArtMesh) return;
@@ -2484,6 +2502,7 @@ export class FreelancerRoomScene {
         this.customPosterTex.dispose();
         this.customPosterTex = null;
       }
+      this.renderIfPaused();
     };
     img.src = nextUrl;
   }
@@ -2511,6 +2530,7 @@ export class FreelancerRoomScene {
     if (this.dualMonitorGroup) this.dualMonitorGroup.visible = Boolean(this.ownedItems.dual_monitor);
     if (this.ergoChairGroup) this.ergoChairGroup.visible = Boolean(this.ownedItems.ergo_chair);
     if (this.chairGroup) this.chairGroup.visible = !this.ownedItems.ergo_chair;
+    this.renderIfPaused();
   }
 
   setQuarter(quarter) {
@@ -3496,6 +3516,7 @@ export class FreelancerRoomScene {
       this.camera.bottom = -this.baseViewSize;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(w, h);
+      this.renderIfPaused();
     };
 
     this.onPointerLeave = () => {
@@ -3514,11 +3535,21 @@ export class FreelancerRoomScene {
     window.addEventListener("resize", this.onResize);
   }
 
+  renderIfPaused() {
+    if (this.paused && !this.disposed && this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
+    }
+  }
+
   pause() {
+    const wasRunning = !this.paused;
     this.paused = true;
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
+    }
+    if (wasRunning) {
+      this.renderIfPaused();
     }
   }
 

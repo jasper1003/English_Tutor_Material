@@ -3354,7 +3354,7 @@
       <div class="map-header">
         <div>
           <h1 class="page-title">接案工作台（英語任務）</h1>
-          <p class="form-hint">完成練習並送交甲方老師驗收通過後，每單元可獲得 +200 英蚌報酬</p>
+          <p class="form-hint" id="home-reward-hint">完成練習並送交甲方老師驗收通過後，每單元可獲得 +200 英蚌報酬</p>
         </div>
         <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
           <div class="map-progress-pill" id="map-progress-pill">
@@ -3455,7 +3455,7 @@
       HAIR_COLORS,
       OUTFIT_COLORS,
       DEFAULT_AVATAR
-    } from "./room-scene.js?v=20261119w";
+    } from "./room-scene.js?v=20261119x";
     import {
       SHOP_CATEGORIES,
       SHOP_CATALOG,
@@ -3516,9 +3516,28 @@
 
     let currentScreen = "loading"; // "auth" | "onboarding" | "room" | "desktop" | "lesson"
     let activeLessonDate = null;
+    let activeLessonSyncCommission = null;
     let roomScene = null;
     let avatarPreviewScene = null;
     let isEditingAvatarFromRoom = false;
+
+    function sync3dSceneLifecycle() {
+      const blocked = document.hidden || Boolean(document.querySelector("dialog[open]"));
+      if (roomScene) {
+        if (currentScreen === "room" && !blocked) {
+          roomScene.resume();
+        } else {
+          roomScene.pause();
+        }
+      }
+      if (avatarPreviewScene) {
+        if (currentScreen === "onboarding" && !blocked) {
+          avatarPreviewScene.resume();
+        } else {
+          avatarPreviewScene.pause();
+        }
+      }
+    }
 
     async function fetchRawSheetTab(sheetName, extraParams = "") {
       const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json${extraParams}&sheet=${encodeURIComponent(sheetName)}`;
@@ -3820,8 +3839,8 @@
         avatarPreviewScene = new AvatarPreviewScene(stageEl, currentValues);
       } else {
         avatarPreviewScene.updateAvatar(currentValues);
-        avatarPreviewScene.resume();
       }
+      sync3dSceneLifecycle();
     }
 
     function syncRoomHUD() {
@@ -3858,6 +3877,7 @@
 
       currentScreen = "room";
       activeLessonDate = null;
+      activeLessonSyncCommission = null;
       hideAllPrimaryScreens();
       const roomView = document.getElementById("room-view");
       roomView.classList.remove("hidden");
@@ -3915,12 +3935,12 @@
           roomScene.applyCustomThoughts(pendingThoughtRows);
         }
         if (Number.isInteger(rs.cameraQuarter)) roomScene.setQuarter(rs.cameraQuarter);
-        roomScene.resume();
         if (fromWorkDesktop) {
           roomScene.returnFromWork();
         }
       }
 
+      sync3dSceneLifecycle();
       syncRoomHUD();
     }
 
@@ -3928,6 +3948,7 @@
       if (!currentUser || !sheetsLoaded) return;
       currentScreen = "desktop";
       activeLessonDate = null;
+      activeLessonSyncCommission = null;
       hideAllPrimaryScreens();
       renderHome();
     }
@@ -4008,6 +4029,10 @@
         } else if (key === "monthly_rent_clams" && val >= 1 && val <= 10000) {
           MONTHLY_RENT_CLAMS = val;
         }
+      }
+      const homeRewardHint = document.getElementById("home-reward-hint");
+      if (homeRewardHint) {
+        homeRewardHint.textContent = `完成練習並送交甲方老師驗收通過後，每單元可獲得 +${UNIT_REWARD_CLAMS} 英蚌報酬`;
       }
     }
 
@@ -4245,6 +4270,36 @@
       }
     }
 
+    function getQuizStorageKey(dateStr) {
+      return `quiz_progress:${currentUser?.uid || "anon"}:${dateStr}`;
+    }
+
+    function loadSavedQuizAnswers(dateStr) {
+      try {
+        const raw = localStorage.getItem(getQuizStorageKey(dateStr));
+        const parsed = raw ? JSON.parse(raw) : null;
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveQuizAnswer(dateStr, qIdx, val) {
+      try {
+        const next = loadSavedQuizAnswers(dateStr);
+        next[String(qIdx)] = String(val || "").trim();
+        localStorage.setItem(getQuizStorageKey(dateStr), JSON.stringify(next));
+      } catch {
+        // Ignore storage quota / private mode failures gracefully
+      }
+    }
+
+    function clearSavedQuizAnswers(dateStr) {
+      try {
+        localStorage.removeItem(getQuizStorageKey(dateStr));
+      } catch {}
+    }
+
     function renderLesson(dateStr) {
       const lesson = db.lessons.find(l => l.Date === dateStr);
       if (!lesson) return openWorkDesktop();
@@ -4401,6 +4456,7 @@
         const radios = qCard.querySelectorAll(`input[name="q_${idx}"]`);
         radios.forEach(radio => {
           radio.addEventListener("change", (e) => {
+            saveQuizAnswer(dateStr, idx, e.target.value);
             handleInstantQuizFeedback(idx, q, e.target.value, qCard, lessonQuiz);
           });
         });
@@ -4408,7 +4464,23 @@
         quizContainer.appendChild(qCard);
       });
 
-      document.getElementById("reset-quiz-btn").onclick = () => renderLesson(dateStr);
+      // Hydrate previously selected quiz answers without triggering confetti bursts
+      const savedAnswers = loadSavedQuizAnswers(dateStr);
+      lessonQuiz.forEach((q, idx) => {
+        const savedVal = savedAnswers[String(idx)];
+        if (!savedVal) return;
+        const qCard = quizContainer.querySelector(`.question-card[data-index="${idx}"]`);
+        const radio = qCard?.querySelector(`input[name="q_${idx}"][value="${CSS.escape(savedVal)}"]`);
+        if (radio) {
+          radio.checked = true;
+          handleInstantQuizFeedback(idx, q, savedVal, qCard, lessonQuiz, { silent: true });
+        }
+      });
+
+      document.getElementById("reset-quiz-btn").onclick = () => {
+        clearSavedQuizAnswers(dateStr);
+        renderLesson(dateStr);
+      };
 
       const syncCommissionUI = () => {
         const statusEl = document.getElementById("lesson-complete-status");
@@ -4424,19 +4496,20 @@
           submitBtn.classList.add("is-completed");
           submitBtn.disabled = true;
         } else if (submitted) {
-          statusEl.textContent = "⏳ 已交稿！請等待甲方老師於課堂驗收後發放 +200 英蚌";
+          statusEl.textContent = `⏳ 已交稿！請等待甲方老師於課堂驗收後發放 +${UNIT_REWARD_CLAMS} 英蚌`;
           statusEl.classList.remove("is-completed");
           submitBtn.textContent = "待案主驗收中（點此可收回修改）";
           submitBtn.classList.add("is-submitted");
           submitBtn.disabled = false;
         } else {
-          statusEl.textContent = "完成單字與閱讀練習後，提交給甲方（老師）驗收即可領取 +200 英蚌";
+          statusEl.textContent = `完成單字與閱讀練習後，提交給甲方（老師）驗收即可領取 +${UNIT_REWARD_CLAMS} 英蚌`;
           statusEl.classList.remove("is-completed");
           submitBtn.textContent = "完成任務";
           submitBtn.disabled = false;
         }
       };
 
+      activeLessonSyncCommission = syncCommissionUI;
       syncCommissionUI();
       document.getElementById("toggle-complete-btn").onclick = async () => {
         if (isLessonCompleted(dateStr)) return;
@@ -4459,7 +4532,7 @@
       lessonView.classList.remove("hidden");
     }
 
-    function handleInstantQuizFeedback(idx, q, selectedVal, qCard, allQuestions) {
+    function handleInstantQuizFeedback(idx, q, selectedVal, qCard, allQuestions, { silent = false } = {}) {
       const userAns = (selectedVal || "").trim().toUpperCase();
       const rightAns = (q.Answer || "").trim().toUpperCase();
       const isCorrect = userAns === rightAns;
@@ -4492,15 +4565,15 @@
       }
 
       // 答對時噴發局部微型彩帶慶祝
-      if (isCorrect) {
+      if (isCorrect && !silent) {
         const rect = qCard.getBoundingClientRect();
         launchConfetti(rect.left + rect.width / 2, rect.top + 30, 26);
       }
 
-      updateQuizProgress(allQuestions);
+      updateQuizProgress(allQuestions, { silent });
     }
 
-    function updateQuizProgress(questions) {
+    function updateQuizProgress(questions, { silent = false } = {}) {
       let answeredCount = 0;
       let correctCount = 0;
 
@@ -4524,7 +4597,7 @@
       }
 
       // 全部答對時觸發大慶祝盛典
-      if (answeredCount === questions.length && correctCount === questions.length) {
+      if (!silent && answeredCount === questions.length && correctCount === questions.length) {
         launchFullCelebration();
       }
     }
@@ -5000,8 +5073,15 @@
       dialogEl.addEventListener("close", () => {
         dialogEl.returnValue = "";
         onCloseCb?.();
+        sync3dSceneLifecycle();
       });
     }
+
+    document.addEventListener("visibilitychange", sync3dSceneLifecycle);
+    const dialogOpenObserver = new MutationObserver(sync3dSceneLifecycle);
+    document.querySelectorAll("dialog").forEach(dlg => {
+      dialogOpenObserver.observe(dlg, { attributes: true, attributeFilter: ["open"] });
+    });
 
     openSettingsBtn.addEventListener("click", () => {
       populateSettingsDialog();
@@ -7017,7 +7097,7 @@
         if (currentScreen === "desktop") {
           renderHome();
         } else if (currentScreen === "lesson" && activeLessonDate) {
-          renderLesson(activeLessonDate);
+          activeLessonSyncCommission?.();
         }
       }, (err) => {
         console.warn("User realtime listener warning:", err?.message || err);
