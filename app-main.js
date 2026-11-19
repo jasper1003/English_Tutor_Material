@@ -239,14 +239,7 @@ function getLessonXp(lesson) {
 }
 
 function getTotalEarnedXp() {
-  const completed = getCompletedLessons();
-  let sum = 0;
-  db.lessons.forEach(lesson => {
-    if (completed.has(lesson.Date)) {
-      sum += getLessonXp(lesson);
-    }
-  });
-  return sum;
+  return Math.max(0, Math.trunc(Number(currentUserProfile?.xp ?? 0)));
 }
 
 let rankUpToastWired = false;
@@ -409,7 +402,7 @@ function syncXpProgressUI({ allowCelebrate = false } = {}) {
     `;
   }
 
-  if (currentUser && authResolved && sheetsLoaded) {
+  if (currentUser && currentUserProfile && authResolved) {
     if (!hasInitializedXpBaseline) {
       hasInitializedXpBaseline = true;
       lastKnownXpRankIndex = progress.rankIndex;
@@ -528,6 +521,7 @@ async function loadOrCreateUserProfile(user) {
     const migrationPatch = {};
     if (!("clams" in data)) migrationPatch.clams = STARTER_CLAMS;
     if (!("totalEarnedClams" in data)) migrationPatch.totalEarnedClams = 0;
+    if (!("xp" in data)) migrationPatch.xp = 0;
     if (!("approvedLessons" in data)) migrationPatch.approvedLessons = {};
     if (!("submittedLessons" in data)) migrationPatch.submittedLessons = {};
     if (!("roomState" in data) || !data.roomState) {
@@ -565,6 +559,7 @@ async function loadOrCreateUserProfile(user) {
     approvedLessons: {},
     clams: STARTER_CLAMS,
     totalEarnedClams: 0,
+    xp: 0,
     avatar: null,
     ownedItems: {},
     nextRentDueAt: getNextMonthFirstEpoch(),
@@ -1123,8 +1118,7 @@ function renderHome() {
       <div class="quest-node-title">${escapeHtml(lesson.Title || "Untitled Lesson")}</div>
       ${lesson.Grammar_Focus ? `<div class="quest-node-grammar">${escapeHtml(lesson.Grammar_Focus)}</div>` : ""}
       <div class="quest-node-meta">
-        單字：${vocabCount} 個 · <span class="quest-xp-pill">+${lessonXp} XP</span>
-        ${isCompleted ? "" : ` · <span class="quest-reward-pill">報酬 +${UNIT_REWARD_CLAMS} 英蚌</span>`}
+        單字：${vocabCount} 個${isCompleted ? "" : ` · <span class="quest-xp-pill">+${lessonXp} XP</span> · <span class="quest-reward-pill">報酬 +${UNIT_REWARD_CLAMS} 英蚌</span>`}
       </div>
     `;
     cardBtn.addEventListener("click", () => openLesson(lesson.Date));
@@ -1296,7 +1290,11 @@ function renderLesson(dateStr) {
 
   const lessonXp = getLessonXp(lesson);
   const xpBadgeEl = document.getElementById("lesson-xp-badge");
-  if (xpBadgeEl) xpBadgeEl.textContent = `🥋 完成驗收 +${lessonXp} XP`;
+  if (xpBadgeEl) {
+    xpBadgeEl.textContent = isLessonCompleted(dateStr)
+      ? "✓ 單元已驗收"
+      : `🥋 完成驗收 +${lessonXp} XP`;
+  }
 
   const lessonQuiz = db.quiz.filter(q => q.Date === dateStr);
   document.getElementById("reading-title").textContent = lesson.Reading_Title || "Reading Passage";
@@ -1408,7 +1406,7 @@ function renderLesson(dateStr) {
 
     submitBtn.classList.remove("is-completed", "is-submitted");
     if (approved) {
-      statusEl.textContent = `✓ 甲方案主已驗收通過（已領 +${unitXp} XP 與英蚌報酬）`;
+      statusEl.textContent = "✓ 甲方案主已驗收通過（已完成本單元任務）";
       statusEl.classList.add("is-completed");
       submitBtn.textContent = "已驗收完成 ✓";
       submitBtn.classList.add("is-completed");
@@ -3482,12 +3480,13 @@ function renderPendingReviewQueue() {
       clearFeedback("admin-review-feedback");
       try {
         const res = await approveStudentLesson(stu.uid, dateStr, rewardInput.value);
+        const xpNote = res.xpGranted > 0 ? `與 +${res.xpGranted} XP` : "";
         showFeedback(
           "admin-review-feedback",
           "success",
           res.alreadyApproved
             ? `${stuLabel} 的 ${dateStr} 已是驗收狀態。`
-            : `已驗收 ${stuLabel}（${dateStr}）並即時發放 ${rewardInput.value} 英蚌！`
+            : `已驗收 ${stuLabel}（${dateStr}）並即時發放 ${rewardInput.value} 英蚌${xpNote}！`
         );
         await loadStudentsForReview(stu.uid);
       } catch (err) {
@@ -3610,8 +3609,11 @@ async function loadStudentsForReview(preserveUid = null) {
   }
 }
 
-async function approveStudentLesson(studentUid, dateStr, rewardAmount) {
+async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount) {
   const safeReward = Math.max(0, Math.min(100000, Math.trunc(Number(rewardAmount) || 0)));
+  const lessonMeta = db.lessons.find(l => l.Date === dateStr);
+  const resolvedXp = xpAmount !== undefined && xpAmount !== null ? xpAmount : getLessonXp(lessonMeta);
+  const safeXp = Math.max(0, Math.min(10000, Math.trunc(Number(resolvedXp) || 0)));
   const stuRef = doc(firestoreDb, "users", studentUid);
 
   const result = await runTransaction(firestoreDb, async (tx) => {
@@ -3622,13 +3624,20 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount) {
     const submittedMap = sanitizeBoolMap(data.submittedLessons);
 
     if (approvedMap[dateStr]) {
-      return { alreadyApproved: true, nextClams: data.clams ?? STARTER_CLAMS };
+      return {
+        alreadyApproved: true,
+        nextClams: data.clams ?? STARTER_CLAMS,
+        nextXp: Math.max(0, Math.trunc(Number(data.xp ?? 0))),
+        xpGranted: 0
+      };
     }
 
     const currentClams = Math.trunc(Number(data.clams ?? STARTER_CLAMS));
     const currentTotal = Math.trunc(Number(data.totalEarnedClams ?? 0));
+    const currentXp = Math.max(0, Math.trunc(Number(data.xp ?? 0)));
     const nextClams = currentClams + safeReward;
     const nextTotal = currentTotal + safeReward;
+    const nextXp = Math.min(10000000, currentXp + safeXp);
 
     approvedMap[dateStr] = true;
     submittedMap[dateStr] = false;
@@ -3638,6 +3647,7 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount) {
       submittedLessons: submittedMap,
       clams: nextClams,
       totalEarnedClams: nextTotal,
+      xp: nextXp,
       updatedAt: serverTimestamp()
     });
     if (safeReward > 0) {
@@ -3649,7 +3659,15 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount) {
       });
     }
 
-    return { alreadyApproved: false, nextClams, nextTotal, approvedMap, submittedMap };
+    return {
+      alreadyApproved: false,
+      nextClams,
+      nextTotal,
+      nextXp,
+      xpGranted: safeXp,
+      approvedMap,
+      submittedMap
+    };
   });
 
   if (studentUid === currentUser?.uid && !result.alreadyApproved) {
@@ -3658,6 +3676,7 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount) {
     if (currentUserProfile) {
       currentUserProfile.clams = result.nextClams;
       currentUserProfile.totalEarnedClams = result.nextTotal;
+      currentUserProfile.xp = result.nextXp;
       currentUserProfile.approvedLessons = result.approvedMap;
       currentUserProfile.submittedLessons = result.submittedMap;
     }
@@ -3746,8 +3765,10 @@ function renderSelectedStudentReview() {
 
   const clams = Math.trunc(Number(stu.clams ?? STARTER_CLAMS));
   const totalEarned = Math.trunc(Number(stu.totalEarnedClams ?? 0));
+  const stuXp = Math.max(0, Math.trunc(Number(stu.xp ?? 0)));
+  const stuProgress = resolveXpProgress(stuXp, XP_PER_LEVEL);
   const ownedCount = Object.values(stu.ownedItems || {}).filter(Boolean).length;
-  summaryEl.textContent = `目前餘額：${clams} 英蚌 ｜ 累積撥款收入：${totalEarned} 英蚌 ｜ 角色：${stu.avatar?.name || "尚未建立"} ｜ 已購房間物件：${ownedCount} 件`;
+  summaryEl.textContent = `Lv.${stuProgress.level} ${stuProgress.title}（${stuXp} XP）｜ 餘額：${clams} 英蚌 ｜ 累積收入：${totalEarned} 英蚌 ｜ 角色：${stu.avatar?.name || "尚未建立"} ｜ 已購物件：${ownedCount} 件`;
 
   // Direct Clam Payout / Adjustment row
   const bonusRow = document.createElement("div");
@@ -3853,12 +3874,13 @@ function renderSelectedStudentReview() {
         clearFeedback("admin-review-feedback");
         try {
           const res = await approveStudentLesson(stu.uid, lesson.Date, rewardInput.value);
+          const xpNote = res.xpGranted > 0 ? `與 +${res.xpGranted} XP` : "";
           showFeedback(
             "admin-review-feedback",
             "success",
             res.alreadyApproved
               ? `${lesson.Date} 已是驗收狀態。`
-              : `已驗收 ${lesson.Date} 並撥款 ${rewardInput.value} 英蚌！`
+              : `已驗收 ${lesson.Date} 並撥款 ${rewardInput.value} 英蚌${xpNote}！`
           );
           await loadStudentsForReview(stu.uid);
         } catch (err) {
