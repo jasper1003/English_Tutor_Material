@@ -724,7 +724,7 @@ export class FreelancerRoomScene {
     this.chillSpots = [
       { id: "phone", label: "在床邊滑手機放鬆中", pos: new THREE.Vector3(1.94, 0, 1.95), rotY: -Math.PI / 2 },
       { id: "exercise", label: "做伏地挺身保持體力", pos: new THREE.Vector3(-0.55, 0, 0.72), rotY: -0.6 },
-      { id: "read", label: "翻閱靈感畫冊", pos: new THREE.Vector3(-0.85, 0, 1.45), rotY: 0.7 },
+      { id: "read", label: "在書桌翻閱靈感畫冊", pos: new THREE.Vector3(-0.2, 0, -2.02), rotY: Math.PI },
       { id: "eat", label: "享用熱食補充靈感", pos: new THREE.Vector3(0.85, 0, 2.45), rotY: -2.2 },
       { id: "gaming", label: "偷玩方塊沙盒遊戲", pos: new THREE.Vector3(-0.2, 0, -2.02), rotY: Math.PI },
       // Parallel along the bed (+Z is headboard/pillow at 2.83; charBody rotation.x=-PI/2 + root rotY=PI puts head at +Z)
@@ -1871,7 +1871,7 @@ export class FreelancerRoomScene {
     const targetInBath = spotId === "wash" || spotId === "toilet";
     const targetOnBed = spotId === "sleep" || spotId === "phone";
     const targetOnSofa = spotId === "sofa_read" || spotId === "sofa_tv";
-    const targetNearDesk = spotId === "work" || spotId === "gaming" || spotId === "water_plant";
+    const targetNearDesk = spotId === "work" || spotId === "gaming" || spotId === "water_plant" || spotId === "read";
 
     // 1. Exit any enclosed or furniture-occupied zone cleanly based on 3D coords
     if (currentlyOnBed && !targetOnBed) {
@@ -1997,15 +1997,14 @@ export class FreelancerRoomScene {
   }
 
   pickNextIdleActivity(isNightTime) {
-    const candidates = isNightTime
-      ? ["sleep", "sleep", "phone", "gaming", "read"]
-      : ["phone", "exercise", "read", "eat", "gaming"];
-
     const owned = this.ownedItems || {};
+    const readActivity = owned.cozy_sofa ? "sofa_read" : "read";
+    const candidates = isNightTime
+      ? ["sleep", "sleep", "phone", "gaming", readActivity]
+      : ["phone", "exercise", readActivity, "eat", "gaming"];
+
     if (owned.cozy_sofa && owned.wall_tv) {
-      candidates.push("sofa_tv", "sofa_read");
-    } else if (owned.cozy_sofa) {
-      candidates.push("sofa_read");
+      candidates.push("sofa_tv");
     } else if (owned.wall_tv) {
       candidates.push("watch_tv");
     }
@@ -2306,10 +2305,14 @@ export class FreelancerRoomScene {
         this.headGroup.rotation.x = 0.12 + Math.sin(elapsedSec * 1.3) * 0.04;
         break;
       case "read":
+        // Sitting comfortably in desk chair reading a book at the desk
         this.bookProp.visible = true;
-        this.leftArmPivot.rotation.x = -0.65;
-        this.rightArmPivot.rotation.x = -0.7;
-        this.headGroup.rotation.x = 0.35 + Math.sin(elapsedSec * 1.5) * 0.04;
+        this.charBody.position.set(0, -0.22, -0.04);
+        this.leftLegPivot.rotation.x = -Math.PI / 2.2;
+        this.rightLegPivot.rotation.x = -Math.PI / 2.2;
+        this.leftArmPivot.rotation.x = -0.68;
+        this.rightArmPivot.rotation.x = -0.72;
+        this.headGroup.rotation.x = 0.28 + Math.sin(elapsedSec * 1.5) * 0.04;
         break;
       case "sofa_read":
         // Leaning back cozily on sofa holding a book
@@ -2456,7 +2459,9 @@ export class FreelancerRoomScene {
         this.commandActivity(spot, 180);
         this.onOpenTv();
       } else if (this.hoveredTarget === "sofa") {
-        const spot = this.ownedItems.wall_tv ? this.actionSpots.sofa_tv : this.actionSpots.sofa_read;
+        const spot = (this.ownedItems.wall_tv && Math.random() < 0.5)
+          ? this.actionSpots.sofa_tv
+          : this.actionSpots.sofa_read;
         this.commandActivity(spot, 180);
       } else if (this.hoveredTarget === "plant") {
         this.commandActivity(this.actionSpots.water_plant, 10);
