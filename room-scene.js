@@ -977,6 +977,8 @@ export class FreelancerRoomScene {
     this.pointerNDC = new THREE.Vector2(-99, -99);
     this.hoveredTarget = null;
     this.allInteractTargets = [];
+    this.tvActiveVideoId = null;
+    this.tvSuspended = false;
 
     this.initScene();
     this.buildLights();
@@ -1029,9 +1031,24 @@ export class FreelancerRoomScene {
 
     this.container.innerHTML = "";
     this.renderer.domElement.style.display = "block";
+    this.renderer.domElement.style.position = "relative";
+    this.renderer.domElement.style.zIndex = "1";
     this.renderer.domElement.style.width = "100%";
     this.renderer.domElement.style.height = "100%";
     this.container.appendChild(this.renderer.domElement);
+
+    // Live 3D-aligned YouTube screen overlay projected onto the West-wall TV
+    this.tvOverlayWrap = document.createElement("div");
+    this.tvOverlayWrap.className = "room-tv-overlay";
+    this.tvOverlayWrap.style.display = "none";
+    this.tvOverlayIframe = document.createElement("iframe");
+    this.tvOverlayIframe.className = "room-tv-overlay-iframe";
+    this.tvOverlayIframe.title = "房間牆上電視 YouTube 即時播放";
+    this.tvOverlayIframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+    this.tvOverlayIframe.referrerPolicy = "strict-origin-when-cross-origin";
+    this.tvOverlayIframe.allowFullscreen = true;
+    this.tvOverlayWrap.appendChild(this.tvOverlayIframe);
+    this.container.appendChild(this.tvOverlayWrap);
 
     // Floating character name + thought bubble HTML overlay inside container
     this.nameTagEl = document.createElement("div");
@@ -1086,6 +1103,11 @@ export class FreelancerRoomScene {
     this.bedLampLight = new THREE.PointLight("#ffb86c", 0, 5.2, 1.8);
     this.bedLampLight.position.set(1.46, 0.96, 3.12);
     this.scene.add(this.bedLampLight);
+
+    // Dynamic cinema light bounce emitted from West-wall TV when playing YouTube
+    this.tvGlowLight = new THREE.PointLight("#7dd3fc", 0, 6.4, 1.65);
+    this.tvGlowLight.position.set(-3.35, 1.56, -0.35);
+    this.scene.add(this.tvGlowLight);
   }
 
   buildRoomShell() {
@@ -1153,6 +1175,7 @@ export class FreelancerRoomScene {
       this.createSouthWall(this.wallMat, trimMat), // (+Z)
       this.createWestWall(this.wallMat, trimMat)   // door wall (-X)
     ];
+    this.westWallUpperGroup = this.walls[3].upperGroup;
 
     this.walls.forEach(w => {
       this.roomGroup.add(w.baseboard);
@@ -1331,10 +1354,12 @@ export class FreelancerRoomScene {
       new THREE.MeshBasicMaterial({ map: makeTvScreenTexture() })
     );
     tvScreen.position.z = 0.03;
+    this.tvScreenMesh = tvScreen;
     tvGroup.add(tvScreen);
+    this.tvLedMat = new THREE.MeshBasicMaterial({ color: "#475569" });
     const tvLed = new THREE.Mesh(
       new THREE.SphereGeometry(0.016, 8, 8),
-      new THREE.MeshBasicMaterial({ color: "#34d399" })
+      this.tvLedMat
     );
     tvLed.position.set(0.58, -0.39, 0.03);
     tvGroup.add(tvLed);
@@ -3613,6 +3638,85 @@ export class FreelancerRoomScene {
     if (this.bubbleEl && !this.bubbleEl.classList.contains("hidden")) {
       this.bubbleEl.style.transform = `translate(${x}px, ${y - 30}px) translate(-50%, -100%)`;
     }
+    this.updateTvScreenOverlay();
+  }
+
+  setTvPlayback({ videoId = null, suspended = false } = {}) {
+    const cleanId = videoId ? String(videoId).trim() : "";
+    this.tvActiveVideoId = cleanId || null;
+    this.tvSuspended = Boolean(suspended);
+
+    if (this.tvLedMat) {
+      this.tvLedMat.color.setHex(this.tvActiveVideoId ? 0x34d399 : 0x475569);
+    }
+
+    if (!this.tvActiveVideoId || this.tvSuspended) {
+      if (this.tvOverlayWrap) this.tvOverlayWrap.style.display = "none";
+      if (this.tvOverlayIframe && this.tvOverlayIframe.getAttribute("src")) {
+        this.tvOverlayIframe.removeAttribute("src");
+      }
+      if (!this.tvActiveVideoId && this.tvGlowLight) {
+        this.tvGlowLight.intensity = 0;
+      }
+      this.renderIfPaused();
+      return;
+    }
+
+    const embedUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(this.tvActiveVideoId)}?autoplay=1&rel=0&playsinline=1&enablejsapi=1`;
+    if (this.tvOverlayIframe && this.tvOverlayIframe.getAttribute("src") !== embedUrl) {
+      this.tvOverlayIframe.src = embedUrl;
+    }
+    this.updateTvScreenOverlay();
+  }
+
+  updateTvScreenOverlay() {
+    if (!this.tvOverlayWrap || !this.tvScreenMesh || !this.camera) return;
+    const canShow = Boolean(
+      this.tvActiveVideoId
+      && !this.tvSuspended
+      && this.ownedItems?.wall_tv
+      && this.wallTvGroup?.visible
+      && this.westWallUpperGroup?.visible
+    );
+    if (!canShow) {
+      this.tvOverlayWrap.style.display = "none";
+      return;
+    }
+
+    const width = this.container.clientWidth || 800;
+    const height = this.container.clientHeight || 560;
+    this.tvScreenMesh.updateWorldMatrix(true, false);
+    this.camera.updateMatrixWorld();
+
+    const projectLocal = (lx, ly, lz) => {
+      const v = new THREE.Vector3(lx, ly, lz);
+      this.tvScreenMesh.localToWorld(v);
+      v.project(this.camera);
+      return {
+        x: (v.x * 0.5 + 0.5) * width,
+        y: (-v.y * 0.5 + 0.5) * height
+      };
+    };
+
+    const tl = projectLocal(-0.66, 0.37, 0.002);
+    const tr = projectLocal(0.66, 0.37, 0.002);
+    const bl = projectLocal(-0.66, -0.37, 0.002);
+
+    const domW = 528;
+    const domH = 296;
+    const ax = (tr.x - tl.x) / domW;
+    const ay = (tr.y - tl.y) / domW;
+    const bx = (bl.x - tl.x) / domH;
+    const by = (bl.y - tl.y) / domH;
+    const det = ax * by - ay * bx;
+
+    if (Math.abs(det) < 1e-4) {
+      this.tvOverlayWrap.style.display = "none";
+      return;
+    }
+
+    this.tvOverlayWrap.style.display = "block";
+    this.tvOverlayWrap.style.transform = `matrix(${ax.toFixed(6)}, ${ay.toFixed(6)}, ${bx.toFixed(6)}, ${by.toFixed(6)}, ${tl.x.toFixed(2)}, ${tl.y.toFixed(2)})`;
   }
 
   bindEvents() {
@@ -3775,6 +3879,7 @@ export class FreelancerRoomScene {
   renderIfPaused() {
     if (this.paused && !this.disposed && this.renderer && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera);
+      this.updateTvScreenOverlay();
     }
   }
 
@@ -3870,9 +3975,22 @@ export class FreelancerRoomScene {
       }
     }
 
-    // Subtle Dolby Atmos soundbar LED pulse (active boost during cinema / vinyl time)
+    // Dynamic cinema light bounce emitted onto room when TV is playing YouTube
+    if (this.tvGlowLight) {
+      const tvPlaying = Boolean(this.tvActiveVideoId && this.ownedItems?.wall_tv);
+      if (!tvPlaying) {
+        this.tvGlowLight.intensity = 0;
+      } else {
+        const wave = (Math.sin(elapsedSec * 2.1) + 1) * 0.5;
+        const warmth = (Math.cos(elapsedSec * 0.9) + 1) * 0.5;
+        this.tvGlowLight.intensity = 1.25 + wave * 0.55;
+        this.tvGlowLight.color.setHex(0x7dd3fc).lerp(new THREE.Color(0xfde68a), warmth * 0.42);
+      }
+    }
+
+    // Subtle Dolby Atmos soundbar LED pulse (active boost during cinema / vinyl / TV time)
     if (this.atmosLedMat && this.dolbyAtmosGroup?.visible) {
-      const cinemaActive = this.currentActivity === "sofa_tv" || this.vinylOn || this.currentActivity === "listen_vinyl";
+      const cinemaActive = Boolean(this.tvActiveVideoId) || this.currentActivity === "sofa_tv" || this.vinylOn || this.currentActivity === "listen_vinyl";
       const k = (Math.sin(elapsedSec * (cinemaActive ? 3.2 : 1.3)) + 1) * 0.5;
       this.atmosLedMat.color.setHex(cinemaActive ? 0x38bdf8 : 0x0ea5e9).lerp(
         new THREE.Color(cinemaActive ? 0xfbbf24 : 0x64748b),

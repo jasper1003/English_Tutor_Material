@@ -42,7 +42,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261120e";
+} from "./room-scene.js?v=20261120g";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -137,6 +137,8 @@ let toastPriorFocusEl = null;
 let roomScene = null;
 let avatarPreviewScene = null;
 let isEditingAvatarFromRoom = false;
+let activeTvVideo = null;
+let tvPowerOffRequested = false;
 
 function sync3dSceneLifecycle() {
   const blocked = document.hidden || Boolean(document.querySelector("dialog[open]"));
@@ -653,6 +655,9 @@ function hideAllPrimaryScreens() {
   });
   document.getElementById("lesson-actions").style.display = "none";
   clearReadingScaffold();
+  if (typeof stopRoomTvPlayback === "function" && currentScreen !== "room") {
+    stopRoomTvPlayback();
+  }
   roomScene?.pause();
   avatarPreviewScene?.pause();
 }
@@ -1926,7 +1931,7 @@ setupModalDialogFallbacks(
 setupModalDialogFallbacks(
   document.getElementById("tv-dialog"),
   [],
-  [document.getElementById("close-tv-btn"), document.getElementById("footer-close-tv-btn")]
+  [document.getElementById("close-tv-btn")]
 );
 
 setupModalDialogFallbacks(
@@ -2902,25 +2907,98 @@ const tvDialog = document.getElementById("tv-dialog");
 const tvIframe = document.getElementById("tv-youtube-iframe");
 let lastTvVideoId = null;
 
-function loadRandomTvChannel() {
+function pickNextTvChannel() {
   const pool = TV_CHANNEL_VIDEOS.filter(v => v.id !== lastTvVideoId);
   const chosen = pool[Math.floor(Math.random() * pool.length)] || TV_CHANNEL_VIDEOS[0];
   lastTvVideoId = chosen.id;
-  document.getElementById("tv-channel-caption").textContent = `${chosen.author} · ${chosen.title}`;
-  document.getElementById("tv-external-link").href = `https://www.youtube.com/watch?v=${chosen.id}`;
-  tvIframe.src = `https://www.youtube-nocookie.com/embed/${chosen.id}?autoplay=1&rel=0`;
+  return chosen;
 }
 
-function openTvPlayer() {
-  loadRandomTvChannel();
+function syncRoomTvRemoteUI() {
+  const remoteEl = document.getElementById("room-tv-remote");
+  const titleEl = document.getElementById("room-tv-remote-title");
+  if (!remoteEl) return;
+  const visible = Boolean(activeTvVideo && currentScreen === "room");
+  remoteEl.classList.toggle("hidden", !visible);
+  if (visible && titleEl && activeTvVideo) {
+    titleEl.textContent = `📺 ${activeTvVideo.title}`;
+    titleEl.title = `${activeTvVideo.author} · ${activeTvVideo.title}`;
+  }
+}
+
+function stopRoomTvPlayback() {
+  activeTvVideo = null;
+  tvPowerOffRequested = false;
+  const frameEl = document.getElementById("tv-youtube-iframe");
+  if (frameEl && frameEl.getAttribute("src")) {
+    frameEl.removeAttribute("src");
+  }
+  roomScene?.setTvPlayback({ videoId: null, suspended: false });
+  syncRoomTvRemoteUI();
+}
+
+function applyTvModalContent(chosen) {
+  if (!chosen) return;
+  document.getElementById("tv-channel-caption").textContent = `${chosen.author} · ${chosen.title}`;
+  document.getElementById("tv-external-link").href = `https://www.youtube.com/watch?v=${chosen.id}`;
+  tvIframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(chosen.id)}?autoplay=1&rel=0&playsinline=1`;
+}
+
+function openTvModalPlayer() {
+  if (!activeTvVideo) {
+    activeTvVideo = pickNextTvChannel();
+  }
+  roomScene?.setTvPlayback({ videoId: activeTvVideo.id, suspended: true });
+  applyTvModalContent(activeTvVideo);
+  syncRoomTvRemoteUI();
   if (!tvDialog.open) {
     tvDialog.showModal();
   }
 }
 
-document.getElementById("tv-shuffle-btn").addEventListener("click", loadRandomTvChannel);
+function openTvPlayer() {
+  if (!activeTvVideo) {
+    activeTvVideo = pickNextTvChannel();
+    roomScene?.setTvPlayback({ videoId: activeTvVideo.id, suspended: false });
+    syncRoomTvRemoteUI();
+    return;
+  }
+  openTvModalPlayer();
+}
+
+function shuffleTvChannel() {
+  const chosen = pickNextTvChannel();
+  activeTvVideo = chosen;
+  if (tvDialog.open) {
+    applyTvModalContent(chosen);
+  } else {
+    roomScene?.setTvPlayback({ videoId: chosen.id, suspended: false });
+  }
+  syncRoomTvRemoteUI();
+}
+
+document.getElementById("tv-shuffle-btn").addEventListener("click", shuffleTvChannel);
+document.getElementById("room-tv-shuffle-btn").addEventListener("click", shuffleTvChannel);
+document.getElementById("room-tv-expand-btn").addEventListener("click", openTvModalPlayer);
+document.getElementById("room-tv-power-btn").addEventListener("click", stopRoomTvPlayback);
+document.getElementById("tv-minimize-room-btn").addEventListener("click", () => {
+  tvPowerOffRequested = false;
+  if (tvDialog.open) tvDialog.close();
+});
+document.getElementById("footer-close-tv-btn").addEventListener("click", () => {
+  tvPowerOffRequested = true;
+  if (tvDialog.open) tvDialog.close();
+});
 tvDialog.addEventListener("close", () => {
-  tvIframe.src = "";
+  tvIframe.removeAttribute("src");
+  if (tvPowerOffRequested) {
+    stopRoomTvPlayback();
+    return;
+  }
+  if (activeTvVideo && currentScreen === "room") {
+    roomScene?.setTvPlayback({ videoId: activeTvVideo.id, suspended: false });
+    syncRoomTvRemoteUI();
+  }
 });
 
 // Wall Art Poster Customizer & Interactive Cropper

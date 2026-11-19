@@ -24,7 +24,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261120f" />
+  <link rel="stylesheet" href="./styles.css?v=20261120g" />
 </head>
 <body>
 
@@ -475,15 +475,13 @@
           </div>
         </div>
         <div class="dialog-footer" style="flex-wrap: wrap;">
-          <button type="button" class="btn" id="tv-shuffle-btn">🔀 隨機換一部影片</button>
-          <a id="tv-external-link" class="btn" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">在 YouTube 開啟 ↗</a>
+          <button type="button" class="btn" id="tv-shuffle-btn">🔀 換一部影片</button>
+          <a id="tv-external-link" class="btn" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube ↗</a>
+          <button type="button" class="btn btn-primary" id="tv-minimize-room-btn" style="margin-inline-start: auto;">📺 放回房間電視播</button>
           <button
             type="button"
-            class="btn btn-primary"
+            class="btn"
             id="footer-close-tv-btn"
-            command="close"
-            commandfor="tv-dialog"
-            style="margin-inline-start: auto;"
           >關掉電視</button>
         </div>
       </div>
@@ -738,6 +736,27 @@
             <span>記帳</span>
             <span class="rent-msg-badge hidden" id="room-rent-msg-badge">1</span>
           </button>
+          <div class="room-tv-remote hidden" id="room-tv-remote" aria-label="房間電視遙控器">
+            <span class="room-tv-remote-title" id="room-tv-remote-title">📺 播放中</span>
+            <button type="button" class="room-tv-remote-btn" id="room-tv-shuffle-btn" aria-label="隨機換台" title="隨機換台">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m18 14 4 4-4 4"></path><path d="m18 2 4 4-4 4"></path>
+                <path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"></path>
+                <path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"></path><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"></path>
+              </svg>
+            </button>
+            <button type="button" class="room-tv-remote-btn" id="room-tv-expand-btn" aria-label="放大觀看電視" title="放大觀看">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 3h6v6"></path><path d="m21 3-7 7"></path>
+                <path d="m3 21 7-7"></path><path d="M9 21H3v-6"></path>
+              </svg>
+            </button>
+            <button type="button" class="room-tv-remote-btn is-power" id="room-tv-power-btn" aria-label="關閉房間電視" title="關掉電視">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2v10"></path><path d="M18.4 6.6a9 9 0 1 1-12.77.04"></path>
+              </svg>
+            </button>
+          </div>
           <div class="room-hud-group" style="gap: 0.5rem;">
             <button
               type="button"
@@ -853,6 +872,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261120e"></script>
+  <script type="module" src="./app-main.js?v=20261120g"></script>
 </body>
 </html>
