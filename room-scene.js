@@ -232,11 +232,19 @@ function createCharacterRig(config) {
     body.add(pivot);
   });
 
-  const phoneProp = new THREE.Mesh(
-    new RoundedBoxGeometry(0.09, 0.15, 0.02, 2, 0.008),
-    makeMat("#1e293b", 0.25, 0.4, { emissive: "#60a5fa", emissiveIntensity: 0.75 })
+  const phoneProp = new THREE.Group();
+  const phoneBody = new THREE.Mesh(
+    new RoundedBoxGeometry(0.095, 0.16, 0.018, 2, 0.008),
+    makeMat("#1e293b", 0.3, 0.35)
   );
-  phoneProp.position.set(0, -0.44, 0.08);
+  const phoneScreen = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.078, 0.136),
+    new THREE.MeshBasicMaterial({ color: "#93c5fd" })
+  );
+  phoneScreen.position.z = 0.01;
+  phoneProp.add(phoneBody, phoneScreen);
+  phoneProp.position.set(-0.04, -0.4, 0.06);
+  phoneProp.rotation.set(-Math.PI / 2 + 0.45, 0.18, 0);
   phoneProp.visible = false;
   rightArmPivot.add(phoneProp);
 
@@ -512,8 +520,8 @@ export class FreelancerRoomScene {
     this.centerAnchor = new THREE.Vector3(0.55, 0, -0.35);
 
     this.chillSpots = [
-      { id: "phone", label: "滑手機放鬆中", pos: new THREE.Vector3(-1.35, 0, 0.95), rotY: 0.45 },
-      { id: "exercise", label: "做伏地挺身保持體力", pos: new THREE.Vector3(0.45, 0, 0.55), rotY: -0.6 },
+      { id: "phone", label: "在床邊滑手機放鬆中", pos: new THREE.Vector3(1.94, 0, 1.95), rotY: -Math.PI / 2 },
+      { id: "exercise", label: "做伏地挺身保持體力", pos: new THREE.Vector3(-0.55, 0, 0.72), rotY: -0.6 },
       { id: "read", label: "翻閱靈感畫冊", pos: new THREE.Vector3(-2.35, 0, -0.55), rotY: 1.1 },
       { id: "eat", label: "享用熱食補充靈感", pos: new THREE.Vector3(0.85, 0, 2.45), rotY: -2.2 },
       { id: "gaming", label: "偷玩方塊沙盒遊戲", pos: new THREE.Vector3(-0.2, 0, -2.02), rotY: Math.PI },
@@ -1363,7 +1371,7 @@ export class FreelancerRoomScene {
     }
 
     const targetInBath = spotId === "wash" || spotId === "toilet";
-    const targetOnBed = spotId === "sleep";
+    const targetOnBed = spotId === "sleep" || spotId === "phone";
     const targetNearDesk = spotId === "work" || spotId === "gaming";
 
     // 1. Exit any enclosed or furniture-occupied zone cleanly based on 3D coords
@@ -1438,11 +1446,12 @@ export class FreelancerRoomScene {
       this.macScreenMat.needsUpdate = true;
     }
 
-    if (spot.id !== "sleep" && this.isOnBed(this.charRoot.position)) {
+    const isBedTarget = spot.id === "sleep" || spot.id === "phone";
+    if (!isBedTarget && this.isOnBed(this.charRoot.position)) {
       this.charRoot.position.copy(this.bedSideAnchor);
     }
 
-    const walkDest = (spot.id === "sleep" && !this.isOnBed(this.charRoot.position))
+    const walkDest = (isBedTarget && !this.isOnBed(this.charRoot.position))
       ? this.bedSideAnchor
       : spot.pos;
 
@@ -1694,14 +1703,18 @@ export class FreelancerRoomScene {
         this.rightArmPivot.rotation.x = -0.8 + Math.cos(elapsedSec * 16) * 0.08;
         this.headGroup.rotation.y = Math.sin(elapsedSec * 3.5) * 0.12;
         break;
-      case "exercise":
-        // Horizontal push-ups on floor mat!
-        this.charBody.position.set(0, 0.25 + Math.sin(elapsedSec * 4.5) * 0.07, 0);
-        this.charBody.rotation.x = Math.PI / 2.2;
-        this.leftArmPivot.rotation.x = -1.45;
-        this.rightArmPivot.rotation.x = -1.45;
-        this.headGroup.rotation.x = -0.6;
+      case "exercise": {
+        // Horizontal push-ups on cozy floor rug
+        const rep = (Math.sin(elapsedSec * 4.2) + 1) * 0.5;
+        this.charBody.position.set(0, 0.14 + rep * 0.04, 0);
+        this.charBody.rotation.x = Math.PI / 2 - (0.06 + rep * 0.18);
+        this.leftArmPivot.rotation.x = -1.65 + rep * 0.28;
+        this.rightArmPivot.rotation.x = -1.65 + rep * 0.28;
+        this.leftArmPivot.rotation.z = -0.22;
+        this.rightArmPivot.rotation.z = 0.22;
+        this.headGroup.rotation.x = -0.55 - rep * 0.1;
         break;
+      }
       case "sleep":
         // Lying flat & parallel along single bed (head at +Z pillow, facing ceiling)
         this.charBody.position.set(0, 0.76 + Math.sin(elapsedSec * 1.4) * 0.012, 0);
@@ -1743,10 +1756,17 @@ export class FreelancerRoomScene {
         break;
       case "phone":
       default:
+        // Sitting on the edge of the bed holding phone tilted up toward face
         this.phoneProp.visible = true;
-        this.rightArmPivot.rotation.x = -0.72;
-        this.rightArmPivot.rotation.z = 0.22;
-        this.headGroup.rotation.x = 0.28 + Math.sin(elapsedSec * 2) * 0.03;
+        this.charBody.position.set(0, 0.14, 0);
+        this.leftLegPivot.rotation.x = -Math.PI / 2.2;
+        this.rightLegPivot.rotation.x = -Math.PI / 2.2;
+        this.leftArmPivot.rotation.x = -0.58;
+        this.leftArmPivot.rotation.z = -0.18;
+        this.rightArmPivot.rotation.x = -1.18;
+        this.rightArmPivot.rotation.y = -0.15;
+        this.rightArmPivot.rotation.z = 0.25;
+        this.headGroup.rotation.x = 0.26 + Math.sin(elapsedSec * 2) * 0.03;
         break;
     }
   }
