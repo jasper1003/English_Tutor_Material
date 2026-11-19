@@ -3111,7 +3111,9 @@
       badgeEl.textContent = getRoleLabel(role);
       badgeEl.className = getRoleBadgeClass(role);
       nameEl.textContent = displayName || user.email || "帳號";
-      clamsEl.textContent = String(Math.max(0, Math.trunc(Number(clams ?? STARTER_CLAMS))));
+      clamsEl.textContent = role === "super_admin"
+        ? "∞"
+        : String(Math.max(0, Math.trunc(Number(clams ?? STARTER_CLAMS))));
 
       const isTeacher = role === "super_admin" || role === "admin";
       reviewBtn.classList.toggle("hidden", !isTeacher);
@@ -4754,11 +4756,12 @@
       const balanceEl = document.getElementById("shop-clams-balance");
       const tabsEl = document.getElementById("shop-tabs");
       const gridEl = document.getElementById("shop-grid");
+      const isSuperAdmin = currentRole === "super_admin";
       const clams = Math.max(0, Math.trunc(Number(currentUserProfile?.clams ?? STARTER_CLAMS)));
       const owned = normalizeOwnedItems(currentUserProfile?.ownedItems);
       const activeWallColor = (currentUserProfile?.roomState?.wallColor || DEFAULT_WALL_COLOR).toLowerCase();
 
-      balanceEl.textContent = String(clams);
+      balanceEl.textContent = isSuperAdmin ? "∞" : String(clams);
       tabsEl.innerHTML = "";
       SHOP_CATEGORIES.forEach(cat => {
         const btn = document.createElement("button");
@@ -4830,7 +4833,7 @@
             actionBtn.textContent = "已擺進房間 ✓";
             actionBtn.disabled = true;
           }
-        } else if (clams < item.price) {
+        } else if (!isSuperAdmin && clams < item.price) {
           actionBtn.textContent = `還差 ${item.price - clams} 英蚌`;
           actionBtn.disabled = true;
         } else {
@@ -4873,6 +4876,7 @@
           const snap = await tx.get(userRef);
           if (!snap.exists()) throw new Error("找不到使用者檔案。");
           const data = snap.data() || {};
+          const isSuperAdmin = currentRole === "super_admin";
           const currentClams = Math.trunc(Number(data.clams ?? STARTER_CLAMS));
           const prevOwned = (data.ownedItems && typeof data.ownedItems === "object" && !Array.isArray(data.ownedItems))
             ? { ...data.ownedItems }
@@ -4881,11 +4885,11 @@
           if (prevOwned[item.id] === true) {
             return { alreadyOwned: true, nextClams: currentClams, nextOwned: prevOwned, nextRoomState: data.roomState || {} };
           }
-          if (currentClams < item.price) {
+          if (!isSuperAdmin && currentClams < item.price) {
             throw new Error("英蚌餘額不足，先去電腦完成接案學習賺錢吧！");
           }
 
-          const nextClams = currentClams - item.price;
+          const nextClams = isSuperAdmin ? currentClams : (currentClams - item.price);
           const nextOwned = { ...prevOwned, [item.id]: true };
           const prevRoomState = (data.roomState && typeof data.roomState === "object")
             ? { ...data.roomState }
