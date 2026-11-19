@@ -866,14 +866,14 @@ export class FreelancerRoomScene {
     this.activityTimer = IDLE_MIN_SEC;
     this.postWorkCooldown = 0;
     this.thoughtCooldown = 2.0;
+    this.thoughtBags = {};
+    this.lastThoughtByActivity = {};
     this.thoughtBank = Object.fromEntries(
       Object.entries(THOUGHT_BANK).map(([k, v]) => [k, [...v]])
     );
     if (Array.isArray(options.customThoughts)) {
       this.applyCustomThoughts(options.customThoughts);
     }
-    this.thoughtBags = {};
-    this.lastThoughtByActivity = {};
     this.walkWaypoints = [];
     this.walkCallback = null;
 
@@ -2496,7 +2496,9 @@ export class FreelancerRoomScene {
     for (const [activity, lines] of Object.entries(grouped)) {
       if (lines.length > 0) {
         this.thoughtBank[activity] = lines;
-        delete this.thoughtBags[activity];
+        if (this.thoughtBags) {
+          delete this.thoughtBags[activity];
+        }
       }
     }
   }
