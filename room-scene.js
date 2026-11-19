@@ -567,6 +567,53 @@ function createCharacterRig(config) {
   coffeeProp.visible = false;
   rightArmPivot.add(coffeeProp);
 
+  // PS5 DualSense style two-tone controller held with both hands during "gaming"
+  const shoulderX = dims.shoulderW / 2 + 0.06;
+  const controllerGripRz = Math.asin(Math.min(0.75, Math.max(0.1, (shoulderX - 0.102) / 0.425)));
+  const controllerProp = new THREE.Group();
+  const psWhiteMat = makeMat("#f8fafc", 0.35, 0.08);
+  const psDarkMat = makeMat("#18181b", 0.45, 0.15);
+  const psGripDarkMat = makeMat("#1e293b", 0.52, 0.1);
+  const psGlowMat = new THREE.MeshBasicMaterial({ color: "#38bdf8" });
+
+  const psBridge = new THREE.Mesh(new RoundedBoxGeometry(0.175, 0.036, 0.095, 3, 0.015), psWhiteMat);
+  const psCenterPlate = new THREE.Mesh(new RoundedBoxGeometry(0.145, 0.038, 0.068, 2, 0.01), psDarkMat);
+  psCenterPlate.position.set(0, -0.002, 0.018);
+
+  const psTouchpad = new THREE.Mesh(new RoundedBoxGeometry(0.084, 0.012, 0.05, 2, 0.005), psWhiteMat);
+  psTouchpad.position.set(0, 0.019, -0.016);
+  const psLightL = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.013, 0.044), psGlowMat);
+  psLightL.position.set(-0.045, 0.019, -0.016);
+  const psLightR = psLightL.clone();
+  psLightR.position.x = 0.045;
+
+  const psStickL = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.017, 0.016, 12), psGripDarkMat);
+  psStickL.position.set(-0.036, 0.022, 0.022);
+  const psStickR = psStickL.clone();
+  psStickR.position.x = 0.036;
+
+  const psDpad = new THREE.Mesh(new RoundedBoxGeometry(0.03, 0.008, 0.03, 2, 0.003), makeMat("#cbd5e1", 0.4));
+  psDpad.position.set(-0.064, 0.02, -0.012);
+  const psButtons = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.008, 12), psGlowMat);
+  psButtons.position.set(0.064, 0.02, -0.012);
+
+  const psGripGeo = new THREE.CapsuleGeometry(0.026, 0.095, 6, 10);
+  const psGripL = new THREE.Mesh(psGripGeo, psWhiteMat);
+  psGripL.position.set(-0.098, -0.012, 0.022);
+  psGripL.rotation.set(0.42, 0, -0.26);
+  const psGripR = new THREE.Mesh(psGripGeo, psWhiteMat);
+  psGripR.position.set(0.098, -0.012, 0.022);
+  psGripR.rotation.set(0.42, 0, 0.26);
+
+  controllerProp.add(
+    psBridge, psCenterPlate, psTouchpad, psLightL, psLightR,
+    psStickL, psStickR, psDpad, psButtons, psGripL, psGripR
+  );
+  controllerProp.position.set(0, 0.785, 0.34);
+  controllerProp.rotation.set(-0.46, 0, 0);
+  controllerProp.visible = false;
+  body.add(controllerProp);
+
   const headGroup = new THREE.Group();
   headGroup.position.set(0, 1.32, 0);
 
@@ -635,6 +682,8 @@ function createCharacterRig(config) {
     bookProp,
     snackProp,
     coffeeProp,
+    controllerProp,
+    controllerGripRz,
     config: cfg
   };
 }
@@ -2315,6 +2364,8 @@ export class FreelancerRoomScene {
     this.bookProp = rig.bookProp;
     this.snackProp = rig.snackProp;
     this.coffeeProp = rig.coffeeProp;
+    this.controllerProp = rig.controllerProp;
+    this.controllerGripRz = rig.controllerGripRz ?? 0.46;
 
     this.roomGroup.add(this.charRoot);
 
@@ -2613,6 +2664,7 @@ export class FreelancerRoomScene {
     if (this.bookProp) this.bookProp.visible = false;
     if (this.snackProp) this.snackProp.visible = false;
     if (this.coffeeProp) this.coffeeProp.visible = false;
+    if (this.controllerProp) this.controllerProp.visible = false;
   }
 
   isInBathroom(pos = this.charRoot?.position) {
@@ -3115,14 +3167,23 @@ export class FreelancerRoomScene {
     }
 
     switch (this.currentActivity) {
-      case "gaming":
+      case "gaming": {
+        if (this.controllerProp) this.controllerProp.visible = true;
+        const tilt = Math.sin(elapsedSec * 7.5) * 0.06;
+        const roll = Math.cos(elapsedSec * 5.2) * 0.07;
         this.charBody.position.set(0, -0.22, -0.04);
         this.leftLegPivot.rotation.x = -Math.PI / 2.2;
         this.rightLegPivot.rotation.x = -Math.PI / 2.2;
-        this.leftArmPivot.rotation.x = -0.8 + Math.sin(elapsedSec * 14) * 0.08;
-        this.rightArmPivot.rotation.x = -0.8 + Math.cos(elapsedSec * 16) * 0.08;
-        this.headGroup.rotation.y = Math.sin(elapsedSec * 3.5) * 0.12;
+        this.leftArmPivot.rotation.set(-1.05 + tilt + roll * 0.5, 0, this.controllerGripRz);
+        this.rightArmPivot.rotation.set(-1.05 + tilt - roll * 0.5, 0, -this.controllerGripRz);
+        if (this.controllerProp) {
+          this.controllerProp.position.set(0, 0.785 - tilt * 0.18, 0.34);
+          this.controllerProp.rotation.set(-0.46 + tilt, 0, roll);
+        }
+        this.headGroup.rotation.x = 0.1 + Math.sin(elapsedSec * 2.2) * 0.03;
+        this.headGroup.rotation.y = Math.sin(elapsedSec * 3.5) * 0.1;
         break;
+      }
       case "exercise": {
         // Horizontal push-ups on cozy floor rug
         const rep = (Math.sin(elapsedSec * 4.2) + 1) * 0.5;
