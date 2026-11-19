@@ -3511,6 +3511,8 @@
     let pendingSignUpName = "";
     let authResolved = false;
     let sheetsLoaded = false;
+    let sheetsDetailsLoaded = false;
+    let sheetsStage2Promise = null;
     let sheetsError = null;
     let authSessionNonce = 0;
 
@@ -3956,11 +3958,19 @@
       renderHome();
     }
 
-    function openLesson(dateStr) {
+    async function openLesson(dateStr) {
       if (!currentUser || !sheetsLoaded) return;
       if (currentScreen !== "desktop" && currentScreen !== "lesson") return;
       const lesson = db.lessons.find(l => l.Date === dateStr);
       if (!lesson) return openWorkDesktop();
+      if (!sheetsDetailsLoaded && sheetsStage2Promise) {
+        try {
+          await sheetsStage2Promise;
+        } catch (err) {
+          alert(`無法載入單元單字與測驗資料：${err?.message || err}`);
+          return;
+        }
+      }
       currentScreen = "lesson";
       activeLessonDate = dateStr;
       renderLesson(dateStr);
@@ -4059,38 +4069,126 @@
       }
     }
 
-    async function loadSheets() {
-      try {
-        const [lessons, vocab, quiz, shopRows, settingRows, tvRows, thoughtRows] = await Promise.all([
-          fetchSheetTab("Lessons"),
-          fetchSheetTab("Vocab"),
-          fetchSheetTab("Quiz"),
-          fetchOptionalSheetTab("Shop"),
-          fetchOptionalSheetTab("Settings"),
-          fetchOptionalSheetTab("TV_Videos"),
-          fetchOptionalSheetTab("Room_Thoughts")
-        ]);
+    const SHEETS_CACHE_KEY = `sheets_cache_v1:${SPREADSHEET_ID}`;
+    let latestSheetSnapshot = {
+      lessons: [],
+      vocab: [],
+      quiz: [],
+      shopRows: [],
+      settingRows: [],
+      tvRows: [],
+      thoughtRows: []
+    };
 
-        // 依日期由早到晚排列，對應關卡由 Unit 1 往前推進
-        db.lessons = lessons.sort((a, b) => a.Date.localeCompare(b.Date));
-        db.vocab = vocab;
-        db.quiz = quiz;
-        applyRemoteSettings(settingRows);
-        applyRemoteShopConfig(shopRows);
-        applyRemoteTvVideos(tvRows);
-        if (Array.isArray(thoughtRows) && thoughtRows.length > 0) {
-          pendingThoughtRows = thoughtRows;
-          roomScene?.applyCustomThoughts(thoughtRows);
-        }
-        sheetsLoaded = true;
-        sheetsError = null;
-      } catch (err) {
-        sheetsError = err;
+    function readSheetsCache() {
+      try {
+        const raw = localStorage.getItem(SHEETS_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return null;
+        if (!Array.isArray(parsed.lessons) || parsed.lessons.length === 0) return null;
+        if (!Array.isArray(parsed.vocab) || !Array.isArray(parsed.quiz)) return null;
+        return parsed;
+      } catch {
+        return null;
       }
-      renderAppState();
+    }
+
+    function writeSheetsCache(snapshot) {
+      try {
+        localStorage.setItem(SHEETS_CACHE_KEY, JSON.stringify({
+          ts: Date.now(),
+          ...snapshot
+        }));
+      } catch {
+        // Ignore storage quota / private mode failures
+      }
+    }
+
+    function applySheetCore(lessons, shopRows, settingRows) {
+      db.lessons = [...lessons].sort((a, b) => a.Date.localeCompare(b.Date));
+      applyRemoteSettings(settingRows);
+      applyRemoteShopConfig(shopRows);
+      latestSheetSnapshot = { ...latestSheetSnapshot, lessons, shopRows, settingRows };
+    }
+
+    function applySheetDetails(vocab, quiz, tvRows, thoughtRows) {
+      db.vocab = vocab;
+      db.quiz = quiz;
+      applyRemoteTvVideos(tvRows);
+      if (Array.isArray(thoughtRows) && thoughtRows.length > 0) {
+        pendingThoughtRows = thoughtRows;
+        roomScene?.applyCustomThoughts(thoughtRows);
+      }
+      latestSheetSnapshot = { ...latestSheetSnapshot, vocab, quiz, tvRows, thoughtRows };
+    }
+
+    function refreshLiveSheetViews() {
       updateRentCountdownUI();
+      if (currentScreen === "desktop") renderHome();
       if (shopDialog?.open) renderShopDialog();
       if (financeDialog?.open) renderFinanceDialog();
+    }
+
+    async function loadSheets() {
+      const cached = readSheetsCache();
+      if (cached) {
+        applySheetCore(cached.lessons, cached.shopRows || [], cached.settingRows || []);
+        applySheetDetails(cached.vocab, cached.quiz, cached.tvRows || [], cached.thoughtRows || []);
+        sheetsLoaded = true;
+        sheetsDetailsLoaded = true;
+        sheetsError = null;
+        renderAppState();
+      }
+
+      const stage1Promise = Promise.all([
+        fetchSheetTab("Lessons"),
+        fetchOptionalSheetTab("Shop"),
+        fetchOptionalSheetTab("Settings")
+      ]);
+      const stage2Promise = Promise.all([
+        fetchSheetTab("Vocab"),
+        fetchSheetTab("Quiz"),
+        fetchOptionalSheetTab("TV_Videos"),
+        fetchOptionalSheetTab("Room_Thoughts")
+      ]);
+      sheetsStage2Promise = stage2Promise;
+
+      try {
+        const [lessons, shopRows, settingRows] = await stage1Promise;
+        const wasLoaded = sheetsLoaded;
+        applySheetCore(lessons, shopRows, settingRows);
+        sheetsLoaded = true;
+        sheetsError = null;
+        if (!wasLoaded) {
+          renderAppState();
+        } else {
+          refreshLiveSheetViews();
+        }
+      } catch (err) {
+        if (!sheetsLoaded) {
+          sheetsError = err;
+          renderAppState();
+          return;
+        }
+        console.warn("Stage 1 sheet refresh failed (using cached data):", err?.message || err);
+      }
+
+      try {
+        const [vocab, quiz, tvRows, thoughtRows] = await stage2Promise;
+        applySheetDetails(vocab, quiz, tvRows, thoughtRows);
+        sheetsDetailsLoaded = true;
+        writeSheetsCache(latestSheetSnapshot);
+        if (currentScreen === "desktop") {
+          renderHome();
+        }
+      } catch (err) {
+        if (!sheetsDetailsLoaded) {
+          console.warn("Stage 2 sheet details failed:", err?.message || err);
+          throw err;
+        }
+        console.warn("Stage 2 sheet refresh failed (using cached data):", err?.message || err);
+      }
     }
 
     function drawQuestPath() {
