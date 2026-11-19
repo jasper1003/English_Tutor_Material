@@ -132,73 +132,295 @@
       margin: 40px auto;
     }
 
-    /* Folder Grid View (Home) — 強化字級反差與層級 */
+    /* Lobby Quest Map (Duolingo-inspired winding path) */
+    .map-header {
+      max-inline-size: 680px;
+      margin-inline: auto;
+      margin-block-end: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
     .page-title {
       font-size: 2rem;
       font-weight: 800;
       letter-spacing: -0.02em;
-      margin-bottom: 1.75rem;
       color: var(--text);
     }
 
-    .folder-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
-      gap: 1.5rem;
+    .map-progress-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.95rem;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-secondary);
     }
 
-    .folder-card {
+    .map-progress-dot {
+      inline-size: 10px;
+      block-size: 10px;
+      border-radius: 50%;
+      background: #22c55e;
+      display: inline-block;
+    }
+
+    .quest-map {
+      position: relative;
+      max-inline-size: 680px;
+      margin-inline: auto;
+      padding-block: 1rem 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2.75rem;
+    }
+
+    .map-path-svg {
+      position: absolute;
+      inset: 0;
+      display: block;
+      pointer-events: none;
+      z-index: 0;
+      overflow: visible;
+    }
+
+    .quest-step {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.85rem;
+      transform: translateX(var(--step-x, 0px));
+    }
+
+    .quest-node-circle {
+      inline-size: 78px;
+      block-size: 78px;
+      border-radius: 50%;
+      border: 4px solid #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #ffffff;
+      background: var(--primary);
+      box-shadow: 0 6px 0 #1e3a8a, 0 10px 20px -6px rgba(30, 64, 175, 0.35);
+      cursor: pointer;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.2s ease;
+      position: relative;
+    }
+
+    .quest-node-circle:hover {
+      transform: translateY(-2px);
+    }
+
+    .quest-node-circle:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #1e3a8a;
+    }
+
+    .quest-node-circle.is-current::after {
+      content: "";
+      position: absolute;
+      inset: -11px;
+      border-radius: 50%;
+      border: 3px solid rgba(37, 99, 235, 0.32);
+      pointer-events: none;
+    }
+
+    .quest-step.is-completed .quest-node-circle {
+      background: #22c55e;
+      box-shadow: 0 6px 0 #15803d, 0 10px 20px -6px rgba(21, 128, 61, 0.35);
+    }
+
+    .quest-step.is-completed .quest-node-circle:active {
+      box-shadow: 0 2px 0 #15803d;
+    }
+
+    .quest-step.is-locked .quest-node-circle {
+      background: #e2e8f0;
+      color: #94a3b8;
+      box-shadow: 0 6px 0 #cbd5e1;
+      cursor: not-allowed;
+    }
+
+    .quest-step.is-locked .quest-node-circle:hover,
+    .quest-step.is-locked .quest-node-circle:active {
+      transform: none;
+    }
+
+    .quest-node-card {
+      inline-size: min(100%, 340px);
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 1.75rem;
+      padding: 1rem 1.25rem;
+      text-align: center;
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+      box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.06);
+    }
+
+    .quest-node-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px -8px rgba(15, 23, 42, 0.1);
+    }
+
+    .quest-step.is-completed .quest-node-card {
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+
+    .quest-step.is-completed .quest-node-card:hover {
+      border-color: #22c55e;
+    }
+
+    .quest-step.is-locked .quest-node-card {
+      background: #f8fafc;
+      border-style: dashed;
+      border-color: #cbd5e1;
+      box-shadow: none;
+      cursor: not-allowed;
+      padding: 0.75rem 1.15rem;
+    }
+
+    .quest-step.is-locked .quest-node-card:hover {
+      transform: none;
+      border-color: #cbd5e1;
+      box-shadow: none;
+    }
+
+    .quest-node-top {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-block-end: 0.35rem;
+    }
+
+    .quest-unit-tag {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+    }
+
+    .quest-step.is-completed .quest-unit-tag {
+      color: #15803d;
+      background: #dcfce7;
+    }
+
+    .quest-node-date {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .quest-node-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-block-end: 0.3rem;
+    }
+
+    .quest-node-grammar {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: var(--muted);
+      margin-block-end: 0.5rem;
+    }
+
+    .quest-node-meta {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .quest-locked-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 600px) {
+      .quest-step {
+        transform: translateX(calc(var(--step-x, 0px) * 0.5));
+      }
+    }
+
+    /* Lesson Bottom Completion Footer */
+    .lesson-footer-action {
+      margin-block-start: 3rem;
+      padding: 2rem 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      gap: 1.25rem;
-    }
-
-    .folder-card:hover {
-      transform: translateY(-3px);
-      border-color: var(--primary);
-      box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.08);
-    }
-
-    /* 層級 1：日期（最大視覺焦點） */
-    .folder-date {
-      display: block;
-      font-size: 1.65rem;
-      font-weight: 800;
-      color: var(--primary);
-      letter-spacing: -0.01em;
-      margin-bottom: 0.4rem;
-    }
-
-    /* 層級 2：乾淨的大 Title */
-    .folder-title {
-      font-size: 1.28rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 0.65rem;
-    }
-
-    /* 層級 3：底部 Description（維持主從關係並提升可讀性） */
-    .folder-grammar {
-      font-size: 1rem;
-      line-height: 1.6;
-      color: var(--muted);
-    }
-
-    .folder-meta {
-      padding-top: 0.9rem;
-      border-top: 1px solid var(--border);
-      font-size: 0.95rem;
-      font-weight: 500;
-      color: var(--muted);
-      display: flex;
+      align-items: center;
+      text-align: center;
       gap: 1rem;
+    }
+
+    .lesson-footer-status {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .lesson-footer-status.is-completed {
+      color: #15803d;
+    }
+
+    .btn-complete-unit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.9rem 2.4rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+      border-radius: 12px;
+      border: none;
+      background: #22c55e;
+      color: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #15803d;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
+    }
+
+    .btn-complete-unit:hover {
+      background: #16a34a;
+    }
+
+    .btn-complete-unit:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #15803d;
+    }
+
+    .btn-complete-unit.is-completed {
+      background: var(--surface);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      box-shadow: 0 3px 0 #cbd5e1;
+    }
+
+    .btn-complete-unit.is-completed:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
     }
 
     /* Lesson Detail View */
@@ -677,7 +899,7 @@
     <div class="header-inner">
       <div class="brand" id="home-btn">English Tutor Material</div>
       <div class="header-actions" id="lesson-actions" style="display: none;">
-        <button class="btn" id="back-btn">← 返回課程資料夾</button>
+        <button class="btn" id="back-btn">← 返回關卡地圖</button>
         <button class="btn btn-primary" id="copy-link-btn">複製本堂課連結</button>
       </div>
     </div>
@@ -687,10 +909,16 @@
     <div id="loading-view" class="status-box">正在同步 Google 試算表教案資料庫...</div>
     <div id="error-view" class="error-box hidden"></div>
 
-    <!-- Home: Date Folders -->
+    <!-- Home: Winding Quest Map -->
     <section id="home-view" class="hidden">
-      <h1 class="page-title">課程資料夾</h1>
-      <div class="folder-grid" id="folder-grid"></div>
+      <div class="map-header">
+        <h1 class="page-title">學習關卡地圖</h1>
+        <div class="map-progress-pill" id="map-progress-pill">
+          <span class="map-progress-dot" aria-hidden="true"></span>
+          <span id="map-completed-count">已完成 0 關</span>
+        </div>
+      </div>
+      <div class="quest-map" id="quest-map"></div>
     </section>
 
     <!-- Lesson Detail -->
@@ -726,6 +954,12 @@
             <div id="quiz-container" style="display: flex; flex-direction: column; gap: 18px;"></div>
           </div>
         </div>
+      </div>
+
+      <!-- Unit Completion Toggle -->
+      <div class="lesson-footer-action">
+        <div class="lesson-footer-status" id="lesson-complete-status"></div>
+        <button type="button" class="btn-complete-unit" id="toggle-complete-btn" aria-pressed="false">完成單元</button>
       </div>
     </section>
   </main>
@@ -769,6 +1003,43 @@
       }).filter(item => item.Date);
     }
 
+    const COMPLETED_STORAGE_KEY = "vic_completed_lessons_v1";
+    const LOCKED_NODES_AHEAD = 4;
+    const WAVE_OFFSETS_PX = [0, -76, -108, -76, 0, 76, 108, 76];
+    let questResizeObserver = null;
+
+    function getCompletedLessons() {
+      try {
+        const raw = localStorage.getItem(COMPLETED_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return new Set(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        return new Set();
+      }
+    }
+
+    function saveCompletedLessons(completedSet) {
+      try {
+        localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify([...completedSet]));
+      } catch {
+        // Ignore storage errors in restricted environments
+      }
+    }
+
+    function toggleLessonCompleted(dateStr) {
+      const completed = getCompletedLessons();
+      let nowCompleted;
+      if (completed.has(dateStr)) {
+        completed.delete(dateStr);
+        nowCompleted = false;
+      } else {
+        completed.add(dateStr);
+        nowCompleted = true;
+      }
+      saveCompletedLessons(completed);
+      return nowCompleted;
+    }
+
     async function init() {
       try {
         const [lessons, vocab, quiz] = await Promise.all([
@@ -777,7 +1048,8 @@
           fetchSheetTab("Quiz")
         ]);
 
-        db.lessons = lessons.sort((a, b) => b.Date.localeCompare(a.Date));
+        // 依日期由早到晚排列，對應關卡由 Unit 1 往前推進
+        db.lessons = lessons.sort((a, b) => a.Date.localeCompare(b.Date));
         db.vocab = vocab;
         db.quiz = quiz;
 
@@ -814,37 +1086,161 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
+    function drawQuestPath() {
+      const mapEl = document.getElementById("quest-map");
+      const svg = mapEl ? mapEl.querySelector(".map-path-svg") : null;
+      if (!mapEl || !svg) return;
+
+      const steps = Array.from(mapEl.querySelectorAll(".quest-step"));
+      if (steps.length < 2) {
+        svg.innerHTML = "";
+        return;
+      }
+
+      const mapRect = mapEl.getBoundingClientRect();
+      if (mapRect.width === 0 || mapRect.height === 0) return;
+
+      svg.setAttribute("viewBox", `0 0 ${mapRect.width} ${mapRect.height}`);
+      svg.style.inlineSize = `${mapRect.width}px`;
+      svg.style.blockSize = `${mapRect.height}px`;
+
+      const points = steps.map(step => {
+        const circle = step.querySelector(".quest-node-circle");
+        const r = circle.getBoundingClientRect();
+        return {
+          x: r.left - mapRect.left + r.width / 2,
+          y: r.top - mapRect.top + r.height / 2,
+          completed: step.classList.contains("is-completed"),
+          locked: step.classList.contains("is-locked")
+        };
+      });
+
+      const paths = [];
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const midY = (p1.y + p2.y) / 2;
+        const d = `M ${p1.x} ${p1.y} C ${p1.x} ${midY}, ${p2.x} ${midY}, ${p2.x} ${p2.y}`;
+
+        let stroke = "#cbd5e1";
+        let width = 6;
+        let dash = "";
+        if (p1.completed && !p2.locked) {
+          stroke = "#22c55e";
+        } else if (p2.locked) {
+          stroke = "#cbd5e1";
+          width = 5;
+          dash = `stroke-dasharray="8 8"`;
+        }
+
+        paths.push(
+          `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round" ${dash} />`
+        );
+      }
+
+      svg.innerHTML = paths.join("");
+    }
+
     function renderHome() {
       document.getElementById("lesson-view").classList.add("hidden");
       document.getElementById("lesson-actions").style.display = "none";
       const homeView = document.getElementById("home-view");
-      const grid = document.getElementById("folder-grid");
-      grid.innerHTML = "";
+      const mapEl = document.getElementById("quest-map");
+      mapEl.innerHTML = "";
+
+      const completedSet = getCompletedLessons();
+      const completedRealCount = db.lessons.filter(l => completedSet.has(l.Date)).length;
+      document.getElementById("map-completed-count").textContent = `已完成 ${completedRealCount} 關`;
 
       if (db.lessons.length === 0) {
-        grid.innerHTML = `<p style="color: var(--muted);">目前試算表中尚無課程資料。</p>`;
-      } else {
-        db.lessons.forEach(lesson => {
-          const vocabCount = db.vocab.filter(v => v.Date === lesson.Date).length;
+        mapEl.innerHTML = `<p style="color: var(--muted); text-align: center;">目前試算表中尚無課程資料。</p>`;
+        homeView.classList.remove("hidden");
+        return;
+      }
 
-          const card = document.createElement("div");
-          card.className = "folder-card";
-          card.innerHTML = `
-            <div>
-              <span class="folder-date">${escapeHtml(lesson.Date)}</span>
-              <div class="folder-title">${escapeHtml(lesson.Title || "Untitled Lesson")}</div>
-              <div class="folder-grammar">${escapeHtml(lesson.Grammar_Focus || "")}</div>
-            </div>
-            <div class="folder-meta">
-              <span>單字：${vocabCount} 個</span>
-            </div>
-          `;
-          card.addEventListener("click", () => navigateTo(lesson.Date));
-          grid.appendChild(card);
-        });
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.classList.add("map-path-svg");
+      svg.setAttribute("aria-hidden", "true");
+      mapEl.appendChild(svg);
+
+      const firstUncompletedIndex = db.lessons.findIndex(l => !completedSet.has(l.Date));
+
+      db.lessons.forEach((lesson, idx) => {
+        const vocabCount = db.vocab.filter(v => v.Date === lesson.Date).length;
+        const isCompleted = completedSet.has(lesson.Date);
+        const isCurrent = idx === firstUncompletedIndex;
+        const unitLabel = `UNIT ${String(idx + 1).padStart(2, "0")}`;
+        const offsetX = WAVE_OFFSETS_PX[idx % WAVE_OFFSETS_PX.length];
+
+        const step = document.createElement("div");
+        step.className = `quest-step${isCompleted ? " is-completed" : ""}`;
+        step.style.setProperty("--step-x", `${offsetX}px`);
+
+        const circleIcon = isCompleted
+          ? `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+          : String(idx + 1).padStart(2, "0");
+
+        const circleBtn = document.createElement("button");
+        circleBtn.type = "button";
+        circleBtn.className = `quest-node-circle${isCurrent ? " is-current" : ""}`;
+        circleBtn.setAttribute("aria-label", `${unitLabel} ${lesson.Title || ""}`);
+        circleBtn.innerHTML = circleIcon;
+        circleBtn.addEventListener("click", () => navigateTo(lesson.Date));
+
+        const cardBtn = document.createElement("button");
+        cardBtn.type = "button";
+        cardBtn.className = "quest-node-card";
+        cardBtn.style.textAlign = "center";
+        cardBtn.innerHTML = `
+          <div class="quest-node-top">
+            <span class="quest-unit-tag">${unitLabel}${isCompleted ? " · 已完成" : ""}</span>
+            <span class="quest-node-date">${escapeHtml(lesson.Date)}</span>
+          </div>
+          <div class="quest-node-title">${escapeHtml(lesson.Title || "Untitled Lesson")}</div>
+          ${lesson.Grammar_Focus ? `<div class="quest-node-grammar">${escapeHtml(lesson.Grammar_Focus)}</div>` : ""}
+          <div class="quest-node-meta">單字：${vocabCount} 個</div>
+        `;
+        cardBtn.addEventListener("click", () => navigateTo(lesson.Date));
+
+        step.appendChild(circleBtn);
+        step.appendChild(cardBtn);
+        mapEl.appendChild(step);
+      });
+
+      // 延伸未開放的鎖定關卡（看不到標題、不可點選，讓學生看見前方仍有路要走）
+      const totalVisibleSteps = Math.max(db.lessons.length + LOCKED_NODES_AHEAD, 6);
+      const lockedCount = totalVisibleSteps - db.lessons.length;
+
+      for (let j = 0; j < lockedCount; j++) {
+        const idx = db.lessons.length + j;
+        const unitLabel = `UNIT ${String(idx + 1).padStart(2, "0")}`;
+        const offsetX = WAVE_OFFSETS_PX[idx % WAVE_OFFSETS_PX.length];
+        const fadeOpacity = Math.max(0.45, 0.85 - j * 0.12);
+
+        const step = document.createElement("div");
+        step.className = "quest-step is-locked";
+        step.style.setProperty("--step-x", `${offsetX}px`);
+        step.style.opacity = String(fadeOpacity);
+        step.setAttribute("aria-disabled", "true");
+
+        step.innerHTML = `
+          <div class="quest-node-circle" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <div class="quest-node-card">
+            <div class="quest-locked-label">${unitLabel} · 尚未解鎖</div>
+          </div>
+        `;
+        mapEl.appendChild(step);
       }
 
       homeView.classList.remove("hidden");
+      requestAnimationFrame(drawQuestPath);
+
+      if (!questResizeObserver && "ResizeObserver" in window) {
+        questResizeObserver = new ResizeObserver(() => drawQuestPath());
+        questResizeObserver.observe(mapEl);
+      }
     }
 
     function renderLesson(dateStr) {
@@ -1011,6 +1407,33 @@
       });
 
       document.getElementById("reset-quiz-btn").onclick = () => renderLesson(dateStr);
+
+      const syncCompleteUI = (isCompleted) => {
+        const statusEl = document.getElementById("lesson-complete-status");
+        const toggleBtn = document.getElementById("toggle-complete-btn");
+        if (isCompleted) {
+          statusEl.textContent = "✓ 本單元已完成（關卡已點亮）";
+          statusEl.classList.add("is-completed");
+          toggleBtn.textContent = "尚未完成本單元";
+          toggleBtn.classList.add("is-completed");
+          toggleBtn.setAttribute("aria-pressed", "true");
+        } else {
+          statusEl.textContent = "完成單字與閱讀練習後，按下按鈕點亮地圖關卡";
+          statusEl.classList.remove("is-completed");
+          toggleBtn.textContent = "完成單元";
+          toggleBtn.classList.remove("is-completed");
+          toggleBtn.setAttribute("aria-pressed", "false");
+        }
+      };
+
+      syncCompleteUI(getCompletedLessons().has(dateStr));
+      document.getElementById("toggle-complete-btn").onclick = () => {
+        const nowCompleted = toggleLessonCompleted(dateStr);
+        syncCompleteUI(nowCompleted);
+        if (nowCompleted) {
+          launchFullCelebration();
+        }
+      };
 
       lessonView.classList.remove("hidden");
     }
