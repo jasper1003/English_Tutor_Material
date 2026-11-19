@@ -5,7 +5,7 @@ import {
   DEFAULT_RUG_STYLE,
   resolveBedSheetStyle,
   resolveRugStyle
-} from "./shop-catalog.js?v=20261119q";
+} from "./shop-catalog.js?v=20261119t";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -16,7 +16,7 @@ const COMMANDED_WASH_SEC = 10;    // 10 seconds hand wash
 const COMMANDED_TOILET_SEC = 15;  // 15 seconds toilet use
 
 // Per-activity English thought library aligned with the student's Google Sheet curriculum (>= 6 lines each)
-const THOUGHT_BANK = {
+export const THOUGHT_BANK = {
   phone: [
     "This page is so cool!",
     "I want to buy a TV...",
@@ -866,6 +866,12 @@ export class FreelancerRoomScene {
     this.activityTimer = IDLE_MIN_SEC;
     this.postWorkCooldown = 0;
     this.thoughtCooldown = 2.0;
+    this.thoughtBank = Object.fromEntries(
+      Object.entries(THOUGHT_BANK).map(([k, v]) => [k, [...v]])
+    );
+    if (Array.isArray(options.customThoughts)) {
+      this.applyCustomThoughts(options.customThoughts);
+    }
     this.thoughtBags = {};
     this.lastThoughtByActivity = {};
     this.walkWaypoints = [];
@@ -2475,11 +2481,31 @@ export class FreelancerRoomScene {
     this.onActivityChange("專心創作接案中");
   }
 
+  applyCustomThoughts(rows = []) {
+    if (!Array.isArray(rows) || rows.length === 0) return;
+    const grouped = {};
+    for (const row of rows) {
+      const activity = String(row?.activity || "").trim();
+      const text = String(row?.text || "").trim();
+      if (!activity || !text) continue;
+      const enabledRaw = String(row?.enabled ?? "true").trim().toLowerCase();
+      if (["false", "0", "no", "off", "停用"].includes(enabledRaw)) continue;
+      if (!grouped[activity]) grouped[activity] = [];
+      grouped[activity].push(text);
+    }
+    for (const [activity, lines] of Object.entries(grouped)) {
+      if (lines.length > 0) {
+        this.thoughtBank[activity] = lines;
+        delete this.thoughtBags[activity];
+      }
+    }
+  }
+
   pickRandomThought(activityKey) {
     const resolvedKey = (activityKey === "toilet" && this.ownedItems?.smart_toilet)
       ? "smart_toilet"
       : activityKey;
-    const bank = THOUGHT_BANK[resolvedKey];
+    const bank = this.thoughtBank?.[resolvedKey] || THOUGHT_BANK[resolvedKey];
     if (!bank || bank.length === 0) return "";
     let bag = this.thoughtBags[resolvedKey];
     if (!bag || bag.length === 0) {

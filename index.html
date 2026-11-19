@@ -3239,16 +3239,17 @@
       HAIR_COLORS,
       OUTFIT_COLORS,
       DEFAULT_AVATAR
-    } from "./room-scene.js?v=20261119s";
+    } from "./room-scene.js?v=20261119t";
     import {
       SHOP_CATEGORIES,
       SHOP_CATALOG,
       DEFAULT_WALL_COLOR,
       DEFAULT_BED_SHEET,
       DEFAULT_RUG_STYLE,
+      applyRemoteShopConfig,
       getShopItem,
       normalizeOwnedItems
-    } from "./shop-catalog.js?v=20261119q";
+    } from "./shop-catalog.js?v=20261119t";
 
     if (window.location.search) {
       const cleanUrl = new URL(window.location.href);
@@ -3274,9 +3275,10 @@
 
     const SUPER_ADMIN_EMAIL = "jasper931003@gmail.com";
     const SPREADSHEET_ID = "1DrKwyy-L9g_nHFBFJ0joLfsDE64vBb1ymjtKiaNQJ5U";
-    const UNIT_REWARD_CLAMS = 200;
-    const STARTER_CLAMS = 100;
-    const MONTHLY_RENT_CLAMS = 100;
+    let UNIT_REWARD_CLAMS = 200;
+    let STARTER_CLAMS = 100;
+    let MONTHLY_RENT_CLAMS = 100;
+    let pendingThoughtRows = null;
 
     let db = {
       lessons: [],
@@ -3302,8 +3304,8 @@
     let avatarPreviewScene = null;
     let isEditingAvatarFromRoom = false;
 
-    async function fetchSheetTab(sheetName) {
-      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+    async function fetchRawSheetTab(sheetName, extraParams = "") {
+      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json${extraParams}&sheet=${encodeURIComponent(sheetName)}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`無法讀取工作表：${sheetName}`);
       const text = await res.text();
@@ -3329,7 +3331,20 @@
           obj[colName] = val.trim();
         });
         return obj;
-      }).filter(item => item.Date);
+      });
+    }
+
+    async function fetchSheetTab(sheetName) {
+      const rows = await fetchRawSheetTab(sheetName);
+      return rows.filter(item => item.Date);
+    }
+
+    async function fetchOptionalSheetTab(sheetName) {
+      try {
+        return await fetchRawSheetTab(sheetName, "&headers=1");
+      } catch {
+        return [];
+      }
     }
 
     const DEFAULT_COMPLETED_BEFORE = "2026-10-28";
@@ -3656,6 +3671,7 @@
           bedSheet: rs.bedSheet || DEFAULT_BED_SHEET,
           rugStyle: rs.rugStyle || DEFAULT_RUG_STYLE,
           ownedItems: owned,
+          customThoughts: pendingThoughtRows,
           onEnterWork: () => {
             openWorkDesktop();
           },
@@ -3684,6 +3700,9 @@
         roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
         roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
         roomScene.applyOwnedItems(owned);
+        if (pendingThoughtRows) {
+          roomScene.applyCustomThoughts(pendingThoughtRows);
+        }
         if (Number.isInteger(rs.cameraQuarter)) roomScene.setQuarter(rs.cameraQuarter);
         roomScene.resume();
         if (fromWorkDesktop) {
@@ -3765,24 +3784,74 @@
       }
     }
 
+    function applyRemoteSettings(rows = []) {
+      if (!Array.isArray(rows)) return;
+      for (const row of rows) {
+        const key = String(row?.key || "").trim();
+        const val = Math.trunc(Number(row?.value));
+        if (!key || !Number.isFinite(val)) continue;
+        if (key === "unit_reward_clams" && val >= 1 && val <= 10000) {
+          UNIT_REWARD_CLAMS = val;
+        } else if (key === "starter_clams" && val >= 0 && val <= 1000) {
+          STARTER_CLAMS = val;
+        } else if (key === "monthly_rent_clams" && val >= 1 && val <= 10000) {
+          MONTHLY_RENT_CLAMS = val;
+        }
+      }
+    }
+
+    function applyRemoteTvVideos(rows = []) {
+      if (!Array.isArray(rows) || rows.length === 0) return;
+      const list = [];
+      for (const row of rows) {
+        const id = String(row?.id || "").trim();
+        const title = String(row?.title || "").trim();
+        if (!id || !title || id.length > 32) continue;
+        const enabledRaw = String(row?.enabled ?? "true").trim().toLowerCase();
+        if (["false", "0", "no", "off", "停用"].includes(enabledRaw)) continue;
+        list.push({
+          id,
+          title,
+          author: String(row?.author || "").trim() || "YouTube"
+        });
+      }
+      if (list.length > 0) {
+        TV_CHANNEL_VIDEOS = list;
+      }
+    }
+
     async function loadSheets() {
       try {
-        const [lessons, vocab, quiz] = await Promise.all([
+        const [lessons, vocab, quiz, shopRows, settingRows, tvRows, thoughtRows] = await Promise.all([
           fetchSheetTab("Lessons"),
           fetchSheetTab("Vocab"),
-          fetchSheetTab("Quiz")
+          fetchSheetTab("Quiz"),
+          fetchOptionalSheetTab("Shop"),
+          fetchOptionalSheetTab("Settings"),
+          fetchOptionalSheetTab("TV_Videos"),
+          fetchOptionalSheetTab("Room_Thoughts")
         ]);
 
         // 依日期由早到晚排列，對應關卡由 Unit 1 往前推進
         db.lessons = lessons.sort((a, b) => a.Date.localeCompare(b.Date));
         db.vocab = vocab;
         db.quiz = quiz;
+        applyRemoteSettings(settingRows);
+        applyRemoteShopConfig(shopRows);
+        applyRemoteTvVideos(tvRows);
+        if (Array.isArray(thoughtRows) && thoughtRows.length > 0) {
+          pendingThoughtRows = thoughtRows;
+          roomScene?.applyCustomThoughts(thoughtRows);
+        }
         sheetsLoaded = true;
         sheetsError = null;
       } catch (err) {
         sheetsError = err;
       }
       renderAppState();
+      updateRentCountdownUI();
+      if (shopDialog?.open) renderShopDialog();
+      if (financeDialog?.open) renderFinanceDialog();
     }
 
     function drawQuestPath() {
@@ -5439,9 +5508,10 @@
       }
 
       gridEl.innerHTML = "";
+      const activeCatalog = SHOP_CATALOG.filter(item => item.enabled !== false);
       const visibleItems = activeShopCategory === "all"
-        ? SHOP_CATALOG
-        : SHOP_CATALOG.filter(item => item.category === activeShopCategory);
+        ? activeCatalog
+        : activeCatalog.filter(item => item.category === activeShopCategory);
 
       visibleItems.forEach(item => {
         const isPaint = Boolean(item.consumable && item.wallColor);
@@ -5574,7 +5644,7 @@
     async function purchaseShopItem(itemId, triggerBtn = null) {
       if (!currentUser || shopPurchaseBusy) return;
       const item = getShopItem(itemId);
-      if (!item || item.price <= 0) return;
+      if (!item || item.price <= 0 || item.enabled === false) return;
 
       clearFeedback("shop-feedback");
       shopPurchaseBusy = true;
@@ -5699,8 +5769,8 @@
       }
     }
 
-    // Guest YouTube TV Player (No login required)
-    const TV_CHANNEL_VIDEOS = [
+    // Guest YouTube TV Player (No login required; overridden by Google Sheet TV_Videos tab)
+    const DEFAULT_TV_CHANNEL_VIDEOS = [
       { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
       { id: "5qap5aO4i9A", title: "lofi hip hop radio — beats to relax / study to", author: "Lofi Girl" },
       { id: "MBRqu0YOH14", title: "Optimistic Nihilism", author: "Kurzgesagt – In a Nutshell" },
@@ -5712,6 +5782,7 @@
       { id: "BHACKCNDMW8", title: "3 Hours of Amazing Nature Scenery & Music", author: "Cat Trumpet" },
       { id: "6v2L2UGZJAM", title: "Planet Earth: Amazing Nature Scenery", author: "Robert Revol" }
     ];
+    let TV_CHANNEL_VIDEOS = [...DEFAULT_TV_CHANNEL_VIDEOS];
     const tvDialog = document.getElementById("tv-dialog");
     const tvIframe = document.getElementById("tv-youtube-iframe");
     let lastTvVideoId = null;

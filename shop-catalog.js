@@ -86,7 +86,7 @@ export const RUG_STYLE_PRESETS = {
   }
 };
 
-export const SHOP_CATALOG = [
+export const DEFAULT_SHOP_CATALOG = [
   {
     id: "wall_oat",
     name: "燕麥奶油牆面",
@@ -344,6 +344,77 @@ export const SHOP_CATALOG = [
     desc: "領養一隻會搖尾巴的可愛肥橘貓住在暖烘烘貓窩裡，可走去摸摸牠！"
   }
 ];
+
+export const SHOP_CATALOG = DEFAULT_SHOP_CATALOG.map(item => ({ ...item, enabled: true }));
+
+function parseSheetBool(raw, defaultValue = true) {
+  if (raw === undefined || raw === null || String(raw).trim() === "") return defaultValue;
+  const norm = String(raw).trim().toLowerCase();
+  if (["false", "0", "no", "off", "停用", "下架"].includes(norm)) return false;
+  if (["true", "1", "yes", "on", "啟用", "上架"].includes(norm)) return true;
+  return defaultValue;
+}
+
+/**
+ * Merge live Google Sheet rows (`Shop` tab) over built-in catalog defaults.
+ * Preserves local preview images, textile/sheet style presets, and falls back
+ * gracefully if the sheet tab is absent or leaves optional cells empty.
+ */
+export function applyRemoteShopConfig(rows = []) {
+  if (!Array.isArray(rows) || rows.length === 0) return SHOP_CATALOG;
+
+  const validCats = new Set(["paint", "textile", "decor", "gear"]);
+  const baseById = new Map(DEFAULT_SHOP_CATALOG.map(item => [item.id, item]));
+  const overrides = new Map();
+  const extraOrder = [];
+
+  for (const row of rows) {
+    const id = String(row?.id || "").trim();
+    if (!id) continue;
+    const base = baseById.get(id);
+    const parsedPrice = Math.trunc(Number(row.price));
+    const safePrice = Number.isFinite(parsedPrice) && parsedPrice >= 1 && parsedPrice <= 10000
+      ? parsedPrice
+      : (base?.price ?? 0);
+    if (safePrice <= 0) continue;
+
+    const category = validCats.has(String(row.category || "").trim())
+      ? String(row.category).trim()
+      : (base?.category || "");
+    if (!category) continue;
+
+    const rawWallColor = String(row.wallColor || "").trim();
+    const wallColor = /^#[0-9a-f]{6}$/i.test(rawWallColor) ? rawWallColor : base?.wallColor;
+
+    // Only built-in items or custom consumable wall paints can be registered dynamically
+    if (!base && !(category === "paint" && wallColor)) continue;
+
+    const merged = {
+      ...(base || {}),
+      id,
+      name: String(row.name || "").trim() || base?.name || id,
+      category,
+      price: safePrice,
+      enabled: parseSheetBool(row.enabled, true),
+      consumable: base ? Boolean(base.consumable) : parseSheetBool(row.consumable, category === "paint"),
+      icon: String(row.icon || "").trim() || base?.icon || (category === "paint" ? "🎨" : "🎁"),
+      desc: String(row.desc || "").trim() || base?.desc || ""
+    };
+    if (wallColor) merged.wallColor = wallColor;
+    const previewImg = String(row.previewImage || "").trim();
+    if (previewImg) merged.previewImage = previewImg;
+
+    overrides.set(id, merged);
+    if (!base) extraOrder.push(merged);
+  }
+
+  const nextList = [
+    ...DEFAULT_SHOP_CATALOG.map(item => overrides.get(item.id) || { ...item, enabled: true }),
+    ...extraOrder
+  ];
+  SHOP_CATALOG.splice(0, SHOP_CATALOG.length, ...nextList);
+  return SHOP_CATALOG;
+}
 
 export function getShopItem(itemId) {
   return SHOP_CATALOG.find(item => item.id === itemId) || null;
