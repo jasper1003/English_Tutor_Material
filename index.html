@@ -24,7 +24,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261120e" />
+  <link rel="stylesheet" href="./styles.css?v=20261120f" />
 </head>
 <body>
 
@@ -739,8 +739,32 @@
             <span class="rent-msg-badge hidden" id="room-rent-msg-badge">1</span>
           </button>
           <div class="room-hud-group" style="gap: 0.5rem;">
-            <button type="button" class="room-hud-btn" id="room-shop-btn">🛒 生活商店</button>
-            <button type="button" class="room-hud-btn" id="room-edit-avatar-btn">✏️ 調整角色外觀</button>
+            <button
+              type="button"
+              class="room-hud-btn room-hud-icon-btn"
+              id="room-shop-btn"
+              aria-label="生活商店"
+              title="生活商店"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="8" cy="21" r="1.4"></circle>
+                <circle cx="19" cy="21" r="1.4"></circle>
+                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="room-hud-btn room-hud-icon-btn"
+              id="room-edit-avatar-btn"
+              aria-label="調整角色外觀"
+              title="調整角色外觀"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11.5 15H7a4 4 0 0 0-4 4v2"></path>
+                <circle cx="10" cy="7" r="4"></circle>
+                <path d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"></path>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
