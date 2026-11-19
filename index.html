@@ -888,6 +888,533 @@
       border-color: var(--border);
     }
 
+    /* Header Account & Settings */
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .header-account {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .account-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      max-width: 240px;
+    }
+
+    .account-name {
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.14rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .role-badge.is-super-admin {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    .role-badge.is-admin {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+
+    .role-badge.is-student {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+
+    .btn-settings {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.48rem 0.85rem;
+      font-size: 0.9rem;
+    }
+
+    /* Auth Gate */
+    .auth-shell {
+      max-width: 440px;
+      margin: 2.5rem auto 4rem;
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+    }
+
+    .auth-title {
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 0.35rem;
+    }
+
+    .auth-subtitle {
+      color: var(--muted);
+      font-size: 0.94rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .btn-google {
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      min-height: 48px;
+      padding: 0.65rem 1rem;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .btn-google:hover:not(:disabled) {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+
+    .btn-google:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin: 1.25rem 0;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.35rem;
+      background: #f1f5f9;
+      padding: 0.3rem;
+      border-radius: 10px;
+      margin-bottom: 1.25rem;
+    }
+
+    .auth-tab {
+      border: 0;
+      background: transparent;
+      padding: 0.55rem 0.75rem;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.94rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .auth-tab[aria-pressed="true"] {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.3rem;
+      margin-block-end: 1.05rem;
+    }
+
+    .form-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .form-hint {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .form-control {
+      width: 100%;
+      font: inherit;
+      font-size: max(1rem, 1em);
+      min-height: 46px;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid #94a3b8;
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .form-control:focus-visible,
+    .btn:focus-visible,
+    .btn-google:focus-visible,
+    .auth-tab:focus-visible,
+    .btn-link:focus-visible,
+    .btn-toggle-pw:focus-visible,
+    .dialog-close-btn:focus-visible {
+      outline: 3px solid #2563eb;
+      outline-offset: 2px;
+    }
+
+    .form-control:is(:user-invalid, .user-invalid-fallback) {
+      border-color: var(--error);
+      background-color: var(--error-bg);
+    }
+
+    .form-error-msg {
+      display: none;
+      font-size: 0.84rem;
+      color: var(--error);
+      margin-top: 0.2rem;
+    }
+
+    .form-control:is(:user-invalid, .user-invalid-fallback) + .form-error-msg,
+    .password-wrap:has(.form-control:is(:user-invalid, .user-invalid-fallback)) + .form-error-msg {
+      display: block;
+    }
+
+    .password-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-wrap .form-control {
+      padding-right: 4.5rem;
+    }
+
+    .btn-toggle-pw {
+      position: absolute;
+      right: 0.45rem;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.35rem 0.55rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-toggle-pw:hover {
+      background: #f1f5f9;
+      color: var(--text);
+    }
+
+    .btn-link {
+      border: 0;
+      background: transparent;
+      color: var(--primary);
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.15rem 0.25rem;
+      border-radius: 4px;
+    }
+
+    .btn-link:hover {
+      text-decoration: underline;
+    }
+
+    .btn-full {
+      width: 100%;
+      min-height: 48px;
+      font-weight: 600;
+      border-radius: 10px;
+    }
+
+    .btn-primary:disabled,
+    .btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .feedback-banner {
+      padding: 0.75rem 0.95rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+
+    .feedback-banner.is-error {
+      background: var(--error-bg);
+      color: var(--error);
+      border: 1px solid #fecaca;
+    }
+
+    .feedback-banner.is-success {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid #bbf7d0;
+    }
+
+    .feedback-banner.is-info {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+    }
+
+    /* Native Modal Settings Dialog */
+    dialog.settings-dialog {
+      margin: auto;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 0;
+      width: min(580px, calc(100vw - 1.5rem));
+      max-height: min(88vh, 840px);
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
+    }
+
+    dialog.settings-dialog:modal {
+      overscroll-behavior: contain;
+    }
+
+    dialog.settings-dialog::backdrop {
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(2px);
+      overflow: hidden;
+      overscroll-behavior: contain;
+    }
+
+    .dialog-shell {
+      display: flex;
+      flex-direction: column;
+      max-height: min(88vh, 840px);
+    }
+
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.2rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dialog-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .dialog-close-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .dialog-close-btn:hover {
+      background: #f1f5f9;
+      color: var(--text);
+    }
+
+    .dialog-body {
+      padding: 1.35rem 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.35rem;
+    }
+
+    .settings-section {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.15rem 1.2rem;
+      background: #ffffff;
+    }
+
+    .settings-section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.55rem 1rem;
+      font-size: 0.92rem;
+      align-items: center;
+    }
+
+    .info-key {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .info-val {
+      color: var(--text);
+      word-break: break-all;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .inline-form-row {
+      display: flex;
+      gap: 0.65rem;
+      align-items: stretch;
+    }
+
+    .inline-form-row .form-control {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .admin-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.85rem;
+    }
+
+    .admin-list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.55rem 0.8rem;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    .btn-danger-outline {
+      background: #ffffff;
+      color: var(--error);
+      border-color: #fecaca;
+    }
+
+    .btn-danger-outline:hover:not(:disabled) {
+      background: var(--error-bg);
+      border-color: #fca5a5;
+    }
+
+    .btn-sm {
+      padding: 0.32rem 0.68rem;
+      font-size: 0.82rem;
+      min-height: 32px;
+    }
+
+    .dialog-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      background: #f8fafc;
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+    }
+
+    .visually-hidden:where(:not(:focus-within, :active)) {
+      position: absolute !important;
+      clip-path: inset(50%) !important;
+      overflow: hidden !important;
+      width: 1px !important;
+      height: 1px !important;
+      margin: -1px !important;
+      padding: 0 !important;
+      border: 0 !important;
+      white-space: nowrap !important;
+    }
+
+    @media (pointer: coarse) {
+      .form-control {
+        min-height: 52px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .auth-card {
+        padding: 1.4rem;
+      }
+      .inline-form-row {
+        flex-direction: column;
+      }
+      .account-chip {
+        max-width: 165px;
+      }
+    }
+
     .hidden {
       display: none !important;
     }
@@ -898,16 +1425,317 @@
   <header>
     <div class="header-inner">
       <div class="brand" id="home-btn">English Tutor Material</div>
-      <div class="header-actions" id="lesson-actions" style="display: none;">
-        <button class="btn" id="back-btn">← 返回關卡地圖</button>
-        <button class="btn btn-primary" id="copy-link-btn">複製本堂課連結</button>
+      <div class="header-right">
+        <div class="header-actions" id="lesson-actions" style="display: none;">
+          <button type="button" class="btn" id="back-btn">← 返回關卡地圖</button>
+          <button type="button" class="btn btn-primary" id="copy-link-btn">複製本堂課連結</button>
+        </div>
+        <div class="header-account hidden" id="header-account">
+          <div class="account-chip" id="header-user-chip">
+            <span class="role-badge is-student" id="header-role-badge">學生</span>
+            <span class="account-name" id="header-user-name"></span>
+          </div>
+          <button
+            type="button"
+            class="btn btn-settings"
+            id="open-settings-btn"
+            command="show-modal"
+            commandfor="settings-dialog"
+            aria-label="開啟帳號與個人設定"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>設定</span>
+          </button>
+        </div>
       </div>
     </div>
   </header>
 
   <main>
-    <div id="loading-view" class="status-box">正在同步 Google 試算表教案資料庫...</div>
+    <div id="loading-view" class="status-box">正在同步帳號狀態與教案資料庫...</div>
     <div id="error-view" class="error-box hidden"></div>
+
+    <!-- Account Login / Register Gate -->
+    <section id="auth-view" class="auth-shell hidden" aria-labelledby="auth-heading">
+      <div class="auth-card">
+        <h1 class="auth-title" id="auth-heading">登入學習帳號</h1>
+        <p class="auth-subtitle">每個帳號會獨立保存課程完成進度，避免老師與同學互相覆蓋。</p>
+
+        <div id="auth-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
+
+        <button type="button" class="btn-google" id="google-signin-btn">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          <span>使用 Google 帳號快速登入</span>
+        </button>
+
+        <div class="auth-divider">或使用電子郵件</div>
+
+        <div class="auth-tabs" role="group" aria-label="登入或註冊模式切換">
+          <button type="button" class="auth-tab" id="tab-signin" aria-pressed="true">登入帳號</button>
+          <button type="button" class="auth-tab" id="tab-signup" aria-pressed="false">註冊新帳號</button>
+        </div>
+
+        <form id="signin-form" aria-label="電子郵件登入表單">
+          <div class="form-group">
+            <label for="signin-email">電子郵件 <span aria-hidden="true">*</span></label>
+            <input
+              type="email"
+              id="signin-email"
+              name="email"
+              class="form-control"
+              autocomplete="username"
+              spellcheck="false"
+              autocapitalize="none"
+              autocorrect="off"
+              required
+              enterkeyhint="next"
+              data-error="signin-email-error"
+            />
+            <div id="signin-email-error" class="form-error-msg">錯誤：請輸入有效的電子郵件格式（例如 name@example.com）。</div>
+          </div>
+
+          <div class="form-group">
+            <div class="form-label-row">
+              <label for="signin-password">密碼 <span aria-hidden="true">*</span></label>
+              <button type="button" class="btn-link" id="forgot-pw-btn">忘記密碼？</button>
+            </div>
+            <div class="password-wrap">
+              <input
+                type="password"
+                id="signin-password"
+                name="password"
+                class="form-control"
+                autocomplete="current-password"
+                required
+                enterkeyhint="done"
+                data-error="signin-password-error"
+              />
+              <button type="button" class="btn-toggle-pw" data-target="signin-password" aria-pressed="false" aria-label="顯示密碼">顯示</button>
+            </div>
+            <div id="signin-password-error" class="form-error-msg">錯誤：請輸入登入密碼。</div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full" id="signin-submit-btn">登入</button>
+        </form>
+
+        <form id="signup-form" class="hidden" aria-label="建立新帳號表單">
+          <div class="form-group">
+            <label for="signup-name">顯示名稱 <span aria-hidden="true">*</span></label>
+            <span id="signup-name-hint" class="form-hint">例如：Vic 或自己的英文／中文名字</span>
+            <input
+              type="text"
+              id="signup-name"
+              name="name"
+              class="form-control"
+              autocomplete="name"
+              maxlength="80"
+              required
+              aria-describedby="signup-name-hint"
+              enterkeyhint="next"
+              data-error="signup-name-error"
+            />
+            <div id="signup-name-error" class="form-error-msg">錯誤：請輸入您的顯示名稱。</div>
+          </div>
+
+          <div class="form-group">
+            <label for="signup-email">電子郵件 <span aria-hidden="true">*</span></label>
+            <input
+              type="email"
+              id="signup-email"
+              name="email"
+              class="form-control"
+              autocomplete="username"
+              spellcheck="false"
+              autocapitalize="none"
+              autocorrect="off"
+              required
+              enterkeyhint="next"
+              data-error="signup-email-error"
+            />
+            <div id="signup-email-error" class="form-error-msg">錯誤：請輸入有效的電子郵件格式（例如 name@example.com）。</div>
+          </div>
+
+          <div class="form-group">
+            <label for="signup-password">設定密碼 <span aria-hidden="true">*</span></label>
+            <span id="signup-pw-hint" class="form-hint">至少 6 個字元，可使用英文字母、數字或符號</span>
+            <div class="password-wrap">
+              <input
+                type="password"
+                id="signup-password"
+                name="new-password"
+                class="form-control"
+                autocomplete="new-password"
+                minlength="6"
+                required
+                aria-describedby="signup-pw-hint"
+                enterkeyhint="done"
+                data-error="signup-pw-error"
+              />
+              <button type="button" class="btn-toggle-pw" data-target="signup-password" aria-pressed="false" aria-label="顯示密碼">顯示</button>
+            </div>
+            <div id="signup-pw-error" class="form-error-msg">錯誤：密碼長度需至少 6 個字元。</div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full" id="signup-submit-btn">建立帳號</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Native Modal Settings Dialog -->
+    <dialog id="settings-dialog" class="settings-dialog" closedby="any" aria-labelledby="settings-dialog-title">
+      <div class="dialog-shell">
+        <div class="dialog-header">
+          <h2 class="dialog-title" id="settings-dialog-title">帳號與個人設定</h2>
+          <button
+            type="button"
+            class="dialog-close-btn"
+            id="close-settings-btn"
+            command="close"
+            commandfor="settings-dialog"
+            aria-label="關閉設定視窗"
+          >✕</button>
+        </div>
+
+        <div class="dialog-body">
+          <div id="settings-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
+
+          <section class="settings-section" aria-labelledby="settings-overview-heading">
+            <h3 class="settings-section-title" id="settings-overview-heading">帳號資訊</h3>
+            <div class="info-grid">
+              <span class="info-key">電子郵件</span>
+              <span class="info-val" id="settings-email"></span>
+
+              <span class="info-key">帳號身分</span>
+              <span class="info-val">
+                <span class="role-badge is-student" id="settings-role-badge">學生</span>
+              </span>
+
+              <span class="info-key">登入方式</span>
+              <span class="info-val" id="settings-providers"></span>
+
+              <span class="info-key">信箱驗證</span>
+              <span class="info-val" id="settings-verified-row"></span>
+            </div>
+          </section>
+
+          <section class="settings-section" aria-labelledby="settings-profile-heading">
+            <h3 class="settings-section-title" id="settings-profile-heading">顯示名稱</h3>
+            <form id="profile-form">
+              <div class="form-group" style="margin-block-end: 0;">
+                <label for="settings-display-name">名稱 <span aria-hidden="true">*</span></label>
+                <div class="inline-form-row">
+                  <input
+                    type="text"
+                    id="settings-display-name"
+                    name="displayName"
+                    class="form-control"
+                    autocomplete="name"
+                    maxlength="80"
+                    required
+                    data-error="settings-name-error"
+                  />
+                  <button type="submit" class="btn btn-primary" id="save-profile-btn">儲存名稱</button>
+                </div>
+                <div id="settings-name-error" class="form-error-msg">錯誤：顯示名稱不能為空白。</div>
+              </div>
+            </form>
+          </section>
+
+          <section class="settings-section" aria-labelledby="settings-password-heading">
+            <div class="settings-section-title">
+              <h3 id="settings-password-heading" style="font-size: 1rem; font-weight: 700;">變更或設定密碼</h3>
+              <button type="button" class="btn-link" id="settings-reset-pw-btn">寄送重設密碼信</button>
+            </div>
+            <p class="form-hint" id="settings-password-desc" style="margin-bottom: 0.9rem;">請輸入目前的密碼與新密碼以完成更新。</p>
+            <form id="change-password-form">
+              <div class="form-group" id="current-pw-group">
+                <label for="settings-current-pw">目前密碼 <span aria-hidden="true">*</span></label>
+                <div class="password-wrap">
+                  <input
+                    type="password"
+                    id="settings-current-pw"
+                    name="currentPassword"
+                    class="form-control"
+                    autocomplete="current-password"
+                    data-error="settings-current-pw-error"
+                  />
+                  <button type="button" class="btn-toggle-pw" data-target="settings-current-pw" aria-pressed="false" aria-label="顯示目前密碼">顯示</button>
+                </div>
+                <div id="settings-current-pw-error" class="form-error-msg">錯誤：請輸入目前密碼。</div>
+              </div>
+
+              <div class="form-group">
+                <label for="settings-new-pw">新密碼 <span aria-hidden="true">*</span></label>
+                <span id="settings-new-pw-hint" class="form-hint">至少 6 個字元，更新後可用此信箱與新密碼直接登入</span>
+                <div class="password-wrap">
+                  <input
+                    type="password"
+                    id="settings-new-pw"
+                    name="newPassword"
+                    class="form-control"
+                    autocomplete="new-password"
+                    minlength="6"
+                    required
+                    aria-describedby="settings-new-pw-hint"
+                    data-error="settings-new-pw-error"
+                  />
+                  <button type="button" class="btn-toggle-pw" data-target="settings-new-pw" aria-pressed="false" aria-label="顯示新密碼">顯示</button>
+                </div>
+                <div id="settings-new-pw-error" class="form-error-msg">錯誤：新密碼長度需至少 6 個字元。</div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" id="save-password-btn">更新密碼</button>
+            </form>
+          </section>
+
+          <section class="settings-section hidden" id="super-admin-section" aria-labelledby="super-admin-heading">
+            <h3 class="settings-section-title" id="super-admin-heading">管理員權限管理（超級管理員專屬）</h3>
+            <p class="form-hint" style="margin-bottom: 0.85rem;">新增其他管理員信箱。對方以已驗證的該信箱登入後，將自動具備管理員身分。</p>
+            <form id="add-admin-form">
+              <div class="form-group" style="margin-block-end: 0;">
+                <label for="admin-email-input">新增管理員電子郵件 <span aria-hidden="true">*</span></label>
+                <div class="inline-form-row">
+                  <input
+                    type="email"
+                    id="admin-email-input"
+                    name="adminEmail"
+                    class="form-control"
+                    spellcheck="false"
+                    autocapitalize="none"
+                    autocorrect="off"
+                    placeholder="teacher-assistant@example.com"
+                    required
+                    data-error="admin-email-error"
+                  />
+                  <button type="submit" class="btn btn-primary" id="add-admin-btn">新增管理員</button>
+                </div>
+                <div id="admin-email-error" class="form-error-msg">錯誤：請輸入有效的電子郵件格式。</div>
+              </div>
+            </form>
+            <ul class="admin-list" id="admin-list" aria-label="現有管理員清單"></ul>
+          </section>
+        </div>
+
+        <div class="dialog-footer">
+          <button type="button" class="btn btn-danger-outline" id="logout-btn">登出目前帳號</button>
+          <button
+            type="button"
+            class="btn"
+            id="footer-close-settings-btn"
+            command="close"
+            commandfor="settings-dialog"
+          >完成</button>
+        </div>
+      </div>
+    </dialog>
 
     <!-- Home: Winding Quest Map -->
     <section id="home-view" class="hidden">
@@ -964,7 +1792,56 @@
     </section>
   </main>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      EmailAuthProvider,
+      signInWithPopup,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      sendPasswordResetEmail,
+      sendEmailVerification,
+      updateProfile,
+      updatePassword,
+      reauthenticateWithCredential,
+      reauthenticateWithPopup,
+      linkWithCredential,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc,
+      deleteDoc,
+      collection,
+      getDocs,
+      query,
+      orderBy,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      projectId: "tutor-material-automation",
+      appId: "1:866845120684:web:cbc6325c58e0bbae2c6709",
+      storageBucket: "tutor-material-automation.firebasestorage.app",
+      apiKey: "AIzaSyAR06eOPaJrD4MhYIRJki_KE01yiDQSUHA",
+      authDomain: "tutor-material-automation.firebaseapp.com",
+      messagingSenderId: "866845120684",
+      measurementId: "G-N0R0TQVNJV"
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    const firestoreDb = getFirestore(firebaseApp);
+    const googleProvider = new GoogleAuthProvider();
+    googleProvider.setCustomParameters({ prompt: "select_account" });
+
+    const SUPER_ADMIN_EMAIL = "jasper931003@gmail.com";
     const SPREADSHEET_ID = "1DrKwyy-L9g_nHFBFJ0joLfsDE64vBb1ymjtKiaNQJ5U";
 
     let db = {
@@ -972,6 +1849,15 @@
       vocab: [],
       quiz: []
     };
+
+    let currentUser = null;
+    let currentRole = "student"; // "super_admin" | "admin" | "student"
+    let userCompletionOverrides = {};
+    let pendingSignUpName = "";
+    let authResolved = false;
+    let sheetsLoaded = false;
+    let sheetsError = null;
+    let authSessionNonce = 0;
 
     async function fetchSheetTab(sheetName) {
       const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
@@ -1003,39 +1889,13 @@
       }).filter(item => item.Date);
     }
 
-    const COMPLETED_STORAGE_KEY = "vic_completed_lessons_v1";
-    const COMPLETION_OVERRIDES_KEY = "vic_lesson_completion_overrides_v1";
     const DEFAULT_COMPLETED_BEFORE = "2026-10-28";
     const LOCKED_NODES_AHEAD = 4;
     const WAVE_OFFSETS_PX = [0, -76, -108, -76, 0, 76, 108, 76];
     let questResizeObserver = null;
 
     function getCompletionOverrides() {
-      const map = {};
-      try {
-        // Migrate legacy completed-only list if present
-        const legacyRaw = localStorage.getItem(COMPLETED_STORAGE_KEY);
-        if (legacyRaw) {
-          const legacyArr = JSON.parse(legacyRaw);
-          if (Array.isArray(legacyArr)) {
-            legacyArr.forEach(d => {
-              if (typeof d === "string" && d) map[d] = true;
-            });
-          }
-        }
-        const raw = localStorage.getItem(COMPLETION_OVERRIDES_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && typeof parsed === "object") {
-            Object.entries(parsed).forEach(([k, v]) => {
-              map[k] = Boolean(v);
-            });
-          }
-        }
-      } catch {
-        // Ignore storage errors in restricted environments
-      }
-      return map;
+      return userCompletionOverrides || {};
     }
 
     function isLessonCompleted(dateStr) {
@@ -1058,18 +1918,167 @@
     }
 
     function toggleLessonCompleted(dateStr) {
-      const overrides = getCompletionOverrides();
       const nextState = !isLessonCompleted(dateStr);
-      overrides[dateStr] = nextState;
-      try {
-        localStorage.setItem(COMPLETION_OVERRIDES_KEY, JSON.stringify(overrides));
-      } catch {
-        // Ignore storage errors in restricted environments
+      userCompletionOverrides = {
+        ...userCompletionOverrides,
+        [dateStr]: nextState
+      };
+      if (currentUser) {
+        persistCompletionOverrides(currentUser, userCompletionOverrides).catch(err => {
+          console.error("Failed to sync completion override to Firestore:", err);
+        });
       }
       return nextState;
     }
 
-    async function init() {
+    async function persistCompletionOverrides(user, overrides) {
+      const sanitized = {};
+      Object.entries(overrides || {}).slice(0, 500).forEach(([k, v]) => {
+        if (typeof k === "string" && k) {
+          sanitized[k] = Boolean(v);
+        }
+      });
+      const userRef = doc(firestoreDb, "users", user.uid);
+      try {
+        await updateDoc(userRef, {
+          completionOverrides: sanitized,
+          updatedAt: serverTimestamp()
+        });
+      } catch {
+        const email = (user.email || "").trim().toLowerCase();
+        await setDoc(userRef, {
+          email,
+          displayName: (user.displayName || "").trim().slice(0, 80),
+          completionOverrides: sanitized,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
+    }
+
+    function getRoleLabel(role) {
+      if (role === "super_admin") return "超級管理員";
+      if (role === "admin") return "管理員";
+      return "學生";
+    }
+
+    function getRoleBadgeClass(role) {
+      if (role === "super_admin") return "role-badge is-super-admin";
+      if (role === "admin") return "role-badge is-admin";
+      return "role-badge is-student";
+    }
+
+    function formatDisplayName(user, profileData) {
+      const fromProfile = (profileData?.displayName || "").trim();
+      if (fromProfile) return fromProfile;
+      const fromAuth = (user?.displayName || "").trim();
+      if (fromAuth) return fromAuth;
+      const email = (user?.email || "").trim();
+      return email ? email.split("@")[0] : "使用者";
+    }
+
+    async function resolveUserRole(user) {
+      const emailLower = (user.email || "").trim().toLowerCase();
+      if (!emailLower || !user.emailVerified) {
+        return "student";
+      }
+      if (emailLower === SUPER_ADMIN_EMAIL) {
+        return "super_admin";
+      }
+      try {
+        const adminSnap = await getDoc(doc(firestoreDb, "admins", emailLower));
+        return adminSnap.exists() ? "admin" : "student";
+      } catch {
+        return "student";
+      }
+    }
+
+    async function loadOrCreateUserProfile(user) {
+      const userRef = doc(firestoreDb, "users", user.uid);
+      const snap = await getDoc(userRef);
+      const normalizedEmail = (user.email || "").trim().toLowerCase();
+
+      if (snap.exists()) {
+        const data = snap.data() || {};
+        const overrides = {};
+        if (data.completionOverrides && typeof data.completionOverrides === "object") {
+          Object.entries(data.completionOverrides).forEach(([k, v]) => {
+            overrides[k] = Boolean(v);
+          });
+        }
+        return { data, overrides };
+      }
+
+      const initialName = (pendingSignUpName || user.displayName || normalizedEmail.split("@")[0] || "").trim().slice(0, 80);
+      pendingSignUpName = "";
+      const initialDoc = {
+        email: normalizedEmail,
+        displayName: initialName,
+        completionOverrides: {},
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      await setDoc(userRef, initialDoc);
+      return { data: { ...initialDoc, displayName: initialName }, overrides: {} };
+    }
+
+    function updateHeaderAccountUI(user, role, displayName) {
+      const accountEl = document.getElementById("header-account");
+      const badgeEl = document.getElementById("header-role-badge");
+      const nameEl = document.getElementById("header-user-name");
+
+      if (!user) {
+        accountEl.classList.add("hidden");
+        return;
+      }
+
+      badgeEl.textContent = getRoleLabel(role);
+      badgeEl.className = getRoleBadgeClass(role);
+      nameEl.textContent = displayName || user.email || "帳號";
+      accountEl.classList.remove("hidden");
+    }
+
+    function renderAppState() {
+      const loadingEl = document.getElementById("loading-view");
+      const errorEl = document.getElementById("error-view");
+      const authEl = document.getElementById("auth-view");
+      const homeEl = document.getElementById("home-view");
+      const lessonEl = document.getElementById("lesson-view");
+      const lessonActionsEl = document.getElementById("lesson-actions");
+
+      if (!authResolved || (!sheetsLoaded && !sheetsError)) {
+        loadingEl.classList.remove("hidden");
+        return;
+      }
+
+      loadingEl.classList.add("hidden");
+
+      if (!currentUser) {
+        errorEl.classList.add("hidden");
+        homeEl.classList.add("hidden");
+        lessonEl.classList.add("hidden");
+        lessonActionsEl.style.display = "none";
+        updateHeaderAccountUI(null);
+        authEl.classList.remove("hidden");
+        return;
+      }
+
+      authEl.classList.add("hidden");
+
+      if (sheetsError) {
+        homeEl.classList.add("hidden");
+        lessonEl.classList.add("hidden");
+        lessonActionsEl.style.display = "none";
+        errorEl.textContent = `載入失敗：${sheetsError.message}。請確認 Google 試算表已設為「知道連結的使用者皆可檢視」，且分頁名稱為 Lessons、Vocab、Quiz。`;
+        errorEl.classList.remove("hidden");
+        return;
+      }
+
+      errorEl.classList.add("hidden");
+      routeFromURL();
+    }
+
+    async function loadSheets() {
       try {
         const [lessons, vocab, quiz] = await Promise.all([
           fetchSheetTab("Lessons"),
@@ -1081,18 +2090,16 @@
         db.lessons = lessons.sort((a, b) => a.Date.localeCompare(b.Date));
         db.vocab = vocab;
         db.quiz = quiz;
-
-        document.getElementById("loading-view").classList.add("hidden");
-        routeFromURL();
+        sheetsLoaded = true;
+        sheetsError = null;
       } catch (err) {
-        document.getElementById("loading-view").classList.add("hidden");
-        const errBox = document.getElementById("error-view");
-        errBox.textContent = `載入失敗：${err.message}。請確認 Google 試算表已設為「知道連結的使用者皆可檢視」，且分頁名稱為 Lessons、Vocab、Quiz。`;
-        errBox.classList.remove("hidden");
+        sheetsError = err;
       }
+      renderAppState();
     }
 
     function routeFromURL() {
+      if (!currentUser || !sheetsLoaded) return;
       const params = new URLSearchParams(window.location.search);
       const targetDate = params.get("date");
 
@@ -1104,6 +2111,7 @@
     }
 
     function navigateTo(dateStr) {
+      if (!currentUser) return;
       const url = new URL(window.location.href);
       if (dateStr) {
         url.searchParams.set("date", dateStr);
@@ -1662,6 +2670,600 @@
         .replace(/'/g, "&#039;");
     }
 
+    const settingsDialog = document.getElementById("settings-dialog");
+    const openSettingsBtn = document.getElementById("open-settings-btn");
+
+    function showFeedback(elementId, type, message) {
+      const box = document.getElementById(elementId);
+      if (!box) return;
+      box.textContent = message;
+      box.className = `feedback-banner is-${type}`;
+    }
+
+    function clearFeedback(elementId) {
+      const box = document.getElementById(elementId);
+      if (!box) return;
+      box.textContent = "";
+      box.className = "feedback-banner hidden";
+    }
+
+    function translateAuthError(err) {
+      const code = err?.code || "";
+      switch (code) {
+        case "auth/operation-not-allowed":
+          return "此登入方式尚未在 Firebase Console 啟用，請至 Authentication → Sign-in method 開啟。";
+        case "auth/unauthorized-domain":
+          return `目前網域（${window.location.hostname || "localhost"}）尚未加入 Firebase 授權網域，請至 Authentication → Settings → Authorized domains 新增。`;
+        case "auth/invalid-email":
+          return "電子郵件格式不正確，請檢查後再試。";
+        case "auth/invalid-credential":
+        case "auth/wrong-password":
+        case "auth/user-not-found":
+          return "電子郵件或密碼不正確，請再確認一次。";
+        case "auth/email-already-in-use":
+          return "此電子郵件已註冊過，請切換至「登入帳號」或使用 Google 登入。";
+        case "auth/weak-password":
+          return "密碼強度不足，請設定至少 6 個字元。";
+        case "auth/too-many-requests":
+          return "嘗試次數過多，請稍候再試。";
+        case "auth/popup-closed-by-user":
+        case "auth/cancelled-popup-request":
+          return "已取消 Google 登入視窗，若要繼續請重新點擊。";
+        case "auth/popup-blocked":
+          return "瀏覽器封鎖了登入彈跳視窗，請允許彈跳視窗後再試。";
+        case "auth/requires-recent-login":
+          return "為了帳號安全，請先重新驗證或重新登入後再變更密碼。";
+        case "auth/network-request-failed":
+          return "網路連線異常，請檢查網路狀態後重試。";
+        case "permission-denied":
+          return "權限不足，無法存取該資料。";
+        default:
+          return err?.message ? `操作失敗：${err.message}` : "操作失敗，請稍後再試。";
+      }
+    }
+
+    function switchAuthMode(mode) {
+      const isSignin = mode === "signin";
+      document.getElementById("tab-signin").setAttribute("aria-pressed", String(isSignin));
+      document.getElementById("tab-signup").setAttribute("aria-pressed", String(!isSignin));
+      document.getElementById("signin-form").classList.toggle("hidden", !isSignin);
+      document.getElementById("signup-form").classList.toggle("hidden", isSignin);
+      document.getElementById("auth-heading").textContent = isSignin ? "登入學習帳號" : "建立學習帳號";
+      clearFeedback("auth-feedback");
+    }
+
+    document.getElementById("tab-signin").addEventListener("click", () => switchAuthMode("signin"));
+    document.getElementById("tab-signup").addEventListener("click", () => switchAuthMode("signup"));
+
+    document.querySelectorAll(".btn-toggle-pw").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = document.getElementById(btn.dataset.target);
+        if (!target) return;
+        const showing = target.type === "text";
+        target.type = showing ? "password" : "text";
+        btn.setAttribute("aria-pressed", String(!showing));
+        btn.textContent = showing ? "顯示" : "隱藏";
+        btn.setAttribute("aria-label", showing ? "顯示密碼" : "隱藏密碼");
+      });
+    });
+
+    document.getElementById("google-signin-btn").addEventListener("click", async () => {
+      const btn = document.getElementById("google-signin-btn");
+      clearFeedback("auth-feedback");
+      btn.disabled = true;
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (err) {
+        showFeedback("auth-feedback", "error", translateAuthError(err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("forgot-pw-btn").addEventListener("click", async () => {
+      const emailInput = document.getElementById("signin-email");
+      const email = emailInput.value.trim();
+      clearFeedback("auth-feedback");
+      if (!email || !emailInput.checkValidity()) {
+        showFeedback("auth-feedback", "info", "請先在上方「電子郵件」欄位輸入您的信箱，再點擊忘記密碼。");
+        emailInput.focus();
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showFeedback("auth-feedback", "success", `已寄出重設密碼信至 ${email}，請查收信件（若未看到可檢查垃圾信件匣）。`);
+      } catch (err) {
+        showFeedback("auth-feedback", "error", translateAuthError(err));
+      }
+    });
+
+    document.getElementById("signin-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      clearFeedback("auth-feedback");
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+      const btn = document.getElementById("signin-submit-btn");
+      const email = document.getElementById("signin-email").value.trim();
+      const password = document.getElementById("signin-password").value;
+      btn.disabled = true;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        showFeedback("auth-feedback", "error", translateAuthError(err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("signup-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      clearFeedback("auth-feedback");
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+      const btn = document.getElementById("signup-submit-btn");
+      const name = document.getElementById("signup-name").value.trim().slice(0, 80);
+      const email = document.getElementById("signup-email").value.trim();
+      const password = document.getElementById("signup-password").value;
+
+      btn.disabled = true;
+      pendingSignUpName = name;
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        if (name) {
+          await updateProfile(cred.user, { displayName: name });
+        }
+        try {
+          await updateDoc(doc(firestoreDb, "users", cred.user.uid), {
+            displayName: name,
+            updatedAt: serverTimestamp()
+          });
+        } catch {
+          // Profile doc will be initialized with pendingSignUpName / updated name
+        }
+        try {
+          await sendEmailVerification(cred.user);
+        } catch {
+          // Non-fatal if verification rate limit is hit
+        }
+      } catch (err) {
+        pendingSignUpName = "";
+        showFeedback("auth-feedback", "error", translateAuthError(err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    function hasPasswordProvider(user) {
+      return Boolean(user?.providerData?.some(p => p.providerId === "password"));
+    }
+
+    function renderVerificationRow(user) {
+      const container = document.getElementById("settings-verified-row");
+      container.innerHTML = "";
+
+      if (user.emailVerified) {
+        const badge = document.createElement("span");
+        badge.className = "role-badge is-admin";
+        badge.style.background = "#f0fdf4";
+        badge.style.color = "#15803d";
+        badge.style.borderColor = "#bbf7d0";
+        badge.textContent = "已完成驗證";
+        container.appendChild(badge);
+        return;
+      }
+
+      const warnText = document.createElement("span");
+      warnText.textContent = "尚未驗證（驗證後才可啟用管理員授權）";
+      warnText.style.color = "#b45309";
+      warnText.style.fontWeight = "600";
+      container.appendChild(warnText);
+
+      const sendBtn = document.createElement("button");
+      sendBtn.type = "button";
+      sendBtn.className = "btn btn-sm";
+      sendBtn.textContent = "寄送驗證信";
+      sendBtn.addEventListener("click", async () => {
+        sendBtn.disabled = true;
+        try {
+          await sendEmailVerification(currentUser);
+          showFeedback("settings-feedback", "success", `已寄出驗證信至 ${currentUser.email}，點擊信中連結後請按「重新檢查」。`);
+        } catch (err) {
+          showFeedback("settings-feedback", "error", translateAuthError(err));
+        } finally {
+          sendBtn.disabled = false;
+        }
+      });
+
+      const refreshBtn = document.createElement("button");
+      refreshBtn.type = "button";
+      refreshBtn.className = "btn btn-sm";
+      refreshBtn.textContent = "重新檢查";
+      refreshBtn.addEventListener("click", async () => {
+        refreshBtn.disabled = true;
+        try {
+          await currentUser.reload();
+          currentRole = await resolveUserRole(currentUser);
+          await currentUser.getIdToken(true);
+          updateHeaderAccountUI(currentUser, currentRole, document.getElementById("settings-display-name").value.trim());
+          await populateSettingsDialog();
+          showFeedback("settings-feedback", "info", currentUser.emailVerified ? "信箱已完成驗證！" : "尚未偵測到驗證完成，請確認已點擊信中驗證連結。");
+        } catch (err) {
+          showFeedback("settings-feedback", "error", translateAuthError(err));
+        } finally {
+          refreshBtn.disabled = false;
+        }
+      });
+
+      container.appendChild(sendBtn);
+      container.appendChild(refreshBtn);
+    }
+
+    async function loadAdminsList() {
+      const listEl = document.getElementById("admin-list");
+      listEl.innerHTML = `<li class="form-hint">正在載入管理員清單...</li>`;
+      try {
+        const snap = await getDocs(query(collection(firestoreDb, "admins"), orderBy("email")));
+        listEl.innerHTML = "";
+        if (snap.empty) {
+          listEl.innerHTML = `<li class="form-hint">目前尚未新增其他管理員。</li>`;
+          return;
+        }
+        snap.forEach(docSnap => {
+          const item = docSnap.data() || {};
+          const emailLower = docSnap.id;
+          const li = document.createElement("li");
+          li.className = "admin-list-item";
+
+          const span = document.createElement("span");
+          span.textContent = item.email || emailLower;
+
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "btn btn-danger-outline btn-sm";
+          removeBtn.textContent = "移除";
+          removeBtn.addEventListener("click", async () => {
+            removeBtn.disabled = true;
+            try {
+              await deleteDoc(doc(firestoreDb, "admins", emailLower));
+              showFeedback("settings-feedback", "success", `已移除管理員：${emailLower}`);
+              await loadAdminsList();
+            } catch (err) {
+              showFeedback("settings-feedback", "error", translateAuthError(err));
+              removeBtn.disabled = false;
+            }
+          });
+
+          li.appendChild(span);
+          li.appendChild(removeBtn);
+          listEl.appendChild(li);
+        });
+      } catch (err) {
+        listEl.innerHTML = "";
+        showFeedback("settings-feedback", "error", translateAuthError(err));
+      }
+    }
+
+    async function populateSettingsDialog() {
+      if (!currentUser) return;
+      clearFeedback("settings-feedback");
+
+      document.getElementById("settings-email").textContent = currentUser.email || "";
+      const roleBadge = document.getElementById("settings-role-badge");
+      roleBadge.textContent = getRoleLabel(currentRole);
+      roleBadge.className = getRoleBadgeClass(currentRole);
+
+      const providerLabels = [];
+      if (currentUser.providerData.some(p => p.providerId === "google.com")) providerLabels.push("Google 登入");
+      if (hasPasswordProvider(currentUser)) providerLabels.push("電子郵件密碼");
+      document.getElementById("settings-providers").textContent = providerLabels.join("、") || "電子郵件";
+
+      renderVerificationRow(currentUser);
+
+      document.getElementById("settings-display-name").value = document.getElementById("header-user-name").textContent || "";
+
+      const hasPw = hasPasswordProvider(currentUser);
+      const currentPwGroup = document.getElementById("current-pw-group");
+      const currentPwInput = document.getElementById("settings-current-pw");
+      const pwDesc = document.getElementById("settings-password-desc");
+      const savePwBtn = document.getElementById("save-password-btn");
+      currentPwGroup.classList.toggle("hidden", !hasPw);
+      currentPwInput.required = hasPw;
+      currentPwInput.value = "";
+      document.getElementById("settings-new-pw").value = "";
+
+      if (hasPw) {
+        pwDesc.textContent = "請輸入目前的密碼與新密碼以完成變更。";
+        savePwBtn.textContent = "更新密碼";
+      } else {
+        pwDesc.textContent = "此帳號目前僅透過 Google 登入，可直接設定一組本機登入密碼。";
+        savePwBtn.textContent = "設定帳號密碼";
+      }
+
+      const adminSection = document.getElementById("super-admin-section");
+      const isSuperAdmin = currentRole === "super_admin";
+      adminSection.classList.toggle("hidden", !isSuperAdmin);
+      if (isSuperAdmin) {
+        await loadAdminsList();
+      }
+    }
+
+    openSettingsBtn.addEventListener("click", () => {
+      populateSettingsDialog();
+    });
+
+    if (!("commandForElement" in HTMLButtonElement.prototype)) {
+      openSettingsBtn.addEventListener("click", () => {
+        if (!settingsDialog.open) settingsDialog.showModal();
+      });
+      document.getElementById("close-settings-btn").addEventListener("click", () => settingsDialog.close());
+      document.getElementById("footer-close-settings-btn").addEventListener("click", () => settingsDialog.close());
+    }
+
+    if (!("closedBy" in HTMLDialogElement.prototype)) {
+      const outside = (e, dialog) => {
+        const r = dialog.getBoundingClientRect();
+        return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+      };
+      let pressedOutside = false;
+      settingsDialog.addEventListener("pointerdown", (e) => {
+        pressedOutside = outside(e, settingsDialog);
+      });
+      settingsDialog.addEventListener("pointerup", (e) => {
+        if (pressedOutside && outside(e, settingsDialog)) settingsDialog.close();
+      });
+    }
+
+    settingsDialog.addEventListener("close", () => {
+      settingsDialog.returnValue = "";
+      document.getElementById("settings-current-pw").value = "";
+      document.getElementById("settings-new-pw").value = "";
+      clearFeedback("settings-feedback");
+    });
+
+    document.getElementById("profile-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+      const form = e.currentTarget;
+      clearFeedback("settings-feedback");
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+      const btn = document.getElementById("save-profile-btn");
+      const nextName = document.getElementById("settings-display-name").value.trim().slice(0, 80);
+      btn.disabled = true;
+      try {
+        await updateProfile(currentUser, { displayName: nextName });
+        await updateDoc(doc(firestoreDb, "users", currentUser.uid), {
+          displayName: nextName,
+          updatedAt: serverTimestamp()
+        });
+        updateHeaderAccountUI(currentUser, currentRole, nextName);
+        showFeedback("settings-feedback", "success", "已更新顯示名稱！");
+      } catch (err) {
+        showFeedback("settings-feedback", "error", translateAuthError(err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("change-password-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+      const form = e.currentTarget;
+      clearFeedback("settings-feedback");
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      const btn = document.getElementById("save-password-btn");
+      const currentPw = document.getElementById("settings-current-pw").value;
+      const newPw = document.getElementById("settings-new-pw").value;
+      const hasPw = hasPasswordProvider(currentUser);
+
+      btn.disabled = true;
+      try {
+        if (hasPw) {
+          const cred = EmailAuthProvider.credential(currentUser.email, currentPw);
+          await reauthenticateWithCredential(currentUser, cred);
+          await updatePassword(currentUser, newPw);
+          showFeedback("settings-feedback", "success", "密碼已更新！下次可使用新密碼登入。");
+        } else {
+          const cred = EmailAuthProvider.credential(currentUser.email, newPw);
+          try {
+            await linkWithCredential(currentUser, cred);
+          } catch (linkErr) {
+            if (linkErr?.code === "auth/requires-recent-login") {
+              await reauthenticateWithPopup(currentUser, googleProvider);
+              await linkWithCredential(currentUser, cred);
+            } else {
+              throw linkErr;
+            }
+          }
+          await populateSettingsDialog();
+          showFeedback("settings-feedback", "success", "已為帳號設定密碼！現在同時支援 Google 與電子郵件密碼登入。");
+        }
+        document.getElementById("settings-current-pw").value = "";
+        document.getElementById("settings-new-pw").value = "";
+      } catch (err) {
+        showFeedback("settings-feedback", "error", translateAuthError(err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("settings-reset-pw-btn").addEventListener("click", async () => {
+      if (!currentUser?.email) return;
+      clearFeedback("settings-feedback");
+      try {
+        await sendPasswordResetEmail(auth, currentUser.email);
+        showFeedback("settings-feedback", "success", `已寄送密碼重設信至 ${currentUser.email}。`);
+      } catch (err) {
+        showFeedback("settings-feedback", "error", translateAuthError(err));
+      }
+    });
+
+    document.getElementById("add-admin-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentUser || currentRole !== "super_admin") return;
+      const form = e.currentTarget;
+      clearFeedback("settings-feedback");
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      const input = document.getElementById("admin-email-input");
+      const emailLower = input.value.trim().toLowerCase();
+      if (emailLower === SUPER_ADMIN_EMAIL) {
+        showFeedback("settings-feedback", "info", "此信箱已為系統超級管理員，無需另外新增。");
+        return;
+      }
+
+      const btn = document.getElementById("add-admin-btn");
+      btn.disabled = true;
+      try {
+        await setDoc(doc(firestoreDb, "admins", emailLower), {
+          email: emailLower,
+          addedBy: currentUser.uid,
+          addedAt: serverTimestamp()
+        });
+        input.value = "";
+        showFeedback("settings-feedback", "success", `已將 ${emailLower} 加入管理員名單。`);
+        await loadAdminsList();
+      } catch (err) {
+        showFeedback("settings-feedback", "error", translateAuthError(err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      const btn = document.getElementById("logout-btn");
+      btn.disabled = true;
+      try {
+        if (settingsDialog.open) settingsDialog.close();
+        await signOut(auth);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Accessible :user-invalid ARIA sync & progressive fallback
+    (function setupAccessibleFormValidation() {
+      const linkError = (el, shown) => {
+        const errorId = el.dataset.error;
+        if (!errorId) return;
+        const ids = (el.getAttribute("aria-describedby") || "").split(/\s+/).filter(id => id && id !== errorId);
+        if (shown) ids.push(errorId);
+        if (ids.length) el.setAttribute("aria-describedby", ids.join(" "));
+        else el.removeAttribute("aria-describedby");
+      };
+
+      const announcer = document.createElement("div");
+      announcer.setAttribute("aria-live", "polite");
+      announcer.classList.add("visually-hidden");
+      document.body.append(announcer);
+      let announceTimer;
+      let announcedField;
+
+      const spokenText = (node) => {
+        const copy = node.cloneNode(true);
+        copy.querySelectorAll('[aria-hidden="true"]').forEach(n => n.remove());
+        return copy.textContent.replace(/\s+/g, " ").trim();
+      };
+
+      const announceError = (el) => {
+        const error = document.getElementById(el.dataset.error);
+        if (!error) return;
+        const label = el.labels?.[0] ? `${spokenText(el.labels[0])}: ` : "";
+        clearTimeout(announceTimer);
+        announcer.textContent = "";
+        announcedField = el;
+        announceTimer = setTimeout(() => {
+          announcer.textContent = label + spokenText(error);
+        }, 500);
+      };
+
+      const dirtyState = new WeakMap();
+      const supportsUserInvalid = CSS.supports("selector(:user-invalid)");
+      const flagged = new WeakSet();
+      const announced = new WeakSet();
+
+      const isFieldInvalid = (el) => {
+        if (supportsUserInvalid) return el.matches(":user-invalid");
+        return el.classList.contains("user-invalid-fallback");
+      };
+
+      const syncAria = (el, announce = false) => {
+        if (!el.matches?.("input, select, textarea")) return;
+        if (el.type === "radio") return;
+        const invalid = isFieldInvalid(el);
+        if (invalid) {
+          if (announce && !announced.has(el)) {
+            announceError(el);
+            announced.add(el);
+          }
+          el.setAttribute("aria-invalid", "true");
+          linkError(el, true);
+          flagged.add(el);
+        } else if (flagged.has(el) || el.getAttribute("aria-invalid") !== "true") {
+          el.setAttribute("aria-invalid", "false");
+          linkError(el, false);
+          flagged.delete(el);
+          announced.delete(el);
+          if (announcedField === el) {
+            clearTimeout(announceTimer);
+            announcer.textContent = "";
+          }
+        }
+      };
+
+      document.querySelectorAll("form input.form-control").forEach(el => syncAria(el));
+
+      document.addEventListener("blur", (e) => {
+        const el = e.target;
+        if (!supportsUserInvalid && el.matches?.("input.form-control")) {
+          const state = dirtyState.get(el) || { hasInteracted: false, hasBlurred: false };
+          state.hasBlurred = true;
+          dirtyState.set(el, state);
+          if (state.hasInteracted) {
+            el.classList.toggle("user-invalid-fallback", !el.validity.valid);
+          }
+        }
+        syncAria(el, true);
+      }, true);
+
+      document.addEventListener("input", (e) => {
+        const el = e.target;
+        if (!supportsUserInvalid && el.matches?.("input.form-control")) {
+          const state = dirtyState.get(el) || { hasInteracted: false, hasBlurred: false };
+          state.hasInteracted = true;
+          dirtyState.set(el, state);
+          if (state.hasBlurred) {
+            el.classList.toggle("user-invalid-fallback", !el.validity.valid);
+          }
+        }
+        if (el.hasAttribute?.("aria-invalid")) syncAria(el);
+      });
+
+      document.addEventListener("invalid", (e) => {
+        if (!supportsUserInvalid && e.target.matches?.("input.form-control")) {
+          dirtyState.set(e.target, { hasInteracted: true, hasBlurred: true });
+          e.target.classList.add("user-invalid-fallback");
+        }
+        announced.add(e.target);
+        syncAria(e.target);
+      }, true);
+    })();
+
     document.getElementById("home-btn").addEventListener("click", () => navigateTo(null));
     document.getElementById("back-btn").addEventListener("click", () => navigateTo(null));
     document.getElementById("copy-link-btn").addEventListener("click", async () => {
@@ -1673,7 +3275,42 @@
     });
 
     window.addEventListener("popstate", routeFromURL);
-    init();
+
+    onAuthStateChanged(auth, async (user) => {
+      const nonce = ++authSessionNonce;
+      currentUser = user;
+      userCompletionOverrides = {};
+      currentRole = "student";
+
+      if (!user) {
+        authResolved = true;
+        renderAppState();
+        return;
+      }
+
+      try {
+        const [role, profileResult] = await Promise.all([
+          resolveUserRole(user),
+          loadOrCreateUserProfile(user)
+        ]);
+        if (nonce !== authSessionNonce) return;
+        currentRole = role;
+        userCompletionOverrides = profileResult.overrides || {};
+        const displayName = formatDisplayName(user, profileResult.data);
+        updateHeaderAccountUI(user, role, displayName);
+      } catch (err) {
+        if (nonce !== authSessionNonce) return;
+        console.error("Failed to load user profile/role:", err);
+        updateHeaderAccountUI(user, "student", formatDisplayName(user, null));
+      } finally {
+        if (nonce === authSessionNonce) {
+          authResolved = true;
+          renderAppState();
+        }
+      }
+    });
+
+    loadSheets();
   </script>
 </body>
 </html>
