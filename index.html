@@ -2898,16 +2898,6 @@
           <div class="shop-tabs" id="shop-tabs" role="tablist" aria-label="商店分類"></div>
           <div class="shop-grid" id="shop-grid"></div>
         </div>
-        <div class="dialog-footer">
-          <span class="form-hint" style="margin-inline-end: auto;">購買後會直接佈置進你的單人租屋處</span>
-          <button
-            type="button"
-            class="btn btn-primary"
-            id="footer-close-shop-btn"
-            command="close"
-            commandfor="shop-dialog"
-          >完成逛街</button>
-        </div>
       </div>
     </dialog>
 
@@ -4730,7 +4720,7 @@
     setupModalDialogFallbacks(
       document.getElementById("shop-dialog"),
       [],
-      [document.getElementById("close-shop-btn"), document.getElementById("footer-close-shop-btn")],
+      [document.getElementById("close-shop-btn")],
       () => {
         clearFeedback("shop-feedback");
       }
