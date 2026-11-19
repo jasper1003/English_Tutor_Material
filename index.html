@@ -1925,14 +1925,17 @@
       top: 0;
       left: 0;
       pointer-events: none;
-      padding: 0.28rem 0.65rem;
-      border-radius: 12px;
+      max-width: 240px;
+      padding: 0.34rem 0.72rem;
+      border-radius: 14px;
       background: #fef3c7;
       color: #92400e;
       border: 1px solid #f59e0b;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      white-space: nowrap;
+      line-height: 1.32;
+      text-align: center;
+      white-space: normal;
       z-index: 5;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
     }
@@ -2700,7 +2703,7 @@
       HAIR_COLORS,
       OUTFIT_COLORS,
       DEFAULT_AVATAR
-    } from "./room-scene.js?v=20261119i";
+    } from "./room-scene.js?v=20261119j";
 
     if (window.location.search) {
       const cleanUrl = new URL(window.location.href);

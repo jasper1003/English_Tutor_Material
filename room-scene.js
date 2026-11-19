@@ -9,6 +9,90 @@ const COMMANDED_SLEEP_SEC = 300;  // 5 minutes sleep when clicked
 const COMMANDED_WASH_SEC = 10;    // 10 seconds hand wash
 const COMMANDED_TOILET_SEC = 15;  // 15 seconds toilet use
 
+// Per-activity English thought library (>= 6 lines each; cycled without repeats)
+const THOUGHT_BANK = {
+  phone: [
+    "This page is so cool!",
+    "I want to buy a TV......",
+    "Ooh, look at this cozy desk setup!",
+    "Wait, how did they shade that hair?",
+    "Maybe I should save up for a new plant.",
+    "Great color palette inspiration right here!",
+    "Five more minutes of scrolling...",
+    "Should I order ramen or cook tonight?"
+  ],
+  exercise: [
+    "One, two, three... keep my back straight!",
+    "A quick workout keeps my focus sharp.",
+    "My arms are burning, almost there!",
+    "Phew! Sitting all day makes my shoulders stiff.",
+    "Two more push-ups before I take a break!",
+    "Healthy artist, steady brush strokes.",
+    "Okay, that's a solid warm-up!"
+  ],
+  read: [
+    "This character design has so much personality!",
+    "I love how soft these lighting studies look.",
+    "Taking mental notes on perspective and shadows...",
+    "Reading on paper feels so relaxing.",
+    "Ooh, I should try this brush texture next time!",
+    "Every illustrator keeps a good art book nearby.",
+    "Just one more chapter for inspiration."
+  ],
+  eat: [
+    "Warm food always makes this place feel like home.",
+    "Delicious! Energy bar refilled.",
+    "Good meals keep creative block away.",
+    "Note to self: buy more groceries this weekend.",
+    "Nothing beats a quiet meal after sketching.",
+    "Hmm, maybe I should learn a new recipe.",
+    "So warm and comforting!"
+  ],
+  gaming: [
+    "Just building one quick house in this block world!",
+    "Wait, where did all my diamonds go?",
+    "My voxel castle is finally coming together!",
+    "Uh-oh, keep that green monster away from my base!",
+    "Ten-minute game break... okay, maybe fifteen.",
+    "Arranging blocks feels just like organizing layers.",
+    "Nice! Beat my own record today."
+  ],
+  sleep: [
+    "Zzz... dreaming about pastel sunsets...",
+    "So cozy under this blanket...",
+    "No deadlines in dreamland... zzz...",
+    "Rest well today, draw better tomorrow...",
+    "Zzz... floating through a watercolor sky...",
+    "Five more minutes... please...",
+    "Tomorrow I'll try that new illustration idea..."
+  ],
+  wash: [
+    "Cold water wakes me right up!",
+    "Got that stylus smudge right off my hands.",
+    "Clean hands, clean drawing tablet.",
+    "Gotta stay fresh between commissions!",
+    "Soap, rinse, dry—good to go!",
+    "Maybe I'll buy a fluffier towel next month."
+  ],
+  toilet: [
+    "Good thing I took a quick break now.",
+    "A moment of peace and quiet...",
+    "Wait, did I save my canvas before walking away?",
+    "Mental checklist: rent, groceries, next commission!",
+    "Should I paint the walls sage green someday?",
+    "Alright, back to work soon."
+  ],
+  work: [
+    "Just polishing a few final highlights...",
+    "Hope the client loves this draft!",
+    "Double-checking the warm color balance...",
+    "Almost ready to export and submit!",
+    "One tiny touch on the rim shadows...",
+    "Freelance life: tea, layers, repeat!",
+    "Saved! One step closer to upgrading my room."
+  ]
+};
+
 export const SKIN_TONES = [
   { id: "porcelain", label: "白皙暖調", hex: "#f9dcc4" },
   { id: "peach", label: "自然杏桃", hex: "#f1c29b" },
@@ -540,6 +624,9 @@ export class FreelancerRoomScene {
     this.currentActivity = "phone";
     this.activityTimer = IDLE_MIN_SEC;
     this.postWorkCooldown = 0;
+    this.thoughtCooldown = 2.0;
+    this.thoughtBags = {};
+    this.lastThoughtByActivity = {};
     this.walkWaypoints = [];
     this.walkCallback = null;
 
@@ -1230,6 +1317,7 @@ export class FreelancerRoomScene {
     this.charRoot.position.copy(startSpot.pos);
     this.charRoot.rotation.y = startSpot.rotY;
     this.currentActivity = startSpot.id;
+    this.thoughtCooldown = 1.6 + Math.random() * 1.8;
     this.onActivityChange(startSpot.label);
   }
 
@@ -1285,6 +1373,7 @@ export class FreelancerRoomScene {
     // Immediate snappy walk straight to desk chair
     this.charState = "WALK_TO_WORK";
     this.currentActivity = "walking";
+    this.hideBubble();
     this.onActivityChange("快步前往書桌準備接案...");
     const dist = this.charRoot.position.distanceTo(this.deskWorkAnchor);
     if (dist < 0.35 && this.isNearDesk(this.charRoot.position)) {
@@ -1314,6 +1403,7 @@ export class FreelancerRoomScene {
     }
     this.charState = "WORKING";
     this.postWorkCooldown = POST_WORK_COOLDOWN_SEC;
+    this.thoughtCooldown = 1.4 + Math.random() * 1.6;
     this.charRoot.position.copy(this.deskWorkAnchor);
     this.charRoot.rotation.y = Math.PI;
     this.onActivityChange("正在電繪板前收尾創作（稍後休息）");
@@ -1322,13 +1412,40 @@ export class FreelancerRoomScene {
   enterWorkingPose() {
     this.charState = "WORKING";
     this.postWorkCooldown = POST_WORK_COOLDOWN_SEC;
+    this.thoughtCooldown = 1.4 + Math.random() * 1.6;
     this.charRoot.position.copy(this.deskWorkAnchor);
     this.charRoot.rotation.y = Math.PI;
     this.onActivityChange("專心創作接案中");
   }
 
-  showBubble(text, durationMs = 1500) {
-    if (!this.bubbleEl) return;
+  pickRandomThought(activityKey) {
+    const bank = THOUGHT_BANK[activityKey];
+    if (!bank || bank.length === 0) return "";
+    let bag = this.thoughtBags[activityKey];
+    if (!bag || bag.length === 0) {
+      bag = [...bank];
+      for (let i = bag.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [bag[i], bag[j]] = [bag[j], bag[i]];
+      }
+      const prevLine = this.lastThoughtByActivity[activityKey];
+      if (bag.length > 1 && bag[bag.length - 1] === prevLine) {
+        [bag[0], bag[bag.length - 1]] = [bag[bag.length - 1], bag[0]];
+      }
+      this.thoughtBags[activityKey] = bag;
+    }
+    const chosen = bag.pop();
+    this.lastThoughtByActivity[activityKey] = chosen;
+    return chosen;
+  }
+
+  hideBubble() {
+    clearTimeout(this.bubbleTimer);
+    if (this.bubbleEl) this.bubbleEl.classList.add("hidden");
+  }
+
+  showBubble(text, durationMs = 4200) {
+    if (!this.bubbleEl || !text) return;
     this.bubbleEl.textContent = text;
     this.bubbleEl.classList.remove("hidden");
     clearTimeout(this.bubbleTimer);
@@ -1457,11 +1574,13 @@ export class FreelancerRoomScene {
 
     this.charState = "WALK_TO_ACTIVITY";
     this.currentActivity = "walking";
+    this.hideBubble();
     this.walkWaypoints = this.buildPathTo(spot.id, walkDest);
     this.walkCallback = () => {
       this.charState = "IDLE";
       this.currentActivity = spot.id;
       this.activityTimer = durationSec;
+      this.thoughtCooldown = 1.2 + Math.random() * 2.2;
       this.charRoot.position.copy(spot.pos);
       this.charRoot.rotation.y = spot.rotY;
       this.onActivityChange(spot.label);
@@ -1682,7 +1801,13 @@ export class FreelancerRoomScene {
         this.postWorkCooldown -= dt;
         if (this.postWorkCooldown <= 0) {
           this.pickNextIdleActivity(isNightTime);
+          return;
         }
+      }
+      this.thoughtCooldown -= dt;
+      if (this.thoughtCooldown <= 0) {
+        this.showBubble(this.pickRandomThought("work"), 4200);
+        this.thoughtCooldown = 8 + Math.random() * 7;
       }
       return;
     }
@@ -1692,6 +1817,12 @@ export class FreelancerRoomScene {
     if (this.activityTimer <= 0) {
       this.pickNextIdleActivity(isNightTime);
       return;
+    }
+
+    this.thoughtCooldown -= dt;
+    if (this.thoughtCooldown <= 0) {
+      this.showBubble(this.pickRandomThought(this.currentActivity), 4200);
+      this.thoughtCooldown = 9 + Math.random() * 9;
     }
 
     switch (this.currentActivity) {
