@@ -1112,7 +1112,9 @@
       }
       window.history.pushState({}, "", url);
       routeFromURL();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (dateStr) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     }
 
     function drawQuestPath() {
@@ -1193,6 +1195,8 @@
       mapEl.appendChild(svg);
 
       const firstUncompletedIndex = db.lessons.findIndex(l => !completedSet.has(l.Date));
+      let currentProgressStep = null;
+      let lastUnlockedStep = null;
 
       db.lessons.forEach((lesson, idx) => {
         const vocabCount = db.vocab.filter(v => v.Date === lesson.Date).length;
@@ -1204,6 +1208,8 @@
         const step = document.createElement("div");
         step.className = `quest-step${isCompleted ? " is-completed" : ""}`;
         step.style.setProperty("--step-x", `${offsetX}px`);
+        if (isCurrent) currentProgressStep = step;
+        lastUnlockedStep = step;
 
         const circleIcon = isCompleted
           ? `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>`
@@ -1264,7 +1270,13 @@
       }
 
       homeView.classList.remove("hidden");
-      requestAnimationFrame(drawQuestPath);
+      requestAnimationFrame(() => {
+        drawQuestPath();
+        const targetStep = currentProgressStep || lastUnlockedStep;
+        if (targetStep) {
+          targetStep.scrollIntoView({ behavior: "auto", block: "center" });
+        }
+      });
 
       if (!questResizeObserver && "ResizeObserver" in window) {
         questResizeObserver = new ResizeObserver(() => drawQuestPath());
