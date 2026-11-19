@@ -2581,20 +2581,16 @@
         <div class="room-hud-top">
           <div class="room-hud-group">
             <div class="room-hud-pill" id="room-clock-pill">☀ 12:00 · 晴朗正午</div>
-            <div class="room-hud-pill" id="room-activity-pill">目前狀態：滑手機放鬆中</div>
           </div>
           <div class="room-hud-group">
-            <button type="button" class="room-hud-btn" id="room-lamp-btn" aria-pressed="true">💡 檯燈：開</button>
-            <button type="button" class="room-hud-btn" id="room-rot-left-btn" title="向左轉 90° (Q)">↺ 左轉 90°</button>
-            <span class="room-hud-pill" id="room-angle-pill">視角 1/4</span>
-            <button type="button" class="room-hud-btn" id="room-rot-right-btn" title="向右轉 90° (E)">↻ 右轉 90°</button>
+            <button type="button" class="room-hud-btn" id="room-rot-left-btn" aria-label="向左旋轉 90 度" style="width: 38px; height: 38px; padding: 0; font-size: 1.15rem;">↺</button>
+            <button type="button" class="room-hud-btn" id="room-rot-right-btn" aria-label="向右旋轉 90 度" style="width: 38px; height: 38px; padding: 0; font-size: 1.15rem;">↻</button>
           </div>
         </div>
 
         <div class="room-canvas-wrap" id="room-canvas-wrap"></div>
 
-        <div class="room-hud-bottom">
-          <div class="room-prompt-pill" id="room-hover-prompt">自由探索房間物件，或點擊書桌電腦進入英語接案工作台</div>
+        <div class="room-hud-bottom" style="justify-content: flex-end;">
           <button type="button" class="room-hud-btn" id="room-edit-avatar-btn">✏️ 調整角色外觀</button>
         </div>
       </div>
@@ -2994,12 +2990,7 @@
     }
 
     function syncRoomHUD() {
-      if (!roomScene) return;
-      const quarter = (roomScene.targetQuarter ?? 0) + 1;
-      document.getElementById("room-angle-pill").textContent = `視角 ${quarter}/4`;
-      const lampBtn = document.getElementById("room-lamp-btn");
-      lampBtn.textContent = roomScene.deskLampOn ? "💡 檯燈：開" : "💡 檯燈：關";
-      lampBtn.setAttribute("aria-pressed", String(roomScene.deskLampOn));
+      // Reserved for future room HUD indicators
     }
 
     async function persistRoomState(patch) {
@@ -3049,19 +3040,11 @@
             openWorkDesktop();
           },
           onLampToggle: (isOn) => {
-            syncRoomHUD();
             persistRoomState({ deskLampOn: isOn });
-          },
-          onActivityChange: (label) => {
-            document.getElementById("room-activity-pill").textContent = `目前狀態：${label}`;
           },
           onTimeUpdate: ({ clockText, label, isNight }) => {
             const icon = isNight ? "🌙" : "☀";
             document.getElementById("room-clock-pill").textContent = `${icon} ${clockText} · ${label}`;
-          },
-          onHoverChange: (hint) => {
-            document.getElementById("room-hover-prompt").textContent =
-              hint || "自由探索房間物件，或點擊書桌電腦進入英語接案工作台";
           }
         });
       } else {
@@ -4586,14 +4569,6 @@
     });
 
     // Room HUD interactions
-    document.getElementById("room-lamp-btn").addEventListener("click", () => {
-      if (!roomScene) return;
-      const nextOn = !roomScene.deskLampOn;
-      roomScene.setDeskLamp(nextOn);
-      syncRoomHUD();
-      persistRoomState({ deskLampOn: nextOn });
-    });
-
     document.getElementById("room-rot-left-btn").addEventListener("click", () => {
       if (!roomScene) return;
       const q = roomScene.rotateLeft();
