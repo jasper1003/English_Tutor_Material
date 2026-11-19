@@ -1681,9 +1681,27 @@
       background: light-dark(#fef3c7, #3b2709);
       border: 1px solid light-dark(#fde68a, #78490f);
       color: light-dark(#92400e, #fcd34d);
+      font: inherit;
       font-size: 0.875rem;
       font-weight: 700;
       white-space: nowrap;
+      cursor: default;
+      transition: transform 0.14s ease, filter 0.14s ease, box-shadow 0.14s ease;
+    }
+
+    .wallet-chip.is-admin-action {
+      cursor: pointer;
+    }
+
+    .wallet-chip.is-admin-action:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+      box-shadow: 0 3px 10px rgba(245, 158, 11, 0.25);
+    }
+
+    .wallet-chip.is-admin-action:focus-visible {
+      outline: 3px solid #60a5fa;
+      outline-offset: 2px;
     }
 
     .clam-icon {
@@ -2299,20 +2317,14 @@
           </span>
         </label>
         <div class="header-account hidden" id="header-account">
-          <div class="wallet-chip" id="header-wallet-chip" title="目前持有的英蚌餘額">
+          <button type="button" class="wallet-chip" id="header-wallet-chip" title="目前持有的英蚌餘額">
             <svg class="clam-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 3C7.2 3 3 6.5 2.2 11.4c-.2 1.2.4 2.4 1.4 3l4.2 2.4c.5.3.9.8 1.1 1.3.2.5.7.9 1.3.9h3.6c.6 0 1.1-.4 1.3-.9.2-.5.6-1 1.1-1.3l4.2-2.4c1-.6 1.6-1.8 1.4-3C21 6.5 16.8 3 12 3zm-4.5 9.8L5.4 8.2c.8-.9 1.8-1.6 2.9-2.1l1.2 6.7H7.5zm3.4 0L10.3 5.5c.6-.1 1.1-.2 1.7-.2s1.1.1 1.7.2l-.6 7.3h-2.2zm5.6 0h-2l1.2-6.7c1.1.5 2.1 1.2 2.9 2.1l-2.1 4.6z"/>
             </svg>
             <span id="header-clams-count">100</span>
             <span>英蚌</span>
-          </div>
-          <button
-            type="button"
-            class="btn btn-sm hidden"
-            id="open-admin-review-btn"
-            command="show-modal"
-            commandfor="admin-review-dialog"
-          >📋 案主驗收與發款 <span class="pending-count-pill hidden" id="admin-pending-badge">0</span></button>
+            <span class="pending-count-pill hidden" id="admin-pending-badge">0</span>
+          </button>
           <div class="account-chip" id="header-user-chip">
             <span class="role-badge is-student" id="header-role-badge">學生</span>
             <span class="account-name" id="header-user-name"></span>
@@ -3203,11 +3215,11 @@
       const badgeEl = document.getElementById("header-role-badge");
       const nameEl = document.getElementById("header-user-name");
       const clamsEl = document.getElementById("header-clams-count");
-      const reviewBtn = document.getElementById("open-admin-review-btn");
+      const walletChip = document.getElementById("header-wallet-chip");
 
       if (!user) {
         accountEl.classList.add("hidden");
-        reviewBtn.classList.add("hidden");
+        walletChip?.classList.remove("is-admin-action");
         return;
       }
 
@@ -3219,7 +3231,11 @@
         : String(Math.max(0, Math.trunc(Number(clams ?? STARTER_CLAMS))));
 
       const isTeacher = role === "super_admin" || role === "admin";
-      reviewBtn.classList.toggle("hidden", !isTeacher);
+      if (walletChip) {
+        walletChip.classList.toggle("is-admin-action", isTeacher);
+        walletChip.title = isTeacher ? "點擊開啟案主驗收與發款台" : "目前持有的英蚌餘額";
+        walletChip.setAttribute("aria-label", isTeacher ? "開啟案主驗收與發款台" : "目前持有的英蚌餘額");
+      }
       accountEl.classList.remove("hidden");
     }
 
@@ -4329,7 +4345,7 @@
     }
 
     const adminReviewDialog = document.getElementById("admin-review-dialog");
-    const openAdminReviewBtn = document.getElementById("open-admin-review-btn");
+    const openAdminReviewBtn = document.getElementById("header-wallet-chip");
 
     function setupModalDialogFallbacks(dialogEl, openBtns, closeBtns, onCloseCb) {
       if (!dialogEl) return;
@@ -4377,7 +4393,7 @@
 
     setupModalDialogFallbacks(
       adminReviewDialog,
-      [openAdminReviewBtn],
+      [],
       [document.getElementById("close-admin-review-btn"), document.getElementById("footer-close-admin-review-btn")],
       () => {
         clearFeedback("admin-review-feedback");
@@ -5629,12 +5645,14 @@
     }
 
     openAdminReviewBtn?.addEventListener("click", () => {
-      requestAnimationFrame(() => {
-        if (cachedStudents.length > 0) {
-          syncCachedStudentsSnapshot(cachedStudents);
-        }
-        loadStudentsForReview();
-      });
+      if (currentRole !== "super_admin" && currentRole !== "admin") return;
+      if (!adminReviewDialog.open) {
+        adminReviewDialog.showModal();
+      }
+      if (cachedStudents.length > 0) {
+        syncCachedStudentsSnapshot(cachedStudents);
+      }
+      loadStudentsForReview();
     });
     document.getElementById("refresh-review-btn").addEventListener("click", () => {
       loadStudentsForReview(document.getElementById("review-student-select").value);
