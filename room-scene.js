@@ -550,6 +550,11 @@ export class FreelancerRoomScene {
 
   addInteractive(mesh, interactType) {
     mesh.userData.interactType = interactType;
+    if (mesh.material && "emissive" in mesh.material && mesh.material !== this.lampBulbMat) {
+      mesh.material = mesh.material.clone();
+      mesh.userData.baseEmissive = mesh.material.emissive.clone();
+      mesh.userData.baseEmissiveIntensity = mesh.material.emissiveIntensity || 0;
+    }
     this.allInteractTargets.push(mesh);
   }
 
@@ -1561,9 +1566,11 @@ export class FreelancerRoomScene {
       if (dist <= speed * dt + 0.05) {
         this.charRoot.position.copy(target);
         this.walkWaypoints.shift();
-        const cb = this.walkCallback;
-        this.walkCallback = null;
-        cb?.();
+        if (this.walkWaypoints.length === 0) {
+          const cb = this.walkCallback;
+          this.walkCallback = null;
+          cb?.();
+        }
         return;
       }
 
@@ -1755,7 +1762,16 @@ export class FreelancerRoomScene {
       this.renderer.setSize(w, h);
     };
 
+    this.onPointerLeave = () => {
+      if (this.hoveredTarget !== null) {
+        this.hoveredTarget = null;
+        dom.style.cursor = "default";
+        this.onHoverChange("");
+      }
+    };
+
     dom.addEventListener("pointermove", this.onPointerMove);
+    dom.addEventListener("pointerleave", this.onPointerLeave);
     dom.addEventListener("click", this.onClick);
     window.addEventListener("resize", this.onResize);
   }
@@ -1779,6 +1795,21 @@ export class FreelancerRoomScene {
     }
   }
 
+  updateInteractGlow() {
+    for (const mesh of this.allInteractTargets) {
+      const mat = mesh.material;
+      if (!mat || !("emissive" in mat) || mat === this.lampBulbMat) continue;
+      const isHovered = this.hoveredTarget && mesh.userData.interactType === this.hoveredTarget;
+      const targetIntensity = isHovered ? 0.28 : (mesh.userData.baseEmissiveIntensity || 0);
+      if (isHovered) {
+        mat.emissive.setHex(0xffd073);
+      } else if (mat.emissiveIntensity < 0.01 && mesh.userData.baseEmissive) {
+        mat.emissive.copy(mesh.userData.baseEmissive);
+      }
+      mat.emissiveIntensity += (targetIntensity - mat.emissiveIntensity) * 0.22;
+    }
+  }
+
   animate = () => {
     if (this.disposed || this.paused) return;
     this.animFrameId = requestAnimationFrame(this.animate);
@@ -1791,10 +1822,11 @@ export class FreelancerRoomScene {
     const isNight = this.updateDayNightLighting();
     this.updateCameraTransform(false);
     this.updateCharacter(dt, elapsedSec, isNight);
+    this.updateInteractGlow();
 
     // Subtle hover pulse on work desk ring
     if (this.workHoverRingMat) {
-      const targetOpacity = this.hoveredTarget === "computer" ? 0.85 : 0.25 + Math.sin(elapsedSec * 3) * 0.1;
+      const targetOpacity = this.hoveredTarget === "computer" ? 0.85 : 0.2 + Math.sin(elapsedSec * 3) * 0.08;
       this.workHoverRingMat.opacity += (targetOpacity - this.workHoverRingMat.opacity) * 0.18;
     }
 
@@ -1808,6 +1840,7 @@ export class FreelancerRoomScene {
     const dom = this.renderer?.domElement;
     if (dom) {
       dom.removeEventListener("pointermove", this.onPointerMove);
+      dom.removeEventListener("pointerleave", this.onPointerLeave);
       dom.removeEventListener("click", this.onClick);
     }
     window.removeEventListener("resize", this.onResize);
