@@ -2955,14 +2955,14 @@
       HAIR_COLORS,
       OUTFIT_COLORS,
       DEFAULT_AVATAR
-    } from "./room-scene.js?v=20261119m";
+    } from "./room-scene.js?v=20261119n";
     import {
       SHOP_CATEGORIES,
       SHOP_CATALOG,
       DEFAULT_WALL_COLOR,
       getShopItem,
       normalizeOwnedItems
-    } from "./shop-catalog.js?v=20261119m";
+    } from "./shop-catalog.js?v=20261119n";
 
     if (window.location.search) {
       const cleanUrl = new URL(window.location.href);
@@ -4903,11 +4903,12 @@
         : SHOP_CATALOG.filter(item => item.category === activeShopCategory);
 
       visibleItems.forEach(item => {
-        const isOwned = item.price === 0 || Boolean(owned[item.id]);
-        const isActivePaint = Boolean(item.wallColor && item.wallColor.toLowerCase() === activeWallColor);
+        const isPaint = Boolean(item.consumable && item.wallColor);
+        const isActivePaint = isPaint && item.wallColor.toLowerCase() === activeWallColor;
+        const isPermanentOwned = !isPaint && Boolean(owned[item.id]);
 
         const card = document.createElement("div");
-        card.className = `shop-item-card${isOwned ? " is-owned" : ""}`;
+        card.className = `shop-item-card${(isPermanentOwned || isActivePaint) ? " is-owned" : ""}`;
 
         const head = document.createElement("div");
         head.className = "shop-item-head";
@@ -4929,7 +4930,7 @@
         title.textContent = item.name;
         const priceEl = document.createElement("div");
         priceEl.className = "shop-item-price";
-        priceEl.textContent = item.price === 0 ? "預設附帶（免費）" : `${item.price} 英蚌`;
+        priceEl.textContent = isPaint ? `${item.price} 英蚌（每次重刷計費）` : `${item.price} 英蚌`;
         meta.append(title, priceEl);
         head.append(iconBox, meta);
 
@@ -4942,47 +4943,24 @@
         actionBtn.className = "btn";
         actionBtn.style.width = "100%";
 
-        if (isOwned) {
-          if (item.wallColor) {
-            if (isActivePaint) {
-              actionBtn.textContent = "目前使用中 ✓";
-              actionBtn.disabled = true;
-            } else {
-              actionBtn.textContent = "套用這個牆色";
-              actionBtn.onclick = () => applyOwnedWallPaint(item);
-            }
-          } else {
-            actionBtn.textContent = "已擺進房間 ✓";
-            actionBtn.disabled = true;
-          }
+        if (isActivePaint) {
+          actionBtn.textContent = "目前牆色 ✓";
+          actionBtn.disabled = true;
+        } else if (isPermanentOwned) {
+          actionBtn.textContent = "已擺進房間 ✓";
+          actionBtn.disabled = true;
         } else if (!isSuperAdmin && clams < item.price) {
           actionBtn.textContent = `還差 ${item.price - clams} 英蚌`;
           actionBtn.disabled = true;
         } else {
           actionBtn.classList.add("btn-primary");
-          actionBtn.textContent = "購買並放進房間";
+          actionBtn.textContent = isPaint ? "購買並重新粉刷" : "購買並放進房間";
           actionBtn.onclick = () => purchaseShopItem(item.id);
         }
 
         card.append(head, desc, actionBtn);
         gridEl.appendChild(card);
       });
-    }
-
-    async function applyOwnedWallPaint(item) {
-      if (!currentUser || !item?.wallColor || shopPurchaseBusy) return;
-      clearFeedback("shop-feedback");
-      shopPurchaseBusy = true;
-      try {
-        await persistRoomState({ wallColor: item.wallColor });
-        roomScene?.setWallColor(item.wallColor);
-        showFeedback("shop-feedback", "success", `已將牆面換成「${item.name}」！`);
-        renderShopDialog();
-      } catch (err) {
-        showFeedback("shop-feedback", "error", translateAuthError(err));
-      } finally {
-        shopPurchaseBusy = false;
-      }
     }
 
     async function purchaseShopItem(itemId) {
@@ -5003,9 +4981,29 @@
           const prevOwned = (data.ownedItems && typeof data.ownedItems === "object" && !Array.isArray(data.ownedItems))
             ? { ...data.ownedItems }
             : {};
+          const prevRoomState = (data.roomState && typeof data.roomState === "object")
+            ? { ...data.roomState }
+            : { cameraQuarter: 0, deskLampOn: true, bedLampOn: false, wallColor: DEFAULT_WALL_COLOR };
+
+          if (item.consumable && item.wallColor) {
+            if ((prevRoomState.wallColor || DEFAULT_WALL_COLOR).toLowerCase() === item.wallColor.toLowerCase()) {
+              return { unchanged: true, nextClams: currentClams, nextOwned: prevOwned, nextRoomState: prevRoomState };
+            }
+            if (!isSuperAdmin && currentClams < item.price) {
+              throw new Error("英蚌餘額不足，先去電腦完成接案學習賺錢吧！");
+            }
+            const nextClams = isSuperAdmin ? currentClams : (currentClams - item.price);
+            const nextRoomState = { ...prevRoomState, wallColor: item.wallColor };
+            tx.update(userRef, {
+              clams: nextClams,
+              roomState: nextRoomState,
+              updatedAt: serverTimestamp()
+            });
+            return { unchanged: false, nextClams, nextOwned: prevOwned, nextRoomState };
+          }
 
           if (prevOwned[item.id] === true) {
-            return { alreadyOwned: true, nextClams: currentClams, nextOwned: prevOwned, nextRoomState: data.roomState || {} };
+            return { unchanged: true, nextClams: currentClams, nextOwned: prevOwned, nextRoomState: prevRoomState };
           }
           if (!isSuperAdmin && currentClams < item.price) {
             throw new Error("英蚌餘額不足，先去電腦完成接案學習賺錢吧！");
@@ -5013,23 +5011,20 @@
 
           const nextClams = isSuperAdmin ? currentClams : (currentClams - item.price);
           const nextOwned = { ...prevOwned, [item.id]: true };
-          const prevRoomState = (data.roomState && typeof data.roomState === "object")
-            ? { ...data.roomState }
-            : { cameraQuarter: 0, deskLampOn: true, bedLampOn: false, wallColor: DEFAULT_WALL_COLOR };
-          const nextRoomState = item.wallColor
-            ? { ...prevRoomState, wallColor: item.wallColor }
-            : (item.id === "bed_lamp" ? { ...prevRoomState, bedLampOn: true } : prevRoomState);
+          const nextRoomState = item.id === "bed_lamp"
+            ? { ...prevRoomState, bedLampOn: true }
+            : prevRoomState;
 
           const patch = {
             clams: nextClams,
             ownedItems: nextOwned,
             updatedAt: serverTimestamp()
           };
-          if (item.wallColor || item.id === "bed_lamp") {
+          if (item.id === "bed_lamp") {
             patch.roomState = nextRoomState;
           }
           tx.update(userRef, patch);
-          return { alreadyOwned: false, nextClams, nextOwned, nextRoomState };
+          return { unchanged: false, nextClams, nextOwned, nextRoomState };
         });
 
         if (currentUserProfile) {
@@ -5047,11 +5042,14 @@
         roomScene?.applyOwnedItems(normalizedOwned);
         if (item.wallColor) {
           roomScene?.setWallColor(item.wallColor);
+          const feeNote = currentRole === "super_admin" ? "超級管理員測試免扣款" : `扣除粉刷費 ${item.price} 英蚌`;
+          showFeedback("shop-feedback", "success", `已重新粉刷為「${item.name}」（${feeNote}）！`);
+        } else {
+          if (item.id === "bed_lamp") {
+            roomScene?.setBedLamp(true);
+          }
+          showFeedback("shop-feedback", "success", `已購買「${item.name}」並直接放進租屋處！`);
         }
-        if (item.id === "bed_lamp") {
-          roomScene?.setBedLamp(true);
-        }
-        showFeedback("shop-feedback", "success", `已購買「${item.name}」並直接放進租屋處！`);
         renderShopDialog();
       } catch (err) {
         showFeedback("shop-feedback", "error", err?.message || translateAuthError(err));

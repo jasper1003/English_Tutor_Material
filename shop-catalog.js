@@ -12,46 +12,51 @@ export const SHOP_CATALOG = [
     id: "wall_oat",
     name: "燕麥奶油牆面",
     category: "paint",
-    price: 0,
+    consumable: true,
+    price: 80,
     wallColor: "#f3eadc",
     icon: "🎨",
-    desc: "租屋處原本的溫暖奶油白牆色，隨時可免費換回。"
+    desc: "溫暖奶油白油漆與粉刷工錢，每次換色皆需重新付費施作。"
   },
   {
     id: "wall_sage",
     name: "鼠尾草淺綠牆面",
     category: "paint",
+    consumable: true,
     price: 100,
     wallColor: "#cdd9ce",
     icon: "🌿",
-    desc: "讓小房間更有呼吸感的溫潤莫蘭迪淺綠。"
+    desc: "莫蘭迪淺綠油漆與粉刷工錢，每次重新粉刷皆需再次購買。"
   },
   {
     id: "wall_mist",
     name: "晨霧微藍牆面",
     category: "paint",
+    consumable: true,
     price: 100,
     wallColor: "#d4dfea",
     icon: "☁️",
-    desc: "清爽療癒的霧面藍灰，夜晚開燈也很柔和。"
+    desc: "霧面藍灰油漆與粉刷工錢，每次重新粉刷皆需再次購買。"
   },
   {
     id: "wall_blush",
     name: "暖陶藕粉牆面",
     category: "paint",
+    consumable: true,
     price: 120,
     wallColor: "#ead6d2",
     icon: "🌷",
-    desc: "像夕陽般溫暖柔和的奶油藕粉色調。"
+    desc: "奶油藕粉油漆與粉刷工錢，每次重新粉刷皆需再次購買。"
   },
   {
     id: "wall_lavender",
     name: "靜謐灰紫牆面",
     category: "paint",
+    consumable: true,
     price: 120,
     wallColor: "#ddd6e8",
     icon: "🪻",
-    desc: "帶一點莫蘭迪灰調的淡雅薰衣草牆面。"
+    desc: "淡雅薰衣灰紫油漆與粉刷工錢，每次重新粉刷皆需再次購買。"
   },
   {
     id: "desk_plant",
@@ -108,7 +113,7 @@ export function getShopItem(itemId) {
 }
 
 export function normalizeOwnedItems(raw) {
-  const result = { wall_oat: true };
+  const result = {};
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
     for (const [key, val] of Object.entries(raw)) {
       if (val === true) result[key] = true;
