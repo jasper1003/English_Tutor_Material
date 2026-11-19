@@ -64,6 +64,7 @@ export const SHOP_CATALOG = [
     category: "decor",
     price: 120,
     icon: "🪴",
+    previewImage: "./assets/shop/desk_plant.jpg",
     desc: "擺在書桌右上角的龜背芋陶土小盆栽，增添生氣。"
   },
   {
@@ -72,6 +73,7 @@ export const SHOP_CATALOG = [
     category: "decor",
     price: 150,
     icon: "🖼️",
+    previewImage: "./assets/shop/wall_poster.jpg",
     desc: "木框裱褙的暖日風景掛畫，裝飾北側空白牆面。"
   },
   {
@@ -80,6 +82,7 @@ export const SHOP_CATALOG = [
     category: "decor",
     price: 180,
     icon: "🛏️",
+    previewImage: "./assets/shop/bed_lamp.jpg",
     desc: "附小床頭櫃的圓潤小夜燈，放在房間裡可直接點擊開關。"
   },
   {
@@ -88,6 +91,7 @@ export const SHOP_CATALOG = [
     category: "gear",
     price: 240,
     icon: "⌨️",
+    previewImage: "./assets/shop/cool_keyboard.jpg",
     desc: "替書桌換上發光 RGB 客製機械鍵盤，接案手感更順。"
   },
   {
@@ -96,6 +100,7 @@ export const SHOP_CATALOG = [
     category: "decor",
     price: 280,
     icon: "🛋️",
+    previewImage: "./assets/shop/cozy_sofa.jpg",
     desc: "面向大門旁牆面的柔軟雙人沙發，累了隨時可以喘口氣。"
   },
   {
@@ -104,6 +109,7 @@ export const SHOP_CATALOG = [
     category: "decor",
     price: 360,
     icon: "📺",
+    previewImage: "./assets/shop/wall_tv.jpg",
     desc: "掛在玄關大門右側牆上，正好對著沙發的纖薄小電視。"
   }
 ];
