@@ -3701,22 +3701,25 @@
       return compact ? `剩 ${days} 天` : `${days} 天`;
     }
 
-    async function logUserTransaction(targetUid, txData) {
-      if (!targetUid || !txData) return;
+    function buildTransactionPayload(txData) {
+      if (!txData) return null;
       const safeAmount = Math.trunc(Number(txData.amount) || 0);
-      if (safeAmount === 0) return;
-      try {
-        await addDoc(collection(firestoreDb, "users", targetUid, "transactions"), {
-          type: String(txData.type || (safeAmount > 0 ? "income" : "purchase")),
-          category: String(txData.category || "decor"),
-          title: String(txData.title || "帳務紀錄").slice(0, 120),
-          amount: safeAmount,
-          monthKey: String(txData.monthKey || getMonthKey()),
-          createdAt: serverTimestamp()
-        });
-      } catch (err) {
-        console.warn("Failed to log transaction:", err?.message || err);
-      }
+      if (safeAmount === 0) return null;
+      return {
+        type: String(txData.type || (safeAmount > 0 ? "income" : "purchase")),
+        category: String(txData.category || "decor"),
+        title: String(txData.title || "帳務紀錄").slice(0, 120),
+        amount: safeAmount,
+        monthKey: String(txData.monthKey || getMonthKey()),
+        createdAt: serverTimestamp()
+      };
+    }
+
+    function queueLedgerTransaction(tx, targetUid, txData) {
+      const payload = buildTransactionPayload(txData);
+      if (!tx || !targetUid || !payload) return;
+      const txRef = doc(collection(firestoreDb, "users", targetUid, "transactions"));
+      tx.set(txRef, payload);
     }
 
     async function loadOrCreateUserProfile(user) {
@@ -5983,6 +5986,14 @@
               roomState: nextRoomState,
               updatedAt: serverTimestamp()
             });
+            if (item.price > 0) {
+              queueLedgerTransaction(tx, currentUser.uid, {
+                type: "purchase",
+                category: item.category,
+                title: `重刷牆面：${item.name}`,
+                amount: -item.price
+              });
+            }
             return { unchanged: false, nextClams, nextOwned: prevOwned, nextRoomState };
           }
 
@@ -6014,6 +6025,14 @@
             patch.roomState = nextRoomState;
           }
           tx.update(userRef, patch);
+          if (item.price > 0) {
+            queueLedgerTransaction(tx, currentUser.uid, {
+              type: "purchase",
+              category: item.category,
+              title: item.textileKind ? `購入織品：${item.name}` : `購買家具：${item.name}`,
+              amount: -item.price
+            });
+          }
           return { unchanged: false, nextClams, nextOwned, nextRoomState };
         });
 
@@ -6045,18 +6064,6 @@
             roomScene?.setBedLamp(true);
           }
           showFeedback("shop-feedback", "success", `已購買「${item.name}」並直接放進租屋處！`);
-        }
-        if (!result.unchanged && item.price > 0) {
-          logUserTransaction(currentUser.uid, {
-            type: "purchase",
-            category: item.category,
-            title: item.wallColor
-              ? `重刷牆面：${item.name}`
-              : item.textileKind
-                ? `購入織品：${item.name}`
-                : `購買家具：${item.name}`,
-            amount: -item.price
-          });
         }
         renderShopDialog();
       } catch (err) {
@@ -6758,6 +6765,13 @@
             lastRentPaidMonth: monthStr,
             updatedAt: serverTimestamp()
           });
+          queueLedgerTransaction(tx, currentUser.uid, {
+            type: "rent",
+            category: "rent",
+            title: isTestDemo ? "測試模擬繳交每月房租" : `繳交每月租屋處房租（${monthStr}）`,
+            amount: -MONTHLY_RENT_CLAMS,
+            monthKey: monthStr
+          });
           return { nextClams, nextDue, monthStr };
         });
 
@@ -6766,13 +6780,6 @@
           currentUserProfile.nextRentDueAt = result.nextDue;
           currentUserProfile.lastRentPaidMonth = result.monthStr;
         }
-        await logUserTransaction(currentUser.uid, {
-          type: "rent",
-          category: "rent",
-          title: isTestDemo ? "測試模擬繳交每月房租" : `繳交每月租屋處房租（${result.monthStr}）`,
-          amount: -MONTHLY_RENT_CLAMS,
-          monthKey: result.monthStr
-        });
 
         updateHeaderAccountUI(
           currentUser,
@@ -7176,18 +7183,17 @@
           totalEarnedClams: nextTotal,
           updatedAt: serverTimestamp()
         });
+        if (safeReward > 0) {
+          queueLedgerTransaction(tx, studentUid, {
+            type: "income",
+            category: "lesson",
+            title: `單元驗收撥款（${dateStr}）`,
+            amount: safeReward
+          });
+        }
 
         return { alreadyApproved: false, nextClams, nextTotal, approvedMap, submittedMap };
       });
-
-      if (!result.alreadyApproved && safeReward > 0) {
-        await logUserTransaction(studentUid, {
-          type: "income",
-          category: "lesson",
-          title: `單元驗收撥款（${dateStr}）`,
-          amount: safeReward
-        });
-      }
 
       if (studentUid === currentUser?.uid && !result.alreadyApproved) {
         userApprovedLessons = result.approvedMap;
@@ -7205,7 +7211,7 @@
           result.nextClams
         );
         if (currentScreen === "desktop") renderHome();
-        if (currentScreen === "lesson" && activeLessonDate) renderLesson(activeLessonDate);
+        if (currentScreen === "lesson" && activeLessonDate) activeLessonSyncCommission?.();
       }
 
       return result;
@@ -7244,17 +7250,17 @@
           totalEarnedClams: nextT,
           updatedAt: serverTimestamp()
         });
-        return { nextC, nextT, deltaApplied: nextC - prevC };
+        const deltaApplied = nextC - prevC;
+        if (deltaApplied !== 0) {
+          queueLedgerTransaction(tx, studentUid, {
+            type: deltaApplied > 0 ? "bonus" : "adjustment",
+            category: deltaApplied > 0 ? "bonus" : "adjustment",
+            title: deltaApplied > 0 ? "課堂獎勵／老師加碼發放" : "管理員餘額更正調整",
+            amount: deltaApplied
+          });
+        }
+        return { nextC, nextT, deltaApplied };
       });
-
-      if (nextClams.deltaApplied !== 0) {
-        await logUserTransaction(studentUid, {
-          type: nextClams.deltaApplied > 0 ? "bonus" : "adjustment",
-          category: nextClams.deltaApplied > 0 ? "bonus" : "adjustment",
-          title: nextClams.deltaApplied > 0 ? "課堂獎勵／老師加碼發放" : "管理員餘額更正調整",
-          amount: nextClams.deltaApplied
-        });
-      }
 
       if (studentUid === currentUser?.uid && currentUserProfile) {
         currentUserProfile.clams = nextClams.nextC;
