@@ -2230,6 +2230,40 @@
       color: var(--text);
     }
 
+    .pending-count-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 19px;
+      height: 19px;
+      padding: 0 0.38rem;
+      border-radius: 999px;
+      background: #f59e0b;
+      color: #111827;
+      font-size: 0.72rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-inline-start: 0.32rem;
+    }
+
+    .admin-section-title {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 0.25rem;
+    }
+
+    .admin-review-row.is-pending-row {
+      border-color: light-dark(#f59e0b, #b45309);
+      background: light-dark(#fffbeb, rgba(180, 83, 9, 0.14));
+    }
+
+    .quick-clam-chips {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
     .hidden {
       display: none !important;
     }
@@ -2278,7 +2312,7 @@
             id="open-admin-review-btn"
             command="show-modal"
             commandfor="admin-review-dialog"
-          >📋 案主驗收台</button>
+          >📋 案主驗收與發款 <span class="pending-count-pill hidden" id="admin-pending-badge">0</span></button>
           <div class="account-chip" id="header-user-chip">
             <span class="role-badge is-student" id="header-role-badge">學生</span>
             <span class="account-name" id="header-user-name"></span>
@@ -2609,8 +2643,11 @@
         </div>
         <div class="dialog-body">
           <div id="admin-review-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
+          <div class="admin-section-title">🔔 待驗收發款佇列（學生點擊「完成任務」會即時出現在這裡）</div>
+          <div id="review-pending-queue" style="display: flex; flex-direction: column; gap: 0.55rem;"></div>
+          <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.35rem 0;" />
           <div class="form-group" style="margin-block-end: 0;">
-            <label for="review-student-select">選擇要驗收的繪師（學生帳號）</label>
+            <label for="review-student-select">選擇指定繪師（直接發錢／調整餘額或檢視所有課程）</label>
             <select id="review-student-select" class="form-control"></select>
           </div>
           <div id="review-student-summary" class="form-hint">請選擇一位學生檢視接案狀態。</div>
@@ -2891,6 +2928,7 @@
       deleteDoc,
       collection,
       getDocs,
+      onSnapshot,
       query,
       orderBy,
       runTransaction,
@@ -5071,47 +5109,258 @@
 
     // Teacher Client Approval & Clam Reward Controller
     let cachedStudents = [];
+    let unsubscribeUserRealtime = null;
+    let unsubscribeAdminQueueRealtime = null;
+
+    function stopRealtimeListeners() {
+      if (unsubscribeUserRealtime) {
+        unsubscribeUserRealtime();
+        unsubscribeUserRealtime = null;
+      }
+      if (unsubscribeAdminQueueRealtime) {
+        unsubscribeAdminQueueRealtime();
+        unsubscribeAdminQueueRealtime = null;
+      }
+      cachedStudents = [];
+      const badge = document.getElementById("admin-pending-badge");
+      if (badge) {
+        badge.textContent = "0";
+        badge.classList.add("hidden");
+      }
+    }
+
+    function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
+      cachedStudents = docsList;
+
+      // Update live pending badge on header button
+      let totalPending = 0;
+      cachedStudents.forEach(stu => {
+        const approved = stu.approvedLessons || {};
+        const overrides = stu.completionOverrides || {};
+        const submitted = stu.submittedLessons || {};
+        Object.keys(submitted).forEach(dateKey => {
+          if (submitted[dateKey] && !approved[dateKey] && !overrides[dateKey]) {
+            totalPending += 1;
+          }
+        });
+      });
+
+      const pendingBadge = document.getElementById("admin-pending-badge");
+      if (pendingBadge) {
+        pendingBadge.textContent = String(totalPending);
+        pendingBadge.classList.toggle("hidden", totalPending <= 0);
+      }
+
+      if (!adminReviewDialog.open) return;
+
+      const selectEl = document.getElementById("review-student-select");
+      const summaryEl = document.getElementById("review-student-summary");
+      const listEl = document.getElementById("review-lessons-list");
+      const targetUid = preserveUid || selectEl.value;
+
+      renderPendingReviewQueue();
+
+      selectEl.innerHTML = "";
+      if (cachedStudents.length === 0) {
+        selectEl.innerHTML = `<option value="">尚無註冊帳號</option>`;
+        summaryEl.textContent = "目前還沒有學生帳號註冊。";
+        listEl.innerHTML = "";
+        return;
+      }
+
+      cachedStudents.forEach(stu => {
+        const opt = document.createElement("option");
+        opt.value = stu.uid;
+        const charName = stu.avatar?.name ? ` [${stu.avatar.name}]` : "";
+        const approved = stu.approvedLessons || {};
+        const overrides = stu.completionOverrides || {};
+        const submitted = stu.submittedLessons || {};
+        const pendingCount = Object.keys(submitted).filter(d => submitted[d] && !approved[d] && !overrides[d]).length;
+        const pendingTag = pendingCount > 0 ? ` · 🔔${pendingCount}待驗收` : "";
+        const selfTag = (stu.email || "").toLowerCase() === SUPER_ADMIN_EMAIL ? " ★測試帳號" : "";
+        opt.textContent = `${stu.displayName || stu.email}${charName}${selfTag} (${stu.email}) — ${stu.clams ?? STARTER_CLAMS} 英蚌${pendingTag}`;
+        selectEl.appendChild(opt);
+      });
+
+      const preferred = targetUid && cachedStudents.some(s => s.uid === targetUid)
+        ? targetUid
+        : (cachedStudents.find(s => {
+            const sub = s.submittedLessons || {};
+            const app = s.approvedLessons || {};
+            const ov = s.completionOverrides || {};
+            return Object.keys(sub).some(d => sub[d] && !app[d] && !ov[d]);
+          })?.uid || cachedStudents[0].uid);
+
+      selectEl.value = preferred;
+      renderSelectedStudentReview();
+    }
+
+    function renderPendingReviewQueue() {
+      const queueEl = document.getElementById("review-pending-queue");
+      if (!queueEl) return;
+      queueEl.innerHTML = "";
+
+      const pendingEntries = [];
+      cachedStudents.forEach(stu => {
+        const approved = stu.approvedLessons || {};
+        const overrides = stu.completionOverrides || {};
+        const submitted = stu.submittedLessons || {};
+        Object.keys(submitted).forEach(dateKey => {
+          if (submitted[dateKey] && !approved[dateKey] && !overrides[dateKey]) {
+            const lessonMeta = db.lessons.find(l => l.Date === dateKey);
+            pendingEntries.push({
+              stu,
+              dateStr: dateKey,
+              title: lessonMeta?.Title || "英語單元任務"
+            });
+          }
+        });
+      });
+
+      pendingEntries.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+
+      if (pendingEntries.length === 0) {
+        const emptyEl = document.createElement("p");
+        emptyEl.className = "form-hint";
+        emptyEl.textContent = "目前沒有尚未驗收的待處理交稿。";
+        queueEl.appendChild(emptyEl);
+        return;
+      }
+
+      pendingEntries.forEach(({ stu, dateStr, title }) => {
+        const row = document.createElement("div");
+        row.className = "admin-review-row is-pending-row";
+        const stuLabel = stu.avatar?.name
+          ? `${stu.displayName || stu.email} [${stu.avatar.name}]`
+          : (stu.displayName || stu.email);
+        row.innerHTML = `
+          <div class="admin-review-meta">
+            <strong>🔔 ${escapeHtml(stuLabel)} — ${escapeHtml(dateStr)} · ${escapeHtml(title)}</strong>
+            <span class="form-hint">${escapeHtml(stu.email || "")} ｜ 目前餘額 ${Math.trunc(Number(stu.clams ?? STARTER_CLAMS))} 英蚌</span>
+          </div>
+          <div class="admin-review-actions"></div>
+        `;
+
+        const actionsEl = row.querySelector(".admin-review-actions");
+        const rewardInput = document.createElement("input");
+        rewardInput.type = "number";
+        rewardInput.className = "reward-input-sm";
+        rewardInput.value = String(UNIT_REWARD_CLAMS);
+        rewardInput.min = "0";
+        rewardInput.max = "100000";
+        rewardInput.setAttribute("aria-label", `${stuLabel} ${dateStr} 驗收報酬英蚌`);
+
+        const approveBtn = document.createElement("button");
+        approveBtn.type = "button";
+        approveBtn.className = "btn btn-primary btn-sm";
+        approveBtn.textContent = "✓ 驗收並發錢";
+        approveBtn.addEventListener("click", async () => {
+          approveBtn.disabled = true;
+          clearFeedback("admin-review-feedback");
+          try {
+            const res = await approveStudentLesson(stu.uid, dateStr, rewardInput.value);
+            showFeedback(
+              "admin-review-feedback",
+              "success",
+              res.alreadyApproved
+                ? `${stuLabel} 的 ${dateStr} 已是驗收狀態。`
+                : `已驗收 ${stuLabel}（${dateStr}）並即時發放 ${rewardInput.value} 英蚌！`
+            );
+            await loadStudentsForReview(stu.uid);
+          } catch (err) {
+            showFeedback("admin-review-feedback", "error", translateAuthError(err));
+            approveBtn.disabled = false;
+          }
+        });
+
+        const rejectBtn = document.createElement("button");
+        rejectBtn.type = "button";
+        rejectBtn.className = "btn btn-sm";
+        rejectBtn.textContent = "退回修改";
+        rejectBtn.addEventListener("click", async () => {
+          rejectBtn.disabled = true;
+          clearFeedback("admin-review-feedback");
+          try {
+            await rejectStudentSubmission(stu.uid, dateStr);
+            showFeedback("admin-review-feedback", "info", `已退回 ${stuLabel} 的 ${dateStr} 交稿。`);
+            await loadStudentsForReview(stu.uid);
+          } catch (err) {
+            showFeedback("admin-review-feedback", "error", translateAuthError(err));
+            rejectBtn.disabled = false;
+          }
+        });
+
+        actionsEl.append(rewardInput, approveBtn, rejectBtn);
+        queueEl.appendChild(row);
+      });
+    }
+
+    function startUserRealtimeListener(uid, nonce) {
+      if (unsubscribeUserRealtime) {
+        unsubscribeUserRealtime();
+        unsubscribeUserRealtime = null;
+      }
+      unsubscribeUserRealtime = onSnapshot(doc(firestoreDb, "users", uid), (snap) => {
+        if (nonce !== authSessionNonce || !snap.exists()) return;
+        const data = snap.data() || {};
+        currentUserProfile = data;
+        userCompletionOverrides = sanitizeBoolMap(data.completionOverrides);
+        userSubmittedLessons = sanitizeBoolMap(data.submittedLessons);
+        userApprovedLessons = sanitizeBoolMap(data.approvedLessons);
+
+        const displayName = formatDisplayName(currentUser, data);
+        updateHeaderAccountUI(currentUser, currentRole, displayName, data.clams ?? STARTER_CLAMS);
+        if (shopDialog.open) {
+          renderShopDialog();
+        }
+        if (currentScreen === "desktop") {
+          renderHome();
+        } else if (currentScreen === "lesson" && activeLessonDate) {
+          renderLesson(activeLessonDate);
+        }
+      }, (err) => {
+        console.warn("User realtime listener warning:", err?.message || err);
+      });
+    }
+
+    function startAdminQueueRealtimeListener(nonce) {
+      if (unsubscribeAdminQueueRealtime) {
+        unsubscribeAdminQueueRealtime();
+        unsubscribeAdminQueueRealtime = null;
+      }
+      const q = query(collection(firestoreDb, "users"), orderBy("email"));
+      unsubscribeAdminQueueRealtime = onSnapshot(q, (snap) => {
+        if (nonce !== authSessionNonce) return;
+        const list = [];
+        snap.forEach(docSnap => {
+          list.push({ uid: docSnap.id, ...(docSnap.data() || {}) });
+        });
+        syncCachedStudentsSnapshot(list);
+      }, (err) => {
+        console.warn("Admin queue realtime listener warning:", err?.message || err);
+      });
+    }
 
     async function loadStudentsForReview(preserveUid = null) {
       if (currentRole !== "super_admin" && currentRole !== "admin") return;
       const selectEl = document.getElementById("review-student-select");
       const listEl = document.getElementById("review-lessons-list");
       const summaryEl = document.getElementById("review-student-summary");
-      selectEl.innerHTML = `<option value="">正在讀取學生名單...</option>`;
-      listEl.innerHTML = "";
+      if (cachedStudents.length === 0) {
+        selectEl.innerHTML = `<option value="">正在讀取學生名單...</option>`;
+        listEl.innerHTML = "";
+      }
 
       try {
         const snap = await getDocs(query(collection(firestoreDb, "users"), orderBy("email")));
-        cachedStudents = [];
+        const list = [];
         snap.forEach(docSnap => {
-          cachedStudents.push({ uid: docSnap.id, ...(docSnap.data() || {}) });
+          list.push({ uid: docSnap.id, ...(docSnap.data() || {}) });
         });
-
-        selectEl.innerHTML = "";
-        if (cachedStudents.length === 0) {
-          selectEl.innerHTML = `<option value="">尚無註冊帳號</option>`;
-          summaryEl.textContent = "目前還沒有學生帳號註冊。";
-          return;
-        }
-
-        cachedStudents.forEach(stu => {
-          const opt = document.createElement("option");
-          opt.value = stu.uid;
-          const charName = stu.avatar?.name ? ` [${stu.avatar.name}]` : "";
-          const pendingCount = Object.values(stu.submittedLessons || {}).filter(Boolean).length;
-          const pendingTag = pendingCount > 0 ? ` · 🔔${pendingCount}待驗收` : "";
-          opt.textContent = `${stu.displayName || stu.email}${charName} (${stu.email}) — ${stu.clams ?? STARTER_CLAMS} 英蚌${pendingTag}`;
-          selectEl.appendChild(opt);
-        });
-
-        const preferred = preserveUid && cachedStudents.some(s => s.uid === preserveUid)
-          ? preserveUid
-          : (cachedStudents.find(s => Object.values(s.submittedLessons || {}).some(Boolean))?.uid || cachedStudents[0].uid);
-
-        selectEl.value = preferred;
-        renderSelectedStudentReview();
+        syncCachedStudentsSnapshot(list, preserveUid);
       } catch (err) {
         selectEl.innerHTML = `<option value="">讀取失敗</option>`;
+        summaryEl.textContent = "無法讀取名單，請確認網路或管理員權限。";
         showFeedback("admin-review-feedback", "error", translateAuthError(err));
       }
     }
@@ -5188,20 +5437,24 @@
     }
 
     async function grantManualBonus(studentUid, bonusAmount) {
-      const safeBonus = Math.max(1, Math.min(100000, Math.trunc(Number(bonusAmount) || 0)));
+      const parsed = Math.trunc(Number(bonusAmount) || 0);
+      const clampedDelta = Math.max(-50000, Math.min(100000, parsed));
+      if (clampedDelta === 0) throw new Error("請輸入非零的英蚌數量。");
       const stuRef = doc(firestoreDb, "users", studentUid);
       const nextClams = await runTransaction(firestoreDb, async (tx) => {
         const snap = await tx.get(stuRef);
         if (!snap.exists()) throw new Error("找不到該學生帳號資料。");
         const data = snap.data() || {};
-        const nextC = Math.trunc(Number(data.clams ?? STARTER_CLAMS)) + safeBonus;
-        const nextT = Math.trunc(Number(data.totalEarnedClams ?? 0)) + safeBonus;
+        const prevC = Math.trunc(Number(data.clams ?? STARTER_CLAMS));
+        const prevT = Math.trunc(Number(data.totalEarnedClams ?? 0));
+        const nextC = Math.max(0, Math.min(10000000, prevC + clampedDelta));
+        const nextT = clampedDelta > 0 ? Math.min(10000000, prevT + clampedDelta) : prevT;
         tx.update(stuRef, {
           clams: nextC,
           totalEarnedClams: nextT,
           updatedAt: serverTimestamp()
         });
-        return { nextC, nextT };
+        return { nextC, nextT, deltaApplied: nextC - prevC };
       });
 
       if (studentUid === currentUser?.uid && currentUserProfile) {
@@ -5214,7 +5467,7 @@
           nextClams.nextC
         );
       }
-      return nextClams.nextC;
+      return nextClams;
     }
 
     function renderSelectedStudentReview() {
@@ -5227,34 +5480,50 @@
 
       const clams = Math.trunc(Number(stu.clams ?? STARTER_CLAMS));
       const totalEarned = Math.trunc(Number(stu.totalEarnedClams ?? 0));
-      summaryEl.textContent = `目前餘額：${clams} 英蚌 ｜ 累積已撥款收入：${totalEarned} 英蚌 ｜ 角色名稱：${stu.avatar?.name || "尚未建立"}`;
+      const ownedCount = Object.values(stu.ownedItems || {}).filter(Boolean).length;
+      summaryEl.textContent = `目前餘額：${clams} 英蚌 ｜ 累積撥款收入：${totalEarned} 英蚌 ｜ 角色：${stu.avatar?.name || "尚未建立"} ｜ 已購房間物件：${ownedCount} 件`;
 
-      // Bonus row
+      // Direct Clam Payout / Adjustment row
       const bonusRow = document.createElement("div");
       bonusRow.className = "admin-review-row";
       bonusRow.innerHTML = `
         <div class="admin-review-meta">
-          <strong>🌟 課堂表現額外獎金（英蚌）</strong>
-          <span class="form-hint">口頭回答優良或額外加碼可直接發放給繪師</span>
+          <strong>💰 直接發放／調整英蚌</strong>
+          <span class="form-hint">點下方快捷按鈕直接匯款，或輸入正負數字進行獎金加碼／更正</span>
+          <div class="quick-clam-chips" style="margin-top: 0.25rem;">
+            <button type="button" class="btn btn-sm quick-payout-btn" data-amt="50">+50</button>
+            <button type="button" class="btn btn-sm quick-payout-btn" data-amt="100">+100</button>
+            <button type="button" class="btn btn-sm quick-payout-btn" data-amt="200">+200</button>
+            <button type="button" class="btn btn-sm quick-payout-btn" data-amt="500">+500</button>
+            <button type="button" class="btn btn-sm quick-payout-btn" data-amt="-50">-50</button>
+          </div>
         </div>
         <div class="admin-review-actions">
-          <input type="number" class="reward-input-sm" id="manual-bonus-input" value="50" min="1" max="50000" aria-label="額外獎金英蚌數量" />
-          <button type="button" class="btn btn-sm" id="send-bonus-btn">發放獎金</button>
+          <input type="number" class="reward-input-sm" id="manual-bonus-input" value="200" min="-50000" max="100000" aria-label="發放或調整英蚌數量" />
+          <button type="button" class="btn btn-primary btn-sm" id="send-bonus-btn">立即發放</button>
         </div>
       `;
-      bonusRow.querySelector("#send-bonus-btn").addEventListener("click", async (e) => {
-        const btn = e.currentTarget;
-        const val = bonusRow.querySelector("#manual-bonus-input").value;
-        btn.disabled = true;
+      const sendPayout = async (amount, triggerBtn) => {
+        if (triggerBtn) triggerBtn.disabled = true;
         clearFeedback("admin-review-feedback");
         try {
-          const updatedClams = await grantManualBonus(stu.uid, val);
-          showFeedback("admin-review-feedback", "success", `已發放 ${val} 英蚌獎金！（目前餘額 ${updatedClams} 英蚌）`);
+          const res = await grantManualBonus(stu.uid, amount);
+          const verb = res.deltaApplied >= 0 ? `已發放 +${res.deltaApplied}` : `已調整 ${res.deltaApplied}`;
+          showFeedback("admin-review-feedback", "success", `${verb} 英蚌給 ${stu.avatar?.name || stu.displayName || stu.email}！（目前餘額 ${res.nextC} 英蚌）`);
           await loadStudentsForReview(stu.uid);
         } catch (err) {
-          showFeedback("admin-review-feedback", "error", translateAuthError(err));
-          btn.disabled = false;
+          showFeedback("admin-review-feedback", "error", err?.message || translateAuthError(err));
+          if (triggerBtn) triggerBtn.disabled = false;
         }
+      };
+      bonusRow.querySelector("#send-bonus-btn").addEventListener("click", (e) => {
+        const val = bonusRow.querySelector("#manual-bonus-input").value;
+        sendPayout(val, e.currentTarget);
+      });
+      bonusRow.querySelectorAll(".quick-payout-btn").forEach(qBtn => {
+        qBtn.addEventListener("click", (e) => {
+          sendPayout(Number(qBtn.dataset.amt), e.currentTarget);
+        });
       });
       listEl.appendChild(bonusRow);
 
@@ -5359,7 +5628,14 @@
       });
     }
 
-    openAdminReviewBtn?.addEventListener("click", () => loadStudentsForReview());
+    openAdminReviewBtn?.addEventListener("click", () => {
+      requestAnimationFrame(() => {
+        if (cachedStudents.length > 0) {
+          syncCachedStudentsSnapshot(cachedStudents);
+        }
+        loadStudentsForReview();
+      });
+    });
     document.getElementById("refresh-review-btn").addEventListener("click", () => {
       loadStudentsForReview(document.getElementById("review-student-select").value);
     });
@@ -5379,6 +5655,7 @@
 
     onAuthStateChanged(auth, async (user) => {
       const nonce = ++authSessionNonce;
+      stopRealtimeListeners();
       currentUser = user;
       currentUserProfile = null;
       userCompletionOverrides = {};
@@ -5405,6 +5682,10 @@
         userApprovedLessons = profileResult.approved || {};
         const displayName = formatDisplayName(user, profileResult.data);
         updateHeaderAccountUI(user, role, displayName, profileResult.data?.clams ?? STARTER_CLAMS);
+        startUserRealtimeListener(user.uid, nonce);
+        if (role === "super_admin" || role === "admin") {
+          startAdminQueueRealtimeListener(nonce);
+        }
       } catch (err) {
         if (nonce !== authSessionNonce) return;
         console.error("Failed to load user profile/role:", err);
