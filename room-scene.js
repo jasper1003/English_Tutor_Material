@@ -90,6 +90,46 @@ const THOUGHT_BANK = {
     "In fact, I really enjoy this career.",
     "Just one more touch—looking better!",
     "Done! Time to share my work."
+  ],
+  sofa_read: [
+    "This soft sofa is the best choice I made!",
+    "Reading on the sofa feels so peaceful.",
+    "Let me take it easy with a good book.",
+    "Such a simple and relaxing afternoon.",
+    "I really admire the story in this book!",
+    "Time flies when I explore a new story."
+  ],
+  watch_tv: [
+    "Ooh, what is on this channel right now?",
+    "Buying this TV was worth every penny!",
+    "This video is so bright and interesting!",
+    "Wait, let me take a closer look at that!",
+    "Next goal: save up for a soft sofa too!",
+    "Fun shows help me cool down after work."
+  ],
+  sofa_tv: [
+    "TV plus a soft sofa? Best combo ever!",
+    "Time to take it easy and enjoy a video!",
+    "This show is actually pretty exciting.",
+    "Lying back after finishing a project feels great!",
+    "Nothing beats relaxing right here at home.",
+    "Let's discover something cool to watch next."
+  ],
+  water_plant: [
+    "Grow strong and green, little plant!",
+    "Remember to water my desk plant regularly.",
+    "Plants always make my desk look bright!",
+    "A little water goes a long way.",
+    "Look! Fresh green leaves make me smile.",
+    "Taking care of green things feels peaceful."
+  ],
+  admire_poster: [
+    "I really admire the warm colors here!",
+    "That art print makes the whole wall better.",
+    "Great framing—it gives me a good idea!",
+    "Art on the wall feels just like a gallery.",
+    "Simple shapes, yet so unique and bright!",
+    "Okay, I feel inspired to draw again!"
   ]
 };
 
@@ -649,6 +689,7 @@ export class FreelancerRoomScene {
     this.onEnterWork = options.onEnterWork || (() => {});
     this.onLampToggle = options.onLampToggle || (() => {});
     this.onBedLampToggle = options.onBedLampToggle || (() => {});
+    this.onOpenTv = options.onOpenTv || (() => {});
     this.onActivityChange = options.onActivityChange || (() => {});
     this.onTimeUpdate = options.onTimeUpdate || (() => {});
     this.onHoverChange = options.onHoverChange || (() => {});
@@ -672,6 +713,9 @@ export class FreelancerRoomScene {
     this.deskWorkAnchor = new THREE.Vector3(-0.2, 0, -2.02);
     this.deskExitAnchor = new THREE.Vector3(-0.2, 0, -1.45);
     this.bedSideAnchor = new THREE.Vector3(1.48, 0, 2.05);
+    this.sofaFrontAnchor = new THREE.Vector3(-2.48, 0, -0.35);
+    this.sofaCorridorWest = new THREE.Vector3(-2.48, 0, 0.88);
+    this.sofaCorridorEast = new THREE.Vector3(-0.95, 0, 0.88);
     this.bathOutsideAnchor = new THREE.Vector3(2.05, 0, -1.15);
     this.bathInsideAnchor = new THREE.Vector3(2.05, 0, -2.05);
     this.toiletApproachAnchor = new THREE.Vector3(3.32, 0, -2.52);
@@ -689,7 +733,12 @@ export class FreelancerRoomScene {
 
     this.actionSpots = {
       wash: { id: "wash", label: "洗手台洗手中", pos: new THREE.Vector3(2.22, 0, -2.92), rotY: Math.PI },
-      toilet: { id: "toilet", label: "使用洗手間中", pos: new THREE.Vector3(3.32, 0, -3.16), rotY: 0 }
+      toilet: { id: "toilet", label: "使用洗手間中", pos: new THREE.Vector3(3.32, 0, -3.16), rotY: 0 },
+      sofa_read: { id: "sofa_read", label: "躺在沙發看書放鬆中", pos: new THREE.Vector3(-1.78, 0, -0.35), rotY: -Math.PI / 2 },
+      sofa_tv: { id: "sofa_tv", label: "躺在沙發看電視中", pos: new THREE.Vector3(-1.78, 0, -0.35), rotY: -Math.PI / 2 },
+      watch_tv: { id: "watch_tv", label: "站在電視前看節目中", pos: new THREE.Vector3(-2.78, 0, -0.35), rotY: -Math.PI / 2 },
+      water_plant: { id: "water_plant", label: "照顧桌上小盆栽中", pos: new THREE.Vector3(0.85, 0, -2.12), rotY: Math.PI },
+      admire_poster: { id: "admire_poster", label: "欣賞北牆插畫掛畫找靈感", pos: new THREE.Vector3(-2.72, 0, -2.95), rotY: Math.PI }
     };
 
     // Character AI state machine:
@@ -945,6 +994,7 @@ export class FreelancerRoomScene {
     posterGroup.visible = Boolean(this.ownedItems.wall_poster);
     this.wallPosterGroup = posterGroup;
     upperGroup.add(posterGroup);
+    [frameOuter, matBoard, posterArt].forEach(m => this.addInteractive(m, "poster"));
 
     // Low floor baseboard always left visible during cutaway
     const baseboard = new THREE.Mesh(new RoundedBoxGeometry(8.48, 0.14, 0.24, 2, 0.03), trimMat);
@@ -1040,6 +1090,7 @@ export class FreelancerRoomScene {
     tvGroup.visible = Boolean(this.ownedItems.wall_tv);
     this.wallTvGroup = tvGroup;
     upperGroup.add(tvGroup);
+    [tvChassis, tvScreen, tvShelf].forEach(m => this.addInteractive(m, "tv"));
 
     const baseboard = new THREE.Mesh(new RoundedBoxGeometry(0.24, 0.14, 8.24, 2, 0.03), trimMat);
     baseboard.position.set(-4.12, 0.07, 0);
@@ -1116,6 +1167,7 @@ export class FreelancerRoomScene {
     sofaGroup.visible = Boolean(this.ownedItems.cozy_sofa);
     this.sofaGroup = sofaGroup;
     this.furnitureGroup.add(sofaGroup);
+    sofaGroup.children.forEach(m => this.addInteractive(m, "sofa"));
 
     // 2. Shop item: Bedside Nightstand + Clickable Warm Night Lamp beside Bed Headboard
     const bedLampGroup = new THREE.Group();
@@ -1416,9 +1468,11 @@ export class FreelancerRoomScene {
     const kbCase = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.028, 0.17, 2, 0.01), makeMat("#1e293b", 0.35, 0.2));
     kbCase.castShadow = true;
     coolKb.add(kbCase);
+    const rgbMat = makeMat("#38bdf8", 0.2, 0.1, { emissive: "#ec4899", emissiveIntensity: 0.9 });
+    this.coolRgbStripMat = rgbMat;
     const rgbStrip = new THREE.Mesh(
       new RoundedBoxGeometry(0.49, 0.008, 0.176, 1, 0.003),
-      makeMat("#38bdf8", 0.2, 0.1, { emissive: "#ec4899", emissiveIntensity: 0.9 })
+      rgbMat
     );
     rgbStrip.position.y = -0.006;
     coolKb.add(rgbStrip);
@@ -1464,6 +1518,7 @@ export class FreelancerRoomScene {
     plantGroup.visible = Boolean(this.ownedItems.desk_plant);
     this.deskPlantGroup = plantGroup;
     workArea.add(plantGroup);
+    plantGroup.children.forEach(m => this.addInteractive(m, "plant"));
 
     const mouse = new THREE.Mesh(new RoundedBoxGeometry(0.08, 0.028, 0.12, 3, 0.014), keyMat);
     mouse.position.set(0.26, 0.99, 0.12);
@@ -1703,6 +1758,9 @@ export class FreelancerRoomScene {
     if (this.isOnBed(this.charRoot.position)) {
       this.charRoot.position.copy(this.bedSideAnchor);
     }
+    if (this.isOnSofa(this.charRoot.position)) {
+      this.charRoot.position.copy(this.sofaFrontAnchor);
+    }
 
     this.walkWaypoints = this.buildPathTo("work", this.deskWorkAnchor);
     this.walkCallback = () => {
@@ -1787,9 +1845,14 @@ export class FreelancerRoomScene {
     return pos.x >= 1.75 && pos.x <= 3.55 && pos.z >= 0.75 && pos.z <= 3.35;
   }
 
+  isOnSofa(pos = this.charRoot?.position) {
+    if (!pos) return false;
+    return pos.x >= -2.26 && pos.x <= -1.25 && pos.z >= -1.25 && pos.z <= 0.55;
+  }
+
   isNearDesk(pos = this.charRoot?.position) {
     if (!pos) return false;
-    return pos.z < -1.7 && pos.x < 1.3;
+    return pos.z < -1.7 && pos.x < 1.3 && pos.x > -1.6;
   }
 
   buildPathTo(spotId, targetPos) {
@@ -1797,6 +1860,7 @@ export class FreelancerRoomScene {
     const curPos = this.charRoot.position.clone();
     const currentlyInBath = this.isInBathroom(curPos);
     const currentlyOnBed = this.isOnBed(curPos);
+    const currentlyOnSofa = this.isOnSofa(curPos);
     const currentlyNearDesk = this.isNearDesk(curPos);
     const currentlyNearToilet = currentlyInBath && curPos.x > 2.85 && curPos.z < -2.45;
 
@@ -1806,11 +1870,14 @@ export class FreelancerRoomScene {
 
     const targetInBath = spotId === "wash" || spotId === "toilet";
     const targetOnBed = spotId === "sleep" || spotId === "phone";
-    const targetNearDesk = spotId === "work" || spotId === "gaming";
+    const targetOnSofa = spotId === "sofa_read" || spotId === "sofa_tv";
+    const targetNearDesk = spotId === "work" || spotId === "gaming" || spotId === "water_plant";
 
     // 1. Exit any enclosed or furniture-occupied zone cleanly based on 3D coords
     if (currentlyOnBed && !targetOnBed) {
       rawWaypoints.push(this.bedSideAnchor.clone());
+    } else if (currentlyOnSofa && !targetOnSofa) {
+      rawWaypoints.push(this.sofaFrontAnchor.clone());
     } else if (currentlyInBath && !targetInBath) {
       if (currentlyNearToilet) {
         rawWaypoints.push(this.toiletApproachAnchor.clone());
@@ -1823,24 +1890,40 @@ export class FreelancerRoomScene {
       rawWaypoints.push(this.deskExitAnchor.clone());
     }
 
-    // 2. Route across open room hub when crossing between opposite corners
-    if (!(currentlyInBath && targetInBath) && !(currentlyOnBed && targetOnBed)) {
-      const fromPt = rawWaypoints.length > 0 ? rawWaypoints[rawWaypoints.length - 1] : curPos;
-      let entryPt = targetPos;
-      if (targetInBath && !currentlyInBath) entryPt = this.bathOutsideAnchor;
-      else if (targetNearDesk && !currentlyNearDesk) entryPt = this.deskExitAnchor;
-      else if (targetOnBed && !currentlyOnBed) entryPt = this.bedSideAnchor;
+    // Determine effective entry anchor for cross-room routing
+    let entryPt = targetPos;
+    if (targetInBath && !currentlyInBath) entryPt = this.bathOutsideAnchor;
+    else if (targetNearDesk && !currentlyNearDesk) entryPt = this.deskExitAnchor;
+    else if (targetOnBed && !currentlyOnBed) entryPt = this.bedSideAnchor;
+    else if (targetOnSofa && !currentlyOnSofa) entryPt = this.sofaFrontAnchor;
 
+    // 2. Route safely around sofa (-2.26..-1.25, -1.25..0.55) when crossing between West TV/sofa front and room interior
+    const startPt = rawWaypoints.length > 0 ? rawWaypoints[rawWaypoints.length - 1] : curPos;
+    const isWestSofaSide = (p) => p.x < -1.9 && p.z > -1.4 && p.z < 0.72;
+    const isEastInterior = (p) => p.x > -1.45 && p.z < 2.6;
+    if (isWestSofaSide(startPt) && isEastInterior(entryPt)) {
+      rawWaypoints.push(this.sofaCorridorWest.clone());
+      rawWaypoints.push(this.sofaCorridorEast.clone());
+    } else if (isEastInterior(startPt) && isWestSofaSide(entryPt)) {
+      rawWaypoints.push(this.sofaCorridorEast.clone());
+      rawWaypoints.push(this.sofaCorridorWest.clone());
+    }
+
+    // 3. Route across open room hub when crossing long diagonal spans
+    if (!(currentlyInBath && targetInBath) && !(currentlyOnBed && targetOnBed) && !(currentlyOnSofa && targetOnSofa)) {
+      const fromPt = rawWaypoints.length > 0 ? rawWaypoints[rawWaypoints.length - 1] : curPos;
       if (
         fromPt.distanceTo(entryPt) > 2.5 &&
         fromPt.distanceTo(this.centerAnchor) > 0.6 &&
-        entryPt.distanceTo(this.centerAnchor) > 0.6
+        entryPt.distanceTo(this.centerAnchor) > 0.6 &&
+        !isWestSofaSide(fromPt) &&
+        !isWestSofaSide(entryPt)
       ) {
         rawWaypoints.push(this.centerAnchor.clone());
       }
     }
 
-    // 3. Enter target zone cleanly
+    // 4. Enter target zone cleanly
     if (targetInBath && !currentlyInBath) {
       rawWaypoints.push(this.bathOutsideAnchor.clone());
       rawWaypoints.push(this.bathInsideAnchor.clone());
@@ -1851,9 +1934,11 @@ export class FreelancerRoomScene {
       rawWaypoints.push(this.deskExitAnchor.clone());
     } else if (targetOnBed && !currentlyOnBed) {
       rawWaypoints.push(this.bedSideAnchor.clone());
+    } else if (targetOnSofa && !currentlyOnSofa) {
+      rawWaypoints.push(this.sofaFrontAnchor.clone());
     }
 
-    // 4. Deduplicate consecutive points near curPos / each other, then append final target
+    // 5. Deduplicate consecutive points near curPos / each other, then append final target
     const waypoints = [];
     let prev = curPos;
     for (const wp of rawWaypoints) {
@@ -1881,13 +1966,20 @@ export class FreelancerRoomScene {
     }
 
     const isBedTarget = spot.id === "sleep" || spot.id === "phone";
+    const isSofaTarget = spot.id === "sofa_read" || spot.id === "sofa_tv";
     if (!isBedTarget && this.isOnBed(this.charRoot.position)) {
       this.charRoot.position.copy(this.bedSideAnchor);
     }
+    if (!isSofaTarget && this.isOnSofa(this.charRoot.position)) {
+      this.charRoot.position.copy(this.sofaFrontAnchor);
+    }
 
-    const walkDest = (isBedTarget && !this.isOnBed(this.charRoot.position))
-      ? this.bedSideAnchor
-      : spot.pos;
+    let walkDest = spot.pos;
+    if (isBedTarget && !this.isOnBed(this.charRoot.position)) {
+      walkDest = this.bedSideAnchor;
+    } else if (isSofaTarget && !this.isOnSofa(this.charRoot.position)) {
+      walkDest = this.sofaFrontAnchor;
+    }
 
     this.charState = "WALK_TO_ACTIVITY";
     this.currentActivity = "walking";
@@ -1909,9 +2001,26 @@ export class FreelancerRoomScene {
       ? ["sleep", "sleep", "phone", "gaming", "read"]
       : ["phone", "exercise", "read", "eat", "gaming"];
 
+    const owned = this.ownedItems || {};
+    if (owned.cozy_sofa && owned.wall_tv) {
+      candidates.push("sofa_tv", "sofa_read");
+    } else if (owned.cozy_sofa) {
+      candidates.push("sofa_read");
+    } else if (owned.wall_tv) {
+      candidates.push("watch_tv");
+    }
+    if (owned.desk_plant) {
+      candidates.push("water_plant");
+    }
+    if (owned.wall_poster) {
+      candidates.push("admire_poster");
+    }
+
     const choices = candidates.filter(id => id !== this.currentActivity);
     const chosenId = choices[Math.floor(Math.random() * choices.length)] || "phone";
-    const spot = this.chillSpots.find(s => s.id === chosenId) || this.chillSpots[0];
+    const spot = this.chillSpots.find(s => s.id === chosenId)
+      || this.actionSpots[chosenId]
+      || this.chillSpots[0];
 
     this.commandActivity(spot, IDLE_MIN_SEC + Math.random() * IDLE_SPAN_SEC);
   }
@@ -2202,6 +2311,50 @@ export class FreelancerRoomScene {
         this.rightArmPivot.rotation.x = -0.7;
         this.headGroup.rotation.x = 0.35 + Math.sin(elapsedSec * 1.5) * 0.04;
         break;
+      case "sofa_read":
+        // Leaning back cozily on sofa holding a book
+        this.bookProp.visible = true;
+        this.charBody.position.set(0, 0.05, 0.06);
+        this.charBody.rotation.x = -0.22;
+        this.leftLegPivot.rotation.x = -Math.PI / 2.2;
+        this.rightLegPivot.rotation.x = -Math.PI / 2.2;
+        this.leftArmPivot.rotation.x = -0.62;
+        this.rightArmPivot.rotation.x = -0.68;
+        this.headGroup.rotation.x = 0.32 + Math.sin(elapsedSec * 1.4) * 0.03;
+        break;
+      case "sofa_tv":
+        // Reclining comfortably on sofa watching TV across the room
+        this.charBody.position.set(0, 0.1, -0.02);
+        this.charBody.rotation.x = -0.46;
+        this.leftLegPivot.rotation.x = -1.16;
+        this.rightLegPivot.rotation.x = -1.24;
+        this.leftArmPivot.rotation.z = -0.18;
+        this.rightArmPivot.rotation.x = -0.45;
+        this.rightArmPivot.rotation.z = 0.14;
+        this.headGroup.rotation.x = 0.28 + Math.sin(elapsedSec * 1.5) * 0.03;
+        break;
+      case "watch_tv":
+        // Standing cheerfully facing TV
+        this.leftArmPivot.rotation.x = -0.25;
+        this.rightArmPivot.rotation.x = -0.35;
+        this.headGroup.rotation.x = -0.06 + Math.sin(elapsedSec * 1.8) * 0.03;
+        this.headGroup.rotation.y = Math.sin(elapsedSec * 1.2) * 0.05;
+        break;
+      case "water_plant":
+        // Gently tending/watering desk plant
+        this.torsoGroup.rotation.x = 0.14;
+        this.rightArmPivot.rotation.x = -1.05 + Math.sin(elapsedSec * 4.2) * 0.14;
+        this.rightArmPivot.rotation.z = 0.16;
+        this.headGroup.rotation.x = 0.18;
+        break;
+      case "admire_poster":
+        // Looking up thoughtfully at framed wall poster
+        this.leftArmPivot.rotation.x = -0.35;
+        this.rightArmPivot.rotation.x = -1.12;
+        this.rightArmPivot.rotation.z = 0.26;
+        this.headGroup.rotation.x = -0.18 + Math.sin(elapsedSec * 1.1) * 0.03;
+        this.headGroup.rotation.y = Math.sin(elapsedSec * 0.9) * 0.08;
+        break;
       case "eat":
         this.snackProp.visible = true;
         this.rightArmPivot.rotation.x = -0.85 + Math.max(0, Math.sin(elapsedSec * 3.2)) * -0.45;
@@ -2270,10 +2423,12 @@ export class FreelancerRoomScene {
           this.onHoverChange("點擊開關檯燈");
         } else if (type === "bedLamp") {
           this.onHoverChange("點擊開關床邊小夜燈");
+        } else if (type === "tv") {
+          this.onHoverChange("點擊看電視（隨機播放 YouTube 影片）");
         } else if (type === "computer") {
           this.onHoverChange("點擊電腦／電繪板開始接案學習");
         } else {
-          // Silent discovery for bed / sink / toilet (no action spoiler text)
+          // Silent discovery for bed / sink / toilet / sofa / plant / poster
           this.onHoverChange("");
         }
         return;
@@ -2296,6 +2451,17 @@ export class FreelancerRoomScene {
         this.onBedLampToggle(this.bedLampOn);
       } else if (this.hoveredTarget === "computer") {
         this.goToWork();
+      } else if (this.hoveredTarget === "tv") {
+        const spot = this.ownedItems.cozy_sofa ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
+        this.commandActivity(spot, 180);
+        this.onOpenTv();
+      } else if (this.hoveredTarget === "sofa") {
+        const spot = this.ownedItems.wall_tv ? this.actionSpots.sofa_tv : this.actionSpots.sofa_read;
+        this.commandActivity(spot, 180);
+      } else if (this.hoveredTarget === "plant") {
+        this.commandActivity(this.actionSpots.water_plant, 10);
+      } else if (this.hoveredTarget === "poster") {
+        this.commandActivity(this.actionSpots.admire_poster, 12);
       } else if (this.hoveredTarget === "bed") {
         const sleepSpot = this.chillSpots.find(s => s.id === "sleep");
         this.commandActivity(sleepSpot, COMMANDED_SLEEP_SEC);
@@ -2396,6 +2562,12 @@ export class FreelancerRoomScene {
     this.updateCameraTransform(false);
     this.updateCharacter(dt, elapsedSec, isNight);
     this.updateInteractGlow();
+
+    // Subtle RGB rainbow breathing on upgraded mechanical keyboard
+    if (this.coolRgbStripMat && this.coolKeyboardGroup?.visible) {
+      const hue = (elapsedSec * 0.14) % 1;
+      this.coolRgbStripMat.emissive.setHSL(hue, 0.85, 0.55);
+    }
 
     // Subtle hover-only highlight ring under desk setup
     if (this.workHoverRingMat) {
