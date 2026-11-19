@@ -1286,6 +1286,10 @@ export class FreelancerRoomScene {
       return;
     }
 
+    if (this.isOnBed(this.charRoot.position)) {
+      this.charRoot.position.copy(this.bedSideAnchor);
+    }
+
     this.walkWaypoints = this.buildPathTo("work", this.deskWorkAnchor);
     this.walkCallback = () => {
       this.enterWorkingPose();
@@ -1434,13 +1438,22 @@ export class FreelancerRoomScene {
       this.macScreenMat.needsUpdate = true;
     }
 
+    if (spot.id !== "sleep" && this.isOnBed(this.charRoot.position)) {
+      this.charRoot.position.copy(this.bedSideAnchor);
+    }
+
+    const walkDest = (spot.id === "sleep" && !this.isOnBed(this.charRoot.position))
+      ? this.bedSideAnchor
+      : spot.pos;
+
     this.charState = "WALK_TO_ACTIVITY";
     this.currentActivity = "walking";
-    this.walkWaypoints = this.buildPathTo(spot.id, spot.pos);
+    this.walkWaypoints = this.buildPathTo(spot.id, walkDest);
     this.walkCallback = () => {
       this.charState = "IDLE";
       this.currentActivity = spot.id;
       this.activityTimer = durationSec;
+      this.charRoot.position.copy(spot.pos);
       this.charRoot.rotation.y = spot.rotY;
       this.onActivityChange(spot.label);
     };
