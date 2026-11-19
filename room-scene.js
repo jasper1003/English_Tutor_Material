@@ -9,87 +9,87 @@ const COMMANDED_SLEEP_SEC = 300;  // 5 minutes sleep when clicked
 const COMMANDED_WASH_SEC = 10;    // 10 seconds hand wash
 const COMMANDED_TOILET_SEC = 15;  // 15 seconds toilet use
 
-// Per-activity English thought library (>= 6 lines each; cycled without repeats)
+// Per-activity English thought library aligned with the student's Google Sheet curriculum (>= 6 lines each)
 const THOUGHT_BANK = {
   phone: [
     "This page is so cool!",
-    "I want to buy a TV......",
-    "Ooh, look at this cozy desk setup!",
-    "Wait, how did they shade that hair?",
-    "Maybe I should save up for a new plant.",
-    "Great color palette inspiration right here!",
-    "Five more minutes of scrolling...",
-    "Should I order ramen or cook tonight?"
+    "I want to buy a TV...",
+    "Look! That new app is easy to use.",
+    "Ooh, a new message from my boss!",
+    "Let's take a look at this fun video.",
+    "Whoa, that jacket costs an arm and a leg!",
+    "What a nice comment on my post!",
+    "Should I order ramen? I can't make up my mind."
   ],
   exercise: [
-    "One, two, three... keep my back straight!",
-    "A quick workout keeps my focus sharp.",
-    "My arms are burning, almost there!",
-    "Phew! Sitting all day makes my shoulders stiff.",
-    "Two more push-ups before I take a break!",
-    "Healthy artist, steady brush strokes.",
-    "Okay, that's a solid warm-up!"
+    "One, two, three... never give up!",
+    "Exercising regularly makes me feel better.",
+    "This is an important daily activity!",
+    "Take it easy—two more on the floor!",
+    "Whew! Time to cool down for a second.",
+    "Ten push-ups? A piece of cake!",
+    "It's not hard at all when I stay calm."
   ],
   read: [
-    "This character design has so much personality!",
-    "I love how soft these lighting studies look.",
-    "Taking mental notes on perspective and shadows...",
-    "Reading on paper feels so relaxing.",
-    "Ooh, I should try this brush texture next time!",
-    "Every illustrator keeps a good art book nearby.",
-    "Just one more chapter for inspiration."
+    "I love this simple and unique art style.",
+    "I see! That makes total sense now.",
+    "I really admire those bright colors.",
+    "What an interesting article to explore!",
+    "Reading at home feels so peaceful.",
+    "Don't judge a book by its cover!",
+    "Every page helps me discover a good idea."
   ],
   eat: [
-    "Warm food always makes this place feel like home.",
-    "Delicious! Energy bar refilled.",
-    "Good meals keep creative block away.",
-    "Note to self: buy more groceries this weekend.",
-    "Nothing beats a quiet meal after sketching.",
-    "Hmm, maybe I should learn a new recipe.",
-    "So warm and comforting!"
+    "Mmm! This tastes so good!",
+    "I'm glad I didn't miss out on dinner.",
+    "Wait... remember to do the dishes later!",
+    "Warm food is worth every penny.",
+    "In fact, cooking at home saves money.",
+    "It's still hot—let it cool down a bit.",
+    "Dinner is ready! Plenty of energy now."
   ],
   gaming: [
-    "Just building one quick house in this block world!",
-    "Wait, where did all my diamonds go?",
-    "My voxel castle is finally coming together!",
-    "Uh-oh, keep that green monster away from my base!",
-    "Ten-minute game break... okay, maybe fifteen.",
-    "Arranging blocks feels just like organizing layers.",
-    "Nice! Beat my own record today."
+    "This block game is so exciting!",
+    "Let's assemble a simple house here.",
+    "Wait, did I just run out of wood?",
+    "Easy! Fixing this wall is a piece of cake.",
+    "Time to explore that mysterious cave!",
+    "Good choice! That was a smart move.",
+    "Okay, almost time to turn off the screen."
   ],
   sleep: [
-    "Zzz... dreaming about pastel sunsets...",
-    "So cozy under this blanket...",
-    "No deadlines in dreamland... zzz...",
-    "Rest well today, draw better tomorrow...",
-    "Zzz... floating through a watercolor sky...",
-    "Five more minutes... please...",
-    "Tomorrow I'll try that new illustration idea..."
+    "Time to call it a day... zzz...",
+    "So peaceful and quiet tonight...",
+    "Rest well today, work better tomorrow...",
+    "Hope I don't sleepwalk tonight...",
+    "Zzz... dreaming of a warm vacation...",
+    "Take it easy... five more minutes...",
+    "Zzz... good night, whole world..."
   ],
   wash: [
-    "Cold water wakes me right up!",
-    "Got that stylus smudge right off my hands.",
-    "Clean hands, clean drawing tablet.",
-    "Gotta stay fresh between commissions!",
-    "Soap, rinse, dry—good to go!",
-    "Maybe I'll buy a fluffier towel next month."
+    "Wash with soap—clean and safe!",
+    "Cool water helps me wake right up.",
+    "Time to wipe my hands dry.",
+    "Washing hands regularly is so important!",
+    "Phew, my hands feel fresh again.",
+    "Soap, water, dry—good to go!"
   ],
   toilet: [
-    "Good thing I took a quick break now.",
-    "A moment of peace and quiet...",
-    "Wait, did I save my canvas before walking away?",
-    "Mental checklist: rent, groceries, next commission!",
-    "Should I paint the walls sage green someday?",
-    "Alright, back to work soon."
+    "Just a quiet moment to take it easy.",
+    "Wait... remember to sweep the floor later.",
+    "Should I mop the floor before dinner?",
+    "Let's hold on and take a quick break.",
+    "Maybe paint the wall light green? Good idea!",
+    "Okay, back to my room soon."
   ],
   work: [
-    "Just polishing a few final highlights...",
-    "Hope the client loves this draft!",
-    "Double-checking the warm color balance...",
-    "Almost ready to export and submit!",
-    "One tiny touch on the rim shadows...",
-    "Freelance life: tea, layers, repeat!",
-    "Saved! One step closer to upgrading my room."
+    "Almost ready to deliver this project!",
+    "Hope my boss and I are on the same page.",
+    "Let me compare these two bright colors.",
+    "Pay attention to the little details!",
+    "In fact, I really enjoy this career.",
+    "Just one more touch—looking better!",
+    "Done! Time to share my work."
   ]
 };
 
