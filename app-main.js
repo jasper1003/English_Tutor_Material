@@ -42,7 +42,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261119z";
+} from "./room-scene.js?v=20261120e";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -51,8 +51,9 @@ import {
   DEFAULT_RUG_STYLE,
   applyRemoteShopConfig,
   getShopItem,
+  getMissingShopPrerequisites,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261119t";
+} from "./shop-catalog.js?v=20261120e";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -2629,15 +2630,17 @@ function renderShopDialog() {
       (item.textileKind === "bedSheet" && activeBedSheet === item.id) ||
       (item.textileKind === "rugStyle" && activeRugStyle === item.id)
     );
+    const missingPrereqs = isPermanentOwned ? [] : getMissingShopPrerequisites(item, owned);
+    const isLocked = missingPrereqs.length > 0;
 
     const card = document.createElement("div");
-    card.className = `shop-item-card${(isActivePaint || (isTextile ? isActiveTextile : isPermanentOwned)) ? " is-owned" : ""}`;
+    card.className = `shop-item-card${(isActivePaint || (isTextile ? isActiveTextile : isPermanentOwned)) ? " is-owned" : ""}${isLocked ? " is-locked" : ""}`;
 
     const previewBox = document.createElement("div");
     previewBox.className = "shop-item-preview";
     if (item.previewImage) {
       const img = document.createElement("img");
-      img.src = `${item.previewImage}?v=20261119q`;
+      img.src = `${item.previewImage}?v=20261120e`;
       img.alt = item.name;
       img.loading = "lazy";
       previewBox.appendChild(img);
@@ -2674,6 +2677,12 @@ function renderShopDialog() {
       `;
     } else if (item.sheetStyle || item.rugStyle) {
       previewBox.innerHTML = buildTextilePreviewSvg(item);
+    }
+    if (isLocked) {
+      const lockBadge = document.createElement("span");
+      lockBadge.className = "shop-lock-badge";
+      lockBadge.textContent = "🔒 組合解鎖";
+      previewBox.appendChild(lockBadge);
     }
 
     const head = document.createElement("div");
@@ -2726,6 +2735,9 @@ function renderShopDialog() {
       actionBtn.onclick = () => equipShopTextile(item.textileKind, item.id, actionBtn);
     } else if (isPermanentOwned) {
       actionBtn.textContent = "已擺進房間 ✓";
+      actionBtn.disabled = true;
+    } else if (isLocked) {
+      actionBtn.textContent = `🔒 需先購買：${missingPrereqs.map(p => p.name).join(" ＋ ")}`;
       actionBtn.disabled = true;
     } else if (!isSuperAdmin && clams < item.price) {
       actionBtn.textContent = `還差 ${item.price - clams} 英蚌`;
@@ -2802,6 +2814,10 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
 
       if (prevOwned[item.id] === true) {
         return { unchanged: true, nextClams: currentClams, nextOwned: prevOwned, nextRoomState: prevRoomState };
+      }
+      const missingPrereqs = getMissingShopPrerequisites(item, prevOwned);
+      if (missingPrereqs.length > 0) {
+        throw new Error(`需先購買「${missingPrereqs.map(p => p.name).join("」與「")}」才能解鎖此商品！`);
       }
       if (!isSuperAdmin && currentClams < item.price) {
         throw new Error("英蚌餘額不足，先去電腦完成接案學習賺錢吧！");

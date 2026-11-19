@@ -342,6 +342,16 @@ export const DEFAULT_SHOP_CATALOG = [
     icon: "🐈",
     previewImage: "./assets/shop/orange_cat.jpg",
     desc: "領養一隻會搖尾巴的可愛肥橘貓住在暖烘烘貓窩裡，可走去摸摸牠！"
+  },
+  {
+    id: "dolby_atmos",
+    name: "Dolby Atmos 環繞音響組",
+    category: "decor",
+    price: 480,
+    icon: "🔊",
+    requiresOwned: ["wall_tv", "cozy_sofa"],
+    previewImage: "./assets/shop/dolby_atmos.jpg",
+    desc: "購齊小電視與雙人沙發解鎖！含電視下 Soundbar、重低音與沙發後環繞音箱，打造全景聲劇院。"
   }
 ];
 
@@ -400,6 +410,9 @@ export function applyRemoteShopConfig(rows = []) {
       icon: String(row.icon || "").trim() || base?.icon || (category === "paint" ? "🎨" : "🎁"),
       desc: String(row.desc || "").trim() || base?.desc || ""
     };
+    if (base?.requiresOwned) {
+      merged.requiresOwned = [...base.requiresOwned];
+    }
     if (wallColor) merged.wallColor = wallColor;
     const previewImg = String(row.previewImage || "").trim();
     if (previewImg) merged.previewImage = previewImg;
@@ -418,6 +431,18 @@ export function applyRemoteShopConfig(rows = []) {
 
 export function getShopItem(itemId) {
   return SHOP_CATALOG.find(item => item.id === itemId) || null;
+}
+
+export function getMissingShopPrerequisites(item, owned = {}) {
+  if (!item || !Array.isArray(item.requiresOwned) || item.requiresOwned.length === 0) {
+    return [];
+  }
+  return item.requiresOwned
+    .filter(reqId => owned?.[reqId] !== true)
+    .map(reqId => ({
+      id: reqId,
+      name: getShopItem(reqId)?.name || reqId
+    }));
 }
 
 export function normalizeOwnedItems(raw) {

@@ -5,7 +5,7 @@ import {
   DEFAULT_RUG_STYLE,
   resolveBedSheetStyle,
   resolveRugStyle
-} from "./shop-catalog.js?v=20261119t";
+} from "./shop-catalog.js?v=20261120e";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -213,6 +213,13 @@ export const THOUGHT_BANK = {
     "Reward & XP incoming! Off-work life starts right now! ✨",
     "Time to stretch, celebrate, and enjoy my cozy room!",
     "Hard work pays off—let's relax a little!"
+  ],
+  dolby_atmos: [
+    "Whoa!! True Dolby Atmos surround sound fills the whole room!",
+    "Feel that deep bass rumble right under the cozy rug!",
+    "TV + sofa + Atmos speakers = private cinema night! 🎬",
+    "Crisp 3D sound coming from above and behind the sofa!",
+    "Saving up for this surround setup was worth every clam!"
   ]
 };
 
@@ -1768,6 +1775,106 @@ export class FreelancerRoomScene {
     this.orangeCatGroup = catGroup;
     this.furnitureGroup.add(catGroup);
     catGroup.children.forEach(m => this.addInteractive(m, "cat"));
+
+    // 6. Unlocked Combo Cinema Upgrade: Dolby Atmos Surround Sound System
+    const atmosGroup = new THREE.Group();
+    const chassisMat = makeMat("#222834", 0.36, 0.45);
+    const grilleMat = makeMat("#11161f", 0.9, 0.08);
+    const titaniumMat = makeMat("#8a95a5", 0.28, 0.72);
+    const copperConeMat = makeMat("#c48b5c", 0.35, 0.62);
+    this.atmosLedMat = new THREE.MeshBasicMaterial({ color: "#38bdf8" });
+
+    // 6a. Upward-firing Soundbar centered on floating TV shelf beneath West-wall TV
+    const soundbar = new THREE.Group();
+    soundbar.position.set(-3.84, 1.075, -0.35);
+    soundbar.rotation.y = Math.PI / 2;
+    const sbBody = new THREE.Mesh(new RoundedBoxGeometry(1.12, 0.09, 0.14, 3, 0.025), chassisMat);
+    sbBody.castShadow = true;
+    soundbar.add(sbBody);
+    const sbFrontGrille = new THREE.Mesh(new RoundedBoxGeometry(1.06, 0.068, 0.02, 2, 0.01), grilleMat);
+    sbFrontGrille.position.set(0, 0, 0.064);
+    soundbar.add(sbFrontGrille);
+    [-0.4, 0.4].forEach(upX => {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.022, 0.036, 16), copperConeMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(upX, 0.047, -0.01);
+      const cone = new THREE.Mesh(new THREE.CircleGeometry(0.022, 16), grilleMat);
+      cone.rotation.x = -Math.PI / 2;
+      cone.position.set(upX, 0.0465, -0.01);
+      soundbar.add(ring, cone);
+    });
+    const sbLed = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.01, 0.01), this.atmosLedMat);
+    sbLed.position.set(0, 0.046, 0.066);
+    soundbar.add(sbLed);
+    atmosGroup.add(soundbar);
+
+    // 6b. Wireless Floor Subwoofer tucked neatly north of TV shelf
+    const subGroup = new THREE.Group();
+    subGroup.position.set(-3.72, 0, -1.25);
+    subGroup.rotation.y = Math.PI / 2;
+    const subBox = new THREE.Mesh(new RoundedBoxGeometry(0.38, 0.42, 0.36, 4, 0.05), chassisMat);
+    subBox.position.y = 0.23;
+    subBox.castShadow = true;
+    subBox.receiveShadow = true;
+    subGroup.add(subBox);
+    const subRing = new THREE.Mesh(new THREE.TorusGeometry(0.115, 0.018, 12, 24), copperConeMat);
+    subRing.position.set(0, 0.23, 0.18);
+    const subCone = new THREE.Mesh(new THREE.CircleGeometry(0.105, 22), grilleMat);
+    subCone.position.set(0, 0.23, 0.182);
+    const subLed = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), this.atmosLedMat);
+    subLed.position.set(0.12, 0.39, 0.182);
+    subGroup.add(subRing, subCone, subLed);
+    atmosGroup.add(subGroup);
+
+    // 6c. Twin Front Height / Atmos Modules mounted above & flanking West-wall TV
+    [-1.24, 0.54].forEach(mz => {
+      const heightMod = new THREE.Group();
+      heightMod.position.set(-3.95, 2.08, mz);
+      heightMod.rotation.y = Math.PI / 2;
+      heightMod.rotation.x = 0.24;
+      const modBox = new THREE.Mesh(new RoundedBoxGeometry(0.18, 0.22, 0.14, 3, 0.025), chassisMat);
+      modBox.castShadow = true;
+      const modGrille = new THREE.Mesh(new RoundedBoxGeometry(0.14, 0.18, 0.018, 2, 0.01), grilleMat);
+      modGrille.position.z = 0.066;
+      const modTrim = new THREE.Mesh(new THREE.RingGeometry(0.042, 0.052, 16), copperConeMat);
+      modTrim.position.z = 0.077;
+      heightMod.add(modBox, modGrille, modTrim);
+      atmosGroup.add(heightMod);
+    });
+
+    // 6d. Twin Rear Surround Satellite Towers behind Sofa corners angled inward
+    [
+      [-1.30, -1.16, -2.25],
+      [-1.30, 0.46, -0.89]
+    ].forEach(([tx, tz, ry]) => {
+      const tower = new THREE.Group();
+      tower.position.set(tx, 0, tz);
+      tower.rotation.y = ry;
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.14, 0.024, 18), titaniumMat);
+      base.position.y = 0.012;
+      base.receiveShadow = true;
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.86, 10), titaniumMat);
+      pole.position.y = 0.44;
+      pole.castShadow = true;
+      const head = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.24, 0.12, 3, 0.025), chassisMat);
+      head.position.y = 0.94;
+      head.castShadow = true;
+      const headGrille = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.2, 0.016, 2, 0.01), grilleMat);
+      headGrille.position.set(0, 0.94, 0.056);
+      const headTrim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.008, 0.01), copperConeMat);
+      headTrim.position.set(0, 1.05, 0.058);
+      tower.add(base, pole, head, headGrille, headTrim);
+      atmosGroup.add(tower);
+    });
+
+    atmosGroup.visible = Boolean(this.ownedItems.dolby_atmos);
+    this.dolbyAtmosGroup = atmosGroup;
+    this.furnitureGroup.add(atmosGroup);
+    atmosGroup.traverse(obj => {
+      if (obj.isMesh && obj.material !== this.atmosLedMat) {
+        this.addInteractive(obj, "atmos");
+      }
+    });
   }
 
   buildDoormat() {
@@ -2539,6 +2646,7 @@ export class FreelancerRoomScene {
     if (this.wallPosterGroup) this.wallPosterGroup.visible = Boolean(this.ownedItems.wall_poster);
     if (this.wallTvGroup) this.wallTvGroup.visible = Boolean(this.ownedItems.wall_tv);
     if (this.sofaGroup) this.sofaGroup.visible = Boolean(this.ownedItems.cozy_sofa);
+    if (this.dolbyAtmosGroup) this.dolbyAtmosGroup.visible = Boolean(this.ownedItems.dolby_atmos);
     if (this.bedLampGroup) this.bedLampGroup.visible = Boolean(this.ownedItems.bed_lamp);
     if (this.deskPlantGroup) this.deskPlantGroup.visible = Boolean(this.ownedItems.desk_plant);
     if (this.coolKeyboardGroup) this.coolKeyboardGroup.visible = Boolean(this.ownedItems.cool_keyboard);
@@ -2722,9 +2830,12 @@ export class FreelancerRoomScene {
   }
 
   pickRandomThought(activityKey) {
-    const resolvedKey = (activityKey === "toilet" && this.ownedItems?.smart_toilet)
+    let resolvedKey = (activityKey === "toilet" && this.ownedItems?.smart_toilet)
       ? "smart_toilet"
       : activityKey;
+    if (resolvedKey === "sofa_tv" && this.ownedItems?.dolby_atmos && Math.random() < 0.55) {
+      resolvedKey = "dolby_atmos";
+    }
     const bank = this.thoughtBank?.[resolvedKey] || THOUGHT_BANK[resolvedKey];
     if (!bank || bank.length === 0) return "";
     let bag = this.thoughtBags[resolvedKey];
@@ -3535,6 +3646,8 @@ export class FreelancerRoomScene {
           this.onHoverChange("點擊開關床邊小夜燈");
         } else if (type === "tv") {
           this.onHoverChange("點擊看電視（隨機播放 YouTube 影片）");
+        } else if (type === "atmos") {
+          this.onHoverChange("點擊啟動 Dolby Atmos 沉浸式劇院音效");
         } else if (type === "vinyl") {
           this.onHoverChange("點擊開關黑膠唱片機與聽音樂");
         } else if (type === "coffeeBar") {
@@ -3589,6 +3702,11 @@ export class FreelancerRoomScene {
         const spot = this.ownedItems.cozy_sofa ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
         this.commandActivity(spot, 180);
         this.onOpenTv();
+      } else if (this.hoveredTarget === "atmos") {
+        this.playAtmosChime();
+        this.commandActivity(this.actionSpots.sofa_tv, 180);
+        this.showBubble(this.pickRandomThought("dolby_atmos"), 4600);
+        this.thoughtCooldown = 10;
       } else if (this.hoveredTarget === "vinyl") {
         this.setVinylOn(!this.vinylOn);
         this.onVinylToggle(this.vinylOn);
@@ -3752,6 +3870,16 @@ export class FreelancerRoomScene {
       }
     }
 
+    // Subtle Dolby Atmos soundbar LED pulse (active boost during cinema / vinyl time)
+    if (this.atmosLedMat && this.dolbyAtmosGroup?.visible) {
+      const cinemaActive = this.currentActivity === "sofa_tv" || this.vinylOn || this.currentActivity === "listen_vinyl";
+      const k = (Math.sin(elapsedSec * (cinemaActive ? 3.2 : 1.3)) + 1) * 0.5;
+      this.atmosLedMat.color.setHex(cinemaActive ? 0x38bdf8 : 0x0ea5e9).lerp(
+        new THREE.Color(cinemaActive ? 0xfbbf24 : 0x64748b),
+        cinemaActive ? k * 0.45 : k * 0.25
+      );
+    }
+
     // Subtle hover-only highlight ring under desk setup
     if (this.workHoverRingMat) {
       const targetOpacity = this.hoveredTarget === "computer" ? 0.36 : 0;
@@ -3774,6 +3902,31 @@ export class FreelancerRoomScene {
     this.renderer.render(this.scene, this.camera);
     this.updateOverlayPositions();
   };
+
+  playAtmosChime() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+      // Warm spatial chord sweep (deep sub + shimmering harmonic fifth)
+      [65.41, 130.81, 196.0, 261.63, 392.0].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = idx === 0 ? "sine" : "triangle";
+        osc.frequency.setValueAtTime(freq, now + idx * 0.045);
+        gain.gain.setValueAtTime(0.0001, now + idx * 0.045);
+        gain.gain.exponentialRampToValueAtTime(idx === 0 ? 0.08 : 0.035, now + idx * 0.045 + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.045 + 0.72);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + idx * 0.045);
+        osc.stop(now + idx * 0.045 + 0.75);
+      });
+      setTimeout(() => ctx.close().catch(() => {}), 950);
+    } catch {
+      // Ignore Web Audio restrictions
+    }
+  }
 
   dispose() {
     this.disposed = true;

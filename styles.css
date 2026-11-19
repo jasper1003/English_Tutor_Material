@@ -2084,6 +2084,29 @@ dialog.settings-dialog::backdrop {
   border-color: light-dark(#93c5fd, #1d4ed8);
 }
 
+.shop-item-card.is-locked {
+  border-style: dashed;
+  opacity: 0.92;
+}
+
+.shop-item-card.is-locked .shop-item-preview img {
+  filter: grayscale(0.45) brightness(0.86);
+}
+
+.shop-lock-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: rgba(15, 23, 42, 0.82);
+  color: #fde68a;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
 .shop-item-preview {
   width: 100%;
   aspect-ratio: 4 / 3;
