@@ -24,7 +24,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261119y" />
+  <link rel="stylesheet" href="./styles.css?v=20261119z" />
 </head>
 <body>
 
@@ -593,6 +593,8 @@
             </div>
           </section>
 
+          <section class="finance-landlord-note" id="finance-landlord-note" aria-label="房東來信小紙條"></section>
+
           <div class="finance-kpi-grid" aria-label="財務重點摘要">
             <div class="finance-kpi-card">
               <span class="finance-kpi-label" id="finance-income-label">💵 本月總收入</span>
@@ -705,8 +707,17 @@
     <section id="room-view" class="hidden" aria-label="接案繪師單人租屋處">
       <div class="room-stage-card">
         <div class="room-hud-top">
-          <div class="room-hud-group">
+          <div class="room-hud-group room-hud-left-stack">
             <div class="room-hud-pill" id="room-clock-pill" style="font-variant-numeric: tabular-nums;">🕒 12:00</div>
+            <div class="room-xp-pill" id="room-xp-pill" title="完成英語接案任務即可獲得繪師 XP 升級稱號">
+              <div class="room-xp-top">
+                <span class="room-xp-badge" id="room-xp-title">🪨 Lv.1 · 默默無名</span>
+                <span class="room-xp-num" id="room-xp-num">0 / 100</span>
+              </div>
+              <div class="room-xp-track" aria-hidden="true">
+                <div class="room-xp-fill" id="room-xp-fill" style="width: 0%;"></div>
+              </div>
+            </div>
           </div>
           <div class="room-hud-group">
             <button type="button" class="room-hud-btn" id="room-rot-left-btn" aria-label="向左旋轉 90 度" style="width: 38px; height: 38px; padding: 0; font-size: 1.15rem;">↺</button>
@@ -750,6 +761,7 @@
           <button type="button" class="btn btn-primary" id="map-back-room-btn">🏠 離開電腦回到租屋處</button>
         </div>
       </div>
+      <section class="home-xp-banner" id="home-xp-banner" aria-label="繪師聲望與經驗值進度"></section>
       <div class="quest-map" id="quest-map"></div>
     </section>
 
@@ -758,7 +770,10 @@
       <div class="lesson-header">
         <span class="lesson-date-pill" id="lesson-date-badge"></span>
         <h1 id="lesson-title"></h1>
-        <div class="grammar-tag" id="lesson-grammar"></div>
+        <div class="lesson-header-tags">
+          <div class="grammar-tag" id="lesson-grammar"></div>
+          <span class="lesson-xp-pill" id="lesson-xp-badge"></span>
+        </div>
       </div>
 
       <!-- Vocabulary Section -->
@@ -773,6 +788,7 @@
         <div class="ielts-split">
           <article class="reading-pane">
             <h3 class="reading-title" id="reading-title"></h3>
+            <div id="reading-tools-container"></div>
             <div class="reading-body" id="reading-body"></div>
           </article>
 
@@ -796,6 +812,21 @@
     </section>
   </main>
 
-  <script type="module" src="./app-main.js?v=20261119y"></script>
+  <div role="region" aria-label="通知中心" class="toast-region">
+    <div id="rankup-toast" class="rankup-toast" popover="manual" role="status">
+      <div class="rankup-toast-inner" id="rankup-toast-body"></div>
+      <button
+        type="button"
+        class="rankup-toast-close"
+        popovertarget="rankup-toast"
+        popovertargetaction="hide"
+        aria-label="關閉升級通知"
+      >✕</button>
+    </div>
+    <div id="toast-live-announcer" class="visually-hidden" aria-live="polite"></div>
+  </div>
+  <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
+
+  <script type="module" src="./app-main.js?v=20261119z"></script>
 </body>
 </html>

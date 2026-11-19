@@ -192,6 +192,27 @@ export const THOUGHT_BANK = {
     "Taking a short stroll helps refresh my mind!",
     "Plenty of open floor space right here.",
     "Walking around the room gives me fresh ideas!"
+  ],
+  rent_urgent: [
+    "Rent is due soon! Back to the MacBook! 💸",
+    "Landlord is waiting... time to finish a case!",
+    "Uh oh—need more clams before rent day! 🥺",
+    "Less daydreaming, more drawing! Rent waits for nobody!",
+    "Gotta grind one more English unit to cover rent!"
+  ],
+  rent_paid: [
+    "Rent paid! That weight off my shoulders feels amazing!",
+    "Safe for another month! Time to celebrate at home! 🎉",
+    "Landlord is happy, and this cozy studio is still mine!",
+    "Paid on time—now extra clams go straight to new decor!",
+    "Nothing beats living stress-free inside my own workspace!"
+  ],
+  work_celebrate: [
+    "Case submitted! Time to take it easy and unwind! 🎉",
+    "Boom! Another illustration quest wrapped up cleanly!",
+    "Reward & XP incoming! Off-work life starts right now! ✨",
+    "Time to stretch, celebrate, and enjoy my cozy room!",
+    "Hard work pays off—let's relax a little!"
   ]
 };
 
@@ -933,6 +954,8 @@ export class FreelancerRoomScene {
     this.thoughtCooldown = 2.0;
     this.thoughtBags = {};
     this.lastThoughtByActivity = {};
+    this.rentMood = { status: "chill", daysLeft: 30, deficit: 0, paidThisMonth: false };
+    this.postCelebrateSpot = null;
     this.thoughtBank = Object.fromEntries(
       Object.entries(THOUGHT_BANK).map(([k, v]) => [k, [...v]])
     );
@@ -2572,6 +2595,7 @@ export class FreelancerRoomScene {
     this.currentActivity = "walking";
     this.hideBubble();
     this.onActivityChange("快步前往書桌準備接案...");
+    this.postCelebrateSpot = null;
     const dist = this.charRoot.position.distanceTo(this.deskWorkAnchor);
     if (dist < 0.35 && this.isNearDesk(this.charRoot.position)) {
       this.charRoot.position.copy(this.deskWorkAnchor);
@@ -2594,13 +2618,70 @@ export class FreelancerRoomScene {
     };
   }
 
-  returnFromWork() {
-    // Character remains sitting and working at the Mac for ~13 seconds before getting up
+  pickCelebrateLeisureSpot() {
+    const owned = this.ownedItems || {};
+    const options = [];
+    if (owned.orange_cat) options.push(this.actionSpots.pet_cat);
+    if (owned.cozy_sofa && owned.wall_tv) options.push(this.actionSpots.sofa_tv);
+    if (owned.vinyl_player) options.push(this.actionSpots.listen_vinyl);
+    if (owned.coffee_bar) options.push(this.actionSpots.coffee_break);
+    if (owned.wall_tv && !owned.cozy_sofa) options.push(this.actionSpots.watch_tv);
+    if (owned.cozy_sofa) options.push(this.actionSpots.sofa_read);
+    const gamingSpot = this.chillSpots.find(s => s.id === "gaming");
+    const eatSpot = this.chillSpots.find(s => s.id === "eat");
+    if (gamingSpot) options.push(gamingSpot);
+    if (eatSpot) options.push(eatSpot);
+    return options[Math.floor(Math.random() * options.length)] || this.chillSpots[0];
+  }
+
+  setRentMood(mood = {}) {
+    const prevStatus = this.rentMood?.status || "chill";
+    const status = String(mood.status || "chill");
+    this.rentMood = {
+      status,
+      daysLeft: Number.isFinite(Number(mood.daysLeft)) ? Number(mood.daysLeft) : 30,
+      deficit: Math.max(0, Math.trunc(Number(mood.deficit) || 0)),
+      paidThisMonth: Boolean(mood.paidThisMonth)
+    };
+    if (status === "urgent" && prevStatus !== "urgent" && this.charState === "IDLE" && this.currentActivity !== "sleep") {
+      this.showBubble(this.pickRandomThought("rent_urgent"), 4800);
+      this.thoughtCooldown = 7;
+    } else if (status === "paid" && prevStatus === "urgent" && this.charState === "IDLE" && this.currentActivity !== "sleep") {
+      this.showBubble(this.pickRandomThought("rent_paid"), 4600);
+      this.thoughtCooldown = 7;
+    }
+  }
+
+  returnFromWork(celebrationType = "none") {
     this.hideAllProps();
+    this.postCelebrateSpot = null;
     if (this.macScreenMat) {
       this.macScreenMat.map = this.artScreenTex;
       this.macScreenMat.needsUpdate = true;
     }
+    this.walkWaypoints = [];
+    this.walkCallback = null;
+
+    if (celebrationType === "submitted" || celebrationType === "approved") {
+      this.postCelebrateSpot = this.pickCelebrateLeisureSpot();
+      this.charState = "IDLE";
+      this.currentActivity = "work_celebrate";
+      this.activityTimer = 2.6;
+      this.thoughtCooldown = 12;
+      this.charRoot.position.copy(this.deskExitAnchor);
+      this.charRoot.rotation.y = -0.25;
+      const activityMsg = celebrationType === "approved"
+        ? "🎉 甲方驗收發薪！歡呼一下準備開啟下班耍廢時間！"
+        : "🎉 完成交稿啦！舉手歡呼準備下班放鬆一下！";
+      const bubbleMsg = celebrationType === "approved"
+        ? "Case approved!! Clams & XP earned! 🎉✨"
+        : "Case submitted! Off-work time!! 🎉";
+      this.onActivityChange(activityMsg);
+      this.showBubble(bubbleMsg, 4600);
+      return;
+    }
+
+    // Character remains sitting and working at the Mac for ~13 seconds before getting up
     this.charState = "WORKING";
     this.postWorkCooldown = POST_WORK_COOLDOWN_SEC;
     this.thoughtCooldown = 1.4 + Math.random() * 1.6;
@@ -3176,13 +3257,34 @@ export class FreelancerRoomScene {
     // IDLE autonomous activities
     this.activityTimer -= dt;
     if (this.activityTimer <= 0) {
+      if (this.currentActivity === "work_celebrate" && this.postCelebrateSpot) {
+        const nextSpot = this.postCelebrateSpot;
+        this.postCelebrateSpot = null;
+        this.commandActivity(nextSpot, IDLE_MIN_SEC + Math.random() * IDLE_SPAN_SEC);
+        return;
+      }
       this.pickNextIdleActivity(isNightTime);
       return;
     }
 
     this.thoughtCooldown -= dt;
     if (this.thoughtCooldown <= 0) {
-      this.showBubble(this.pickRandomThought(this.currentActivity), 4200);
+      let thoughtKey = this.currentActivity;
+      if (
+        this.rentMood?.status === "urgent"
+        && this.currentActivity !== "sleep"
+        && this.currentActivity !== "work_celebrate"
+        && Math.random() < 0.48
+      ) {
+        thoughtKey = "rent_urgent";
+      } else if (
+        this.rentMood?.status === "paid"
+        && (this.currentActivity === "floor_stand" || this.currentActivity === "coffee_break")
+        && Math.random() < 0.4
+      ) {
+        thoughtKey = "rent_paid";
+      }
+      this.showBubble(this.pickRandomThought(thoughtKey), 4200);
       this.thoughtCooldown = 9 + Math.random() * 9;
     }
 
@@ -3341,14 +3443,31 @@ export class FreelancerRoomScene {
         this.rightArmPivot.rotation.x = -0.85 + Math.max(0, Math.sin(elapsedSec * 3.2)) * -0.45;
         this.headGroup.rotation.x = 0.15;
         break;
-      case "floor_stand":
-        // Calm relaxed standing stance looking gently around the studio
-        this.torsoGroup.rotation.y = Math.sin(elapsedSec * 0.9) * 0.04;
-        this.leftArmPivot.rotation.z = -0.06;
-        this.rightArmPivot.rotation.z = 0.06;
-        this.headGroup.rotation.y = Math.sin(elapsedSec * 1.1) * 0.14;
-        this.headGroup.rotation.x = Math.sin(elapsedSec * 1.6) * 0.03;
+      case "work_celebrate": {
+        // Energetic double-arm fist pump celebrating task submission / reward payout!
+        const jump = Math.abs(Math.sin(elapsedSec * 7.2));
+        this.charBody.position.set(0, jump * 0.16, 0);
+        this.torsoGroup.rotation.x = -0.06;
+        this.leftLegPivot.rotation.x = -jump * 0.18;
+        this.rightLegPivot.rotation.x = jump * 0.12;
+        this.leftArmPivot.rotation.x = -2.45 + Math.sin(elapsedSec * 14) * 0.28;
+        this.leftArmPivot.rotation.z = -0.35;
+        this.rightArmPivot.rotation.x = -2.45 - Math.sin(elapsedSec * 14) * 0.28;
+        this.rightArmPivot.rotation.z = 0.35;
+        this.headGroup.rotation.x = -0.14;
+        this.headGroup.rotation.y = Math.sin(elapsedSec * 5) * 0.15;
         break;
+      }
+      case "floor_stand": {
+        // Calm relaxed standing stance (or nervously pacing head when rent is urgent)
+        const urgent = this.rentMood?.status === "urgent";
+        this.torsoGroup.rotation.y = Math.sin(elapsedSec * (urgent ? 2.4 : 0.9)) * (urgent ? 0.08 : 0.04);
+        this.leftArmPivot.rotation.z = urgent ? -0.14 : -0.06;
+        this.rightArmPivot.rotation.z = urgent ? 0.14 : 0.06;
+        this.headGroup.rotation.y = Math.sin(elapsedSec * (urgent ? 3.2 : 1.1)) * (urgent ? 0.22 : 0.14);
+        this.headGroup.rotation.x = Math.sin(elapsedSec * 1.6) * 0.03 + (urgent ? 0.08 : 0);
+        break;
+      }
       case "phone":
       default:
         // Sitting on the edge of the bed holding phone tilted up toward face

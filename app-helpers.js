@@ -11,6 +11,64 @@ export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "6v2L2UGZJAM", title: "Planet Earth: Amazing Nature Scenery", author: "Robert Revol" }
 ];
 
+export const XP_RANK_LADDER = [
+  { title: "默默無名", emblem: "🪨", subtitle: "剛踏進接案江湖的新手繪師，連隔壁阿橘都還沒記住你" },
+  { title: "初出茅廬", emblem: "🌱", subtitle: "順利熬過第一個月房租，開始有零星案主私訊問檔期" },
+  { title: "略懂皮毛", emblem: "✏️", subtitle: "筆刷手感逐漸穩定，草稿不再被退件退到手軟" },
+  { title: "小試牛刀", emblem: "🔪", subtitle: "連趕幾張急件也能準時交稿，累積第一批固定回頭客" },
+  { title: "漸入佳境", emblem: "🎨", subtitle: "光影與配色突然開竅，甲方的修改意見少了一大半" },
+  { title: "略有名氣", emblem: "🏮", subtitle: "設計圈開始聽過你的筆名，周末接案排程悄悄排滿" },
+  { title: "小有名堂", emblem: "✨", subtitle: "作品截圖常被轉傳討論，小套房裡住著一位神秘畫手" },
+  { title: "名聲初顯", emblem: "📜", subtitle: "商業插畫案主開始指名合作，不用再到處投履歷" },
+  { title: "嶄露頭角", emblem: "⚔️", subtitle: "大型企劃點名邀約封面繪製，報價單底氣越來越足" },
+  { title: "聲名鵲起", emblem: "🦅", subtitle: "每次發佈新作就衝上討論榜，收件匣每天塞滿合作信" },
+  { title: "獨當一面", emblem: "🛡️", subtitle: "再刁鑽的高難度英語專題與畫風切換，都能單人完美過關" },
+  { title: "名動一城", emblem: "🏯", subtitle: "整座城市的創意總監都收藏了你的電繪作品集" },
+  { title: "爐火純青", emblem: "🔥", subtitle: "下筆如劍客出招乾脆俐落，每一條線都毫無猶豫" },
+  { title: "登堂入室", emblem: "🏛️", subtitle: "畫技心法已修至上乘，隨手草圖都能拿去當展覽海報" },
+  { title: "聲振林木", emblem: "🌩️", subtitle: "個展現場人潮擠爆巷口，創作氣場連房東都主動打招呼" },
+  { title: "威震四方", emblem: "🐉", subtitle: "東西南北出版商齊聚租屋處樓下，只求排到你明年的檔期" },
+  { title: "名滿江湖", emblem: "🌟", subtitle: "美術江湖人人傳頌的傳奇插畫宗師，筆落驚風雨" },
+  { title: "一代宗師", emblem: "🥋", subtitle: "開創專屬流派畫風，無數新手畫師把你的圖當教材臨摹" },
+  { title: "天下無雙", emblem: "👑", subtitle: "論速度、文意精準度與質感，江湖中已難逢對手" },
+  { title: "武林盟主", emblem: "🏆", subtitle: "號令全城接案工作室，甲方見到你也要先雙手奉茶敬禮" },
+  { title: "登峰造極", emblem: "⛰️", subtitle: "作品境界超越一般評審尺度，隨手一筆皆是藏品" },
+  { title: "傲視群雄", emblem: "🦅", subtitle: "高處不勝寒，只剩手沖咖啡、黑膠與橘貓懂你的寂寞" },
+  { title: "破碎虛空", emblem: "⚡", subtitle: "電繪筆彷彿發出金光，英文單字與靈感直接跨次元具現" },
+  { title: "飛升成仙", emblem: "☁️", subtitle: "每月房租早已只是塵世小數字，你靠畫筆悟道成仙" },
+  { title: "畫道聖尊", emblem: "🌀", subtitle: "美術館爭相典藏你用過的草稿紙與磨短的觸控筆芯" },
+  { title: "超凡入聖", emblem: "🪽", subtitle: "萬千單字文法皆化作你的創作內力，心念一動便成神作" },
+  { title: "萬古神話", emblem: "🌌", subtitle: "後世插畫史開篇第一章，只刻著你的名號與單人房號" },
+  { title: "太古獨尊·無敵寂寞", emblem: "🪩", subtitle: "超越凡間段位的終極繪神！連宇宙星雲都照你的色票調色" }
+];
+
+export function resolveXpProgress(totalXp, xpPerLevel = 100) {
+  const safeTotal = Math.max(0, Math.trunc(Number(totalXp) || 0));
+  const safeStep = Math.max(10, Math.min(10000, Math.trunc(Number(xpPerLevel) || 100)));
+  const level = Math.floor(safeTotal / safeStep) + 1;
+  const rankIndex = Math.min(XP_RANK_LADDER.length - 1, level - 1);
+  const nextIndex = Math.min(XP_RANK_LADDER.length - 1, level);
+  const rank = XP_RANK_LADDER[rankIndex];
+  const nextRank = XP_RANK_LADDER[nextIndex];
+  const xpIntoLevel = safeTotal % safeStep;
+  const xpToNextLevel = safeStep - xpIntoLevel;
+  const progressPct = Math.round((xpIntoLevel / safeStep) * 1000) / 10;
+  return {
+    totalXp: safeTotal,
+    xpPerLevel: safeStep,
+    level,
+    rankIndex,
+    title: rank.title,
+    emblem: rank.emblem,
+    subtitle: rank.subtitle,
+    nextTitle: nextRank.title,
+    xpIntoLevel,
+    xpToNextLevel,
+    progressPct,
+    isMaxNamedRank: rankIndex >= XP_RANK_LADDER.length - 1
+  };
+}
+
 export function sanitizeBoolMap(obj) {
   const map = {};
   if (obj && typeof obj === "object") {

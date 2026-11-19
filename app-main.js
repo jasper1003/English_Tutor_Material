@@ -42,7 +42,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261119x";
+} from "./room-scene.js?v=20261119z";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -55,6 +55,8 @@ import {
 } from "./shop-catalog.js?v=20261119t";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
+  XP_RANK_LADDER,
+  resolveXpProgress,
   sanitizeBoolMap,
   getMonthKey,
   getNextMonthFirstEpoch,
@@ -66,8 +68,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261119y";
+} from "./app-helpers.js?v=20261119z";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261119z";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -96,6 +99,8 @@ const SPREADSHEET_ID = "1DrKwyy-L9g_nHFBFJ0joLfsDE64vBb1ymjtKiaNQJ5U";
 let UNIT_REWARD_CLAMS = 200;
 let STARTER_CLAMS = 100;
 let MONTHLY_RENT_CLAMS = 100;
+let DEFAULT_LESSON_XP = 100;
+let XP_PER_LEVEL = 100;
 let pendingThoughtRows = null;
 
 let db = {
@@ -121,6 +126,12 @@ let authSessionNonce = 0;
 let currentScreen = "loading"; // "auth" | "onboarding" | "room" | "desktop" | "lesson"
 let activeLessonDate = null;
 let activeLessonSyncCommission = null;
+let pendingWorkCelebration = null; // null | "submitted" | "approved"
+let lastKnownXpRankIndex = null;
+let hasInitializedXpBaseline = false;
+let pendingRankUpToast = null;
+let rankUpToastTimer = null;
+let toastPriorFocusEl = null;
 let roomScene = null;
 let avatarPreviewScene = null;
 let isEditingAvatarFromRoom = false;
@@ -215,6 +226,208 @@ function getCompletedLessons() {
     }
   });
   return completed;
+}
+
+function getLessonXp(lesson) {
+  if (!lesson) return DEFAULT_LESSON_XP;
+  const raw = lesson.XP ?? lesson.xp;
+  if (raw === undefined || raw === null || String(raw).trim() === "") {
+    return DEFAULT_LESSON_XP;
+  }
+  const parsed = Math.trunc(Number(raw));
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 10000 ? parsed : DEFAULT_LESSON_XP;
+}
+
+function getTotalEarnedXp() {
+  const completed = getCompletedLessons();
+  let sum = 0;
+  db.lessons.forEach(lesson => {
+    if (completed.has(lesson.Date)) {
+      sum += getLessonXp(lesson);
+    }
+  });
+  return sum;
+}
+
+let rankUpToastWired = false;
+function initRankUpToastEvents() {
+  if (rankUpToastWired) return;
+  rankUpToastWired = true;
+  const toastEl = document.getElementById("rankup-toast");
+  if (!toastEl) return;
+
+  const scheduleHide = () => {
+    clearTimeout(rankUpToastTimer);
+    rankUpToastTimer = setTimeout(() => {
+      const focusedInside = toastEl.contains(document.activeElement);
+      if (!focusedInside && !toastEl.matches(":hover")) {
+        dismissRankUpToast(false);
+      }
+    }, 6000);
+  };
+
+  toastEl.addEventListener("mouseenter", () => clearTimeout(rankUpToastTimer));
+  toastEl.addEventListener("mouseleave", scheduleHide);
+  toastEl.addEventListener("focusin", () => clearTimeout(rankUpToastTimer));
+  toastEl.addEventListener("focusout", () => {
+    setTimeout(() => {
+      if (!toastEl.contains(document.activeElement)) scheduleHide();
+    }, 50);
+  });
+  toastEl.addEventListener("toggle", e => {
+    if (e.newState === "closed") {
+      clearTimeout(rankUpToastTimer);
+      toastEl.classList.remove("is-open");
+      if (toastPriorFocusEl && document.contains(toastPriorFocusEl)) {
+        toastPriorFocusEl.focus({ preventScroll: true });
+        toastPriorFocusEl = null;
+      }
+    }
+  });
+
+  document.querySelectorAll("dialog").forEach(dlg => {
+    dlg.addEventListener("close", () => {
+      setTimeout(flushPendingRankUpToast, 120);
+    });
+  });
+}
+
+function dismissRankUpToast(restoreFocus = false) {
+  clearTimeout(rankUpToastTimer);
+  const toastEl = document.getElementById("rankup-toast");
+  if (!toastEl) return;
+  const hadFocus = toastEl.contains(document.activeElement);
+  if (typeof toastEl.hidePopover === "function") {
+    try {
+      if (toastEl.matches(":popover-open")) toastEl.hidePopover();
+    } catch {
+      toastEl.classList.remove("is-open");
+    }
+  } else {
+    toastEl.classList.remove("is-open");
+  }
+  if ((restoreFocus || hadFocus) && toastPriorFocusEl && document.contains(toastPriorFocusEl)) {
+    toastPriorFocusEl.focus({ preventScroll: true });
+    toastPriorFocusEl = null;
+  }
+}
+
+function showRankUpToast(prevProgress, nextProgress) {
+  initRankUpToastEvents();
+  if (document.querySelector("dialog[open]")) {
+    pendingRankUpToast = { prevProgress, nextProgress };
+    return;
+  }
+  const toastEl = document.getElementById("rankup-toast");
+  const bodyEl = document.getElementById("rankup-toast-body");
+  const liveEl = document.getElementById("toast-live-announcer");
+  if (!toastEl || !bodyEl) return;
+
+  toastPriorFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const prevLabel = prevProgress ? `${prevProgress.title} → ` : "";
+  bodyEl.innerHTML = `
+    <div><strong>${escapeHtml(nextProgress.emblem)} 聲望晉升！${escapeHtml(prevLabel)}Lv.${nextProgress.level}【${escapeHtml(nextProgress.title)}】</strong></div>
+    <div>${escapeHtml(nextProgress.subtitle)}</div>
+  `;
+
+  if (typeof toastEl.showPopover === "function") {
+    try {
+      if (!toastEl.matches(":popover-open")) toastEl.showPopover();
+    } catch {
+      toastEl.classList.add("is-open");
+    }
+  } else {
+    toastEl.classList.add("is-open");
+  }
+
+  const spokenText = `繪師聲望升級，${nextProgress.level}級稱號，${nextProgress.title}。${nextProgress.subtitle}`;
+  if (typeof navigator.ariaNotify === "function") {
+    navigator.ariaNotify(spokenText);
+  } else if (liveEl) {
+    liveEl.textContent = spokenText;
+  }
+
+  clearTimeout(rankUpToastTimer);
+  rankUpToastTimer = setTimeout(() => {
+    if (!toastEl.contains(document.activeElement) && !toastEl.matches(":hover")) {
+      dismissRankUpToast(false);
+    }
+  }, 6500);
+}
+
+function flushPendingRankUpToast() {
+  if (!pendingRankUpToast || document.querySelector("dialog[open]")) return;
+  const { prevProgress, nextProgress } = pendingRankUpToast;
+  pendingRankUpToast = null;
+  launchFullCelebration();
+  showRankUpToast(prevProgress, nextProgress);
+}
+
+function syncXpProgressUI({ allowCelebrate = false } = {}) {
+  initRankUpToastEvents();
+  const totalXp = getTotalEarnedXp();
+  const progress = resolveXpProgress(totalXp, XP_PER_LEVEL);
+
+  const roomTitleEl = document.getElementById("room-xp-title");
+  const roomNumEl = document.getElementById("room-xp-num");
+  const roomFillEl = document.getElementById("room-xp-fill");
+  const roomPillEl = document.getElementById("room-xp-pill");
+
+  if (roomTitleEl) roomTitleEl.textContent = `${progress.emblem} Lv.${progress.level} · ${progress.title}`;
+  if (roomNumEl) roomNumEl.textContent = `${progress.xpIntoLevel}/${progress.xpPerLevel}`;
+  if (roomFillEl) roomFillEl.style.width = `${progress.progressPct}%`;
+  if (roomPillEl) {
+    roomPillEl.title = `累積 ${progress.totalXp} XP · ${progress.subtitle}（再 ${progress.xpToNextLevel} XP 升至 Lv.${progress.level + 1} ${progress.nextTitle}）`;
+  }
+
+  const bannerEl = document.getElementById("home-xp-banner");
+  if (bannerEl) {
+    const nextHint = progress.isMaxNamedRank && progress.level >= XP_RANK_LADDER.length
+      ? `累積總經驗：${progress.totalXp} XP · 已修至最高稱號，仍可繼續突破 Lv.${progress.level + 1}！`
+      : `再獲 ${progress.xpToNextLevel} XP 升級 → Lv.${progress.level + 1}【${escapeHtml(progress.nextTitle)}】`;
+    bannerEl.innerHTML = `
+      <div class="home-xp-rank-col">
+        <div class="home-xp-emblem" aria-hidden="true">${escapeHtml(progress.emblem)}</div>
+        <div>
+          <div class="home-xp-title-row">
+            <span class="home-xp-level-pill">Lv.${progress.level}</span>
+            <strong class="home-xp-title-text">${escapeHtml(progress.title)}</strong>
+          </div>
+          <p class="home-xp-sub">${escapeHtml(progress.subtitle)}</p>
+        </div>
+      </div>
+      <div class="home-xp-meter-col">
+        <div class="home-xp-meter-meta">
+          <span>繪師聲望條（總計 ${progress.totalXp} XP）</span>
+          <span>${progress.xpIntoLevel} / ${progress.xpPerLevel} XP</span>
+        </div>
+        <div class="home-xp-bar-track" role="progressbar" aria-label="繪師聲望升級進度" aria-valuemin="0" aria-valuemax="${progress.xpPerLevel}" aria-valuenow="${progress.xpIntoLevel}">
+          <div class="home-xp-bar-fill" style="width: ${progress.progressPct}%;"></div>
+        </div>
+        <div class="form-hint" style="margin: 0;">${nextHint}</div>
+      </div>
+    `;
+  }
+
+  if (currentUser && authResolved && sheetsLoaded) {
+    if (!hasInitializedXpBaseline) {
+      hasInitializedXpBaseline = true;
+      lastKnownXpRankIndex = progress.rankIndex;
+    } else if (lastKnownXpRankIndex !== null && progress.rankIndex > lastKnownXpRankIndex) {
+      const prevRank = XP_RANK_LADDER[lastKnownXpRankIndex] || null;
+      lastKnownXpRankIndex = progress.rankIndex;
+      if (allowCelebrate) {
+        if (!document.querySelector("dialog[open]")) {
+          launchFullCelebration();
+        }
+        showRankUpToast(prevRank, progress);
+      }
+    } else {
+      lastKnownXpRankIndex = progress.rankIndex;
+    }
+  }
+
+  return progress;
 }
 
 async function setLessonSubmitted(dateStr, nextSubmitted) {
@@ -408,6 +621,7 @@ function hideAllPrimaryScreens() {
     document.getElementById(id).classList.add("hidden");
   });
   document.getElementById("lesson-actions").style.display = "none";
+  clearReadingScaffold();
   roomScene?.pause();
   avatarPreviewScene?.pause();
 }
@@ -430,7 +644,7 @@ function showOnboardingScreen(isEditing = false) {
 }
 
 function syncRoomHUD() {
-  // Reserved for future room HUD indicators
+  syncXpProgressUI({ allowCelebrate: false });
 }
 
 async function persistRoomState(patch) {
@@ -521,13 +735,16 @@ function enterRoomView(fromWorkDesktop = false) {
       roomScene.applyCustomThoughts(pendingThoughtRows);
     }
     if (Number.isInteger(rs.cameraQuarter)) roomScene.setQuarter(rs.cameraQuarter);
+    const celebration = fromWorkDesktop ? (pendingWorkCelebration || "none") : "none";
     if (fromWorkDesktop) {
-      roomScene.returnFromWork();
+      pendingWorkCelebration = null;
+      roomScene.returnFromWork(celebration);
     }
   }
 
   sync3dSceneLifecycle();
   syncRoomHUD();
+  updateRentCountdownUI();
 }
 
 function openWorkDesktop() {
@@ -622,12 +839,17 @@ function applyRemoteSettings(rows = []) {
       STARTER_CLAMS = val;
     } else if (key === "monthly_rent_clams" && val >= 1 && val <= 10000) {
       MONTHLY_RENT_CLAMS = val;
+    } else if (key === "default_lesson_xp" && val >= 0 && val <= 10000) {
+      DEFAULT_LESSON_XP = val;
+    } else if (key === "xp_per_level" && val >= 10 && val <= 10000) {
+      XP_PER_LEVEL = val;
     }
   }
   const homeRewardHint = document.getElementById("home-reward-hint");
   if (homeRewardHint) {
-    homeRewardHint.textContent = `完成練習並送交甲方老師驗收通過後，每單元可獲得 +${UNIT_REWARD_CLAMS} 英蚌報酬`;
+    homeRewardHint.textContent = `完成練習並送交甲方老師驗收通過後，每單元可獲得 +${UNIT_REWARD_CLAMS} 英蚌報酬與對應 XP`;
   }
+  syncXpProgressUI({ allowCelebrate: false });
 }
 
 function applyRemoteTvVideos(rows = []) {
@@ -837,6 +1059,7 @@ function renderHome() {
   const completedSet = getCompletedLessons();
   const completedRealCount = db.lessons.filter(l => completedSet.has(l.Date)).length;
   document.getElementById("map-completed-count").textContent = `已驗收 ${completedRealCount} 關`;
+  syncXpProgressUI({ allowCelebrate: false });
 
   if (db.lessons.length === 0) {
     mapEl.innerHTML = `<p style="color: var(--muted); text-align: center;">目前試算表中尚無課程資料。</p>`;
@@ -891,6 +1114,7 @@ function renderHome() {
     cardBtn.type = "button";
     cardBtn.className = "quest-node-card";
     cardBtn.style.textAlign = "center";
+    const lessonXp = getLessonXp(lesson);
     cardBtn.innerHTML = `
       <div class="quest-node-top">
         <span class="quest-unit-tag">${unitLabel}${statusSuffix}</span>
@@ -899,7 +1123,7 @@ function renderHome() {
       <div class="quest-node-title">${escapeHtml(lesson.Title || "Untitled Lesson")}</div>
       ${lesson.Grammar_Focus ? `<div class="quest-node-grammar">${escapeHtml(lesson.Grammar_Focus)}</div>` : ""}
       <div class="quest-node-meta">
-        單字：${vocabCount} 個
+        單字：${vocabCount} 個 · <span class="quest-xp-pill">+${lessonXp} XP</span>
         ${isCompleted ? "" : ` · <span class="quest-reward-pill">報酬 +${UNIT_REWARD_CLAMS} 英蚌</span>`}
       </div>
     `;
@@ -1070,10 +1294,21 @@ function renderLesson(dateStr) {
     });
   }
 
+  const lessonXp = getLessonXp(lesson);
+  const xpBadgeEl = document.getElementById("lesson-xp-badge");
+  if (xpBadgeEl) xpBadgeEl.textContent = `🥋 完成驗收 +${lessonXp} XP`;
+
   const lessonQuiz = db.quiz.filter(q => q.Date === dateStr);
   document.getElementById("reading-title").textContent = lesson.Reading_Title || "Reading Passage";
-  const safePassage = escapeHtml(lesson.Reading_Passage || "").replace(/&lt;br\s*\/?&gt;/gi, "<br>");
-  document.getElementById("reading-body").innerHTML = safePassage;
+  renderInteractiveReadingPassage({
+    bodyEl: document.getElementById("reading-body"),
+    toolsEl: document.getElementById("reading-tools-container"),
+    popoverEl: document.getElementById("reading-vocab-popover"),
+    passageText: lesson.Reading_Passage || "",
+    vocabRows: lessonVocab,
+    uid: currentUser?.uid || "guest",
+    dateStr
+  });
 
   const quizContainer = document.getElementById("quiz-container");
   const progressFill = document.getElementById("quiz-progress-fill");
@@ -1169,22 +1404,23 @@ function renderLesson(dateStr) {
     const submitBtn = document.getElementById("toggle-complete-btn");
     const approved = isLessonCompleted(dateStr);
     const submitted = isLessonSubmitted(dateStr);
+    const unitXp = getLessonXp(lesson);
 
     submitBtn.classList.remove("is-completed", "is-submitted");
     if (approved) {
-      statusEl.textContent = "✓ 甲方案主已驗收通過（單元已完成並發放英蚌報酬）";
+      statusEl.textContent = `✓ 甲方案主已驗收通過（已領 +${unitXp} XP 與英蚌報酬）`;
       statusEl.classList.add("is-completed");
       submitBtn.textContent = "已驗收完成 ✓";
       submitBtn.classList.add("is-completed");
       submitBtn.disabled = true;
     } else if (submitted) {
-      statusEl.textContent = `⏳ 已交稿！請等待甲方老師於課堂驗收後發放 +${UNIT_REWARD_CLAMS} 英蚌`;
+      statusEl.textContent = `⏳ 已交稿！請等待甲方老師於課堂驗收後發放 +${UNIT_REWARD_CLAMS} 英蚌與 +${unitXp} XP`;
       statusEl.classList.remove("is-completed");
       submitBtn.textContent = "待案主驗收中（點此可收回修改）";
       submitBtn.classList.add("is-submitted");
       submitBtn.disabled = false;
     } else {
-      statusEl.textContent = `完成單字與閱讀練習後，提交給甲方（老師）驗收即可領取 +${UNIT_REWARD_CLAMS} 英蚌`;
+      statusEl.textContent = `完成單字與閱讀練習後，提交給甲方（老師）驗收即可領取 +${UNIT_REWARD_CLAMS} 英蚌與 +${unitXp} XP`;
       statusEl.classList.remove("is-completed");
       submitBtn.textContent = "完成任務";
       submitBtn.disabled = false;
@@ -1202,7 +1438,10 @@ function renderLesson(dateStr) {
       await setLessonSubmitted(dateStr, targetSubmitted);
       syncCommissionUI();
       if (targetSubmitted) {
+        pendingWorkCelebration = "submitted";
         launchFullCelebration();
+      } else if (pendingWorkCelebration === "submitted") {
+        pendingWorkCelebration = null;
       }
     } catch (err) {
       alert(translateAuthError(err));
@@ -2684,6 +2923,20 @@ function updateRentCountdownUI() {
   const clams = Math.max(0, Math.trunc(Number(profile?.clams ?? STARTER_CLAMS)));
   const isSuperAdmin = currentRole === "super_admin";
   const hasRentAlert = Boolean(isDue && !isSuperAdmin);
+  const daysLeft = isDue ? 0 : Math.max(1, Math.ceil(msLeft / 86400000));
+  const paidThisMonth = Boolean(profile?.lastRentPaidMonth && profile.lastRentPaidMonth === getMonthKey());
+  const rentDeficit = Math.max(0, MONTHLY_RENT_CLAMS - clams);
+  const rentMoodStatus = (!isSuperAdmin && (isDue || (daysLeft <= 5 && rentDeficit > 0)))
+    ? "urgent"
+    : (paidThisMonth && daysLeft >= 20)
+    ? "paid"
+    : "chill";
+  roomScene?.setRentMood({
+    status: rentMoodStatus,
+    daysLeft,
+    deficit: rentDeficit,
+    paidThisMonth
+  });
 
   if (btn) {
     btn.classList.toggle("is-rent-alert", hasRentAlert);
@@ -2737,6 +2990,64 @@ function renderFinanceDialog() {
     } else {
       budgetMsgEl.textContent = `⚠️ 目前還差 ${MONTHLY_RENT_CLAMS - clams} 英蚌才夠繳下月房租，建議先去電腦接案賺錢喔！`;
     }
+  }
+
+  const landlordNoteEl = document.getElementById("finance-landlord-note");
+  if (landlordNoteEl) {
+    const dueAt = Number(profile.nextRentDueAt || getNextMonthFirstEpoch());
+    const msLeft = dueAt - Date.now();
+    const isDue = msLeft <= 0;
+    const daysLeft = isDue ? 0 : Math.max(1, Math.ceil(msLeft / 86400000));
+    const deficit = Math.max(0, MONTHLY_RENT_CLAMS - clams);
+    const paidThisMonth = Boolean(profile.lastRentPaidMonth && profile.lastRentPaidMonth === currentMonth);
+
+    landlordNoteEl.className = "finance-landlord-note";
+    let noteIcon = "✉️";
+    let noteTitle = "房東陳伯伯的小紙條";
+    let noteBody = "";
+
+    if (isSuperAdmin) {
+      noteIcon = "🕶️";
+      noteTitle = "房東陳伯伯（對大股東敬禮）";
+      noteBody = "「管理員大大好！這棟樓的財務報表您隨時檢閱，房租只是順手測一下流程而已～」";
+    } else if (isDue && deficit > 0) {
+      landlordNoteEl.classList.add("is-urgent");
+      noteIcon = "🧧";
+      noteTitle = "🚨 房東急件催租字條（已到期且餘額不足）";
+      noteBody = `「門縫收到通知了嗎？本月房租 ${MONTHLY_RENT_CLAMS} 英蚌已到期，還差 ${deficit} 英蚌！快回電腦接一個英語單元交稿賺錢，不然橘貓也要看著你嘆氣啦！」`;
+    } else if (isDue) {
+      landlordNoteEl.classList.add("is-urgent");
+      noteIcon = "🚪";
+      noteTitle = "🏠 房東通知：本月房租可以結算囉！";
+      noteBody = `「早安呀小畫師～本月 ${MONTHLY_RENT_CLAMS} 英蚌房租已到期，我看你存摺裡現金夠了，按上方按鈕就能輕鬆入帳！」`;
+    } else if (deficit > 0 && daysLeft <= 7) {
+      landlordNoteEl.classList.add("is-tight");
+      noteIcon = "⏳";
+      noteTitle = `⚠️ 房東溫馨倒數通知（剩 ${daysLeft} 天）`;
+      noteBody = `「再過 ${daysLeft} 天就要繳下期 ${MONTHLY_RENT_CLAMS} 英蚌房租囉！你現在還缺 ${deficit} 英蚌，趕緊打開 MacBook 完成一單英語委託最安心！」`;
+    } else if (paidThisMonth) {
+      landlordNoteEl.classList.add("is-paid");
+      noteIcon = "🥳";
+      noteTitle = "✨ 房東點讚回執：本月房租準時收訖";
+      noteBody = `「這麼準時的接案租客真是少見！距離下次繳租還有 ${daysLeft} 天，多餘的 ${clams} 英蚌可以去生活商店挑家具犒賞自己～」`;
+    } else if (deficit > 0) {
+      landlordNoteEl.classList.add("is-tight");
+      noteIcon = "📒";
+      noteTitle = `💡 房東鄰居關心（距繳租 ${daysLeft} 天）`;
+      noteBody = `「先存好下期房租（還差 ${deficit} 英蚌）再逛家具店，是最穩健的接案生存法則喔！」`;
+    } else {
+      noteIcon = "☕";
+      noteTitle = `🌞 房東的祝福（預算已就緒，距繳租剩 ${daysLeft} 天）`;
+      noteBody = `「房租 ${MONTHLY_RENT_CLAMS} 英蚌都預留妥當啦，剩下的 ${clams - MONTHLY_RENT_CLAMS} 英蚌祝你在工作室創作愉快！」`;
+    }
+
+    landlordNoteEl.innerHTML = `
+      <span class="finance-landlord-icon" aria-hidden="true">${noteIcon}</span>
+      <div class="finance-landlord-copy">
+        <strong>${escapeHtml(noteTitle)}</strong>
+        <span>${escapeHtml(noteBody)}</span>
+      </div>
+    `;
   }
 
   // Month selector options
@@ -3215,13 +3526,22 @@ function startUserRealtimeListener(uid, nonce) {
   unsubscribeUserRealtime = onSnapshot(doc(firestoreDb, "users", uid), (snap) => {
     if (nonce !== authSessionNonce || !snap.exists()) return;
     const data = snap.data() || {};
+    const prevApproved = { ...userApprovedLessons };
+    const nextApproved = sanitizeBoolMap(data.approvedLessons);
+    const newlyApproved = Object.keys(nextApproved).some(k => nextApproved[k] && !prevApproved[k]);
+
     currentUserProfile = data;
     userCompletionOverrides = sanitizeBoolMap(data.completionOverrides);
     userSubmittedLessons = sanitizeBoolMap(data.submittedLessons);
-    userApprovedLessons = sanitizeBoolMap(data.approvedLessons);
+    userApprovedLessons = nextApproved;
+
+    if (newlyApproved && (currentScreen === "desktop" || currentScreen === "lesson")) {
+      pendingWorkCelebration = "approved";
+    }
 
     const displayName = formatDisplayName(currentUser, data);
     updateHeaderAccountUI(currentUser, currentRole, displayName, data.clams ?? STARTER_CLAMS);
+    syncXpProgressUI({ allowCelebrate: true });
     if (roomScene) {
       const rs = data.roomState || {};
       roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
@@ -3347,6 +3667,10 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount) {
       formatDisplayName(currentUser, currentUserProfile),
       result.nextClams
     );
+    if (currentScreen === "desktop" || currentScreen === "lesson") {
+      pendingWorkCelebration = "approved";
+    }
+    syncXpProgressUI({ allowCelebrate: true });
     if (currentScreen === "desktop") renderHome();
     if (currentScreen === "lesson" && activeLessonDate) activeLessonSyncCommission?.();
   }
@@ -3605,10 +3929,16 @@ onAuthStateChanged(auth, async (user) => {
   userCompletionOverrides = {};
   userSubmittedLessons = {};
   userApprovedLessons = {};
+  pendingWorkCelebration = null;
+  lastKnownXpRankIndex = null;
+  hasInitializedXpBaseline = false;
+  pendingRankUpToast = null;
+  dismissRankUpToast(false);
   currentRole = "student";
 
   if (!user) {
     authResolved = true;
+    syncXpProgressUI({ allowCelebrate: false });
     renderAppState();
     return;
   }
@@ -3641,6 +3971,7 @@ onAuthStateChanged(auth, async (user) => {
     if (nonce === authSessionNonce) {
       authResolved = true;
       renderAppState();
+      syncXpProgressUI({ allowCelebrate: false });
     }
   }
 });
