@@ -1,0 +1,1557 @@
+import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+
+const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
+const POST_WORK_COOLDOWN_SEC = 13;
+
+export const SKIN_TONES = [
+  { id: "porcelain", label: "白皙暖調", hex: "#f9dcc4" },
+  { id: "peach", label: "自然杏桃", hex: "#f1c29b" },
+  { id: "honey", label: "小麥暖棕", hex: "#d99b66" },
+  { id: "caramel", label: "焦糖健康", hex: "#a96e44" },
+  { id: "espresso", label: "深栗棕", hex: "#6f442a" }
+];
+
+export const BODY_BUILDS = [
+  { id: "slim", label: "修長輕盈", hint: "肩線較窄、身形修長" },
+  { id: "balanced", label: "勻稱標準", hint: "肩腰比例自然均衡" },
+  { id: "athletic", label: "結實寬肩", hint: "肩背較厚實、線條立體" }
+];
+
+export const HAIR_STYLES = [
+  { id: "short", label: "俐落短髮" },
+  { id: "parted", label: "微卷旁分" },
+  { id: "bob", label: "圓潤齊短髮" },
+  { id: "bun", label: "丸子紮髮" },
+  { id: "long", label: "及肩長髮" }
+];
+
+export const HAIR_COLORS = [
+  { id: "ink", label: "墨黑", hex: "#1f2430" },
+  { id: "espresso", label: "深棕", hex: "#4a3225" },
+  { id: "caramel", label: "奶茶棕", hex: "#8c5b3b" },
+  { id: "ash", label: "霧灰", hex: "#6c768a" },
+  { id: "plum", label: "酒紅棕", hex: "#6b2f3f" }
+];
+
+export const OUTFIT_COLORS = [
+  { id: "terracotta", label: "暖陶橘", hex: "#d96b43" },
+  { id: "sage", label: "鼠尾草綠", hex: "#5a8f7b" },
+  { id: "cobalt", label: "靛藍", hex: "#3b6fd8" },
+  { id: "mustard", label: "芥末黃", hex: "#d9a036" },
+  { id: "charcoal", label: "炭墨灰", hex: "#384152" }
+];
+
+export const DEFAULT_AVATAR = {
+  name: "",
+  build: "balanced",
+  skinTone: "peach",
+  hairStyle: "short",
+  hairColor: "ink",
+  outfitColor: "terracotta"
+};
+
+function findHex(list, id, fallback) {
+  const item = list.find(entry => entry.id === id);
+  return item ? item.hex : fallback;
+}
+
+function lerpColor(c1, c2, alpha) {
+  return c1.clone().lerp(c2, THREE.MathUtils.clamp(alpha, 0, 1));
+}
+
+function makeMat(hex, roughness = 0.65, metalness = 0.04, extras = {}) {
+  return new THREE.MeshStandardMaterial({
+    color: hex,
+    roughness,
+    metalness,
+    ...extras
+  });
+}
+
+function makeDeskScreenTexture(mode = "art") {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 160;
+  const ctx = canvas.getContext("2d");
+
+  if (mode === "game") {
+    // Blocky sandbox game screen
+    ctx.fillStyle = "#5cb8ff";
+    ctx.fillRect(0, 0, 256, 160);
+    ctx.fillStyle = "#4aa944";
+    ctx.fillRect(0, 108, 256, 16);
+    ctx.fillStyle = "#7a5230";
+    ctx.fillRect(0, 124, 256, 36);
+    ctx.fillStyle = "#2f7a2c";
+    ctx.fillRect(42, 46, 36, 36);
+    ctx.fillStyle = "#6c4829";
+    ctx.fillRect(55, 82, 10, 26);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(150, 24, 48, 14);
+    ctx.fillRect(28, 18, 36, 12);
+    ctx.fillStyle = "#ffd54f";
+    ctx.fillRect(184, 92, 18, 16);
+  } else {
+    // Cozy illustration studio UI screen
+    ctx.fillStyle = "#1c2233";
+    ctx.fillRect(0, 0, 256, 160);
+    ctx.fillStyle = "#283046";
+    ctx.fillRect(0, 0, 256, 20);
+    ctx.fillStyle = "#ff5f57";
+    ctx.beginPath(); ctx.arc(12, 10, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#febc2e";
+    ctx.beginPath(); ctx.arc(24, 10, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#28c840";
+    ctx.beginPath(); ctx.arc(36, 10, 4, 0, Math.PI * 2); ctx.fill();
+
+    // Left tool bar
+    ctx.fillStyle = "#232a3d";
+    ctx.fillRect(6, 26, 26, 126);
+    // Art canvas
+    ctx.fillStyle = "#fff7ed";
+    ctx.fillRect(40, 28, 162, 120);
+    ctx.fillStyle = "#fb923c";
+    ctx.beginPath(); ctx.arc(98, 72, 24, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#38bdf8";
+    ctx.fillRect(126, 56, 52, 60);
+    ctx.fillStyle = "#10b981";
+    ctx.fillRect(54, 108, 134, 24);
+    // Right palette
+    ctx.fillStyle = "#232a3d";
+    ctx.fillRect(210, 26, 38, 126);
+    ["#f97316", "#facc15", "#34d399", "#60a5fa", "#c084fc"].forEach((col, i) => {
+      ctx.fillStyle = col;
+      ctx.fillRect(218, 36 + i * 20, 22, 14);
+    });
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export class FreelancerRoomScene {
+  constructor(container, options = {}) {
+    this.container = container;
+    this.onEnterWork = options.onEnterWork || (() => {});
+    this.onLampToggle = options.onLampToggle || (() => {});
+    this.onActivityChange = options.onActivityChange || (() => {});
+    this.onTimeUpdate = options.onTimeUpdate || (() => {});
+    this.onHoverChange = options.onHoverChange || (() => {});
+
+    this.disposed = false;
+    this.animFrameId = null;
+    this.lastFrameTime = performance.now();
+
+    // Camera quarter 0..3 (rotated by 90 deg)
+    this.targetQuarter = ((options.cameraQuarter ?? 0) % 4 + 4) % 4;
+    this.currentAngle = this.targetQuarter * (Math.PI / 2) + Math.PI / 4;
+    this.zoomScale = 1.0;
+
+    this.deskLampOn = Boolean(options.deskLampOn ?? true);
+    this.wallColorHex = options.wallColor || "#f3eadc";
+    this.avatarConfig = { ...DEFAULT_AVATAR, ...(options.avatar || {}) };
+
+    // Room bounds & interactives
+    this.deskWorkAnchor = new THREE.Vector3(-0.2, 0, -2.02);
+    this.bedAnchor = new THREE.Vector3(2.45, 0, 2.05);
+    this.chillSpots = [
+      { id: "phone", label: "滑手機放鬆中", pos: new THREE.Vector3(-1.35, 0, 0.95), rotY: 0.45 },
+      { id: "exercise", label: "做伏地挺身保持體力", pos: new THREE.Vector3(0.45, 0, 0.55), rotY: -0.6 },
+      { id: "read", label: "翻閱靈感畫冊", pos: new THREE.Vector3(-2.35, 0, -0.55), rotY: 1.1 },
+      { id: "eat", label: "享用熱食補充靈感", pos: new THREE.Vector3(0.85, 0, 2.45), rotY: -2.2 },
+      { id: "gaming", label: "偷玩方塊沙盒遊戲", pos: new THREE.Vector3(-0.2, 0, -2.02), rotY: Math.PI },
+      { id: "sleep", label: "在床上休息補眠", pos: new THREE.Vector3(2.55, 0, 2.05), rotY: -Math.PI / 2 }
+    ];
+
+    // Character AI state machine:
+    // "IDLE" | "WALK_TO_ACTIVITY" | "WALK_TO_WORK" | "WORKING"
+    this.charState = "IDLE";
+    this.currentActivity = "phone";
+    this.activityTimer = 7.0;
+    this.postWorkCooldown = 0;
+    this.walkWaypoints = [];
+    this.walkCallback = null;
+    this.walkSpeed = 5.8; // Snappy, brisk walk so entering desktop feels instant
+
+    // Interactive hover/raycast
+    this.raycaster = new THREE.Raycaster();
+    this.pointerNDC = new THREE.Vector2(-99, -99);
+    this.hoveredTarget = null;
+    this.workClickTargets = [];
+    this.lampClickTargets = [];
+
+    this.initScene();
+    this.buildLights();
+    this.buildRoomShell();
+    this.buildFurniture();
+    this.buildCharacter(this.avatarConfig);
+    this.placeCharacterAtIdleStart();
+    this.bindEvents();
+    this.updateCameraTransform(true);
+    this.animate();
+  }
+
+  initScene() {
+    const width = Math.max(320, this.container.clientWidth || 800);
+    const height = Math.max(320, this.container.clientHeight || 560);
+
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color("#e8dfd1");
+
+    const aspect = width / height;
+    const viewSize = 6.35;
+    this.baseViewSize = viewSize;
+    this.camera = new THREE.OrthographicCamera(
+      -viewSize * aspect,
+      viewSize * aspect,
+      viewSize,
+      -viewSize,
+      0.1,
+      60
+    );
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    this.renderer.setSize(width, height);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.06;
+
+    this.container.innerHTML = "";
+    this.renderer.domElement.style.display = "block";
+    this.renderer.domElement.style.width = "100%";
+    this.renderer.domElement.style.height = "100%";
+    this.container.appendChild(this.renderer.domElement);
+
+    // Floating character name + thought bubble HTML overlay inside container
+    this.nameTagEl = document.createElement("div");
+    this.nameTagEl.className = "room-char-nametag";
+    this.container.appendChild(this.nameTagEl);
+
+    this.bubbleEl = document.createElement("div");
+    this.bubbleEl.className = "room-char-bubble hidden";
+    this.container.appendChild(this.bubbleEl);
+  }
+
+  buildLights() {
+    this.hemiLight = new THREE.HemisphereLight("#fff3e0", "#c99b78", 0.72);
+    this.scene.add(this.hemiLight);
+
+    // Key directional Sun/Moon light casting soft shadows through the north window & across studio
+    this.sunLight = new THREE.DirectionalLight("#fff1d6", 2.05);
+    this.sunLight.position.set(5.5, 9.5, -6.5);
+    this.sunLight.castShadow = true;
+    this.sunLight.shadow.mapSize.set(2048, 2048);
+    this.sunLight.shadow.camera.near = 1;
+    this.sunLight.shadow.camera.far = 28;
+    const d = 7.5;
+    this.sunLight.shadow.camera.left = -d;
+    this.sunLight.shadow.camera.right = d;
+    this.sunLight.shadow.camera.top = d;
+    this.sunLight.shadow.camera.bottom = -d;
+    this.sunLight.shadow.bias = -0.0005;
+    this.sunLight.shadow.normalBias = 0.03;
+    this.scene.add(this.sunLight);
+    this.scene.add(this.sunLight.target);
+
+    // Gentle warm ambient fill so shadow undersides look creamy like UE5 Lumen GI
+    this.bounceLight = new THREE.DirectionalLight("#ffe4c4", 0.42);
+    this.bounceLight.position.set(-6, 4, 6);
+    this.scene.add(this.bounceLight);
+
+    // Desk lamp warm tungsten PointLight
+    this.deskLampLight = new THREE.PointLight("#ffbe6b", 2.8, 7.2, 1.6);
+    this.deskLampLight.position.set(-1.05, 1.55, -2.95);
+    this.deskLampLight.castShadow = true;
+    this.deskLampLight.shadow.mapSize.set(512, 512);
+    this.deskLampLight.shadow.bias = -0.002;
+    this.scene.add(this.deskLampLight);
+
+    // Monitor soft cool bounce onto face
+    this.screenGlowLight = new THREE.PointLight("#7cc4ff", 0.75, 3.2, 1.8);
+    this.screenGlowLight.position.set(-0.2, 1.48, -2.85);
+    this.scene.add(this.screenGlowLight);
+  }
+
+  buildRoomShell() {
+    this.roomGroup = new THREE.Group();
+    this.scene.add(this.roomGroup);
+
+    // Thick slab base under floor for clean Game Dev Tycoon diorama edge
+    const baseMat = makeMat("#8a684e", 0.85);
+    const slab = new THREE.Mesh(new RoundedBoxGeometry(8.56, 0.42, 8.56, 3, 0.06), baseMat);
+    slab.position.set(0, -0.22, 0);
+    slab.receiveShadow = true;
+    this.roomGroup.add(slab);
+
+    // Honey-oak warm floor planks
+    const floorMat = makeMat("#d8a774", 0.62, 0.04);
+    const floor = new THREE.Mesh(new RoundedBoxGeometry(8.2, 0.08, 8.2, 2, 0.03), floorMat);
+    floor.position.set(0, -0.04, 0);
+    floor.receiveShadow = true;
+    this.roomGroup.add(floor);
+
+    // Subtle wooden plank grooves
+    const plankLineMat = makeMat("#c4905c", 0.72);
+    for (let i = -3.2; i <= 3.2; i += 0.8) {
+      const strip = new THREE.Mesh(new THREE.BoxGeometry(8.05, 0.005, 0.025), plankLineMat);
+      strip.position.set(0, 0.002, i);
+      strip.receiveShadow = true;
+      this.roomGroup.add(strip);
+    }
+
+    // Perimeter Wall System with auto-cutaway on the 2 front-most walls per camera angle!
+    this.wallMat = makeMat(this.wallColorHex, 0.78);
+    const trimMat = makeMat("#e5d7c3", 0.65);
+
+    this.walls = [
+      this.createNorthWall(this.wallMat, trimMat), // window wall (-Z)
+      this.createEastWall(this.wallMat, trimMat),  // (+X)
+      this.createSouthWall(this.wallMat, trimMat), // (+Z)
+      this.createWestWall(this.wallMat, trimMat)   // door wall (-X)
+    ];
+
+    this.walls.forEach(w => {
+      this.roomGroup.add(w.baseboard);
+      this.roomGroup.add(w.upperGroup);
+    });
+  }
+
+  createNorthWall(wallMat, trimMat) {
+    // Wall along z = -4.12, outward normal (0, 0, -1). Includes a large picture window centered at x = -0.25!
+    const upperGroup = new THREE.Group();
+    const h = 3.15;
+
+    // Left segment: x from -4.24 to -1.45 (width 2.79)
+    const leftSeg = new THREE.Mesh(new RoundedBoxGeometry(2.79, h, 0.24, 2, 0.04), wallMat);
+    leftSeg.position.set(-2.845, h / 2, -4.12);
+    leftSeg.castShadow = true;
+    leftSeg.receiveShadow = true;
+    upperGroup.add(leftSeg);
+
+    // Right segment: x from +0.95 to +4.24 (width 3.29)
+    const rightSeg = new THREE.Mesh(new RoundedBoxGeometry(3.29, h, 0.24, 2, 0.04), wallMat);
+    rightSeg.position.set(2.595, h / 2, -4.12);
+    rightSeg.castShadow = true;
+    rightSeg.receiveShadow = true;
+    upperGroup.add(rightSeg);
+
+    // Below window sill: x from -1.45 to +0.95 (width 2.4), height 1.05
+    const bottomSeg = new THREE.Mesh(new RoundedBoxGeometry(2.44, 1.05, 0.24, 2, 0.04), wallMat);
+    bottomSeg.position.set(-0.25, 0.525, -4.12);
+    bottomSeg.castShadow = true;
+    bottomSeg.receiveShadow = true;
+    upperGroup.add(bottomSeg);
+
+    // Header lintel above window: height 0.55 (y = 2.6..3.15)
+    const topSeg = new THREE.Mesh(new RoundedBoxGeometry(2.44, 0.55, 0.24, 2, 0.04), wallMat);
+    topSeg.position.set(-0.25, 2.875, -4.12);
+    topSeg.castShadow = true;
+    topSeg.receiveShadow = true;
+    upperGroup.add(topSeg);
+
+    // Window frame & sill
+    const frameMat = makeMat("#8b6447", 0.52);
+    const sill = new THREE.Mesh(new RoundedBoxGeometry(2.56, 0.1, 0.36, 2, 0.03), frameMat);
+    sill.position.set(-0.25, 1.08, -4.08);
+    sill.castShadow = true;
+    sill.receiveShadow = true;
+    upperGroup.add(sill);
+
+    const mullionV = new THREE.Mesh(new RoundedBoxGeometry(0.07, 1.56, 0.14, 2, 0.02), frameMat);
+    mullionV.position.set(-0.25, 1.85, -4.12);
+    mullionV.castShadow = true;
+    upperGroup.add(mullionV);
+
+    // Window sky backdrop plane right behind window opening (shows sunrise/day/sunset/stars!)
+    this.windowSkyMat = new THREE.MeshBasicMaterial({ color: "#87cefa" });
+    const skyBackdrop = new THREE.Mesh(new THREE.PlaneGeometry(2.42, 1.58), this.windowSkyMat);
+    skyBackdrop.position.set(-0.25, 1.84, -4.23);
+    upperGroup.add(skyBackdrop);
+
+    // Celestial sun/moon orb inside window
+    this.windowOrbMat = new THREE.MeshBasicMaterial({ color: "#fff3a8" });
+    this.windowOrb = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), this.windowOrbMat);
+    this.windowOrb.position.set(-0.5, 2.1, -4.2);
+    upperGroup.add(this.windowOrb);
+
+    // Glass pane with soft sheen
+    const glassMat = new THREE.MeshPhysicalMaterial({
+      color: "#d8f0ff",
+      transparent: true,
+      opacity: 0.22,
+      roughness: 0.08,
+      metalness: 0.05
+    });
+    const glass = new THREE.Mesh(new THREE.PlaneGeometry(2.38, 1.5), glassMat);
+    glass.position.set(-0.25, 1.84, -4.11);
+    upperGroup.add(glass);
+
+    // Low floor baseboard always left visible during cutaway
+    const baseboard = new THREE.Mesh(new RoundedBoxGeometry(8.48, 0.14, 0.24, 2, 0.03), trimMat);
+    baseboard.position.set(0, 0.07, -4.12);
+    baseboard.receiveShadow = true;
+
+    return { name: "north", normal: new THREE.Vector3(0, 0, -1), upperGroup, baseboard };
+  }
+
+  createSouthWall(wallMat, trimMat) {
+    const upperGroup = new THREE.Group();
+    const h = 3.15;
+    const wall = new THREE.Mesh(new RoundedBoxGeometry(8.48, h, 0.24, 2, 0.04), wallMat);
+    wall.position.set(0, h / 2, 4.12);
+    wall.castShadow = true;
+    wall.receiveShadow = true;
+    upperGroup.add(wall);
+
+    const baseboard = new THREE.Mesh(new RoundedBoxGeometry(8.48, 0.14, 0.24, 2, 0.03), trimMat);
+    baseboard.position.set(0, 0.07, 4.12);
+    baseboard.receiveShadow = true;
+
+    return { name: "south", normal: new THREE.Vector3(0, 0, 1), upperGroup, baseboard };
+  }
+
+  createEastWall(wallMat, trimMat) {
+    const upperGroup = new THREE.Group();
+    const h = 3.15;
+    const wall = new THREE.Mesh(new RoundedBoxGeometry(0.24, h, 8.24, 2, 0.04), wallMat);
+    wall.position.set(4.12, h / 2, 0);
+    wall.castShadow = true;
+    wall.receiveShadow = true;
+    upperGroup.add(wall);
+
+    const baseboard = new THREE.Mesh(new RoundedBoxGeometry(0.24, 0.14, 8.24, 2, 0.03), trimMat);
+    baseboard.position.set(4.12, 0.07, 0);
+    baseboard.receiveShadow = true;
+
+    return { name: "east", normal: new THREE.Vector3(1, 0, 0), upperGroup, baseboard };
+  }
+
+  createWestWall(wallMat, trimMat) {
+    const upperGroup = new THREE.Group();
+    const h = 3.15;
+    const wall = new THREE.Mesh(new RoundedBoxGeometry(0.24, h, 8.24, 2, 0.04), wallMat);
+    wall.position.set(-4.12, h / 2, 0);
+    wall.castShadow = true;
+    wall.receiveShadow = true;
+    upperGroup.add(wall);
+
+    // Apartment entrance door attached to West wall around z = 2.05
+    const doorFrameMat = makeMat("#7a553a", 0.55);
+    const doorPanelMat = makeMat("#a97851", 0.58);
+    const brassMat = makeMat("#eab308", 0.25, 0.85);
+
+    const doorFrame = new THREE.Mesh(new RoundedBoxGeometry(0.14, 2.36, 1.32, 2, 0.03), doorFrameMat);
+    doorFrame.position.set(-3.98, 1.18, 2.05);
+    doorFrame.castShadow = true;
+    upperGroup.add(doorFrame);
+
+    const doorLeaf = new THREE.Mesh(new RoundedBoxGeometry(0.16, 2.24, 1.14, 2, 0.03), doorPanelMat);
+    doorLeaf.position.set(-3.96, 1.12, 2.05);
+    doorLeaf.receiveShadow = true;
+    upperGroup.add(doorLeaf);
+
+    const handle = new THREE.Mesh(new THREE.SphereGeometry(0.06, 14, 14), brassMat);
+    handle.position.set(-3.86, 1.05, 1.62);
+    upperGroup.add(handle);
+
+    const baseboard = new THREE.Mesh(new RoundedBoxGeometry(0.24, 0.14, 8.24, 2, 0.03), trimMat);
+    baseboard.position.set(-4.12, 0.07, 0);
+    baseboard.receiveShadow = true;
+
+    return { name: "west", normal: new THREE.Vector3(-1, 0, 0), upperGroup, baseboard };
+  }
+
+  buildFurniture() {
+    this.furnitureGroup = new THREE.Group();
+    this.roomGroup.add(this.furnitureGroup);
+
+    this.buildDoormat();
+    this.buildCozyRug();
+    this.buildBathroomCorner();
+    this.buildSingleBed();
+    this.buildWorkDeskAndMac();
+  }
+
+  buildDoormat() {
+    const matMesh = new THREE.Mesh(
+      new RoundedBoxGeometry(0.85, 0.04, 1.28, 2, 0.02),
+      makeMat("#7d9b76", 0.92)
+    );
+    matMesh.position.set(-3.36, 0.02, 2.05);
+    matMesh.receiveShadow = true;
+    this.furnitureGroup.add(matMesh);
+  }
+
+  buildCozyRug() {
+    const rug = new THREE.Mesh(
+      new RoundedBoxGeometry(2.65, 0.03, 2.25, 3, 0.015),
+      makeMat("#ebe1d2", 0.95)
+    );
+    rug.position.set(-0.55, 0.015, 0.72);
+    rug.receiveShadow = true;
+    this.furnitureGroup.add(rug);
+
+    const innerStripe = new THREE.Mesh(
+      new RoundedBoxGeometry(2.25, 0.034, 1.85, 3, 0.015),
+      makeMat("#dfcbb5", 0.95)
+    );
+    innerStripe.position.set(-0.55, 0.017, 0.72);
+    innerStripe.receiveShadow = true;
+    this.furnitureGroup.add(innerStripe);
+  }
+
+  buildBathroomCorner() {
+    const bathGroup = new THREE.Group();
+    this.furnitureGroup.add(bathGroup);
+
+    // Ceramic tile zone in Northeast corner (+X, -Z)
+    const tileMat = makeMat("#e5ecf2", 0.35, 0.05);
+    const tileFloor = new THREE.Mesh(new RoundedBoxGeometry(2.45, 0.028, 2.45, 2, 0.012), tileMat);
+    tileFloor.position.set(2.76, 0.014, -2.76);
+    tileFloor.receiveShadow = true;
+    bathGroup.add(tileFloor);
+
+    // Low frosted partition walls (never block isometric overview!)
+    const partFrameMat = makeMat("#9fb0c4", 0.4, 0.25);
+    const frostedMat = new THREE.MeshPhysicalMaterial({
+      color: "#d8e9f5",
+      roughness: 0.38,
+      transparent: true,
+      opacity: 0.62
+    });
+
+    // West divider panel with open doorway toward bottom
+    const westPart = new THREE.Mesh(new RoundedBoxGeometry(0.1, 1.18, 1.55, 2, 0.03), frostedMat);
+    westPart.position.set(1.52, 0.59, -3.22);
+    westPart.castShadow = true;
+    bathGroup.add(westPart);
+
+    const westCap = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.06, 1.57, 2, 0.02), partFrameMat);
+    westCap.position.set(1.52, 1.19, -3.22);
+    bathGroup.add(westCap);
+
+    // South divider panel (partial privacy screen)
+    const southPart = new THREE.Mesh(new RoundedBoxGeometry(1.45, 1.18, 0.1, 2, 0.03), frostedMat);
+    southPart.position.set(3.26, 0.59, -1.52);
+    southPart.castShadow = true;
+    bathGroup.add(southPart);
+
+    const southCap = new THREE.Mesh(new RoundedBoxGeometry(1.47, 0.06, 0.12, 2, 0.02), partFrameMat);
+    southCap.position.set(3.26, 1.19, -1.52);
+    bathGroup.add(southCap);
+
+    // Cute rounded porcelain toilet
+    const ceramicMat = makeMat("#f8fafc", 0.22, 0.04);
+    const chromeMat = makeMat("#cbd5e1", 0.2, 0.85);
+    const toilet = new THREE.Group();
+    toilet.position.set(3.32, 0, -3.35);
+
+    const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.2, 0.34, 20), ceramicMat);
+    ped.position.set(0, 0.17, 0.06);
+    ped.castShadow = true;
+    toilet.add(ped);
+
+    const bowl = new THREE.Mesh(new RoundedBoxGeometry(0.52, 0.18, 0.58, 4, 0.08), ceramicMat);
+    bowl.position.set(0, 0.38, 0.12);
+    bowl.castShadow = true;
+    toilet.add(bowl);
+
+    const lid = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.06, 0.52, 3, 0.03), makeMat("#ffffff", 0.18));
+    lid.position.set(0, 0.49, 0.12);
+    lid.castShadow = true;
+    toilet.add(lid);
+
+    const tank = new THREE.Mesh(new RoundedBoxGeometry(0.54, 0.56, 0.24, 4, 0.07), ceramicMat);
+    tank.position.set(0, 0.58, -0.2);
+    tank.castShadow = true;
+    toilet.add(tank);
+
+    const flushBtn = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.03, 14), chromeMat);
+    flushBtn.position.set(0, 0.87, -0.2);
+    toilet.add(flushBtn);
+
+    bathGroup.add(toilet);
+
+    // Compact corner wash basin
+    const sinkGroup = new THREE.Group();
+    sinkGroup.position.set(2.22, 0, -3.45);
+    const sinkPed = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.14, 0.68, 16), ceramicMat);
+    sinkPed.position.set(0, 0.34, 0);
+    sinkPed.castShadow = true;
+    sinkGroup.add(sinkPed);
+
+    const basin = new THREE.Mesh(new RoundedBoxGeometry(0.58, 0.18, 0.48, 4, 0.07), ceramicMat);
+    basin.position.set(0, 0.72, 0.04);
+    basin.castShadow = true;
+    sinkGroup.add(basin);
+
+    const faucet = new THREE.Mesh(new RoundedBoxGeometry(0.06, 0.16, 0.12, 2, 0.02), chromeMat);
+    faucet.position.set(0, 0.86, -0.1);
+    sinkGroup.add(faucet);
+
+    bathGroup.add(sinkGroup);
+  }
+
+  buildSingleBed() {
+    const bedGroup = new THREE.Group();
+    bedGroup.position.set(2.65, 0, 2.05);
+    this.furnitureGroup.add(bedGroup);
+
+    const woodMat = makeMat("#b98456", 0.58);
+    const sheetMat = makeMat("#f5f0e8", 0.86);
+    const blanketMat = makeMat("#6d8da6", 0.88);
+    const pillowMat = makeMat("#fff9f0", 0.9);
+
+    // Wooden bed frame
+    const frame = new THREE.Mesh(new RoundedBoxGeometry(1.62, 0.28, 2.52, 4, 0.07), woodMat);
+    frame.position.set(0, 0.22, 0);
+    frame.castShadow = true;
+    frame.receiveShadow = true;
+    bedGroup.add(frame);
+
+    // Rounded headboard against +X side
+    const headboard = new THREE.Mesh(new RoundedBoxGeometry(1.62, 0.85, 0.16, 4, 0.06), woodMat);
+    headboard.position.set(0, 0.48, 1.2);
+    headboard.castShadow = true;
+    bedGroup.add(headboard);
+
+    // Legs
+    [[-0.68, -1.1], [0.68, -1.1], [-0.68, 1.1], [0.68, 1.1]].forEach(([lx, lz]) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.14, 12), woodMat);
+      leg.position.set(lx, 0.07, lz);
+      leg.castShadow = true;
+      bedGroup.add(leg);
+    });
+
+    // Plump mattress
+    const mattress = new THREE.Mesh(new RoundedBoxGeometry(1.48, 0.24, 2.32, 5, 0.09), sheetMat);
+    mattress.position.set(0, 0.42, -0.02);
+    mattress.castShadow = true;
+    mattress.receiveShadow = true;
+    bedGroup.add(mattress);
+
+    // Folded soft blanket
+    const blanket = new THREE.Mesh(new RoundedBoxGeometry(1.54, 0.2, 1.48, 5, 0.09), blanketMat);
+    blanket.position.set(0, 0.47, -0.45);
+    blanket.castShadow = true;
+    blanket.receiveShadow = true;
+    bedGroup.add(blanket);
+
+    // Fluffy pillow
+    const pillow = new THREE.Mesh(new RoundedBoxGeometry(0.95, 0.18, 0.52, 5, 0.08), pillowMat);
+    pillow.position.set(0, 0.57, 0.78);
+    pillow.rotation.x = -0.12;
+    pillow.castShadow = true;
+    bedGroup.add(pillow);
+  }
+
+  buildWorkDeskAndMac() {
+    const workArea = new THREE.Group();
+    workArea.position.set(-0.2, 0, -3.05);
+    this.furnitureGroup.add(workArea);
+
+    const deskWood = makeMat("#cfa072", 0.52);
+    const deskLegMat = makeMat("#4b5563", 0.45, 0.3);
+
+    // Desk tabletop (rounded modern minimalist desk)
+    const tableTop = new THREE.Mesh(new RoundedBoxGeometry(2.35, 0.11, 1.12, 4, 0.045), deskWood);
+    tableTop.position.set(0, 0.92, 0);
+    tableTop.castShadow = true;
+    tableTop.receiveShadow = true;
+    workArea.add(tableTop);
+    this.workClickTargets.push(tableTop);
+
+    // 4 clean legs
+    [[-1.02, -0.44], [1.02, -0.44], [-1.02, 0.44], [1.02, 0.44]].forEach(([lx, lz]) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.9, 14), deskLegMat);
+      leg.position.set(lx, 0.45, lz);
+      leg.castShadow = true;
+      workArea.add(leg);
+    });
+
+    // Mac-like sleek silver desktop monitor
+    const aluMat = makeMat("#d6dbe3", 0.28, 0.72);
+    const bezelMat = makeMat("#1e2430", 0.35, 0.1);
+
+    const standFoot = new THREE.Mesh(new RoundedBoxGeometry(0.36, 0.03, 0.26, 3, 0.015), aluMat);
+    standFoot.position.set(0, 0.99, -0.2);
+    standFoot.castShadow = true;
+    workArea.add(standFoot);
+
+    const standNeck = new THREE.Mesh(new RoundedBoxGeometry(0.11, 0.24, 0.04, 2, 0.015), aluMat);
+    standNeck.position.set(0, 1.12, -0.24);
+    standNeck.rotation.x = -0.15;
+    workArea.add(standNeck);
+
+    const macChassis = new THREE.Mesh(new RoundedBoxGeometry(1.02, 0.64, 0.05, 4, 0.025), aluMat);
+    macChassis.position.set(0, 1.46, -0.2);
+    macChassis.castShadow = true;
+    workArea.add(macChassis);
+    this.workClickTargets.push(macChassis);
+
+    const macBezel = new THREE.Mesh(new RoundedBoxGeometry(0.96, 0.56, 0.055, 3, 0.02), bezelMat);
+    macBezel.position.set(0, 1.47, -0.195);
+    workArea.add(macBezel);
+    this.workClickTargets.push(macBezel);
+
+    this.artScreenTex = makeDeskScreenTexture("art");
+    this.gameScreenTex = makeDeskScreenTexture("game");
+    this.macScreenMat = new THREE.MeshBasicMaterial({ map: this.artScreenTex });
+    const macDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.5), this.macScreenMat);
+    macDisplay.position.set(0, 1.475, -0.165);
+    workArea.add(macDisplay);
+    this.workClickTargets.push(macDisplay);
+
+    // Compact rounded Mac keyboard + mouse
+    const keyMat = makeMat("#eef2f6", 0.45);
+    const keyboard = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.025, 0.16, 2, 0.01), keyMat);
+    keyboard.position.set(-0.08, 0.99, 0.12);
+    keyboard.castShadow = true;
+    workArea.add(keyboard);
+    this.workClickTargets.push(keyboard);
+
+    const mouse = new THREE.Mesh(new RoundedBoxGeometry(0.08, 0.028, 0.12, 3, 0.014), keyMat);
+    mouse.position.set(0.26, 0.99, 0.12);
+    workArea.add(mouse);
+
+    // Drawing Tablet + Stylus (電繪板!) right in front/side for freelance illustrator identity
+    const tabletMat = makeMat("#2a3242", 0.38, 0.15);
+    const tabletScreenMat = makeMat("#3b4a66", 0.25);
+    const tablet = new THREE.Mesh(new RoundedBoxGeometry(0.52, 0.032, 0.34, 3, 0.016), tabletMat);
+    tablet.position.set(0.56, 1.0, 0.2);
+    tablet.rotation.x = 0.12;
+    tablet.rotation.y = -0.22;
+    tablet.castShadow = true;
+    workArea.add(tablet);
+    this.workClickTargets.push(tablet);
+
+    const tabletActiveArea = new THREE.Mesh(new RoundedBoxGeometry(0.44, 0.01, 0.26, 2, 0.004), tabletScreenMat);
+    tabletActiveArea.position.set(0.56, 1.02, 0.2);
+    tabletActiveArea.rotation.x = 0.12;
+    tabletActiveArea.rotation.y = -0.22;
+    workArea.add(tabletActiveArea);
+    this.workClickTargets.push(tabletActiveArea);
+
+    const stylus = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.22, 10), makeMat("#f59e0b", 0.4));
+    stylus.position.set(0.86, 1.0, 0.24);
+    stylus.rotation.z = Math.PI / 2;
+    stylus.rotation.y = 0.35;
+    workArea.add(stylus);
+
+    // Cozy toggleable Desk Lamp on left edge of desk
+    const lampGroup = new THREE.Group();
+    lampGroup.position.set(-0.88, 0.97, -0.15);
+    const lampBaseMat = makeMat("#d97757", 0.42);
+    const lampShadeMat = makeMat("#f59e0b", 0.4);
+    this.lampBulbMat = new THREE.MeshStandardMaterial({
+      color: "#fff3c4",
+      emissive: "#ffb347",
+      emissiveIntensity: this.deskLampOn ? 1.6 : 0.0,
+      roughness: 0.2
+    });
+
+    const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.05, 18), lampBaseMat);
+    lampBase.position.set(0, 0.025, 0);
+    lampBase.castShadow = true;
+    lampGroup.add(lampBase);
+
+    const lampArm = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.42, 12), makeMat("#64748b", 0.3, 0.6));
+    lampArm.position.set(-0.04, 0.22, 0);
+    lampArm.rotation.z = -0.2;
+    lampGroup.add(lampArm);
+
+    const lampShade = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.2, 20), lampShadeMat);
+    lampShade.position.set(0.05, 0.43, 0);
+    lampShade.rotation.z = -0.5;
+    lampShade.castShadow = true;
+    lampGroup.add(lampShade);
+
+    const lampBulb = new THREE.Mesh(new THREE.SphereGeometry(0.065, 14, 14), this.lampBulbMat);
+    lampBulb.position.set(0.08, 0.38, 0);
+    lampGroup.add(lampBulb);
+
+    workArea.add(lampGroup);
+    this.lampClickTargets.push(lampBase, lampArm, lampShade, lampBulb);
+
+    // Hover highlight ring around desk setup
+    const ringGeo = new THREE.RingGeometry(0.95, 1.06, 36);
+    this.workHoverRingMat = new THREE.MeshBasicMaterial({
+      color: "#f59e0b",
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0
+    });
+    const hoverRing = new THREE.Mesh(ringGeo, this.workHoverRingMat);
+    hoverRing.rotation.x = -Math.PI / 2;
+    hoverRing.position.set(-0.2, 0.02, -2.55);
+    this.roomGroup.add(hoverRing);
+
+    // Cozy Swivel Desk Chair
+    const chair = new THREE.Group();
+    chair.position.set(-0.2, 0, -2.02);
+    const chairFabric = makeMat("#5b738f", 0.8);
+    const chairMetal = makeMat("#475569", 0.35, 0.6);
+
+    const chairSeat = new THREE.Mesh(new RoundedBoxGeometry(0.62, 0.12, 0.58, 4, 0.05), chairFabric);
+    chairSeat.position.set(0, 0.48, 0);
+    chairSeat.castShadow = true;
+    chair.add(chairSeat);
+
+    const chairBack = new THREE.Mesh(new RoundedBoxGeometry(0.58, 0.56, 0.11, 4, 0.05), chairFabric);
+    chairBack.position.set(0, 0.78, 0.25);
+    chairBack.rotation.x = 0.08;
+    chairBack.castShadow = true;
+    chair.add(chairBack);
+
+    const chairPole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.42, 12), chairMetal);
+    chairPole.position.set(0, 0.24, 0);
+    chair.add(chairPole);
+
+    const chairBase = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.32, 0.06, 16), chairMetal);
+    chairBase.position.set(0, 0.04, 0);
+    chair.add(chairBase);
+
+    this.chairGroup = chair;
+    this.furnitureGroup.add(chair);
+    this.workClickTargets.push(chairSeat, chairBack);
+  }
+
+  buildCharacter(config) {
+    if (this.charRoot) {
+      this.roomGroup.remove(this.charRoot);
+    }
+
+    this.avatarConfig = { ...DEFAULT_AVATAR, ...config };
+    const cfg = this.avatarConfig;
+
+    const skinMat = makeMat(findHex(SKIN_TONES, cfg.skinTone, "#f1c29b"), 0.58);
+    const hairMat = makeMat(findHex(HAIR_COLORS, cfg.hairColor, "#1f2430"), 0.72);
+    const shirtMat = makeMat(findHex(OUTFIT_COLORS, cfg.outfitColor, "#d96b43"), 0.78);
+    const pantsMat = makeMat("#374151", 0.85);
+    const shoeMat = makeMat("#f8fafc", 0.65);
+    const eyeMat = makeMat("#1e293b", 0.2);
+    const blushMat = makeMat("#f48c8c", 0.8);
+
+    // Non-binary physical silhouette traits via build selector ("slim" | "balanced" | "athletic")
+    const dims = {
+      slim:     { shoulderW: 0.42, torsoD: 0.25, hipW: 0.40, limbR: 0.072, chestBump: true },
+      balanced: { shoulderW: 0.48, torsoD: 0.28, hipW: 0.43, limbR: 0.082, chestBump: false },
+      athletic: { shoulderW: 0.56, torsoD: 0.31, hipW: 0.44, limbR: 0.092, chestBump: false }
+    }[cfg.build] || { shoulderW: 0.48, torsoD: 0.28, hipW: 0.43, limbR: 0.082, chestBump: false };
+
+    this.charRoot = new THREE.Group();
+    this.charBody = new THREE.Group(); // inner rig tilted for sleeping/pushups
+    this.charRoot.add(this.charBody);
+
+    // Legs (pivoted around hips y = 0.52)
+    this.leftLegPivot = new THREE.Group();
+    this.leftLegPivot.position.set(-0.11, 0.52, 0);
+    this.rightLegPivot = new THREE.Group();
+    this.rightLegPivot.position.set(0.11, 0.52, 0);
+
+    [this.leftLegPivot, this.rightLegPivot].forEach(pivot => {
+      const leg = new THREE.Mesh(
+        new THREE.CapsuleGeometry(dims.limbR, 0.34, 8, 12),
+        pantsMat
+      );
+      leg.position.set(0, -0.22, 0);
+      leg.castShadow = true;
+      pivot.add(leg);
+
+      const shoe = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.1, 0.23, 3, 0.04), shoeMat);
+      shoe.position.set(0, -0.46, 0.04);
+      shoe.castShadow = true;
+      pivot.add(shoe);
+      this.charBody.add(pivot);
+    });
+
+    // Rounded Torso
+    this.torsoGroup = new THREE.Group();
+    this.torsoGroup.position.set(0, 0.78, 0);
+
+    const torso = new THREE.Mesh(
+      new RoundedBoxGeometry(dims.shoulderW, 0.54, dims.torsoD, 5, 0.11),
+      shirtMat
+    );
+    torso.castShadow = true;
+    this.torsoGroup.add(torso);
+
+    const hips = new THREE.Mesh(
+      new RoundedBoxGeometry(dims.hipW, 0.18, dims.torsoD * 0.96, 4, 0.07),
+      pantsMat
+    );
+    hips.position.set(0, -0.25, 0);
+    hips.castShadow = true;
+    this.torsoGroup.add(hips);
+
+    // Subtle chest silhouette contour when slim build is chosen
+    if (dims.chestBump) {
+      const contour = new THREE.Mesh(
+        new RoundedBoxGeometry(dims.shoulderW * 0.82, 0.16, 0.08, 4, 0.04),
+        shirtMat
+      );
+      contour.position.set(0, 0.06, dims.torsoD * 0.45);
+      this.torsoGroup.add(contour);
+    }
+
+    this.charBody.add(this.torsoGroup);
+
+    // Arms (pivoted around shoulders)
+    this.leftArmPivot = new THREE.Group();
+    this.leftArmPivot.position.set(-(dims.shoulderW / 2 + 0.06), 0.98, 0);
+    this.rightArmPivot = new THREE.Group();
+    this.rightArmPivot.position.set(dims.shoulderW / 2 + 0.06, 0.98, 0);
+
+    [this.leftArmPivot, this.rightArmPivot].forEach(pivot => {
+      const sleeve = new THREE.Mesh(
+        new THREE.CapsuleGeometry(dims.limbR * 0.92, 0.22, 8, 12),
+        shirtMat
+      );
+      sleeve.position.set(0, -0.14, 0);
+      sleeve.castShadow = true;
+      pivot.add(sleeve);
+
+      const forearm = new THREE.Mesh(
+        new THREE.CapsuleGeometry(dims.limbR * 0.78, 0.16, 8, 12),
+        skinMat
+      );
+      forearm.position.set(0, -0.32, 0);
+      forearm.castShadow = true;
+      pivot.add(forearm);
+      this.charBody.add(pivot);
+    });
+
+    // Small hand-held props for idle states (phone / book / snack bowl)
+    this.phoneProp = new THREE.Mesh(
+      new RoundedBoxGeometry(0.09, 0.15, 0.02, 2, 0.008),
+      makeMat("#1e293b", 0.25, 0.4, { emissive: "#60a5fa", emissiveIntensity: 0.75 })
+    );
+    this.phoneProp.position.set(0, -0.44, 0.08);
+    this.phoneProp.visible = false;
+    this.rightArmPivot.add(this.phoneProp);
+
+    this.bookProp = new THREE.Mesh(
+      new RoundedBoxGeometry(0.24, 0.05, 0.3, 2, 0.015),
+      makeMat("#f97316", 0.7)
+    );
+    this.bookProp.position.set(-0.1, -0.42, 0.14);
+    this.bookProp.visible = false;
+    this.rightArmPivot.add(this.bookProp);
+
+    this.snackProp = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.09, 0.06, 0.11, 14),
+      makeMat("#fef3c7", 0.5)
+    );
+    this.snackProp.position.set(0, -0.44, 0.08);
+    this.snackProp.visible = false;
+    this.rightArmPivot.add(this.snackProp);
+
+    // Cute Oversized Stylized Clay Head
+    this.headGroup = new THREE.Group();
+    this.headGroup.position.set(0, 1.32, 0);
+
+    const head = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.44, 0.44, 6, 0.17), skinMat);
+    head.castShadow = true;
+    this.headGroup.add(head);
+
+    // Eyes & rosy cheeks
+    const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 10), eyeMat);
+    leftEye.position.set(-0.09, -0.01, 0.21);
+    const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 10), eyeMat);
+    rightEye.position.set(0.09, -0.01, 0.21);
+    this.headGroup.add(leftEye, rightEye);
+
+    const cheekL = new THREE.Mesh(new THREE.SphereGeometry(0.038, 10, 10), blushMat);
+    cheekL.scale.set(1.2, 0.6, 0.4);
+    cheekL.position.set(-0.14, -0.07, 0.195);
+    const cheekR = cheekL.clone();
+    cheekR.position.x = 0.14;
+    this.headGroup.add(cheekL, cheekR);
+
+    // Modular Hair Style
+    const hairCap = new THREE.Mesh(new RoundedBoxGeometry(0.49, 0.24, 0.47, 5, 0.12), hairMat);
+    hairCap.position.set(0, 0.14, -0.01);
+    hairCap.castShadow = true;
+    this.headGroup.add(hairCap);
+
+    const hairBack = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.34, 0.16, 4, 0.08), hairMat);
+    hairBack.position.set(0, 0.04, -0.17);
+    hairBack.castShadow = true;
+    this.headGroup.add(hairBack);
+
+    if (cfg.hairStyle === "parted") {
+      const bang = new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.11, 0.15, 4, 0.05), hairMat);
+      bang.position.set(0.06, 0.15, 0.18);
+      bang.rotation.z = -0.18;
+      this.headGroup.add(bang);
+    } else if (cfg.hairStyle === "bob") {
+      const sideL = new THREE.Mesh(new RoundedBoxGeometry(0.11, 0.36, 0.32, 4, 0.05), hairMat);
+      sideL.position.set(-0.22, -0.01, -0.02);
+      const sideR = sideL.clone();
+      sideR.position.x = 0.22;
+      this.headGroup.add(sideL, sideR);
+    } else if (cfg.hairStyle === "bun") {
+      const bun = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 14), hairMat);
+      bun.position.set(0, 0.29, -0.14);
+      bun.castShadow = true;
+      this.headGroup.add(bun);
+    } else if (cfg.hairStyle === "long") {
+      const longTail = new THREE.Mesh(new RoundedBoxGeometry(0.44, 0.48, 0.14, 4, 0.06), hairMat);
+      longTail.position.set(0, -0.16, -0.19);
+      longTail.castShadow = true;
+      this.headGroup.add(longTail);
+    }
+
+    this.charBody.add(this.headGroup);
+    this.roomGroup.add(this.charRoot);
+
+    this.nameTagEl.textContent = (cfg.name || "接案繪師").trim();
+    if (this.charState === "WORKING") {
+      this.charRoot.position.copy(this.deskWorkAnchor);
+      this.charRoot.rotation.y = Math.PI;
+    }
+  }
+
+  placeCharacterAtIdleStart() {
+    const startSpot = this.chillSpots[0];
+    this.charRoot.position.copy(startSpot.pos);
+    this.charRoot.rotation.y = startSpot.rotY;
+    this.currentActivity = startSpot.id;
+    this.onActivityChange(startSpot.label);
+  }
+
+  updateAvatarConfig(nextConfig) {
+    const prevPos = this.charRoot ? this.charRoot.position.clone() : this.chillSpots[0].pos.clone();
+    const prevRot = this.charRoot ? this.charRoot.rotation.y : 0;
+    this.buildCharacter(nextConfig);
+    this.charRoot.position.copy(prevPos);
+    this.charRoot.rotation.y = prevRot;
+  }
+
+  setDeskLamp(isOn) {
+    this.deskLampOn = Boolean(isOn);
+    if (this.lampBulbMat) {
+      this.lampBulbMat.emissiveIntensity = this.deskLampOn ? 1.6 : 0.0;
+    }
+  }
+
+  setQuarter(quarter) {
+    this.targetQuarter = ((quarter % 4) + 4) % 4;
+  }
+
+  rotateLeft() {
+    this.setQuarter(this.targetQuarter - 1);
+    return this.targetQuarter;
+  }
+
+  rotateRight() {
+    this.setQuarter(this.targetQuarter + 1);
+    return this.targetQuarter;
+  }
+
+  // Triggered when clicking the computer/desk (or pressing keyboard shortcut)
+  goToWork() {
+    if (this.charState === "WALK_TO_WORK") return;
+    const isNightSleeping = this.currentActivity === "sleep";
+
+    if (this.charState === "WORKING") {
+      this.onEnterWork();
+      return;
+    }
+
+    this.hideAllProps();
+    if (this.macScreenMat) {
+      this.macScreenMat.map = this.artScreenTex;
+      this.macScreenMat.needsUpdate = true;
+    }
+
+    if (isNightSleeping) {
+      this.showBubble("💡 靈感來了！", 1600);
+    }
+
+    // Immediate snappy walk straight to desk chair
+    this.charState = "WALK_TO_WORK";
+    this.onActivityChange("快步前往書桌準備接案...");
+    const dist = this.charRoot.position.distanceTo(this.deskWorkAnchor);
+    if (dist < 0.35) {
+      this.charRoot.position.copy(this.deskWorkAnchor);
+      this.enterWorkingPose();
+      this.onEnterWork();
+      return;
+    }
+
+    this.walkWaypoints = [this.deskWorkAnchor.clone()];
+    this.walkCallback = () => {
+      this.enterWorkingPose();
+      this.onEnterWork();
+    };
+  }
+
+  returnFromWork() {
+    // Character remains sitting and working at the Mac for ~13 seconds before getting up
+    this.hideAllProps();
+    if (this.macScreenMat) {
+      this.macScreenMat.map = this.artScreenTex;
+      this.macScreenMat.needsUpdate = true;
+    }
+    this.charState = "WORKING";
+    this.postWorkCooldown = POST_WORK_COOLDOWN_SEC;
+    this.charRoot.position.copy(this.deskWorkAnchor);
+    this.charRoot.rotation.y = Math.PI;
+    this.onActivityChange("正在電繪板前收尾創作（稍後休息）");
+  }
+
+  enterWorkingPose() {
+    this.charState = "WORKING";
+    this.postWorkCooldown = POST_WORK_COOLDOWN_SEC;
+    this.charRoot.position.copy(this.deskWorkAnchor);
+    this.charRoot.rotation.y = Math.PI;
+    this.onActivityChange("專心創作接案中");
+  }
+
+  showBubble(text, durationMs = 1500) {
+    if (!this.bubbleEl) return;
+    this.bubbleEl.textContent = text;
+    this.bubbleEl.classList.remove("hidden");
+    clearTimeout(this.bubbleTimer);
+    this.bubbleTimer = setTimeout(() => {
+      this.bubbleEl.classList.add("hidden");
+    }, durationMs);
+  }
+
+  hideAllProps() {
+    if (this.phoneProp) this.phoneProp.visible = false;
+    if (this.bookProp) this.bookProp.visible = false;
+    if (this.snackProp) this.snackProp.visible = false;
+  }
+
+  pickNextIdleActivity(isNightTime) {
+    const candidates = isNightTime
+      ? ["sleep", "sleep", "phone", "gaming", "read"]
+      : ["phone", "exercise", "read", "eat", "gaming"];
+
+    const choices = candidates.filter(id => id !== this.currentActivity);
+    const chosenId = choices[Math.floor(Math.random() * choices.length)] || "phone";
+    const spot = this.chillSpots.find(s => s.id === chosenId) || this.chillSpots[0];
+
+    this.hideAllProps();
+    if (this.macScreenMat) {
+      this.macScreenMat.map = chosenId === "gaming" ? this.gameScreenTex : this.artScreenTex;
+      this.macScreenMat.needsUpdate = true;
+    }
+
+    this.charState = "WALK_TO_ACTIVITY";
+    this.walkWaypoints = [spot.pos.clone()];
+    this.walkCallback = () => {
+      this.charState = "IDLE";
+      this.currentActivity = spot.id;
+      this.activityTimer = chosenId === "sleep" ? 14 : 8 + Math.random() * 6;
+      this.charRoot.rotation.y = spot.rotY;
+      this.onActivityChange(spot.label);
+    };
+  }
+
+  updateDayNightLighting() {
+    const now = Date.now();
+    // 0.0 -> 0.5 is 15-min Day; 0.5 -> 1.0 is 15-min Night
+    const phase = (now % DAY_CYCLE_MS) / DAY_CYCLE_MS;
+    const isDay = phase < 0.5;
+
+    let sunColor, sunIntensity, hemiSky, hemiGround, hemiIntensity, bgHex, windowSkyHex, orbColor, label;
+
+    if (phase < 0.08) {
+      // Sunrise (06:00 -> 08:00)
+      const k = phase / 0.08;
+      sunColor = lerpColor(new THREE.Color("#ff8e53"), new THREE.Color("#ffdca8"), k);
+      sunIntensity = THREE.MathUtils.lerp(1.2, 2.0, k);
+      hemiSky = lerpColor(new THREE.Color("#ffb88c"), new THREE.Color("#fff5e6"), k);
+      hemiGround = new THREE.Color("#c99875");
+      hemiIntensity = THREE.MathUtils.lerp(0.55, 0.78, k);
+      bgHex = lerpColor(new THREE.Color("#e8cbb8"), new THREE.Color("#ece3d5"), k);
+      windowSkyHex = lerpColor(new THREE.Color("#fda4af"), new THREE.Color("#93c5fd"), k);
+      orbColor = new THREE.Color("#fde047");
+      label = "日出清晨";
+    } else if (phase < 0.40) {
+      // Bright Noon / Warm Afternoon
+      sunColor = new THREE.Color("#fff3db");
+      sunIntensity = 2.15;
+      hemiSky = new THREE.Color("#fff8ee");
+      hemiGround = new THREE.Color("#c99a74");
+      hemiIntensity = 0.82;
+      bgHex = new THREE.Color("#ece3d5");
+      windowSkyHex = new THREE.Color("#7dd3fc");
+      orbColor = new THREE.Color("#fef08a");
+      label = "晴朗正午";
+    } else if (phase < 0.52) {
+      // Golden Hour / Sunset
+      const k = (phase - 0.40) / 0.12;
+      sunColor = lerpColor(new THREE.Color("#fff0cf"), new THREE.Color("#ff7b47"), k);
+      sunIntensity = THREE.MathUtils.lerp(2.1, 1.4, k);
+      hemiSky = lerpColor(new THREE.Color("#fff3e0"), new THREE.Color("#d98b82"), k);
+      hemiGround = lerpColor(new THREE.Color("#c99a74"), new THREE.Color("#785563"), k);
+      hemiIntensity = THREE.MathUtils.lerp(0.78, 0.5, k);
+      bgHex = lerpColor(new THREE.Color("#ece3d5"), new THREE.Color("#3b3048"), k);
+      windowSkyHex = lerpColor(new THREE.Color("#7dd3fc"), new THREE.Color("#f97316"), k);
+      orbColor = new THREE.Color("#fb923c");
+      label = "夕陽日落";
+    } else if (phase < 0.58) {
+      // Dusk Twilight
+      const k = (phase - 0.52) / 0.06;
+      sunColor = lerpColor(new THREE.Color("#ff7b47"), new THREE.Color("#7896e0"), k);
+      sunIntensity = THREE.MathUtils.lerp(1.3, 0.65, k);
+      hemiSky = lerpColor(new THREE.Color("#88698c"), new THREE.Color("#293452"), k);
+      hemiGround = new THREE.Color("#352d3c");
+      hemiIntensity = THREE.MathUtils.lerp(0.45, 0.34, k);
+      bgHex = lerpColor(new THREE.Color("#3b3048"), new THREE.Color("#141926"), k);
+      windowSkyHex = lerpColor(new THREE.Color("#9333ea"), new THREE.Color("#1e293b"), k);
+      orbColor = new THREE.Color("#e2e8f0");
+      label = "暮色黃昏";
+    } else if (phase < 0.94) {
+      // Cozy Night
+      sunColor = new THREE.Color("#8aa8eb");
+      sunIntensity = 0.62;
+      hemiSky = new THREE.Color("#263352");
+      hemiGround = new THREE.Color("#2a2220");
+      hemiIntensity = 0.36;
+      bgHex = new THREE.Color("#111622");
+      windowSkyHex = new THREE.Color("#0f172a");
+      orbColor = new THREE.Color("#fef9c3");
+      label = "靜謐夜晚";
+    } else {
+      // Pre-dawn transition
+      const k = (phase - 0.94) / 0.06;
+      sunColor = lerpColor(new THREE.Color("#8aa8eb"), new THREE.Color("#ff8e53"), k);
+      sunIntensity = THREE.MathUtils.lerp(0.65, 1.2, k);
+      hemiSky = lerpColor(new THREE.Color("#263352"), new THREE.Color("#ffb88c"), k);
+      hemiGround = lerpColor(new THREE.Color("#2a2220"), new THREE.Color("#c99875"), k);
+      hemiIntensity = THREE.MathUtils.lerp(0.36, 0.55, k);
+      bgHex = lerpColor(new THREE.Color("#111622"), new THREE.Color("#e8cbb8"), k);
+      windowSkyHex = lerpColor(new THREE.Color("#0f172a"), new THREE.Color("#fda4af"), k);
+      orbColor = new THREE.Color("#fde047");
+      label = "黎明微光";
+    }
+
+    this.sunLight.color.copy(sunColor);
+    this.sunLight.intensity = sunIntensity;
+    this.hemiLight.color.copy(hemiSky);
+    this.hemiLight.groundColor.copy(hemiGround);
+    this.hemiLight.intensity = hemiIntensity;
+    this.scene.background.copy(bgHex);
+
+    if (this.windowSkyMat) this.windowSkyMat.color.copy(windowSkyHex);
+    if (this.windowOrbMat) this.windowOrbMat.color.copy(orbColor);
+    if (this.windowOrb) {
+      const arc = isDay ? (phase / 0.5) * Math.PI : ((phase - 0.5) / 0.5) * Math.PI;
+      this.windowOrb.position.set(
+        -0.25 + Math.cos(arc) * 0.78,
+        1.55 + Math.sin(arc) * 0.62,
+        -4.2
+      );
+    }
+
+    // Move key directional sun shadow across north window through the day
+    const sunArc = isDay ? (phase / 0.5) * Math.PI : ((phase - 0.5) / 0.5) * Math.PI;
+    this.sunLight.position.set(
+      Math.cos(sunArc) * 8.5,
+      5.5 + Math.sin(sunArc) * 6.5,
+      -7.5
+    );
+
+    // Warm desk lamp shines brighter & cozier at sunset/night!
+    if (this.deskLampLight) {
+      const darknessBoost = isDay ? (phase > 0.4 ? (phase - 0.4) * 14 : 1.0) : 3.2;
+      this.deskLampLight.intensity = this.deskLampOn ? 1.8 + darknessBoost : 0;
+    }
+
+    // Map 0..1 phase to 24h clock starting at 06:00 sunrise
+    const totalMinutes = Math.floor(((phase + 0.25) % 1.0) * 1440);
+    const hh = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
+    const mm = String(totalMinutes % 60).padStart(2, "0");
+    this.onTimeUpdate({ clockText: `${hh}:${mm}`, label, isNight: !isDay });
+    return !isDay;
+  }
+
+  updateCameraTransform(instant = false) {
+    const targetAngle = this.targetQuarter * (Math.PI / 2) + Math.PI / 4;
+    if (instant) {
+      this.currentAngle = targetAngle;
+    } else {
+      // Shortest angular interpolation around Y
+      let diff = targetAngle - this.currentAngle;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      this.currentAngle += diff * 0.16;
+    }
+
+    const radius = 14.5;
+    const camX = Math.sin(this.currentAngle) * radius;
+    const camZ = Math.cos(this.currentAngle) * radius;
+    this.camera.position.set(camX, 10.6, camZ);
+    this.camera.lookAt(0, 0.95, 0);
+
+    // Cutaway Auto-Invisibility: hide the 2 perimeter walls facing closest to camera
+    const camDir = new THREE.Vector3(camX, 0, camZ).normalize();
+    this.walls.forEach(w => {
+      const facingCamera = w.normal.dot(camDir) > 0.05;
+      w.upperGroup.visible = !facingCamera;
+    });
+  }
+
+  resetLimbs() {
+    this.charBody.position.set(0, 0, 0);
+    this.charBody.rotation.set(0, 0, 0);
+    this.leftLegPivot.rotation.set(0, 0, 0);
+    this.rightLegPivot.rotation.set(0, 0, 0);
+    this.leftArmPivot.rotation.set(0, 0, 0);
+    this.rightArmPivot.rotation.set(0, 0, 0);
+    this.headGroup.rotation.set(0, 0, 0);
+  }
+
+  updateCharacter(dt, elapsedSec, isNightTime) {
+    this.resetLimbs();
+
+    if (this.charState === "WALK_TO_WORK" || this.charState === "WALK_TO_ACTIVITY") {
+      const target = this.walkWaypoints[0];
+      if (!target) {
+        this.walkCallback?.();
+        return;
+      }
+      const delta = target.clone().sub(this.charRoot.position);
+      delta.y = 0;
+      const dist = delta.length();
+      const speed = this.charState === "WALK_TO_WORK" ? 7.2 : 3.2;
+
+      if (dist <= speed * dt + 0.05) {
+        this.charRoot.position.copy(target);
+        this.walkWaypoints.shift();
+        const cb = this.walkCallback;
+        this.walkCallback = null;
+        cb?.();
+        return;
+      }
+
+      delta.normalize();
+      this.charRoot.position.addScaledVector(delta, speed * dt);
+      const targetRot = Math.atan2(delta.x, delta.z);
+      this.charRoot.rotation.y = targetRot;
+
+      // Crisp bouncy jog cycle
+      const swing = Math.sin(elapsedSec * 16) * 0.65;
+      this.leftLegPivot.rotation.x = swing;
+      this.rightLegPivot.rotation.x = -swing;
+      this.leftArmPivot.rotation.x = -swing * 0.7;
+      this.rightArmPivot.rotation.x = swing * 0.7;
+      this.charBody.position.y = Math.abs(Math.sin(elapsedSec * 16)) * 0.07;
+      return;
+    }
+
+    if (this.charState === "WORKING") {
+      // Sitting in front of Mac & drawing tablet
+      this.charBody.position.set(0, -0.22, -0.04);
+      this.leftLegPivot.rotation.x = -Math.PI / 2.2;
+      this.rightLegPivot.rotation.x = -Math.PI / 2.2;
+      this.leftArmPivot.rotation.x = -0.75;
+      this.rightArmPivot.rotation.x = -0.75 + Math.sin(elapsedSec * 8) * 0.12;
+      this.rightArmPivot.rotation.y = Math.cos(elapsedSec * 5) * 0.14;
+      this.headGroup.rotation.x = 0.08 + Math.sin(elapsedSec * 2) * 0.04;
+
+      if (this.postWorkCooldown > 0) {
+        this.postWorkCooldown -= dt;
+        if (this.postWorkCooldown <= 0) {
+          this.pickNextIdleActivity(isNightTime);
+        }
+      }
+      return;
+    }
+
+    // IDLE autonomous activities
+    this.activityTimer -= dt;
+    if (this.activityTimer <= 0) {
+      this.pickNextIdleActivity(isNightTime);
+      return;
+    }
+
+    switch (this.currentActivity) {
+      case "gaming":
+        this.charBody.position.set(0, -0.22, -0.04);
+        this.leftLegPivot.rotation.x = -Math.PI / 2.2;
+        this.rightLegPivot.rotation.x = -Math.PI / 2.2;
+        this.leftArmPivot.rotation.x = -0.8 + Math.sin(elapsedSec * 14) * 0.08;
+        this.rightArmPivot.rotation.x = -0.8 + Math.cos(elapsedSec * 16) * 0.08;
+        this.headGroup.rotation.y = Math.sin(elapsedSec * 3.5) * 0.12;
+        break;
+      case "exercise":
+        // Horizontal push-ups on floor mat!
+        this.charBody.position.set(0, 0.25 + Math.sin(elapsedSec * 4.5) * 0.07, 0);
+        this.charBody.rotation.x = Math.PI / 2.2;
+        this.leftArmPivot.rotation.x = -1.45;
+        this.rightArmPivot.rotation.x = -1.45;
+        this.headGroup.rotation.x = -0.6;
+        break;
+      case "sleep":
+        // Lying cozy on bed mattress
+        this.charBody.position.set(0, 0.66, 0.12);
+        this.charBody.rotation.x = -Math.PI / 2;
+        this.leftArmPivot.rotation.z = 0.2;
+        this.rightArmPivot.rotation.z = -0.2;
+        this.headGroup.rotation.y = Math.sin(elapsedSec * 1.2) * 0.08;
+        break;
+      case "read":
+        this.bookProp.visible = true;
+        this.leftArmPivot.rotation.x = -0.65;
+        this.rightArmPivot.rotation.x = -0.7;
+        this.headGroup.rotation.x = 0.35 + Math.sin(elapsedSec * 1.5) * 0.04;
+        break;
+      case "eat":
+        this.snackProp.visible = true;
+        this.rightArmPivot.rotation.x = -0.85 + Math.max(0, Math.sin(elapsedSec * 3.2)) * -0.45;
+        this.headGroup.rotation.x = 0.15;
+        break;
+      case "phone":
+      default:
+        this.phoneProp.visible = true;
+        this.rightArmPivot.rotation.x = -0.72;
+        this.rightArmPivot.rotation.z = 0.22;
+        this.headGroup.rotation.x = 0.28 + Math.sin(elapsedSec * 2) * 0.03;
+        break;
+    }
+  }
+
+  updateOverlayPositions() {
+    if (!this.charRoot || !this.nameTagEl) return;
+    const width = this.container.clientWidth || 800;
+    const height = this.container.clientHeight || 560;
+
+    const headWorld = new THREE.Vector3();
+    this.headGroup.getWorldPosition(headWorld);
+    headWorld.y += 0.56;
+    headWorld.project(this.camera);
+
+    const x = (headWorld.x * 0.5 + 0.5) * width;
+    const y = (-headWorld.y * 0.5 + 0.5) * height;
+    this.nameTagEl.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
+
+    if (this.bubbleEl && !this.bubbleEl.classList.contains("hidden")) {
+      this.bubbleEl.style.transform = `translate(${x}px, ${y - 30}px) translate(-50%, -100%)`;
+    }
+  }
+
+  bindEvents() {
+    const dom = this.renderer.domElement;
+
+    this.onPointerMove = (e) => {
+      const rect = dom.getBoundingClientRect();
+      this.pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      this.pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      this.raycaster.setFromCamera(this.pointerNDC, this.camera);
+      const lampHits = this.raycaster.intersectObjects(this.lampClickTargets, false);
+      if (lampHits.length > 0) {
+        this.hoveredTarget = "lamp";
+        dom.style.cursor = "pointer";
+        this.onHoverChange("點擊開關檯燈");
+        return;
+      }
+
+      const workHits = this.raycaster.intersectObjects(this.workClickTargets, false);
+      if (workHits.length > 0) {
+        this.hoveredTarget = "computer";
+        dom.style.cursor = "pointer";
+        this.onHoverChange("點擊電腦／電繪板開始接案學習");
+        return;
+      }
+
+      if (this.hoveredTarget !== null) {
+        this.hoveredTarget = null;
+        dom.style.cursor = "default";
+        this.onHoverChange("");
+      }
+    };
+
+    this.onClick = (e) => {
+      this.onPointerMove(e);
+      if (this.hoveredTarget === "lamp") {
+        this.setDeskLamp(!this.deskLampOn);
+        this.onLampToggle(this.deskLampOn);
+      } else if (this.hoveredTarget === "computer") {
+        this.goToWork();
+      }
+    };
+
+    this.onResize = () => {
+      if (this.disposed) return;
+      const w = Math.max(320, this.container.clientWidth || 800);
+      const h = Math.max(320, this.container.clientHeight || 560);
+      const aspect = w / h;
+      this.camera.left = -this.baseViewSize * aspect;
+      this.camera.right = this.baseViewSize * aspect;
+      this.camera.top = this.baseViewSize;
+      this.camera.bottom = -this.baseViewSize;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(w, h);
+    };
+
+    dom.addEventListener("pointermove", this.onPointerMove);
+    dom.addEventListener("click", this.onClick);
+    window.addEventListener("resize", this.onResize);
+  }
+
+  pause() {
+    this.paused = true;
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+  }
+
+  resume() {
+    if (this.disposed) return;
+    const wasPaused = this.paused;
+    this.paused = false;
+    this.lastFrameTime = performance.now();
+    this.onResize();
+    if (wasPaused || !this.animFrameId) {
+      this.animate();
+    }
+  }
+
+  animate = () => {
+    if (this.disposed || this.paused) return;
+    this.animFrameId = requestAnimationFrame(this.animate);
+
+    const now = performance.now();
+    const dt = Math.min(0.05, (now - this.lastFrameTime) / 1000);
+    this.lastFrameTime = now;
+    const elapsedSec = now / 1000;
+
+    const isNight = this.updateDayNightLighting();
+    this.updateCameraTransform(false);
+    this.updateCharacter(dt, elapsedSec, isNight);
+
+    // Subtle hover pulse on work desk ring
+    if (this.workHoverRingMat) {
+      const targetOpacity = this.hoveredTarget === "computer" ? 0.85 : 0.25 + Math.sin(elapsedSec * 3) * 0.1;
+      this.workHoverRingMat.opacity += (targetOpacity - this.workHoverRingMat.opacity) * 0.18;
+    }
+
+    this.renderer.render(this.scene, this.camera);
+    this.updateOverlayPositions();
+  };
+
+  dispose() {
+    this.disposed = true;
+    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+    const dom = this.renderer?.domElement;
+    if (dom) {
+      dom.removeEventListener("pointermove", this.onPointerMove);
+      dom.removeEventListener("click", this.onClick);
+    }
+    window.removeEventListener("resize", this.onResize);
+    clearTimeout(this.bubbleTimer);
+    this.renderer?.dispose();
+  }
+}
