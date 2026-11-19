@@ -742,12 +742,6 @@ export class FreelancerRoomScene {
     skyBackdrop.position.set(-0.25, 1.84, -4.23);
     upperGroup.add(skyBackdrop);
 
-    // Celestial sun/moon orb inside window
-    this.windowOrbMat = new THREE.MeshBasicMaterial({ color: "#fff3a8" });
-    this.windowOrb = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), this.windowOrbMat);
-    this.windowOrb.position.set(-0.5, 2.1, -4.2);
-    upperGroup.add(this.windowOrb);
-
     // Glass pane with soft sheen
     const glassMat = new THREE.MeshPhysicalMaterial({
       color: "#d8f0ff",
@@ -1552,15 +1546,6 @@ export class FreelancerRoomScene {
     this.scene.background.copy(bgHex);
 
     if (this.windowSkyMat) this.windowSkyMat.color.copy(windowSkyHex);
-    if (this.windowOrbMat) this.windowOrbMat.color.copy(orbColor);
-    if (this.windowOrb) {
-      const arc = isDay ? (phase / 0.5) * Math.PI : ((phase - 0.5) / 0.5) * Math.PI;
-      this.windowOrb.position.set(
-        -0.25 + Math.cos(arc) * 0.78,
-        1.55 + Math.sin(arc) * 0.62,
-        -4.2
-      );
-    }
 
     // Move key directional sun shadow across north window through the day
     const sunArc = isDay ? (phase / 0.5) * Math.PI : ((phase - 0.5) / 0.5) * Math.PI;
