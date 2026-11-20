@@ -458,6 +458,150 @@ function makeRefScreenTexture() {
   return tex;
 }
 
+function headRadiusAlongDir(dx, dy, dz) {
+  // Exact ray distance to RoundedBoxGeometry(0.46, 0.44, 0.44, 6, 0.17)
+  let lo = 0.16;
+  let hi = 0.32;
+  for (let i = 0; i < 10; i++) {
+    const mid = (lo + hi) * 0.5;
+    const qx = Math.max(Math.abs(mid * dx) - 0.06, 0);
+    const qy = Math.max(Math.abs(mid * dy) - 0.05, 0);
+    const qz = Math.max(Math.abs(mid * dz) - 0.05, 0);
+    if (Math.hypot(qx, qy, qz) - 0.17 < 0) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) * 0.5;
+}
+
+/**
+ * Generates a single seamless, gap-free 3D hair shell conforming smoothly around the head
+ * with a clean forehead hairline, sculpted crown volume, and closed inward-tucked hem.
+ */
+function buildSculptedScalpGeometry({
+  getAlphaMax,
+  getOffset,
+  getHangDrop = () => 0,
+  getHangOutward = () => 0
+}) {
+  const U = 56;
+  const V_SKULL = 18;
+  const V_HANG = 8;
+  const V_CAP = V_SKULL + V_HANG;
+  const V_TOTAL = V_CAP + 2; // 2 inward-tuck rings for solid closed hem rim
+  const cols = U + 1;
+
+  const positions = new Float32Array(cols * (V_TOTAL + 1) * 3);
+  const uvs = new Float32Array(cols * (V_TOTAL + 1) * 2);
+  const indices = [];
+
+  for (let i = 0; i <= U; i++) {
+    const u = i / U;
+    const theta = u * Math.PI * 2;
+    const sinT = Math.sin(theta);
+    const cosT = Math.cos(theta);
+
+    const alphaMax = getAlphaMax(theta, sinT, cosT);
+    const hangDrop = Math.max(0, getHangDrop(theta, sinT, cosT));
+    const hangOutward = getHangOutward(theta, sinT, cosT);
+
+    // Compute anchor point at the bottom of the skull wrap (v = V_SKULL)
+    const sa = Math.sin(alphaMax);
+    const ca = Math.cos(alphaMax);
+    const adx = sa * sinT;
+    const ady = ca;
+    const adz = sa * cosT;
+    const rAnchor = headRadiusAlongDir(adx, ady, adz) + getOffset(theta, alphaMax, 1, sinT, cosT);
+    const anchorX = adx * rAnchor;
+    const anchorY = ady * rAnchor;
+    const anchorZ = adz * rAnchor;
+
+    for (let j = 0; j <= V_TOTAL; j++) {
+      let px = 0;
+      let py = 0;
+      let pz = 0;
+
+      if (j <= V_SKULL) {
+        const s = j / V_SKULL;
+        const alpha = s * alphaMax;
+        const salpha = Math.sin(alpha);
+        const dx = salpha * sinT;
+        const dy = Math.cos(alpha);
+        const dz = salpha * cosT;
+        const rBase = headRadiusAlongDir(dx, dy, dz);
+        const r = rBase + getOffset(theta, alpha, s, sinT, cosT);
+        px = dx * r;
+        py = dy * r;
+        pz = dz * r;
+      } else if (j <= V_CAP) {
+        const h = (j - V_SKULL) / V_HANG;
+        // Soft natural bell/curtain curve while draping downward
+        const curveOut = Math.sin(h * Math.PI * 0.72) * hangOutward;
+        const taper = 1 - Math.pow(h, 2.2) * (hangDrop > 0.18 ? 0.08 : 0.04);
+        px = (anchorX + sinT * curveOut) * taper;
+        py = anchorY - h * hangDrop;
+        pz = anchorZ + cosT * curveOut;
+      } else {
+        // Inward-tucked closed bottom lip (zero hollow seams from below)
+        const rimStep = (j - V_CAP) / 2;
+        const h = 1;
+        const curveOut = Math.sin(h * Math.PI * 0.72) * hangOutward;
+        const taper = 1 - (hangDrop > 0.18 ? 0.08 : 0.04);
+        const outerX = (anchorX + sinT * curveOut) * taper;
+        const outerY = anchorY - hangDrop;
+        const outerZ = anchorZ + cosT * curveOut;
+        const tuckScale = rimStep === 0.5 ? 0.90 : 0.78;
+        px = outerX * tuckScale;
+        py = outerY + (rimStep === 0.5 ? -0.008 : 0.012);
+        pz = outerZ * tuckScale;
+      }
+
+      const vIdx = (j * cols + i);
+      positions[vIdx * 3] = px;
+      positions[vIdx * 3 + 1] = py;
+      positions[vIdx * 3 + 2] = pz;
+      uvs[vIdx * 2] = u;
+      uvs[vIdx * 2 + 1] = j / V_TOTAL;
+    }
+  }
+
+  for (let j = 0; j < V_TOTAL; j++) {
+    for (let i = 0; i < U; i++) {
+      const a = j * cols + i;
+      const b = (j + 1) * cols + i;
+      const c = (j + 1) * cols + (i + 1);
+      const d = j * cols + (i + 1);
+      indices.push(a, b, d);
+      indices.push(b, c, d);
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+
+  // Blend seam vertex normals between i=0 and i=U so shading is 100% seamless across theta=0
+  const norm = geo.attributes.normal;
+  for (let j = 0; j <= V_TOTAL; j++) {
+    const i0 = j * cols;
+    const iU = j * cols + U;
+    const nx = norm.getX(i0) + norm.getX(iU);
+    const ny = norm.getY(i0) + norm.getY(iU);
+    const nz = norm.getZ(i0) + norm.getZ(iU);
+    const len = Math.hypot(nx, ny, nz) || 1;
+    norm.setXYZ(i0, nx / len, ny / len, nz / len);
+    norm.setXYZ(iU, nx / len, ny / len, nz / len);
+  }
+  norm.needsUpdate = true;
+  return geo;
+}
+
+const smoothstep = (e0, e1, x) => {
+  const t = THREE.MathUtils.clamp((x - e0) / (e1 - e0), 0, 1);
+  return t * t * (3 - 2 * t);
+};
+
 function buildCharacterHairGroup(style, hairMat, accentMat) {
   const hair = new THREE.Group();
   const addShadowed = (mesh) => {
@@ -466,6 +610,7 @@ function buildCharacterHairGroup(style, hairMat, accentMat) {
     hair.add(mesh);
     return mesh;
   };
+  const addScalpMesh = (spec) => addShadowed(new THREE.Mesh(buildSculptedScalpGeometry(spec), hairMat));
   const addLock = (r, len, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => {
     const m = new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 10, 14), hairMat);
     m.position.set(x, y, z);
@@ -481,155 +626,191 @@ function buildCharacterHairGroup(style, hairMat, accentMat) {
     return addShadowed(m);
   };
 
-  // Sculpted cranial dome + occipital nape shell sized cleanly past RoundedBox(0.46, 0.44, 0.44)
-  const addCrown = (sx = 0.258, sy = 0.218, sz = 0.252, y = 0.056, z = -0.012) =>
-    addPuff(1, 0, y, z, sx, sy, sz);
-  const addFullNape = (sx = 0.252, sy = 0.205, sz = 0.205, y = -0.032, z = -0.068) =>
-    addPuff(1, 0, y, z, sx, sy, sz);
-
-  if (style === "parted") {
-    addCrown(0.260, 0.220, 0.254, 0.058, -0.012);
-    addFullNape(0.252, 0.198, 0.198, -0.032, -0.072);
-    // Flowing 7:3 diagonal sweeping fringe (wide overlapping curves, zero finger gaps)
-    addPuff(1, 0.05, 0.145, 0.155, 0.195, 0.088, 0.105, 0.18, 0.1, -0.18);
-    addPuff(1, -0.115, 0.142, 0.145, 0.125, 0.082, 0.105, 0.16, -0.15, 0.24);
-    addLock(0.052, 0.12, 0.175, 0.085, 0.128, 0.15, -0.22, 0.25, 0.9, 1.0, 0.72);
-    // Soft cheek-skimming temple curves
-    addLock(0.048, 0.13, -0.224, -0.005, 0.035, 0.08, 0, -0.06, 0.85, 1.0, 1.15);
-    addLock(0.048, 0.13, 0.224, -0.005, 0.035, 0.08, 0, 0.06, 0.85, 1.0, 1.15);
-  } else if (style === "bob") {
-    // Silky, seamless 270-degree rounded chin-length bob with zero back gap & smooth straight bangs
-    addCrown(0.268, 0.226, 0.258, 0.058, -0.012);
-    // Smooth wide curved back+side bell mantle (completely hides neck/back corners)
-    addPuff(1, 0, -0.025, -0.055, 0.278, 0.228, 0.228);
-    const backArc = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.262, 0.282, 0.25, 32, 1, false, Math.PI * 0.34, Math.PI * 1.32),
-      hairMat
-    );
-    backArc.position.set(0, -0.038, -0.02);
-    addShadowed(backArc);
-    // Smooth rounded inner-curl chin hem ring (centered cleanly on -Z back)
-    const hemWrap = new THREE.Group();
-    hemWrap.position.set(0, -0.145, -0.02);
-    const hemTorus = new THREE.Mesh(new THREE.TorusGeometry(0.214, 0.064, 16, 32, Math.PI * 1.32), hairMat);
-    hemTorus.rotation.x = Math.PI / 2;
-    hemTorus.rotation.z = Math.PI * 0.84;
-    hemTorus.castShadow = true;
-    hemTorus.receiveShadow = true;
-    hemWrap.add(hemTorus);
-    hair.add(hemWrap);
-    // Cheek-framing curved side curtains bridging face to bob hem
-    addPuff(1, -0.218, -0.025, 0.045, 0.062, 0.175, 0.128, 0.06, 0, -0.08);
-    addPuff(1, 0.218, -0.025, 0.045, 0.062, 0.175, 0.128, 0.06, 0, 0.08);
-    // Smooth continuous rounded 齊瀏海 (straight brow-skimming fringe)
-    addPuff(1, 0, 0.135, 0.172, 0.218, 0.072, 0.088, 0.12, 0, 0);
-    addPuff(1, -0.145, 0.115, 0.135, 0.085, 0.075, 0.088, 0.1, 0.28, 0.15);
-    addPuff(1, 0.145, 0.115, 0.135, 0.085, 0.075, 0.088, 0.1, -0.28, -0.15);
+  if (style === "bob") {
+    // Seamless silky chin-length rounded bob with full brow-skimming straight bangs (齊瀏海)
+    addScalpMesh({
+      getAlphaMax: (t, sinT, cosT) => {
+        const frontMask = smoothstep(-0.15, 0.52, cosT);
+        const sideToBack = 0.585 * Math.PI;
+        // Full straight bangs curving smoothly just above the eyebrows (y ~ +0.068), tapering seamlessly at temples
+        const frontBang = 0.408 * Math.PI - Math.pow(sinT, 4) * 0.012;
+        return THREE.MathUtils.lerp(sideToBack, frontBang, frontMask);
+      },
+      getOffset: (t, alpha, s, sinT, cosT) => {
+        const crownPlump = Math.sin(s * Math.PI * 0.85) * 0.018;
+        const bangLoft = smoothstep(0.25, 0.9, cosT) * Math.sin(s * Math.PI * 0.9) * 0.014;
+        const sideFullness = (1 - smoothstep(0.3, 0.85, cosT)) * 0.016 * Math.pow(s, 0.7);
+        return 0.022 + crownPlump + bangLoft + sideFullness;
+      },
+      getHangDrop: (t, sinT, cosT) => {
+        const mask = 1 - smoothstep(-0.08, 0.52, cosT);
+        return mask * 0.118;
+      },
+      getHangOutward: (t, sinT, cosT) => {
+        const mask = 1 - smoothstep(-0.08, 0.52, cosT);
+        return mask * 0.024;
+      }
+    });
+  } else if (style === "parted") {
+    // Natural 7:3 diagonal side-parted crop with sculptural sweeping wave
+    addScalpMesh({
+      getAlphaMax: (t, sinT, cosT) => {
+        const frontMask = smoothstep(-0.2, 0.7, cosT);
+        // Smooth asymmetric 7:3 wave sweeping over forehead from left part to right brow
+        const sweep = smoothstep(-0.35, 0.55, sinT);
+        const partWave = THREE.MathUtils.lerp(0.325 * Math.PI, 0.415 * Math.PI, sweep) - Math.pow(Math.max(0, Math.abs(sinT) - 0.65), 2) * 0.08;
+        const sideEarNotch = Math.exp(-Math.pow((cosT + 0.05) / 0.32, 2)) * 0.065 * Math.abs(sinT);
+        const backNape = 0.63 * Math.PI - sideEarNotch;
+        return THREE.MathUtils.lerp(backNape, partWave, frontMask);
+      },
+      getOffset: (t, alpha, s, sinT, cosT) => {
+        const sweepVol = (cosT > 0 ? smoothstep(-0.3, 0.6, sinT) * 0.020 : 0) * Math.sin(s * Math.PI * 0.92);
+        return 0.022 + Math.sin(s * Math.PI * 0.82) * 0.016 + sweepVol;
+      }
+    });
   } else if (style === "bun") {
-    addCrown(0.256, 0.215, 0.248, 0.056, -0.012);
-    addFullNape(0.246, 0.185, 0.185, -0.022, -0.076);
-    // Smooth front hairline band + soft parted wisps
-    addPuff(1, 0, 0.152, 0.165, 0.195, 0.062, 0.085);
-    addPuff(0.055, -0.07, 0.122, 0.195, 1.2, 0.65, 0.65, 0.2, 0.1, -0.2);
-    addPuff(0.055, 0.07, 0.122, 0.195, 1.2, 0.65, 0.65, 0.2, -0.1, 0.2);
-    // High tousled artist bun + fabric scrunchy
-    addPuff(0.128, 0, 0.295, -0.105, 1.08, 0.94, 1.04);
-    addPuff(0.072, -0.058, 0.278, -0.132);
-    addPuff(0.070, 0.062, 0.286, -0.086);
-    const scrunchy = new THREE.Mesh(new THREE.TorusGeometry(0.094, 0.024, 10, 20), accentMat);
-    scrunchy.position.set(0, 0.228, -0.092);
+    // Pulled-up artist top bun + soft hairline & temple wisps + scrunchy
+    addScalpMesh({
+      getAlphaMax: (t, sinT, cosT) => {
+        const frontMask = smoothstep(-0.25, 0.65, cosT);
+        const sideEarNotch = Math.exp(-Math.pow((cosT + 0.04) / 0.34, 2)) * 0.075 * Math.abs(sinT);
+        const curtainArch = 0.338 * Math.PI + (1 - Math.cos(sinT * 2.2)) * 0.022;
+        const backLine = 0.59 * Math.PI - sideEarNotch;
+        return THREE.MathUtils.lerp(backLine, curtainArch, frontMask);
+      },
+      getOffset: (t, alpha, s) => 0.020 + Math.sin(s * Math.PI) * 0.010
+    });
+    // High tousled bun seated cleanly into crown + scrunchy
+    addPuff(0.125, 0, 0.292, -0.105, 1.08, 0.94, 1.04);
+    addPuff(0.068, -0.055, 0.278, -0.128);
+    addPuff(0.066, 0.058, 0.285, -0.088);
+    const scrunchy = new THREE.Mesh(new THREE.TorusGeometry(0.092, 0.022, 12, 24), accentMat);
+    scrunchy.position.set(0, 0.228, -0.094);
     scrunchy.rotation.x = Math.PI / 2 - 0.35;
     hair.add(scrunchy);
-    // Delicate cheek curls
-    addLock(0.028, 0.115, -0.215, -0.02, 0.102, 0.14, 0, 0.1);
-    addLock(0.028, 0.115, 0.215, -0.02, 0.102, 0.14, 0, -0.1);
   } else if (style === "long") {
-    addCrown(0.264, 0.224, 0.254, 0.058, -0.012);
-    addFullNape(0.262, 0.215, 0.208, -0.036, -0.064);
-    // Seamless flowing long back hair mantle tapering softly below shoulders
-    addPuff(1, 0, -0.16, -0.182, 0.265, 0.30, 0.105, 0.09, 0, 0);
-    addPuff(1, 0, -0.28, -0.202, 0.232, 0.20, 0.088, 0.06, 0, 0);
-    addLock(0.065, 0.30, -0.155, -0.20, -0.18, 0.08, 0, -0.06, 1.0, 1.0, 0.78);
-    addLock(0.065, 0.30, 0.155, -0.20, -0.18, 0.08, 0, 0.06, 1.0, 1.0, 0.78);
-    // Smooth long front collarbone framing locks
-    addLock(0.056, 0.27, -0.232, -0.09, 0.042, 0.05, 0, 0.05, 0.85, 1.0, 1.15);
-    addLock(0.056, 0.27, 0.232, -0.09, 0.042, 0.05, 0, -0.05, 0.85, 1.0, 1.15);
-    // Soft center-parted flowing bangs
-    addPuff(1, -0.095, 0.145, 0.165, 0.135, 0.075, 0.095, 0.18, 0.18, 0.26);
-    addPuff(1, 0.095, 0.145, 0.165, 0.135, 0.075, 0.095, 0.18, -0.18, -0.26);
+    // Silky flowing long hair with soft center-parted curtain bangs
+    addScalpMesh({
+      getAlphaMax: (t, sinT, cosT) => {
+        const frontMask = smoothstep(-0.15, 0.65, cosT);
+        // Gentle center-parted curtain fringe framing temples cleanly above brows
+        const centerPart = 0.332 * Math.PI + smoothstep(0.05, 0.65, Math.abs(sinT)) * 0.068;
+        const backSides = 0.57 * Math.PI;
+        return THREE.MathUtils.lerp(backSides, centerPart, frontMask);
+      },
+      getOffset: (t, alpha, s, sinT, cosT) => {
+        const curtainLoft = smoothstep(0.2, 0.85, cosT) * Math.sin(s * Math.PI) * 0.012;
+        const sideVolume = (1 - smoothstep(0.25, 0.8, cosT)) * 0.016 * Math.pow(s, 0.7);
+        return 0.022 + Math.sin(s * Math.PI * 0.85) * 0.015 + curtainLoft + sideVolume;
+      },
+      getHangDrop: (t, sinT, cosT) => {
+        const backDrop = (1 - smoothstep(-0.4, 0.22, cosT)) * 0.34;
+        const sideDrop = (1 - smoothstep(-0.1, 0.52, cosT)) * 0.14;
+        return Math.max(backDrop, sideDrop);
+      },
+      getHangOutward: (t, sinT, cosT) => {
+        const mask = 1 - smoothstep(-0.1, 0.5, cosT);
+        return mask * 0.024;
+      }
+    });
   } else if (style === "ponytail") {
-    addCrown(0.258, 0.215, 0.250, 0.056, -0.012);
-    addFullNape(0.248, 0.185, 0.185, -0.022, -0.076);
-    addPuff(1, 0, 0.152, 0.162, 0.195, 0.062, 0.085);
-    // Elastic tie + smooth sculpted high ponytail curve
-    const tie = new THREE.Mesh(new THREE.TorusGeometry(0.054, 0.019, 10, 18), accentMat);
-    tie.position.set(0, 0.125, -0.242);
+    // Sleek pulled-back crown + lively curved high ponytail
+    addScalpMesh({
+      getAlphaMax: (t, sinT, cosT) => {
+        const frontMask = smoothstep(-0.25, 0.65, cosT);
+        const sideEarNotch = Math.exp(-Math.pow((cosT + 0.04) / 0.34, 2)) * 0.075 * Math.abs(sinT);
+        const frontLine = 0.342 * Math.PI + smoothstep(0.1, 0.6, Math.abs(sinT)) * 0.022;
+        const backLine = 0.60 * Math.PI - sideEarNotch;
+        return THREE.MathUtils.lerp(backLine, frontLine, frontMask);
+      },
+      getOffset: (t, alpha, s) => 0.020 + Math.sin(s * Math.PI) * 0.010
+    });
+    const tie = new THREE.Mesh(new THREE.TorusGeometry(0.052, 0.018, 10, 20), accentMat);
+    tie.position.set(0, 0.125, -0.238);
     tie.rotation.x = 0.48;
     hair.add(tie);
-    addLock(0.076, 0.14, 0, 0.095, -0.295, -0.68, 0, 0);
-    addLock(0.066, 0.22, 0, -0.075, -0.345, -0.18, 0, 0);
-    addLock(0.042, 0.11, 0, -0.235, -0.352, 0.15, 0, 0);
-    // Soft parted bangs + side framing curls
-    addPuff(1, -0.085, 0.135, 0.175, 0.115, 0.068, 0.082, 0.2, 0.1, 0.22);
-    addPuff(1, 0.085, 0.135, 0.175, 0.115, 0.068, 0.082, 0.2, -0.1, -0.22);
-    addLock(0.032, 0.11, -0.218, 0.0, 0.078, 0.08, 0, 0.08);
-    addLock(0.032, 0.11, 0.218, 0.0, 0.078, 0.08, 0, -0.08);
+    addLock(0.074, 0.14, 0, 0.092, -0.292, -0.68, 0, 0);
+    addLock(0.064, 0.22, 0, -0.078, -0.342, -0.18, 0, 0);
+    addLock(0.040, 0.10, 0, -0.232, -0.348, 0.15, 0, 0);
   } else if (style === "wolf") {
-    addCrown(0.260, 0.220, 0.252, 0.058, -0.012);
-    addFullNape(0.252, 0.20, 0.198, -0.03, -0.072);
-    // Tousled top crown volume
-    addPuff(0.095, -0.055, 0.235, 0.02, 1.2, 0.72, 1.1, 0.1, 0, 0.2);
-    addPuff(0.095, 0.065, 0.238, -0.01, 1.2, 0.74, 1.1, -0.1, 0, -0.16);
-    // Layered wispy center-split bangs
-    addPuff(1, -0.095, 0.138, 0.172, 0.135, 0.072, 0.092, 0.18, 0.15, 0.24);
-    addPuff(1, 0.095, 0.138, 0.172, 0.135, 0.072, 0.092, 0.18, -0.15, -0.24);
-    // Cheek-hugging tapered side locks
-    addLock(0.046, 0.16, -0.224, -0.03, 0.075, 0.12, 0, 0.12);
-    addLock(0.046, 0.16, 0.224, -0.03, 0.075, 0.12, 0, -0.12);
-    // Feathered curved wolf mullet tail flaring softly behind neck
-    addPuff(1, 0, -0.14, -0.182, 0.235, 0.16, 0.088, -0.20, 0, 0);
-    [-0.14, -0.07, 0, 0.07, 0.14].forEach((fx, idx) => {
-      const sideLift = Math.abs(idx - 2) * 0.015;
-      addLock(0.048, 0.16 - sideLift, fx, -0.18 + sideLift, -0.205, -0.32, 0, fx * 0.8, 1.0, 1.0, 0.72);
+    // Trendy feathered wolf cut: tousled crown, curtain bangs & flared collar-length back tail
+    addScalpMesh({
+      getAlphaMax: (t, sinT, cosT) => {
+        const frontMask = smoothstep(-0.18, 0.68, cosT);
+        const bangCurtain = 0.355 * Math.PI + smoothstep(0.05, 0.58, Math.abs(sinT)) * 0.055;
+        const sideEarNotch = Math.exp(-Math.pow((cosT - 0.1) / 0.32, 2)) * 0.045 * Math.abs(sinT);
+        return THREE.MathUtils.lerp(0.58 * Math.PI - sideEarNotch, bangCurtain, frontMask);
+      },
+      getOffset: (t, alpha, s, sinT, cosT) => {
+        const bangLoft = smoothstep(0.25, 0.85, cosT) * Math.sin(s * Math.PI) * 0.015;
+        return 0.024 + Math.sin(s * Math.PI * 0.85) * 0.018 + bangLoft;
+      },
+      getHangDrop: (t, sinT, cosT) => {
+        const backMask = 1 - smoothstep(-0.35, 0.2, cosT);
+        return backMask * 0.18;
+      },
+      getHangOutward: (t, sinT, cosT) => {
+        const backMask = 1 - smoothstep(-0.35, 0.2, cosT);
+        return backMask * 0.044;
+      }
     });
   } else if (style === "curly") {
-    addCrown(0.254, 0.212, 0.244, 0.052, -0.014);
-    addFullNape(0.250, 0.192, 0.190, -0.03, -0.070);
+    // Seamless curly base cap + sculpted fluffy curl cluster cleanly framing upper forehead
+    addScalpMesh({
+      getAlphaMax: (t, sinT, cosT) => {
+        const frontMask = smoothstep(-0.2, 0.68, cosT);
+        const frontLine = 0.345 * Math.PI;
+        const backLine = 0.62 * Math.PI;
+        return THREE.MathUtils.lerp(backLine, frontLine, frontMask);
+      },
+      getOffset: (t, alpha, s) => 0.022 + Math.sin(s * Math.PI) * 0.014
+    });
     const curlCoords = [
-      // Crown puffs
-      [0, 0.265, 0.02, 0.112], [-0.115, 0.245, 0.03, 0.100], [0.115, 0.245, 0.03, 0.100],
-      [-0.08, 0.255, -0.11, 0.108], [0.08, 0.255, -0.11, 0.108],
-      // Seamless forehead curl fringe (center puff closes any gap)
-      [-0.14, 0.162, 0.162, 0.086], [-0.055, 0.178, 0.188, 0.092], [0, 0.182, 0.194, 0.094],
-      [0.055, 0.178, 0.188, 0.092], [0.14, 0.162, 0.162, 0.086],
-      // Side & temple curls
-      [-0.225, 0.09, 0.06, 0.086], [-0.235, -0.01, -0.03, 0.086], [-0.215, 0.08, -0.12, 0.090],
-      [0.225, 0.09, 0.06, 0.086], [0.235, -0.01, -0.03, 0.086], [0.215, 0.08, -0.12, 0.090],
-      // Full back & nape curls
-      [-0.13, -0.03, -0.215, 0.094], [0, -0.02, -0.235, 0.100], [0.13, -0.03, -0.215, 0.094],
-      [-0.10, -0.125, -0.20, 0.084], [0, -0.13, -0.21, 0.088], [0.10, -0.125, -0.20, 0.084]
+      // Top crown puffs
+      [0, 0.258, 0.01, 0.110], [-0.11, 0.238, 0.02, 0.100], [0.11, 0.238, 0.02, 0.100],
+      [-0.08, 0.246, -0.11, 0.108], [0.08, 0.246, -0.11, 0.108],
+      // Soft curly fringe framing forehead just above eyebrows
+      [-0.148, 0.148, 0.145, 0.082], [-0.062, 0.165, 0.172, 0.088], [0, 0.170, 0.178, 0.090],
+      [0.062, 0.165, 0.172, 0.088], [0.148, 0.148, 0.145, 0.082],
+      // Side & back curls
+      [-0.225, 0.085, 0.04, 0.086], [-0.232, -0.01, -0.04, 0.084], [-0.215, 0.08, -0.12, 0.090],
+      [0.225, 0.085, 0.04, 0.086], [0.232, -0.01, -0.04, 0.084], [0.215, 0.08, -0.12, 0.090],
+      [-0.13, -0.025, -0.212, 0.094], [0, -0.02, -0.232, 0.100], [0.13, -0.025, -0.212, 0.094],
+      [-0.10, -0.115, -0.195, 0.082], [0, -0.12, -0.205, 0.086], [0.10, -0.115, -0.195, 0.082]
     ];
     curlCoords.forEach(([cx, cy, cz, cr]) => addPuff(cr, cx, cy, cz));
   } else if (style === "undercut") {
-    // Clean close-cropped cranial coverage (covers upper skull without skin poking through) + sculpted pompadour wave
-    addCrown(0.252, 0.208, 0.246, 0.058, -0.014);
-    addFullNape(0.244, 0.176, 0.178, -0.018, -0.076);
-    addPuff(1, 0, 0.156, 0.148, 0.198, 0.062, 0.095);
-    // Swept-back pompadour wave along crown
-    addLock(0.096, 0.22, -0.015, 0.228, 0.02, Math.PI / 2 - 0.18, 0, 0.06, 1.28, 1.0, 0.78);
-    addLock(0.072, 0.17, 0.085, 0.208, 0.015, Math.PI / 2 - 0.12, 0, -0.10, 1.02, 1.0, 0.74);
-    addPuff(0.088, -0.015, 0.218, 0.145, 1.32, 0.72, 0.92, -0.22, 0, 0.08);
+    // Sleek close-cropped tapered sides showing ears + smooth swept-back pompadour wave
+    addScalpMesh({
+      getAlphaMax: (t, sinT, cosT) => {
+        const frontMask = smoothstep(-0.2, 0.65, cosT);
+        const sideEarNotch = Math.exp(-Math.pow((cosT + 0.04) / 0.35, 2)) * 0.08 * Math.abs(sinT);
+        const frontLine = 0.305 * Math.PI;
+        const backLine = 0.56 * Math.PI - sideEarNotch;
+        return THREE.MathUtils.lerp(backLine, frontLine, frontMask);
+      },
+      getOffset: (t, alpha, s, sinT, cosT) => {
+        // Broad rounded pompadour crest sweeping smoothly up from forehead across crown
+        const sideRoll = Math.exp(-Math.pow(sinT / 0.68, 2));
+        const frontToCrown = Math.sin(smoothstep(0.02, 0.34 * Math.PI, alpha) * Math.PI) * (cosT > -0.35 ? 1 : 0.45);
+        return 0.016 + sideRoll * frontToCrown * 0.048;
+      }
+    });
   } else {
-    // Default "short" (俐落短髮): smooth natural crop with soft layered fringe & crisp nape
-    addCrown(0.258, 0.216, 0.250, 0.056, -0.012);
-    addFullNape(0.248, 0.182, 0.184, -0.022, -0.076);
-    // Smooth overlapping textured crop bangs across forehead
-    addPuff(1, 0, 0.155, 0.165, 0.205, 0.068, 0.088, 0.18, 0, 0);
-    addPuff(0.065, -0.09, 0.135, 0.175, 1.25, 0.7, 0.78, 0.24, 0.15, -0.22);
-    addPuff(0.065, 0.09, 0.135, 0.175, 1.25, 0.7, 0.78, 0.24, -0.15, 0.22);
-    // Clean sideburns framing front of ears
-    addLock(0.032, 0.075, -0.222, 0.022, 0.072, 0.06, 0, 0, 0.75, 1.0, 1.05);
-    addLock(0.032, 0.075, 0.222, 0.022, 0.072, 0.06, 0, 0, 0.75, 1.0, 1.05);
+    // Default "short" (俐落短髮): natural forward textured crop framing forehead & ears cleanly
+    addScalpMesh({
+      getAlphaMax: (t, sinT, cosT) => {
+        const frontMask = smoothstep(-0.2, 0.7, cosT);
+        const sideEarNotch = Math.exp(-Math.pow((cosT + 0.04) / 0.32, 2)) * 0.072 * Math.abs(sinT);
+        const frontCrop = 0.365 * Math.PI + Math.cos(sinT * 7) * 0.012;
+        const backLine = 0.61 * Math.PI - sideEarNotch;
+        return THREE.MathUtils.lerp(backLine, frontCrop, frontMask);
+      },
+      getOffset: (t, alpha, s, sinT, cosT) => {
+        const frontLoft = smoothstep(0.25, 0.88, cosT) * Math.sin(s * Math.PI) * 0.012;
+        return 0.022 + Math.sin(s * Math.PI * 0.85) * 0.015 + frontLoft;
+      }
+    });
   }
 
   return hair;
@@ -639,7 +820,7 @@ function createCharacterRig(config) {
   const cfg = { ...DEFAULT_AVATAR, ...(config || {}) };
 
   const skinMat = makeMat(findHex(SKIN_TONES, cfg.skinTone, "#f1c29b"), 0.58);
-  const hairMat = makeMat(findHex(HAIR_COLORS, cfg.hairColor, "#1f2430"), 0.72);
+  const hairMat = makeMat(findHex(HAIR_COLORS, cfg.hairColor, "#1f2430"), 0.78);
   const shirtMat = makeMat(findHex(OUTFIT_COLORS, cfg.outfitColor, "#d96b43"), 0.78);
   const pantsMat = makeMat("#374151", 0.85);
   const shoeMat = makeMat("#f8fafc", 0.65);
@@ -849,10 +1030,10 @@ function createCharacterRig(config) {
   headGroup.add(head);
 
   // Subtle stylized figurine ears
-  [-0.228, 0.228].forEach(ex => {
-    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.048, 12, 10), skinMat);
-    ear.scale.set(0.55, 1.0, 0.8);
-    ear.position.set(ex, -0.024, -0.01);
+  [-0.224, 0.224].forEach(ex => {
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), skinMat);
+    ear.scale.set(0.48, 0.92, 0.72);
+    ear.position.set(ex, -0.024, -0.015);
     ear.castShadow = true;
     headGroup.add(ear);
   });
@@ -868,12 +1049,12 @@ function createCharacterRig(config) {
   rightCatch.position.x = 0.10;
   headGroup.add(leftEye, rightEye, leftCatch, rightCatch);
 
-  const browL = new THREE.Mesh(new THREE.CapsuleGeometry(0.0085, 0.048, 4, 8), hairMat);
+  const browL = new THREE.Mesh(new THREE.CapsuleGeometry(0.006, 0.036, 4, 8), hairMat);
   browL.rotation.z = Math.PI / 2 + 0.06;
-  browL.position.set(-0.09, 0.048, 0.216);
-  const browR = new THREE.Mesh(new THREE.CapsuleGeometry(0.0085, 0.048, 4, 8), hairMat);
+  browL.position.set(-0.09, 0.042, 0.219);
+  const browR = new THREE.Mesh(new THREE.CapsuleGeometry(0.006, 0.036, 4, 8), hairMat);
   browR.rotation.z = Math.PI / 2 - 0.06;
-  browR.position.set(0.09, 0.048, 0.216);
+  browR.position.set(0.09, 0.042, 0.219);
   headGroup.add(browL, browR);
 
   const cheekL = new THREE.Mesh(new THREE.SphereGeometry(0.038, 10, 10), blushMat);

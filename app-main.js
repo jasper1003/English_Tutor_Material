@@ -42,7 +42,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121e";
+} from "./room-scene.js?v=20261121f";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
