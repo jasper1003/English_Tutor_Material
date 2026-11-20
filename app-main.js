@@ -42,7 +42,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121d";
+} from "./room-scene.js?v=20261121e";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -2374,14 +2374,6 @@ document.getElementById("avatar-form").addEventListener("change", (e) => {
   if (e.target.matches('input[type="radio"]')) {
     syncLiveAvatarPreview();
   }
-});
-
-document.getElementById("preview-rot-left").addEventListener("click", () => {
-  avatarPreviewScene?.rotateBy(-Math.PI / 4);
-});
-
-document.getElementById("preview-rot-right").addEventListener("click", () => {
-  avatarPreviewScene?.rotateBy(Math.PI / 4);
 });
 
 document.getElementById("cancel-avatar-edit-btn").addEventListener("click", () => {

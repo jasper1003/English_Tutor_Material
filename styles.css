@@ -1766,6 +1766,18 @@ dialog.settings-dialog::backdrop {
   width: 100%;
 }
 
+.preview-drag-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft, rgba(148, 163, 184, 0.08));
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
 .onboarding-section {
   margin-bottom: 1.35rem;
 }
@@ -1784,6 +1796,11 @@ dialog.settings-dialog::backdrop {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 0.65rem;
+}
+
+#avatar-hairstyle-choices.choice-grid {
+  grid-template-columns: repeat(auto-fit, minmax(122px, 1fr));
+  gap: 0.5rem;
 }
 
 .choice-card {
