@@ -369,13 +369,19 @@ function syncXpProgressUI({ allowCelebrate = false } = {}) {
   const totalXp = getTotalEarnedXp();
   const progress = resolveXpProgress(totalXp, XP_PER_LEVEL);
 
+  const roomEmblemEl = document.getElementById("room-xp-emblem");
+  const roomLevelEl = document.getElementById("room-xp-level");
   const roomTitleEl = document.getElementById("room-xp-title");
   const roomNumEl = document.getElementById("room-xp-num");
+  const roomSubEl = document.getElementById("room-xp-sub");
   const roomFillEl = document.getElementById("room-xp-fill");
   const roomPillEl = document.getElementById("room-xp-pill");
 
-  if (roomTitleEl) roomTitleEl.textContent = `${progress.emblem} Lv.${progress.level} · ${progress.title}`;
-  if (roomNumEl) roomNumEl.textContent = `${progress.xpIntoLevel}/${progress.xpPerLevel}`;
+  if (roomEmblemEl) roomEmblemEl.textContent = progress.emblem;
+  if (roomLevelEl) roomLevelEl.textContent = `Lv.${progress.level}`;
+  if (roomTitleEl) roomTitleEl.textContent = progress.title;
+  if (roomNumEl) roomNumEl.textContent = `${progress.xpIntoLevel} / ${progress.xpPerLevel} XP`;
+  if (roomSubEl) roomSubEl.textContent = progress.subtitle;
   if (roomFillEl) roomFillEl.style.width = `${progress.progressPct}%`;
   if (roomPillEl) {
     roomPillEl.title = `累積 ${progress.totalXp} XP · ${progress.subtitle}（再 ${progress.xpToNextLevel} XP 升至 Lv.${progress.level + 1} ${progress.nextTitle}）`;
