@@ -1810,15 +1810,16 @@ export class FreelancerRoomScene {
 
     // 6. Unlocked Combo Cinema Upgrade: Dolby Atmos Surround Sound System
     const atmosGroup = new THREE.Group();
-    const chassisMat = makeMat("#222834", 0.36, 0.45);
-    const grilleMat = makeMat("#11161f", 0.9, 0.08);
-    const titaniumMat = makeMat("#8a95a5", 0.28, 0.72);
-    const copperConeMat = makeMat("#c48b5c", 0.35, 0.62);
+    const atmosWallGroup = new THREE.Group();
+    const chassisMat = makeMat("#313b4d", 0.36, 0.45);
+    const grilleMat = makeMat("#161d29", 0.88, 0.08);
+    const titaniumMat = makeMat("#94a3b8", 0.28, 0.72);
+    const copperConeMat = makeMat("#d49a6a", 0.35, 0.62);
     this.atmosLedMat = new THREE.MeshBasicMaterial({ color: "#38bdf8" });
 
     // 6a. Upward-firing Soundbar centered on floating TV shelf beneath West-wall TV
     const soundbar = new THREE.Group();
-    soundbar.position.set(-3.84, 1.075, -0.35);
+    soundbar.position.set(-3.86, 1.075, -0.35);
     soundbar.rotation.y = Math.PI / 2;
     const sbBody = new THREE.Mesh(new RoundedBoxGeometry(1.12, 0.09, 0.14, 3, 0.025), chassisMat);
     sbBody.castShadow = true;
@@ -1838,7 +1839,7 @@ export class FreelancerRoomScene {
     const sbLed = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.01, 0.01), this.atmosLedMat);
     sbLed.position.set(0, 0.046, 0.066);
     soundbar.add(sbLed);
-    atmosGroup.add(soundbar);
+    atmosWallGroup.add(soundbar);
 
     // 6b. Wireless Floor Subwoofer tucked neatly north of TV shelf
     const subGroup = new THREE.Group();
@@ -1858,20 +1859,23 @@ export class FreelancerRoomScene {
     subGroup.add(subRing, subCone, subLed);
     atmosGroup.add(subGroup);
 
-    // 6c. Twin Front Height / Atmos Modules mounted above & flanking West-wall TV
+    // 6c. Twin Front Height / Atmos Modules mounted cleanly in front of West wall flanking above TV
     [-1.24, 0.54].forEach(mz => {
       const heightMod = new THREE.Group();
-      heightMod.position.set(-3.95, 2.08, mz);
+      heightMod.position.set(-3.90, 2.08, mz);
+      heightMod.rotation.order = "YXZ";
       heightMod.rotation.y = Math.PI / 2;
-      heightMod.rotation.x = 0.24;
-      const modBox = new THREE.Mesh(new RoundedBoxGeometry(0.18, 0.22, 0.14, 3, 0.025), chassisMat);
+      heightMod.rotation.x = 0.26;
+      const modBox = new THREE.Mesh(new RoundedBoxGeometry(0.19, 0.23, 0.14, 3, 0.025), chassisMat);
       modBox.castShadow = true;
-      const modGrille = new THREE.Mesh(new RoundedBoxGeometry(0.14, 0.18, 0.018, 2, 0.01), grilleMat);
+      const modGrille = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.18, 0.018, 2, 0.01), grilleMat);
       modGrille.position.z = 0.066;
-      const modTrim = new THREE.Mesh(new THREE.RingGeometry(0.042, 0.052, 16), copperConeMat);
-      modTrim.position.z = 0.077;
-      heightMod.add(modBox, modGrille, modTrim);
-      atmosGroup.add(heightMod);
+      const modTrim = new THREE.Mesh(new THREE.RingGeometry(0.044, 0.056, 18), copperConeMat);
+      modTrim.position.set(0, 0.01, 0.077);
+      const modLed = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.01, 0.01), this.atmosLedMat);
+      modLed.position.set(0, -0.088, 0.073);
+      heightMod.add(modBox, modGrille, modTrim, modLed);
+      atmosWallGroup.add(heightMod);
     });
 
     // 6d. Twin Rear Surround Satellite Towers behind Sofa corners angled inward
@@ -1899,13 +1903,20 @@ export class FreelancerRoomScene {
       atmosGroup.add(tower);
     });
 
+    const westWallRef = this.walls?.find(w => w.name === "west");
+    atmosWallGroup.visible = Boolean(this.ownedItems.dolby_atmos && (westWallRef ? westWallRef.upperGroup.visible : true));
+    this.atmosWallGroup = atmosWallGroup;
+    this.furnitureGroup.add(atmosWallGroup);
+
     atmosGroup.visible = Boolean(this.ownedItems.dolby_atmos);
     this.dolbyAtmosGroup = atmosGroup;
     this.furnitureGroup.add(atmosGroup);
-    atmosGroup.traverse(obj => {
-      if (obj.isMesh && obj.material !== this.atmosLedMat) {
-        this.addInteractive(obj, "atmos");
-      }
+    [atmosGroup, atmosWallGroup].forEach(grp => {
+      grp.traverse(obj => {
+        if (obj.isMesh && obj.material !== this.atmosLedMat) {
+          this.addInteractive(obj, "atmos");
+        }
+      });
     });
   }
 
@@ -2704,6 +2715,11 @@ export class FreelancerRoomScene {
     if (this.wallTvGroup) this.wallTvGroup.visible = Boolean(this.ownedItems.wall_tv);
     if (this.sofaGroup) this.sofaGroup.visible = Boolean(this.ownedItems.cozy_sofa);
     if (this.dolbyAtmosGroup) this.dolbyAtmosGroup.visible = Boolean(this.ownedItems.dolby_atmos);
+    if (this.atmosWallGroup) {
+      const westWall = this.walls?.find(w => w.name === "west");
+      const westVisible = westWall ? westWall.upperGroup.visible : true;
+      this.atmosWallGroup.visible = Boolean(this.ownedItems.dolby_atmos && westVisible);
+    }
     if (this.bedLampGroup) this.bedLampGroup.visible = Boolean(this.ownedItems.bed_lamp);
     if (this.deskPlantGroup) this.deskPlantGroup.visible = Boolean(this.ownedItems.desk_plant);
     if (this.coolKeyboardGroup) this.coolKeyboardGroup.visible = Boolean(this.ownedItems.cool_keyboard);
@@ -3348,6 +3364,9 @@ export class FreelancerRoomScene {
     this.walls.forEach(w => {
       const facingCamera = w.normal.dot(camDir) > 0.05;
       w.upperGroup.visible = !facingCamera;
+      if (w.name === "west" && this.atmosWallGroup) {
+        this.atmosWallGroup.visible = Boolean(this.ownedItems?.dolby_atmos && w.upperGroup.visible);
+      }
     });
   }
 
