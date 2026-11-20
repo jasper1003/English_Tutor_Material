@@ -69,7 +69,7 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261119z";
+} from "./app-helpers.js?v=20261120i";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
 import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261120d";
 
@@ -380,18 +380,18 @@ function syncXpProgressUI({ allowCelebrate = false } = {}) {
   if (roomEmblemEl) roomEmblemEl.textContent = progress.emblem;
   if (roomLevelEl) roomLevelEl.textContent = `Lv.${progress.level}`;
   if (roomTitleEl) roomTitleEl.textContent = progress.title;
-  if (roomNumEl) roomNumEl.textContent = `${progress.xpIntoLevel} / ${progress.xpPerLevel} XP`;
+  if (roomNumEl) roomNumEl.textContent = `${progress.xpIntoLevel}/${progress.xpPerLevel}`;
   if (roomSubEl) roomSubEl.textContent = progress.subtitle;
   if (roomFillEl) roomFillEl.style.width = `${progress.progressPct}%`;
   if (roomPillEl) {
-    roomPillEl.title = `累積 ${progress.totalXp} XP · ${progress.subtitle}（再 ${progress.xpToNextLevel} XP 升至 Lv.${progress.level + 1} ${progress.nextTitle}）`;
+    roomPillEl.title = `累積 ${progress.totalXp} XP · ${progress.subtitle}（再 +${progress.xpToNextLevel} XP → Lv.${progress.level + 1} ${progress.nextTitle}）`;
   }
 
   const bannerEl = document.getElementById("home-xp-banner");
   if (bannerEl) {
     const nextHint = progress.isMaxNamedRank && progress.level >= XP_RANK_LADDER.length
-      ? `累積總經驗：${progress.totalXp} XP · 已修至最高稱號，仍可繼續突破 Lv.${progress.level + 1}！`
-      : `再獲 ${progress.xpToNextLevel} XP 升級 → Lv.${progress.level + 1}【${escapeHtml(progress.nextTitle)}】`;
+      ? `總計 ${progress.totalXp} XP · 最高段位`
+      : `→ Lv.${progress.level + 1} ${escapeHtml(progress.nextTitle)}（+${progress.xpToNextLevel} XP）`;
     bannerEl.innerHTML = `
       <div class="home-xp-rank-col">
         <div class="home-xp-emblem" aria-hidden="true">${escapeHtml(progress.emblem)}</div>
@@ -405,13 +405,13 @@ function syncXpProgressUI({ allowCelebrate = false } = {}) {
       </div>
       <div class="home-xp-meter-col">
         <div class="home-xp-meter-meta">
-          <span>繪師聲望條（總計 ${progress.totalXp} XP）</span>
-          <span>${progress.xpIntoLevel} / ${progress.xpPerLevel} XP</span>
+          <span>總計 ${progress.totalXp} XP</span>
+          <span>${progress.xpIntoLevel}/${progress.xpPerLevel}</span>
         </div>
         <div class="home-xp-bar-track" role="progressbar" aria-label="繪師聲望升級進度" aria-valuemin="0" aria-valuemax="${progress.xpPerLevel}" aria-valuenow="${progress.xpIntoLevel}">
           <div class="home-xp-bar-fill" style="width: ${progress.progressPct}%;"></div>
         </div>
-        <div class="form-hint" style="margin: 0;">${nextHint}</div>
+        <div class="form-hint" style="margin: 0; font-size: 0.76rem;">${nextHint}</div>
       </div>
     `;
   }
