@@ -972,6 +972,8 @@ export class FreelancerRoomScene {
     }
     this.walkWaypoints = [];
     this.walkCallback = null;
+    this.targetActivityId = null;
+    this.toiletLidAngle = 0;
 
     // Interactive hover/raycast
     this.raycaster = new THREE.Raycaster();
@@ -2065,10 +2067,23 @@ export class FreelancerRoomScene {
     bowl.castShadow = true;
     toilet.add(bowl);
 
+    // Inner recessed bowl opening visible when lid lifts up
+    const basicBowlOpening = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.16, 0.14, 0.014, 20),
+      makeMat("#bae6fd", 0.18, 0.1)
+    );
+    basicBowlOpening.scale.set(1, 1, 1.18);
+    basicBowlOpening.position.set(0, 0.468, 0.14);
+    toilet.add(basicBowlOpening);
+
+    const basicLidPivot = new THREE.Group();
+    basicLidPivot.position.set(0, 0.49, -0.05);
     const lid = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.06, 0.52, 3, 0.03), makeMat("#ffffff", 0.18));
-    lid.position.set(0, 0.49, 0.12);
+    lid.position.set(0, 0, 0.17);
     lid.castShadow = true;
-    toilet.add(lid);
+    basicLidPivot.add(lid);
+    this.basicToiletLidPivot = basicLidPivot;
+    toilet.add(basicLidPivot);
 
     const tank = new THREE.Mesh(new RoundedBoxGeometry(0.54, 0.56, 0.24, 4, 0.07), ceramicMat);
     tank.position.set(0, 0.58, -0.2);
@@ -2082,7 +2097,7 @@ export class FreelancerRoomScene {
     toilet.visible = !this.ownedItems.smart_toilet;
     this.basicToiletGroup = toilet;
     bathGroup.add(toilet);
-    [ped, bowl, lid, tank, flushBtn].forEach(m => this.addInteractive(m, "toilet"));
+    [ped, bowl, basicBowlOpening, lid, tank, flushBtn].forEach(m => this.addInteractive(m, "toilet"));
 
     // Smart Tankless Bidet Toilet upgrade
     const smartToilet = new THREE.Group();
@@ -2100,10 +2115,22 @@ export class FreelancerRoomScene {
     smartRimGlow.position.set(0, 0.4, 0.02);
     smartToilet.add(smartRimGlow);
 
+    const smartBowlOpening = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.16, 0.14, 0.014, 20),
+      makeMat("#bae6fd", 0.16, 0.1)
+    );
+    smartBowlOpening.scale.set(1, 1, 1.24);
+    smartBowlOpening.position.set(0, 0.415, 0.08);
+    smartToilet.add(smartBowlOpening);
+
+    const smartLidPivot = new THREE.Group();
+    smartLidPivot.position.set(0, 0.45, -0.22);
     const smartLid = new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.07, 0.68, 4, 0.035), makeMat("#ffffff", 0.14));
-    smartLid.position.set(0, 0.45, 0.02);
+    smartLid.position.set(0, 0, 0.24);
     smartLid.castShadow = true;
-    smartToilet.add(smartLid);
+    smartLidPivot.add(smartLid);
+    this.smartToiletLidPivot = smartLidPivot;
+    smartToilet.add(smartLidPivot);
 
     const smartChrome = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.025, 0.05, 2, 0.01), chromeMat);
     smartChrome.position.set(0, 0.49, -0.22);
@@ -2124,7 +2151,7 @@ export class FreelancerRoomScene {
     smartToilet.visible = Boolean(this.ownedItems.smart_toilet);
     this.smartToiletGroup = smartToilet;
     bathGroup.add(smartToilet);
-    [smartBase, smartLid, bidetPanel].forEach(m => this.addInteractive(m, "toilet"));
+    [smartBase, smartBowlOpening, smartLid, bidetPanel].forEach(m => this.addInteractive(m, "toilet"));
 
     // Compact corner wash basin
     const sinkGroup = new THREE.Group();
@@ -2731,6 +2758,7 @@ export class FreelancerRoomScene {
     // Immediate snappy walk straight to desk chair
     this.charState = "WALK_TO_WORK";
     this.currentActivity = "walking";
+    this.targetActivityId = null;
     this.hideBubble();
     this.onActivityChange("快步前往書桌準備接案...");
     this.postCelebrateSpot = null;
@@ -2799,6 +2827,8 @@ export class FreelancerRoomScene {
     }
     this.walkWaypoints = [];
     this.walkCallback = null;
+    this.targetActivityId = null;
+    this.toiletLidAngle = 0;
 
     if (celebrationType === "submitted" || celebrationType === "approved") {
       this.postCelebrateSpot = this.pickCelebrateLeisureSpot();
@@ -3121,11 +3151,13 @@ export class FreelancerRoomScene {
 
     this.charState = "WALK_TO_ACTIVITY";
     this.currentActivity = "walking";
+    this.targetActivityId = spot.id;
     this.hideBubble();
     this.walkWaypoints = this.buildPathTo(spot.id, walkDest);
     this.walkCallback = () => {
       this.charState = "IDLE";
       this.currentActivity = spot.id;
+      this.targetActivityId = null;
       this.activityTimer = durationSec;
       this.thoughtCooldown = 1.2 + Math.random() * 2.2;
       this.charRoot.position.copy(spot.pos);
@@ -3330,8 +3362,33 @@ export class FreelancerRoomScene {
     this.headGroup.rotation.set(0, 0, 0);
   }
 
+  updateToiletLid(dt) {
+    const toiletSpotPos = this.actionSpots?.toilet?.pos;
+    const isApproachingToilet = Boolean(
+      this.charState === "WALK_TO_ACTIVITY"
+      && this.targetActivityId === "toilet"
+      && toiletSpotPos
+      && this.charRoot?.position
+      && this.charRoot.position.distanceTo(toiletSpotPos) < 1.15
+    );
+    const shouldOpen = this.currentActivity === "toilet" || isApproachingToilet;
+    const targetAngle = shouldOpen ? -Math.PI * 0.46 : 0;
+    const step = 1 - Math.exp(-10 * Math.max(0.001, dt || 0.016));
+    this.toiletLidAngle += (targetAngle - this.toiletLidAngle) * step;
+    if (Math.abs(targetAngle - this.toiletLidAngle) < 0.004) {
+      this.toiletLidAngle = targetAngle;
+    }
+    if (this.basicToiletLidPivot) {
+      this.basicToiletLidPivot.rotation.x = this.toiletLidAngle;
+    }
+    if (this.smartToiletLidPivot) {
+      this.smartToiletLidPivot.rotation.x = this.toiletLidAngle;
+    }
+  }
+
   updateCharacter(dt, elapsedSec, isNightTime) {
     this.resetLimbs();
+    this.updateToiletLid(dt);
 
     if (this.charState === "WALK_TO_WORK" || this.charState === "WALK_TO_ACTIVITY") {
       const target = this.walkWaypoints[0];
