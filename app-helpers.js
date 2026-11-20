@@ -42,6 +42,50 @@ export const XP_RANK_LADDER = [
   { title: "太古獨尊·無敵寂寞", emblem: "🪩", subtitle: "宇宙星雲都照你的色票調色" }
 ];
 
+export function calculateShopPurchaseXp(price) {
+  const safePrice = Math.max(0, Math.trunc(Number(price) || 0));
+  return Math.round(safePrice * 0.2);
+}
+
+/**
+ * Extract an 11-character YouTube video ID from a URL or raw ID.
+ * Returns null if the input is not a recognized YouTube video reference.
+ */
+export function parseYouTubeVideoId(raw) {
+  const text = String(raw ?? "").trim();
+  if (!text) return null;
+  const idPattern = /^[A-Za-z0-9_-]{11}$/;
+  if (idPattern.test(text)) return text;
+
+  const candidateUrl = /^https?:\/\//i.test(text) ? text : `https://${text}`;
+  try {
+    const parsed = new URL(candidateUrl);
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    let extracted = "";
+    if (host === "youtu.be") {
+      extracted = parsed.pathname.split("/").filter(Boolean)[0] || "";
+    } else if (
+      host === "youtube.com"
+      || host === "m.youtube.com"
+      || host === "music.youtube.com"
+      || host === "youtube-nocookie.com"
+    ) {
+      const vParam = parsed.searchParams.get("v");
+      if (vParam) {
+        extracted = vParam.trim();
+      } else {
+        const parts = parsed.pathname.split("/").filter(Boolean);
+        if (parts.length >= 2 && ["shorts", "live", "embed", "v"].includes(parts[0])) {
+          extracted = parts[1];
+        }
+      }
+    }
+    return idPattern.test(extracted) ? extracted : null;
+  } catch {
+    return null;
+  }
+}
+
 export function resolveXpProgress(totalXp, xpPerLevel = 100) {
   const safeTotal = Math.max(0, Math.trunc(Number(totalXp) || 0));
   const safeStep = Math.max(10, Math.min(10000, Math.trunc(Number(xpPerLevel) || 100)));

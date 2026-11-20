@@ -42,7 +42,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261120g";
+} from "./room-scene.js?v=20261121a";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -57,6 +57,8 @@ import {
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
+  calculateShopPurchaseXp,
+  parseYouTubeVideoId,
   resolveXpProgress,
   sanitizeBoolMap,
   getMonthKey,
@@ -69,9 +71,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261120i";
+} from "./app-helpers.js?v=20261121a";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261120d";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121a";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -898,7 +900,8 @@ function applyRemoteTvVideos(rows = []) {
   if (!Array.isArray(rows) || rows.length === 0) return;
   const list = [];
   for (const row of rows) {
-    const id = String(row?.id || "").trim();
+    const rawId = String(row?.id || "").trim();
+    const id = parseYouTubeVideoId(rawId) || rawId;
     const title = String(row?.title || "").trim();
     if (!id || !title || id.length > 32) continue;
     const enabledRaw = String(row?.enabled ?? "true").trim().toLowerCase();
@@ -911,6 +914,9 @@ function applyRemoteTvVideos(rows = []) {
   }
   if (list.length > 0) {
     TV_CHANNEL_VIDEOS = list;
+    if (typeof renderTvChannelList === "function" && tvDialog?.open) {
+      renderTvChannelList();
+    }
   }
 }
 
@@ -2717,11 +2723,15 @@ function renderShopDialog() {
     title.textContent = item.name;
     const priceEl = document.createElement("div");
     priceEl.className = "shop-item-price";
+    const xpReward = calculateShopPurchaseXp(item.price);
+    const xpSuffix = xpReward > 0 ? ` · +${xpReward} XP` : "";
     priceEl.textContent = isPaint
-      ? `${item.price} 英蚌（每次重刷計費）`
+      ? `${item.price} 英蚌${isActivePaint ? "" : xpSuffix}（每次重刷計費）`
       : (isTextile && isPermanentOwned)
-        ? `${item.price} 英蚌（已購買，可免費更換）`
-        : `${item.price} 英蚌`;
+        ? `${item.price} 英蚌（已購，免費更換）`
+        : isPermanentOwned
+          ? `${item.price} 英蚌`
+          : `${item.price} 英蚌${xpSuffix}`;
     meta.append(title, priceEl);
     head.append(iconBox, meta);
 
@@ -2806,9 +2816,13 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
           throw new Error("英蚌餘額不足，先去電腦完成接案學習賺錢吧！");
         }
         const nextClams = isSuperAdmin ? currentClams : (currentClams - item.price);
+        const currentXp = Math.max(0, Math.trunc(Number(data.xp ?? 0)));
+        const xpGain = calculateShopPurchaseXp(item.price);
+        const nextXp = Math.min(10000000, currentXp + xpGain);
         const nextRoomState = { ...prevRoomState, wallColor: item.wallColor };
         tx.update(userRef, {
           clams: nextClams,
+          xp: nextXp,
           roomState: nextRoomState,
           updatedAt: serverTimestamp()
         });
@@ -2820,11 +2834,11 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
             amount: -item.price
           });
         }
-        return { unchanged: false, nextClams, nextOwned: prevOwned, nextRoomState };
+        return { unchanged: false, nextClams, nextXp, xpGranted: xpGain, nextOwned: prevOwned, nextRoomState };
       }
 
       if (prevOwned[item.id] === true) {
-        return { unchanged: true, nextClams: currentClams, nextOwned: prevOwned, nextRoomState: prevRoomState };
+        return { unchanged: true, nextClams: currentClams, nextXp: Math.max(0, Math.trunc(Number(data.xp ?? 0))), xpGranted: 0, nextOwned: prevOwned, nextRoomState: prevRoomState };
       }
       const missingPrereqs = getMissingShopPrerequisites(item, prevOwned);
       if (missingPrereqs.length > 0) {
@@ -2835,6 +2849,9 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       }
 
       const nextClams = isSuperAdmin ? currentClams : (currentClams - item.price);
+      const currentXp = Math.max(0, Math.trunc(Number(data.xp ?? 0)));
+      const xpGain = calculateShopPurchaseXp(item.price);
+      const nextXp = Math.min(10000000, currentXp + xpGain);
       const nextOwned = { ...prevOwned, [item.id]: true };
       let nextRoomState = prevRoomState;
       let shouldUpdateRoomState = false;
@@ -2848,6 +2865,7 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
 
       const patch = {
         clams: nextClams,
+        xp: nextXp,
         ownedItems: nextOwned,
         updatedAt: serverTimestamp()
       };
@@ -2863,11 +2881,17 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
           amount: -item.price
         });
       }
-      return { unchanged: false, nextClams, nextOwned, nextRoomState };
+      return { unchanged: false, nextClams, nextXp, xpGranted: xpGain, nextOwned, nextRoomState };
     });
+
+    if (result.unchanged) {
+      renderShopDialog();
+      return;
+    }
 
     if (currentUserProfile) {
       currentUserProfile.clams = result.nextClams;
+      currentUserProfile.xp = result.nextXp;
       currentUserProfile.ownedItems = result.nextOwned;
       currentUserProfile.roomState = result.nextRoomState;
     }
@@ -2877,23 +2901,25 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       currentUserProfile?.displayName || resolveFallbackName(currentUser),
       result.nextClams
     );
+    syncXpProgressUI({ allowCelebrate: true });
     const normalizedOwned = normalizeOwnedItems(result.nextOwned);
     roomScene?.applyOwnedItems(normalizedOwned);
+    const xpMsg = result.xpGranted > 0 ? `，獲得 +${result.xpGranted} XP` : "";
     if (item.wallColor) {
       roomScene?.setWallColor(item.wallColor);
       const feeNote = currentRole === "super_admin" ? "超級管理員測試免扣款" : `扣除粉刷費 ${item.price} 英蚌`;
-      showFeedback("shop-feedback", "success", `已重新粉刷為「${item.name}」（${feeNote}）！`);
+      showFeedback("shop-feedback", "success", `已重新粉刷為「${item.name}」（${feeNote}${xpMsg}）！`);
     } else if (item.textileKind === "bedSheet") {
       roomScene?.setBedSheet(item.id);
-      showFeedback("shop-feedback", "success", `已購入「${item.name}」並立即換上！`);
+      showFeedback("shop-feedback", "success", `已購入「${item.name}」並立即換上${xpMsg}！`);
     } else if (item.textileKind === "rugStyle") {
       roomScene?.setRugStyle(item.id);
-      showFeedback("shop-feedback", "success", `已購入「${item.name}」並立即鋪好！`);
+      showFeedback("shop-feedback", "success", `已購入「${item.name}」並立即鋪好${xpMsg}！`);
     } else {
       if (item.id === "bed_lamp") {
         roomScene?.setBedLamp(true);
       }
-      showFeedback("shop-feedback", "success", `已購買「${item.name}」並直接放進租屋處！`);
+      showFeedback("shop-feedback", "success", `已購買「${item.name}」並直接放進租屋處${xpMsg}！`);
     }
     renderShopDialog();
   } catch (err) {
@@ -2908,15 +2934,68 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
 }
 
 // Guest YouTube TV Player (No login required; overridden by Google Sheet TV_Videos tab)
+const TV_CUSTOM_STORAGE_KEY = "room_tv_custom_videos_v1";
 let TV_CHANNEL_VIDEOS = [...DEFAULT_TV_CHANNEL_VIDEOS];
 const tvDialog = document.getElementById("tv-dialog");
 const tvIframe = document.getElementById("tv-youtube-iframe");
 let lastTvVideoId = null;
+let customTvVideos = readCustomTvVideos();
+
+function readCustomTvVideos() {
+  try {
+    const raw = localStorage.getItem(TV_CUSTOM_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map(item => {
+        const id = parseYouTubeVideoId(item?.id);
+        if (!id) return null;
+        return {
+          id,
+          title: String(item?.title || "").trim() || `YouTube 影片 (${id})`,
+          author: String(item?.author || "").trim() || "自訂 YouTube",
+          isCustom: true
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 12);
+  } catch {
+    return [];
+  }
+}
+
+function writeCustomTvVideos(list) {
+  try {
+    localStorage.setItem(TV_CUSTOM_STORAGE_KEY, JSON.stringify(list.slice(0, 12)));
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+function getAllTvChannels() {
+  const seen = new Set();
+  const merged = [];
+  for (const v of customTvVideos) {
+    if (v?.id && !seen.has(v.id)) {
+      seen.add(v.id);
+      merged.push({ ...v, isCustom: true });
+    }
+  }
+  for (const v of TV_CHANNEL_VIDEOS) {
+    if (v?.id && !seen.has(v.id)) {
+      seen.add(v.id);
+      merged.push(v);
+    }
+  }
+  return merged;
+}
 
 function pickNextTvChannel() {
-  const pool = TV_CHANNEL_VIDEOS.filter(v => v.id !== lastTvVideoId);
-  const chosen = pool[Math.floor(Math.random() * pool.length)] || TV_CHANNEL_VIDEOS[0];
-  lastTvVideoId = chosen.id;
+  const allChannels = getAllTvChannels();
+  const pool = allChannels.filter(v => v.id !== lastTvVideoId);
+  const chosen = pool[Math.floor(Math.random() * pool.length)] || allChannels[0] || TV_CHANNEL_VIDEOS[0];
+  lastTvVideoId = chosen?.id || null;
   return chosen;
 }
 
@@ -2932,6 +3011,114 @@ function syncRoomTvRemoteUI() {
   }
 }
 
+function clearTvCustomFeedback() {
+  const box = document.getElementById("tv-custom-feedback");
+  if (!box) return;
+  box.replaceChildren();
+  box.classList.add("hidden");
+}
+
+function showTvCustomFeedback(message, searchQuery = "") {
+  const box = document.getElementById("tv-custom-feedback");
+  if (!box) return;
+  box.replaceChildren();
+  const msgSpan = document.createElement("span");
+  msgSpan.textContent = message;
+  box.appendChild(msgSpan);
+  if (searchQuery) {
+    const link = document.createElement("a");
+    link.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = `在 YouTube 搜尋「${searchQuery}」↗`;
+    box.appendChild(link);
+  }
+  box.classList.remove("hidden");
+}
+
+function updateTvHeaderAndExternalLink(chosen) {
+  if (!chosen) return;
+  const captionEl = document.getElementById("tv-channel-caption");
+  const linkEl = document.getElementById("tv-external-link");
+  if (captionEl) captionEl.textContent = `${chosen.author} · ${chosen.title}`;
+  if (linkEl) linkEl.href = `https://www.youtube.com/watch?v=${encodeURIComponent(chosen.id)}`;
+}
+
+function renderTvChannelList() {
+  const listEl = document.getElementById("tv-channel-list");
+  const countEl = document.getElementById("tv-channel-count");
+  if (!listEl) return;
+  const channels = getAllTvChannels();
+  if (countEl) countEl.textContent = `${channels.length} 部`;
+  listEl.replaceChildren();
+
+  channels.forEach(video => {
+    const isActive = activeTvVideo?.id === video.id;
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = `tv-channel-card${isActive ? " is-active" : ""}`;
+    card.setAttribute("role", "option");
+    card.setAttribute("aria-selected", String(isActive));
+
+    const thumbWrap = document.createElement("div");
+    thumbWrap.className = "tv-channel-thumb-wrap";
+    const img = document.createElement("img");
+    img.className = "tv-channel-thumb";
+    img.src = `https://i.ytimg.com/vi/${encodeURIComponent(video.id)}/mqdefault.jpg`;
+    img.alt = "";
+    img.loading = "lazy";
+    thumbWrap.appendChild(img);
+
+    if (isActive) {
+      const liveBadge = document.createElement("span");
+      liveBadge.className = "tv-channel-live-badge";
+      liveBadge.textContent = "▶ 播放中";
+      thumbWrap.appendChild(liveBadge);
+    }
+
+    if (video.isCustom) {
+      const removeBtn = document.createElement("span");
+      removeBtn.className = "tv-channel-remove-btn";
+      removeBtn.setAttribute("role", "button");
+      removeBtn.setAttribute("tabindex", "0");
+      removeBtn.setAttribute("aria-label", `移除自訂影片 ${video.title}`);
+      removeBtn.title = "從清單移除";
+      removeBtn.textContent = "✕";
+      const removeHandler = (e) => {
+        e.stopPropagation();
+        customTvVideos = customTvVideos.filter(item => item.id !== video.id);
+        writeCustomTvVideos(customTvVideos);
+        renderTvChannelList();
+      };
+      removeBtn.addEventListener("click", removeHandler);
+      removeBtn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          removeHandler(e);
+        }
+      });
+      thumbWrap.appendChild(removeBtn);
+    }
+
+    const meta = document.createElement("div");
+    meta.className = "tv-channel-meta";
+    const titleEl = document.createElement("div");
+    titleEl.className = "tv-channel-title";
+    titleEl.textContent = video.title;
+    const authorEl = document.createElement("div");
+    authorEl.className = "tv-channel-author";
+    authorEl.textContent = video.author;
+    meta.append(titleEl, authorEl);
+
+    card.append(thumbWrap, meta);
+    card.addEventListener("click", () => {
+      clearTvCustomFeedback();
+      selectTvVideo(video);
+    });
+    listEl.appendChild(card);
+  });
+}
+
 function stopRoomTvPlayback() {
   activeTvVideo = null;
   tvPowerOffRequested = false;
@@ -2945,17 +3132,78 @@ function stopRoomTvPlayback() {
 
 function applyTvModalContent(chosen) {
   if (!chosen) return;
-  document.getElementById("tv-channel-caption").textContent = `${chosen.author} · ${chosen.title}`;
-  document.getElementById("tv-external-link").href = `https://www.youtube.com/watch?v=${chosen.id}`;
-  tvIframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(chosen.id)}?autoplay=1&rel=0&playsinline=1`;
+  updateTvHeaderAndExternalLink(chosen);
+  const nextSrc = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(chosen.id)}?autoplay=1&rel=0&playsinline=1`;
+  if (tvIframe.getAttribute("src") !== nextSrc) {
+    tvIframe.src = nextSrc;
+  }
+}
+
+function selectTvVideo(chosen) {
+  if (!chosen?.id) return;
+  activeTvVideo = chosen;
+  lastTvVideoId = chosen.id;
+  if (tvDialog.open) {
+    applyTvModalContent(chosen);
+    renderTvChannelList();
+  } else {
+    roomScene?.setTvPlayback({ videoId: chosen.id, suspended: false });
+  }
+  syncRoomTvRemoteUI();
+}
+
+async function enrichCustomVideoMetadata(videoId) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4500);
+  try {
+    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`;
+    const res = await fetch(oembedUrl, { signal: controller.signal });
+    if (!res.ok) return;
+    const meta = await res.json();
+    const title = String(meta?.title || "").trim();
+    const author = String(meta?.author_name || "").trim();
+    if (!title && !author) return;
+
+    let changed = false;
+    customTvVideos = customTvVideos.map(item => {
+      if (item.id !== videoId) return item;
+      changed = true;
+      return {
+        ...item,
+        title: title || item.title,
+        author: author || item.author
+      };
+    });
+    if (changed) writeCustomTvVideos(customTvVideos);
+
+    if (activeTvVideo?.id === videoId) {
+      activeTvVideo = {
+        ...activeTvVideo,
+        title: title || activeTvVideo.title,
+        author: author || activeTvVideo.author
+      };
+      updateTvHeaderAndExternalLink(activeTvVideo);
+      syncRoomTvRemoteUI();
+    }
+    if (tvDialog.open) {
+      renderTvChannelList();
+    }
+  } catch {
+    // Ignore oEmbed failure / offline fallback
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function openTvModalPlayer() {
+  tvPowerOffRequested = false;
+  clearTvCustomFeedback();
   if (!activeTvVideo) {
     activeTvVideo = pickNextTvChannel();
   }
   roomScene?.setTvPlayback({ videoId: activeTvVideo.id, suspended: true });
   applyTvModalContent(activeTvVideo);
+  renderTvChannelList();
   syncRoomTvRemoteUI();
   if (!tvDialog.open) {
     tvDialog.showModal();
@@ -2963,25 +3211,60 @@ function openTvModalPlayer() {
 }
 
 function openTvPlayer() {
-  if (!activeTvVideo) {
-    activeTvVideo = pickNextTvChannel();
-    roomScene?.setTvPlayback({ videoId: activeTvVideo.id, suspended: false });
-    syncRoomTvRemoteUI();
-    return;
-  }
   openTvModalPlayer();
 }
 
 function shuffleTvChannel() {
+  clearTvCustomFeedback();
   const chosen = pickNextTvChannel();
-  activeTvVideo = chosen;
-  if (tvDialog.open) {
-    applyTvModalContent(chosen);
-  } else {
-    roomScene?.setTvPlayback({ videoId: chosen.id, suspended: false });
-  }
-  syncRoomTvRemoteUI();
+  selectTvVideo(chosen);
 }
+
+document.getElementById("tv-custom-form")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const inputEl = document.getElementById("tv-custom-url-input");
+  const raw = inputEl?.value.trim() || "";
+  if (!raw) {
+    clearTvCustomFeedback();
+    return;
+  }
+  const videoId = parseYouTubeVideoId(raw);
+  if (!videoId) {
+    showTvCustomFeedback("請貼上有效的 YouTube 網址或 11 碼影片 ID，或點右側直接搜尋：", raw);
+    return;
+  }
+
+  clearTvCustomFeedback();
+  if (inputEl) inputEl.value = "";
+
+  const existing = getAllTvChannels().find(v => v.id === videoId);
+  if (existing) {
+    selectTvVideo(existing);
+    if (existing.isCustom && existing.author === "自訂 YouTube") {
+      enrichCustomVideoMetadata(videoId);
+    }
+    return;
+  }
+
+  const customEntry = {
+    id: videoId,
+    title: `自訂影片 (${videoId})`,
+    author: "自訂 YouTube",
+    isCustom: true
+  };
+  customTvVideos = [customEntry, ...customTvVideos.filter(v => v.id !== videoId)].slice(0, 12);
+  writeCustomTvVideos(customTvVideos);
+  selectTvVideo(customEntry);
+  enrichCustomVideoMetadata(videoId);
+});
+
+document.getElementById("tv-search-yt-btn")?.addEventListener("click", () => {
+  const raw = document.getElementById("tv-custom-url-input")?.value.trim() || "";
+  const url = raw
+    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(raw)}`
+    : "https://www.youtube.com/";
+  window.open(url, "_blank", "noopener,noreferrer");
+});
 
 document.getElementById("tv-shuffle-btn").addEventListener("click", shuffleTvChannel);
 document.getElementById("room-tv-shuffle-btn").addEventListener("click", shuffleTvChannel);
@@ -2997,6 +3280,7 @@ document.getElementById("footer-close-tv-btn").addEventListener("click", () => {
 });
 tvDialog.addEventListener("close", () => {
   tvIframe.removeAttribute("src");
+  clearTvCustomFeedback();
   if (tvPowerOffRequested) {
     stopRoomTvPlayback();
     return;

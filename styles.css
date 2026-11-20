@@ -2197,7 +2197,15 @@ dialog.settings-dialog::backdrop {
 }
 
 .tv-dialog {
-  max-width: min(760px, calc(100vw - 2rem));
+  max-width: min(820px, calc(100vw - 2rem));
+}
+
+.tv-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.78rem;
+  max-height: min(74dvh, 660px);
+  overflow-y: auto;
 }
 
 .tv-frame-wrap {
@@ -2208,6 +2216,7 @@ dialog.settings-dialog::backdrop {
   overflow: hidden;
   background: #0f172a;
   border: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .tv-frame-wrap iframe {
@@ -2216,6 +2225,193 @@ dialog.settings-dialog::backdrop {
   width: 100%;
   height: 100%;
   border: 0;
+}
+
+.tv-custom-form {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.tv-custom-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.52rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft, rgba(148, 163, 184, 0.08));
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
+.tv-custom-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.tv-custom-submit-btn,
+.tv-search-btn {
+  flex-shrink: 0;
+  padding-inline: 0.78rem;
+}
+
+.tv-custom-feedback {
+  font-size: 0.8rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 9px;
+  background: light-dark(rgba(59, 130, 246, 0.09), rgba(56, 189, 248, 0.14));
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tv-custom-feedback a {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.tv-channel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.48rem;
+}
+
+.tv-channel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.tv-channel-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.tv-channel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: 0.55rem;
+  max-height: 210px;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.tv-channel-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  padding: 0;
+  border-radius: 11px;
+  overflow: hidden;
+  border: 1.5px solid var(--border);
+  background: var(--card-bg, var(--surface));
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.tv-channel-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary);
+}
+
+.tv-channel-card.is-active {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.28);
+}
+
+.tv-channel-thumb-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #0f172a;
+  overflow: hidden;
+}
+
+.tv-channel-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tv-channel-live-badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  background: rgba(14, 165, 233, 0.92);
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.tv-channel-remove-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(15, 23, 42, 0.78);
+  color: #f8fafc;
+  font-size: 0.7rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tv-channel-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.9);
+}
+
+.tv-channel-meta {
+  padding: 0.42rem 0.5rem 0.48rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.14rem;
+}
+
+.tv-channel-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.28;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tv-channel-author {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tv-power-off-btn {
+  border-color: light-dark(rgba(220, 38, 38, 0.38), rgba(248, 113, 113, 0.42));
+  color: light-dark(#b91c1c, #fca5a5);
+}
+
+.tv-power-off-btn:hover {
+  background: light-dark(rgba(220, 38, 38, 0.08), rgba(239, 68, 68, 0.16));
+  border-color: light-dark(rgba(220, 38, 38, 0.65), rgba(248, 113, 113, 0.7));
 }
 
 .poster-dialog {
@@ -2524,7 +2720,7 @@ dialog.settings-dialog::backdrop {
   z-index: 2;
   background: #090d16;
   box-shadow: 0 0 18px rgba(56, 189, 248, 0.28);
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .room-tv-overlay-iframe {
@@ -2532,6 +2728,7 @@ dialog.settings-dialog::backdrop {
   height: 100%;
   border: 0;
   display: block;
+  pointer-events: none;
 }
 
 .room-tv-remote {

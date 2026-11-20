@@ -24,7 +24,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261120i" />
+  <link rel="stylesheet" href="./styles.css?v=20261121a" />
 </head>
 <body>
 
@@ -446,13 +446,13 @@
       </div>
     </dialog>
 
-    <!-- Guest Random YouTube TV Player Dialog -->
+    <!-- Guest YouTube TV Player & Channel Selector Dialog -->
     <dialog id="tv-dialog" class="settings-dialog tv-dialog" closedby="any" aria-labelledby="tv-dialog-title">
       <div class="dialog-shell">
         <div class="dialog-header">
           <div>
-            <h2 class="dialog-title" id="tv-dialog-title">📺 租屋處電視頻道</h2>
-            <div class="form-hint" id="tv-channel-caption" style="margin-top: 0.15rem;">免登入訪客播放 · 隨機精選英語／自然／音樂頻道</div>
+            <h2 class="dialog-title" id="tv-dialog-title">📺 房間電視</h2>
+            <div class="form-hint" id="tv-channel-caption" style="margin-top: 0.15rem;">選擇頻道或貼上 YouTube 網址，離開視窗仍會繼續播放</div>
           </div>
           <button
             type="button"
@@ -460,29 +460,53 @@
             id="close-tv-btn"
             command="close"
             commandfor="tv-dialog"
-            aria-label="關閉電視"
+            title="回到房間（電視繼續播放）"
+            aria-label="回到房間（電視繼續播放）"
           >✕</button>
         </div>
-        <div class="dialog-body">
+        <div class="dialog-body tv-dialog-body">
           <div class="tv-frame-wrap">
             <iframe
               id="tv-youtube-iframe"
-              title="房間電視 YouTube 訪客播放"
+              title="房間電視 YouTube 播放"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               referrerpolicy="strict-origin-when-cross-origin"
               allowfullscreen
             ></iframe>
           </div>
+
+          <form id="tv-custom-form" class="tv-custom-form">
+            <input
+              type="text"
+              id="tv-custom-url-input"
+              class="tv-custom-input"
+              placeholder="貼上 YouTube 網址或影片 ID…"
+              aria-label="貼上 YouTube 網址或影片 ID"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="submit" class="btn btn-primary tv-custom-submit-btn" id="tv-play-custom-btn" title="播放輸入的 YouTube 影片">▶ 播放</button>
+            <button type="button" class="btn tv-search-btn" id="tv-search-yt-btn" title="前往 YouTube 搜尋影片" aria-label="前往 YouTube 搜尋影片">🔍</button>
+          </form>
+          <div id="tv-custom-feedback" class="tv-custom-feedback hidden" role="status"></div>
+
+          <div class="tv-channel-section">
+            <div class="tv-channel-header">
+              <span class="tv-channel-heading">📺 選擇頻道</span>
+              <span class="tv-channel-count" id="tv-channel-count"></span>
+            </div>
+            <div id="tv-channel-list" class="tv-channel-grid" role="listbox" aria-label="選擇 YouTube 觀看內容"></div>
+          </div>
         </div>
         <div class="dialog-footer" style="flex-wrap: wrap;">
-          <button type="button" class="btn" id="tv-shuffle-btn">🔀 換一部影片</button>
+          <button type="button" class="btn" id="tv-shuffle-btn" title="隨機換台" aria-label="隨機換一部影片">🔀 換台</button>
           <a id="tv-external-link" class="btn" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube ↗</a>
-          <button type="button" class="btn btn-primary" id="tv-minimize-room-btn" style="margin-inline-start: auto;">📺 放回房間電視播</button>
+          <button type="button" class="btn btn-primary" id="tv-minimize-room-btn" style="margin-inline-start: auto;">📺 回房間繼續看</button>
           <button
             type="button"
-            class="btn"
+            class="btn tv-power-off-btn"
             id="footer-close-tv-btn"
-          >關掉電視</button>
+          >⏻ 關掉電視</button>
         </div>
       </div>
     </dialog>
@@ -879,6 +903,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261120i"></script>
+  <script type="module" src="./app-main.js?v=20261121a"></script>
 </body>
 </html>

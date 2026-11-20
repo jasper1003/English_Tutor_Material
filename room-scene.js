@@ -3749,7 +3749,11 @@ export class FreelancerRoomScene {
         } else if (type === "bedLamp") {
           this.onHoverChange("點擊開關床邊小夜燈");
         } else if (type === "tv") {
-          this.onHoverChange("點擊看電視（隨機播放 YouTube 影片）");
+          this.onHoverChange(
+            this.tvActiveVideoId
+              ? "點擊打開電視頁面（更換 YouTube 影片或關掉電視）"
+              : "點擊打開電視，選擇要觀看的 YouTube 影片"
+          );
         } else if (type === "atmos") {
           this.onHoverChange("點擊啟動 Dolby Atmos 沉浸式劇院音效");
         } else if (type === "vinyl") {
