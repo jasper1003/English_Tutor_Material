@@ -891,6 +891,7 @@ export class FreelancerRoomScene {
     this.onActivityChange = options.onActivityChange || (() => {});
     this.onTimeUpdate = options.onTimeUpdate || (() => {});
     this.onHoverChange = options.onHoverChange || (() => {});
+    this.usesSharedTvIframe = Boolean(options.usesSharedTvIframe);
 
     this.disposed = false;
     this.paused = false;
@@ -1041,13 +1042,17 @@ export class FreelancerRoomScene {
     this.tvOverlayWrap = document.createElement("div");
     this.tvOverlayWrap.className = "room-tv-overlay";
     this.tvOverlayWrap.style.display = "none";
-    this.tvOverlayIframe = document.createElement("iframe");
-    this.tvOverlayIframe.className = "room-tv-overlay-iframe";
-    this.tvOverlayIframe.title = "房間牆上電視 YouTube 即時播放";
-    this.tvOverlayIframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
-    this.tvOverlayIframe.referrerPolicy = "strict-origin-when-cross-origin";
-    this.tvOverlayIframe.allowFullscreen = true;
-    this.tvOverlayWrap.appendChild(this.tvOverlayIframe);
+    if (!this.usesSharedTvIframe) {
+      this.tvOverlayIframe = document.createElement("iframe");
+      this.tvOverlayIframe.className = "room-tv-overlay-iframe";
+      this.tvOverlayIframe.title = "房間牆上電視 YouTube 即時播放";
+      this.tvOverlayIframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+      this.tvOverlayIframe.referrerPolicy = "strict-origin-when-cross-origin";
+      this.tvOverlayIframe.allowFullscreen = true;
+      this.tvOverlayWrap.appendChild(this.tvOverlayIframe);
+    } else {
+      this.tvOverlayIframe = null;
+    }
     this.container.appendChild(this.tvOverlayWrap);
 
     // Floating character name + thought bubble HTML overlay inside container
@@ -3641,6 +3646,10 @@ export class FreelancerRoomScene {
     this.updateTvScreenOverlay();
   }
 
+  getTvOverlayMountEl() {
+    return this.tvOverlayWrap || null;
+  }
+
   setTvPlayback({ videoId = null, suspended = false } = {}) {
     const cleanId = videoId ? String(videoId).trim() : "";
     this.tvActiveVideoId = cleanId || null;
@@ -3652,7 +3661,7 @@ export class FreelancerRoomScene {
 
     if (!this.tvActiveVideoId || this.tvSuspended) {
       if (this.tvOverlayWrap) this.tvOverlayWrap.style.display = "none";
-      if (this.tvOverlayIframe && this.tvOverlayIframe.getAttribute("src")) {
+      if (!this.usesSharedTvIframe && this.tvOverlayIframe && this.tvOverlayIframe.getAttribute("src")) {
         this.tvOverlayIframe.removeAttribute("src");
       }
       if (!this.tvActiveVideoId && this.tvGlowLight) {
@@ -3662,9 +3671,11 @@ export class FreelancerRoomScene {
       return;
     }
 
-    const embedUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(this.tvActiveVideoId)}?autoplay=1&rel=0&playsinline=1&enablejsapi=1`;
-    if (this.tvOverlayIframe && this.tvOverlayIframe.getAttribute("src") !== embedUrl) {
-      this.tvOverlayIframe.src = embedUrl;
+    if (!this.usesSharedTvIframe && this.tvOverlayIframe) {
+      const embedUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(this.tvActiveVideoId)}?autoplay=1&rel=0&playsinline=1&enablejsapi=1`;
+      if (this.tvOverlayIframe.getAttribute("src") !== embedUrl) {
+        this.tvOverlayIframe.src = embedUrl;
+      }
     }
     this.updateTvScreenOverlay();
   }

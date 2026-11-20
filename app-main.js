@@ -42,7 +42,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121a";
+} from "./room-scene.js?v=20261121b";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -743,6 +743,7 @@ function enterRoomView(fromWorkDesktop = false) {
       posterImage: rs.posterImage || "",
       ownedItems: owned,
       customThoughts: pendingThoughtRows,
+      usesSharedTvIframe: true,
       onEnterWork: () => {
         openWorkDesktop();
       },
@@ -2937,9 +2938,120 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
 const TV_CUSTOM_STORAGE_KEY = "room_tv_custom_videos_v1";
 let TV_CHANNEL_VIDEOS = [...DEFAULT_TV_CHANNEL_VIDEOS];
 const tvDialog = document.getElementById("tv-dialog");
+const tvFrameWrap = tvDialog?.querySelector(".tv-frame-wrap");
 const tvIframe = document.getElementById("tv-youtube-iframe");
 let lastTvVideoId = null;
+let tvLoadedVideoId = null;
+let tvPlaybackSec = 0;
+let tvPlayerPaused = false;
+let tvHandshakeAcked = false;
 let customTvVideos = readCustomTvVideos();
+
+function moveElementPreservingState(targetParent, node) {
+  if (!targetParent || !node) return false;
+  if (node.parentElement === targetParent) return true;
+  if ("moveBefore" in Element.prototype) {
+    try {
+      targetParent.moveBefore(node, null);
+      return true;
+    } catch {
+      // Fall back to standard reparenting below
+    }
+  }
+  targetParent.appendChild(node);
+  return false;
+}
+
+function buildTvEmbedUrl(videoId, { startSec = 0, autoplay = true } = {}) {
+  const params = new URLSearchParams({
+    autoplay: autoplay ? "1" : "0",
+    rel: "0",
+    playsinline: "1",
+    enablejsapi: "1"
+  });
+  const startInt = Math.max(0, Math.floor(Number(startSec) || 0));
+  if (startInt > 0) {
+    params.set("start", String(startInt));
+  }
+  if (typeof window !== "undefined" && window.location?.origin?.startsWith("http")) {
+    params.set("origin", window.location.origin);
+  }
+  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?${params.toString()}`;
+}
+
+function sendYouTubeListeningHandshake() {
+  if (!tvIframe?.contentWindow || !tvIframe.getAttribute("src")) return;
+  ["https://www.youtube-nocookie.com", "https://www.youtube.com"].forEach(targetOrigin => {
+    try {
+      tvIframe.contentWindow.postMessage(
+        JSON.stringify({ event: "listening", id: 1, channel: "widget" }),
+        targetOrigin
+      );
+      tvIframe.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func: "addEventListener", args: ["onStateChange"] }),
+        targetOrigin
+      );
+    } catch {
+      // Ignore cross-origin postMessage errors before frame is ready
+    }
+  });
+}
+
+function loadTvIframeVideo(chosen, { forceReload = false } = {}) {
+  if (!chosen?.id || !tvIframe) return;
+  const sameVideo = tvLoadedVideoId === chosen.id;
+  if (!forceReload && sameVideo && tvIframe.getAttribute("src")) {
+    return;
+  }
+  const startSec = sameVideo ? tvPlaybackSec : 0;
+  const shouldAutoplay = sameVideo ? !tvPlayerPaused : true;
+  if (!sameVideo) {
+    tvPlaybackSec = 0;
+    tvPlayerPaused = false;
+  }
+  tvLoadedVideoId = chosen.id;
+  tvHandshakeAcked = false;
+  tvIframe.src = buildTvEmbedUrl(chosen.id, { startSec, autoplay: shouldAutoplay });
+}
+
+if (tvIframe) {
+  tvIframe.addEventListener("load", () => {
+    if (!tvIframe.getAttribute("src")) return;
+    sendYouTubeListeningHandshake();
+    setTimeout(() => {
+      if (!tvHandshakeAcked) sendYouTubeListeningHandshake();
+    }, 450);
+    setTimeout(() => {
+      if (!tvHandshakeAcked) sendYouTubeListeningHandshake();
+    }, 1300);
+  });
+}
+
+window.addEventListener("message", (event) => {
+  if (!tvIframe?.contentWindow || event.source !== tvIframe.contentWindow) return;
+  if (event.origin !== "https://www.youtube-nocookie.com" && event.origin !== "https://www.youtube.com") {
+    return;
+  }
+  if (typeof event.data !== "string") return;
+  try {
+    const payload = JSON.parse(event.data);
+    if (!payload || typeof payload !== "object") return;
+    if (payload.event === "onReady" || payload.event === "initialDelivery" || payload.event === "infoDelivery") {
+      tvHandshakeAcked = true;
+    }
+    const info = payload.info;
+    if (info && typeof info === "object") {
+      if (typeof info.currentTime === "number" && Number.isFinite(info.currentTime) && info.currentTime >= 0) {
+        tvPlaybackSec = info.currentTime;
+      }
+      if (typeof info.playerState === "number") {
+        tvPlayerPaused = info.playerState === 2;
+      }
+    }
+  } catch {
+    // Ignore non-JSON postMessage payloads
+  }
+});
 
 function readCustomTvVideos() {
   try {
@@ -3122,31 +3234,43 @@ function renderTvChannelList() {
 function stopRoomTvPlayback() {
   activeTvVideo = null;
   tvPowerOffRequested = false;
-  const frameEl = document.getElementById("tv-youtube-iframe");
-  if (frameEl && frameEl.getAttribute("src")) {
-    frameEl.removeAttribute("src");
+  tvLoadedVideoId = null;
+  tvPlaybackSec = 0;
+  tvPlayerPaused = false;
+  tvHandshakeAcked = false;
+  if (tvFrameWrap && tvIframe && tvIframe.parentElement !== tvFrameWrap) {
+    moveElementPreservingState(tvFrameWrap, tvIframe);
+  }
+  if (tvIframe && tvIframe.getAttribute("src")) {
+    tvIframe.removeAttribute("src");
   }
   roomScene?.setTvPlayback({ videoId: null, suspended: false });
   syncRoomTvRemoteUI();
 }
 
-function applyTvModalContent(chosen) {
+function applyTvModalContent(chosen, { forceReload = false } = {}) {
   if (!chosen) return;
   updateTvHeaderAndExternalLink(chosen);
-  const nextSrc = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(chosen.id)}?autoplay=1&rel=0&playsinline=1`;
-  if (tvIframe.getAttribute("src") !== nextSrc) {
-    tvIframe.src = nextSrc;
-  }
+  loadTvIframeVideo(chosen, { forceReload });
 }
 
 function selectTvVideo(chosen) {
   if (!chosen?.id) return;
+  const changedVideo = activeTvVideo?.id !== chosen.id;
   activeTvVideo = chosen;
   lastTvVideoId = chosen.id;
+  if (changedVideo) {
+    tvPlaybackSec = 0;
+    tvPlayerPaused = false;
+  }
   if (tvDialog.open) {
-    applyTvModalContent(chosen);
+    const atomic = moveElementPreservingState(tvFrameWrap, tvIframe);
+    applyTvModalContent(chosen, { forceReload: !atomic || changedVideo });
     renderTvChannelList();
   } else {
+    const roomMount = roomScene?.getTvOverlayMountEl();
+    const atomic = roomMount ? moveElementPreservingState(roomMount, tvIframe) : false;
+    loadTvIframeVideo(chosen, { forceReload: !atomic || changedVideo });
     roomScene?.setTvPlayback({ videoId: chosen.id, suspended: false });
   }
   syncRoomTvRemoteUI();
@@ -3202,12 +3326,13 @@ function openTvModalPlayer() {
     activeTvVideo = pickNextTvChannel();
   }
   roomScene?.setTvPlayback({ videoId: activeTvVideo.id, suspended: true });
-  applyTvModalContent(activeTvVideo);
-  renderTvChannelList();
-  syncRoomTvRemoteUI();
   if (!tvDialog.open) {
     tvDialog.showModal();
   }
+  const atomic = moveElementPreservingState(tvFrameWrap, tvIframe);
+  applyTvModalContent(activeTvVideo, { forceReload: !atomic });
+  renderTvChannelList();
+  syncRoomTvRemoteUI();
 }
 
 function openTvPlayer() {
@@ -3279,16 +3404,29 @@ document.getElementById("footer-close-tv-btn").addEventListener("click", () => {
   if (tvDialog.open) tvDialog.close();
 });
 tvDialog.addEventListener("close", () => {
-  tvIframe.removeAttribute("src");
   clearTvCustomFeedback();
   if (tvPowerOffRequested) {
     stopRoomTvPlayback();
     return;
   }
   if (activeTvVideo && currentScreen === "room") {
-    roomScene?.setTvPlayback({ videoId: activeTvVideo.id, suspended: false });
+    const roomMount = roomScene?.getTvOverlayMountEl();
+    if (roomMount) {
+      const atomic = moveElementPreservingState(roomMount, tvIframe);
+      roomScene.setTvPlayback({ videoId: activeTvVideo.id, suspended: false });
+      if (!atomic) {
+        loadTvIframeVideo(activeTvVideo, { forceReload: true });
+      }
+    } else {
+      roomScene?.setTvPlayback({ videoId: activeTvVideo.id, suspended: false });
+    }
     syncRoomTvRemoteUI();
+    return;
   }
+  if (tvIframe && tvIframe.getAttribute("src")) {
+    tvIframe.removeAttribute("src");
+  }
+  tvLoadedVideoId = null;
 });
 
 // Wall Art Poster Customizer & Interactive Cropper
