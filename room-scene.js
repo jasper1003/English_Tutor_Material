@@ -9,13 +9,31 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261121l";
+} from "./shop-catalog.js?v=20261121m";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261121l";
+} from "./app-helpers.js?v=20261121m";
+import {
+  GRID_STEP,
+  GRID_CELLS,
+  WALL_NAMES,
+  PLACEABLE_FURNITURE_META,
+  DEFAULT_FURNITURE_LAYOUT,
+  isFloorCellReserved,
+  isWallCellReserved,
+  canPlaceFloorItem,
+  canPlaceWallItem,
+  findFirstValidPlacement,
+  resolveEffectiveLayout,
+  normalizePendingParcels,
+  floorPlacementToWorld,
+  wallPlacementToLocal,
+  getFloorFootprintWorldBox,
+  getRotatedDims
+} from "./room-grid.js?v=20261121m";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -1376,6 +1394,8 @@ export class FreelancerRoomScene {
     this.onActivityChange = options.onActivityChange || (() => {});
     this.onTimeUpdate = options.onTimeUpdate || (() => {});
     this.onHoverChange = options.onHoverChange || (() => {});
+    this.onSaveLayout = options.onSaveLayout || (() => {});
+    this.onEditModeChange = options.onEditModeChange || (() => {});
     this.usesSharedTvIframe = Boolean(options.usesSharedTvIframe);
 
     this.disposed = false;
@@ -1407,6 +1427,19 @@ export class FreelancerRoomScene {
     };
     this.activeCharacterId = String(options.characterId || this.avatarConfig.name || "self").trim() || "self";
     this.spectating = Boolean(options.spectating);
+    this.furnitureLayout = (options.furnitureLayout && typeof options.furnitureLayout === "object")
+      ? { ...options.furnitureLayout }
+      : {};
+    this.pendingParcels = normalizePendingParcels(options.pendingParcels, this.ownedItems);
+    this.editMode = false;
+    this.editSelectedId = null;
+    this.editHoldingFromParcel = false;
+    this.editPreviewRot = 0;
+    this.editPreviewEntry = null;
+    this.editCanPlace = false;
+    this.movableGroups = {};
+    this.tvHostWallName = "west";
+    this.posterHostWallName = "north";
     this.characterStates = new Map();
     this.customThoughts = Array.isArray(options.customThoughts) ? [...options.customThoughts] : [];
     this.persona = buildCharacterPersona(this.activeCharacterId, this.avatarConfig, this.ownedItems);
@@ -1480,15 +1513,20 @@ export class FreelancerRoomScene {
     this.buildLights();
     this.buildRoomShell();
     this.buildFurniture();
+    this.buildGridVisuals();
+    this.registerMovableFurniture();
     this.buildCharacter(this.avatarConfig);
+    this.applyPendingParcels(this.pendingParcels);
+    this.applyFurnitureLayout(this.furnitureLayout);
     this.placeCharacterAtIdleStart();
     this.bindEvents();
     this.updateCameraTransform(true);
     this.animate();
   }
 
-  addInteractive(mesh, interactType) {
+  addInteractive(mesh, interactType, movableId = null) {
     mesh.userData.interactType = interactType;
+    if (movableId) mesh.userData.movableId = movableId;
     if (mesh.material && "emissive" in mesh.material && mesh.material !== this.lampBulbMat) {
       mesh.material = mesh.material.clone();
       mesh.userData.baseEmissive = mesh.material.emissive.clone();
@@ -1558,6 +1596,16 @@ export class FreelancerRoomScene {
     this.bubbleEl = document.createElement("div");
     this.bubbleEl.className = "room-char-bubble hidden";
     this.container.appendChild(this.bubbleEl);
+
+    // Floating entrance parcel arrival pill (clickable to unbox new furniture!)
+    this.parcelBadgeEl = document.createElement("button");
+    this.parcelBadgeEl.type = "button";
+    this.parcelBadgeEl.className = "room-parcel-badge hidden";
+    this.parcelBadgeEl.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this.spectating) this.openNextParcelBox();
+    });
+    this.container.appendChild(this.parcelBadgeEl);
   }
 
   buildLights() {
@@ -1586,28 +1634,17 @@ export class FreelancerRoomScene {
     this.bounceLight.position.set(-6, 4, 6);
     this.scene.add(this.bounceLight);
 
-    // Desk lamp warm tungsten PointLight
+    // Lights attached dynamically to movable furniture groups once constructed
     this.deskLampLight = new THREE.PointLight("#ffbe6b", 2.8, 7.2, 1.6);
-    this.deskLampLight.position.set(-1.05, 1.55, -2.95);
     this.deskLampLight.castShadow = true;
     this.deskLampLight.shadow.mapSize.set(512, 512);
     this.deskLampLight.shadow.bias = -0.002;
-    this.scene.add(this.deskLampLight);
 
-    // Monitor soft cool bounce onto face
     this.screenGlowLight = new THREE.PointLight("#7cc4ff", 0.75, 3.2, 1.8);
-    this.screenGlowLight.position.set(-0.2, 1.48, -2.85);
-    this.scene.add(this.screenGlowLight);
 
-    // Optional shop-bought bedside night lamp PointLight
     this.bedLampLight = new THREE.PointLight("#ffb86c", 0, 5.2, 1.8);
-    this.bedLampLight.position.set(1.46, 0.96, 3.12);
-    this.scene.add(this.bedLampLight);
 
-    // Dynamic cinema light bounce emitted from West-wall TV when playing YouTube
     this.tvGlowLight = new THREE.PointLight("#7dd3fc", 0, 6.4, 1.65);
-    this.tvGlowLight.position.set(-3.35, 1.56, -0.35);
-    this.scene.add(this.tvGlowLight);
   }
 
   buildRoomShell() {
@@ -1675,7 +1712,8 @@ export class FreelancerRoomScene {
       this.createSouthWall(this.wallMat, trimMat), // (+Z)
       this.createWestWall(this.wallMat, trimMat)   // door wall (-X)
     ];
-    this.westWallUpperGroup = this.walls[3].upperGroup;
+    this.wallsMap = Object.fromEntries(this.walls.map(w => [w.name, w]));
+    this.westWallUpperGroup = this.wallsMap.west.upperGroup;
 
     this.walls.forEach(w => {
       this.roomGroup.add(w.baseboard);
@@ -1767,7 +1805,7 @@ export class FreelancerRoomScene {
     posterGroup.visible = Boolean(this.ownedItems.wall_poster);
     this.wallPosterGroup = posterGroup;
     upperGroup.add(posterGroup);
-    [frameOuter, matBoard, posterArt].forEach(m => this.addInteractive(m, "poster"));
+    [frameOuter, matBoard, posterArt].forEach(m => this.addInteractive(m, "poster", "wall_poster"));
     if (this.posterImageDataUrl) {
       const savedUrl = this.posterImageDataUrl;
       this.posterImageDataUrl = "";
@@ -1869,8 +1907,12 @@ export class FreelancerRoomScene {
     tvGroup.add(tvShelf);
     tvGroup.visible = Boolean(this.ownedItems.wall_tv);
     this.wallTvGroup = tvGroup;
+    if (this.tvGlowLight) {
+      this.tvGlowLight.position.set(0, 0, 0.62);
+      tvGroup.add(this.tvGlowLight);
+    }
     upperGroup.add(tvGroup);
-    [tvChassis, tvScreen, tvShelf].forEach(m => this.addInteractive(m, "tv"));
+    [tvChassis, tvScreen, tvShelf].forEach(m => this.addInteractive(m, "tv", "wall_tv"));
 
     const baseboard = new THREE.Mesh(new RoundedBoxGeometry(0.24, 0.14, 8.24, 2, 0.03), trimMat);
     baseboard.position.set(-4.12, 0.07, 0);
@@ -1948,11 +1990,11 @@ export class FreelancerRoomScene {
     sofaGroup.visible = Boolean(this.ownedItems.cozy_sofa);
     this.sofaGroup = sofaGroup;
     this.furnitureGroup.add(sofaGroup);
-    sofaGroup.children.forEach(m => this.addInteractive(m, "sofa"));
+    sofaGroup.children.forEach(m => this.addInteractive(m, "sofa", "cozy_sofa"));
 
     // 2. Shop item: Bedside Nightstand + Clickable Warm Night Lamp beside Bed Headboard
     const bedLampGroup = new THREE.Group();
-    bedLampGroup.position.set(1.46, 0, 3.12);
+    bedLampGroup.position.set(1.75, 0, 3.25);
 
     const standMat = makeMat("#b98456", 0.55);
     const standBody = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.5, 0.46, 4, 0.05), standMat);
@@ -1962,7 +2004,7 @@ export class FreelancerRoomScene {
     bedLampGroup.add(standBody);
 
     const drawerFront = new THREE.Mesh(new RoundedBoxGeometry(0.36, 0.16, 0.03, 2, 0.01), makeMat("#cfa072", 0.5));
-    drawerFront.position.set(0, 0.34, -0.225);
+    drawerFront.position.set(0, 0.34, 0.225);
     bedLampGroup.add(drawerFront);
 
     const nBase = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.05, 16), makeMat("#e2e8f0", 0.35));
@@ -1994,7 +2036,12 @@ export class FreelancerRoomScene {
     nBulb.position.set(0, 0.72, 0);
     bedLampGroup.add(nBulb);
 
-    [standBody, nBase, nStem, nShade, nBulb].forEach(m => this.addInteractive(m, "bedLamp"));
+    if (this.bedLampLight) {
+      this.bedLampLight.position.set(0, 0.96, 0);
+      bedLampGroup.add(this.bedLampLight);
+    }
+
+    [standBody, nBase, nStem, nShade, nBulb].forEach(m => this.addInteractive(m, "bedLamp", "bed_lamp"));
     bedLampGroup.visible = Boolean(this.ownedItems.bed_lamp);
     this.bedLampGroup = bedLampGroup;
     this.furnitureGroup.add(bedLampGroup);
@@ -2063,7 +2110,7 @@ export class FreelancerRoomScene {
     coatRack.visible = Boolean(this.ownedItems.coat_rack);
     this.coatRackGroup = coatRack;
     this.furnitureGroup.add(coatRack);
-    coatRack.children.forEach(m => this.addInteractive(m, "coatRack"));
+    coatRack.children.forEach(m => this.addInteractive(m, "coatRack", "coat_rack"));
 
     // 2. Floor Fiddle-Leaf Fig in Woven Basket (East side between bath & bed)
     const floorPlant = new THREE.Group();
@@ -2114,7 +2161,7 @@ export class FreelancerRoomScene {
     floorPlant.visible = Boolean(this.ownedItems.floor_plant);
     this.floorPlantGroup = floorPlant;
     this.furnitureGroup.add(floorPlant);
-    floorPlant.children.forEach(m => this.addInteractive(m, "floorPlant"));
+    floorPlant.children.forEach(m => this.addInteractive(m, "floorPlant", "floor_plant"));
 
     // 3. Coffee Bar Station (West wall north of TV)
     const coffeeBar = new THREE.Group();
@@ -2166,7 +2213,7 @@ export class FreelancerRoomScene {
     coffeeBar.visible = Boolean(this.ownedItems.coffee_bar);
     this.coffeeBarGroup = coffeeBar;
     this.furnitureGroup.add(coffeeBar);
-    coffeeBar.children.forEach(m => this.addInteractive(m, "coffeeBar"));
+    coffeeBar.children.forEach(m => this.addInteractive(m, "coffeeBar", "coffee_bar"));
 
     // 4. Mid-century Vinyl Turntable & Record Console (South wall)
     const vinylGroup = new THREE.Group();
@@ -2237,12 +2284,15 @@ export class FreelancerRoomScene {
     vinylGroup.visible = Boolean(this.ownedItems.vinyl_player);
     this.vinylPlayerGroup = vinylGroup;
     this.furnitureGroup.add(vinylGroup);
-    vinylGroup.children.forEach(m => this.addInteractive(m, "vinyl"));
+    vinylGroup.children.forEach(m => this.addInteractive(m, "vinyl", "vinyl_player"));
 
     // 5. Orange Tabby Cat Roommate + Fleece Pet Bed (South corner near bed)
     const catGroup = new THREE.Group();
-    catGroup.position.set(0.95, 0, 3.52);
-    catGroup.rotation.y = Math.PI * 0.85;
+    catGroup.position.set(1.00, 0, 3.50);
+    catGroup.rotation.y = Math.PI;
+    const catVisual = new THREE.Group();
+    catVisual.rotation.y = -Math.PI * 0.15;
+    catGroup.add(catVisual);
 
     const rimMat = makeMat("#d97757", 0.86);
     const fleeceMat = makeMat("#faf3e8", 0.96);
@@ -2250,12 +2300,12 @@ export class FreelancerRoomScene {
     petBedRim.rotation.x = Math.PI / 2;
     petBedRim.position.y = 0.09;
     petBedRim.castShadow = true;
-    catGroup.add(petBedRim);
+    catVisual.add(petBedRim);
 
     const petCushion = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.31, 0.08, 22), fleeceMat);
     petCushion.position.y = 0.05;
     petCushion.receiveShadow = true;
-    catGroup.add(petCushion);
+    catVisual.add(petCushion);
 
     const catMat = makeMat("#ed8936", 0.76);
     const stripeMat = makeMat("#c05621", 0.82);
@@ -2264,28 +2314,28 @@ export class FreelancerRoomScene {
     catBody.position.set(0.02, 0.16, 0.02);
     catBody.castShadow = true;
     this.catBodyMesh = catBody;
-    catGroup.add(catBody);
+    catVisual.add(catBody);
 
     const catHead = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 14), catMat);
     catHead.position.set(-0.14, 0.25, -0.06);
     catHead.castShadow = true;
-    catGroup.add(catHead);
+    catVisual.add(catHead);
 
     [-0.07, 0.07].forEach(ex => {
       const ear = new THREE.Mesh(new THREE.ConeGeometry(0.042, 0.08, 4), catMat);
       ear.position.set(-0.14 + ex * 0.7, 0.36, -0.06 + ex * 0.55);
       ear.rotation.z = -ex * 1.4;
-      catGroup.add(ear);
+      catVisual.add(ear);
     });
 
     const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), makeMat("#fffaf0", 0.85));
     muzzle.scale.set(1.1, 0.7, 0.8);
     muzzle.position.set(-0.22, 0.22, -0.1);
-    catGroup.add(muzzle);
+    catVisual.add(muzzle);
 
     const cStripe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 0.04), stripeMat);
     cStripe.position.set(0.04, 0.28, 0.02);
-    catGroup.add(cStripe);
+    catVisual.add(cStripe);
 
     const tailPivot = new THREE.Group();
     tailPivot.position.set(0.18, 0.16, 0.06);
@@ -2294,26 +2344,25 @@ export class FreelancerRoomScene {
     catTail.position.set(0.09, 0.04, 0);
     tailPivot.add(catTail);
     this.catTailPivot = tailPivot;
-    catGroup.add(tailPivot);
+    catVisual.add(tailPivot);
 
     catGroup.visible = Boolean(this.ownedItems.orange_cat);
     this.orangeCatGroup = catGroup;
     this.furnitureGroup.add(catGroup);
-    catGroup.children.forEach(m => this.addInteractive(m, "cat"));
+    catVisual.children.forEach(m => this.addInteractive(m, "cat", "orange_cat"));
 
-    // 6. Unlocked Combo Cinema Upgrade: Dolby Atmos Surround Sound System
-    const atmosGroup = new THREE.Group();
-    const atmosWallGroup = new THREE.Group();
+    // 6. Unlocked Combo Cinema Upgrade: Dolby Atmos Surround Sound System (follows wallTvGroup & sofaGroup!)
+    const tvAtmosGroup = new THREE.Group();
+    const sofaAtmosGroup = new THREE.Group();
     const chassisMat = makeMat("#313b4d", 0.36, 0.45);
     const grilleMat = makeMat("#161d29", 0.88, 0.08);
     const titaniumMat = makeMat("#94a3b8", 0.28, 0.72);
     const copperConeMat = makeMat("#d49a6a", 0.35, 0.62);
     this.atmosLedMat = new THREE.MeshBasicMaterial({ color: "#38bdf8" });
 
-    // 6a. Upward-firing Soundbar centered on floating TV shelf beneath West-wall TV
+    // 6a. Upward-firing Soundbar centered on floating TV shelf beneath wall TV (local coords of wallTvGroup)
     const soundbar = new THREE.Group();
-    soundbar.position.set(-3.86, 1.075, -0.35);
-    soundbar.rotation.y = Math.PI / 2;
+    soundbar.position.set(0, -0.485, 0.12);
     const sbBody = new THREE.Mesh(new RoundedBoxGeometry(1.12, 0.09, 0.14, 3, 0.025), chassisMat);
     sbBody.castShadow = true;
     soundbar.add(sbBody);
@@ -2332,12 +2381,11 @@ export class FreelancerRoomScene {
     const sbLed = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.01, 0.01), this.atmosLedMat);
     sbLed.position.set(0, 0.046, 0.066);
     soundbar.add(sbLed);
-    atmosWallGroup.add(soundbar);
+    tvAtmosGroup.add(soundbar);
 
-    // 6b. Wireless Floor Subwoofer tucked neatly north of TV shelf
+    // 6b. Wireless Floor Subwoofer tucked neatly under/beside TV shelf
     const subGroup = new THREE.Group();
-    subGroup.position.set(-3.72, 0, -1.25);
-    subGroup.rotation.y = Math.PI / 2;
+    subGroup.position.set(0.88, -1.56, 0.24);
     const subBox = new THREE.Mesh(new RoundedBoxGeometry(0.38, 0.42, 0.36, 4, 0.05), chassisMat);
     subBox.position.y = 0.23;
     subBox.castShadow = true;
@@ -2350,14 +2398,12 @@ export class FreelancerRoomScene {
     const subLed = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), this.atmosLedMat);
     subLed.position.set(0.12, 0.39, 0.182);
     subGroup.add(subRing, subCone, subLed);
-    atmosGroup.add(subGroup);
+    tvAtmosGroup.add(subGroup);
 
-    // 6c. Twin Front Height / Atmos Modules mounted cleanly in front of West wall flanking above TV
-    [-1.24, 0.54].forEach(mz => {
+    // 6c. Twin Front Height / Atmos Modules flanking above wall TV
+    [-0.88, 0.88].forEach(mx => {
       const heightMod = new THREE.Group();
-      heightMod.position.set(-3.90, 2.08, mz);
-      heightMod.rotation.order = "YXZ";
-      heightMod.rotation.y = Math.PI / 2;
+      heightMod.position.set(mx, 0.52, 0.08);
       heightMod.rotation.x = 0.26;
       const modBox = new THREE.Mesh(new RoundedBoxGeometry(0.19, 0.23, 0.14, 3, 0.025), chassisMat);
       modBox.castShadow = true;
@@ -2368,13 +2414,13 @@ export class FreelancerRoomScene {
       const modLed = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.01, 0.01), this.atmosLedMat);
       modLed.position.set(0, -0.088, 0.073);
       heightMod.add(modBox, modGrille, modTrim, modLed);
-      atmosWallGroup.add(heightMod);
+      tvAtmosGroup.add(heightMod);
     });
 
-    // 6d. Twin Rear Surround Satellite Towers behind Sofa corners angled inward
+    // 6d. Twin Rear Surround Satellite Towers behind Cozy Sofa corners
     [
-      [-1.30, -1.16, -2.25],
-      [-1.30, 0.46, -0.89]
+      [-0.56, -0.56, -0.45],
+      [0.56, -0.56, 0.45]
     ].forEach(([tx, tz, ry]) => {
       const tower = new THREE.Group();
       tower.position.set(tx, 0, tz);
@@ -2393,18 +2439,16 @@ export class FreelancerRoomScene {
       const headTrim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.008, 0.01), copperConeMat);
       headTrim.position.set(0, 1.05, 0.058);
       tower.add(base, pole, head, headGrille, headTrim);
-      atmosGroup.add(tower);
+      sofaAtmosGroup.add(tower);
     });
 
-    const westWallRef = this.walls?.find(w => w.name === "west");
-    atmosWallGroup.visible = Boolean(this.ownedItems.dolby_atmos && (westWallRef ? westWallRef.upperGroup.visible : true));
-    this.atmosWallGroup = atmosWallGroup;
-    this.furnitureGroup.add(atmosWallGroup);
-
-    atmosGroup.visible = Boolean(this.ownedItems.dolby_atmos);
-    this.dolbyAtmosGroup = atmosGroup;
-    this.furnitureGroup.add(atmosGroup);
-    [atmosGroup, atmosWallGroup].forEach(grp => {
+    tvAtmosGroup.visible = Boolean(this.ownedItems.dolby_atmos);
+    sofaAtmosGroup.visible = Boolean(this.ownedItems.dolby_atmos);
+    this.atmosWallGroup = tvAtmosGroup;
+    this.dolbyAtmosGroup = sofaAtmosGroup;
+    if (this.wallTvGroup) this.wallTvGroup.add(tvAtmosGroup);
+    if (this.sofaGroup) this.sofaGroup.add(sofaAtmosGroup);
+    [tvAtmosGroup, sofaAtmosGroup].forEach(grp => {
       grp.traverse(obj => {
         if (obj.isMesh && obj.material !== this.atmosLedMat) {
           this.addInteractive(obj, "atmos");
@@ -2611,7 +2655,7 @@ export class FreelancerRoomScene {
     this.furnitureGroup.add(hamsterSet);
     hamsterSet.traverse(obj => {
       if (obj.isMesh && obj.material !== glassMat) {
-        this.addInteractive(obj, "hamster");
+        this.addInteractive(obj, "hamster", "hamster_cage");
       }
     });
   }
@@ -2624,6 +2668,52 @@ export class FreelancerRoomScene {
     matMesh.position.set(-3.36, 0.02, 2.05);
     matMesh.receiveShadow = true;
     this.furnitureGroup.add(matMesh);
+
+    this.buildDoormatParcels();
+  }
+
+  buildDoormatParcels() {
+    const parcelGroup = new THREE.Group();
+    parcelGroup.position.set(-3.36, 0.04, 2.05);
+
+    const kraftMat = makeMat("#c89a64", 0.85);
+    const kraftDarkMat = makeMat("#b3834f", 0.88);
+    const tapeMat = makeMat("#f2e4cb", 0.72);
+    const labelMat = makeMat("#fffaf0", 0.8);
+    const inkMat = makeMat("#4a3728", 0.9);
+
+    const makeBoxMesh = (bw, bh, bd, px, py, pz, ry = 0) => {
+      const box = new THREE.Group();
+      box.position.set(px, py + bh / 2, pz);
+      box.rotation.y = ry;
+      const body = new THREE.Mesh(new RoundedBoxGeometry(bw, bh, bd, 2, 0.015), kraftMat);
+      body.castShadow = true;
+      body.receiveShadow = true;
+      const seam = new THREE.Mesh(new THREE.BoxGeometry(bw + 0.004, 0.008, bd * 0.24), tapeMat);
+      seam.position.y = bh * 0.5 + 0.001;
+      const tapeFront = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.22, bh * 0.32, bd + 0.004), tapeMat);
+      tapeFront.position.y = bh * 0.34;
+      const lbl = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.34, bh * 0.28, 0.006), labelMat);
+      lbl.position.set(-bw * 0.16, 0, bd * 0.5 + 0.003);
+      const line1 = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.22, bh * 0.04, 0.006), inkMat);
+      line1.position.set(-bw * 0.16, bh * 0.04, bd * 0.5 + 0.005);
+      const flapShadow = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.86, 0.006, 0.012), kraftDarkMat);
+      flapShadow.position.y = bh * 0.5 + 0.002;
+      box.add(body, seam, tapeFront, lbl, line1, flapShadow);
+      box.traverse(m => {
+        if (m.isMesh) this.addInteractive(m, "parcel");
+      });
+      return box;
+    };
+
+    this.parcelBox1 = makeBoxMesh(0.46, 0.32, 0.40, 0, 0, 0, 0.08);
+    this.parcelBox2 = makeBoxMesh(0.38, 0.26, 0.34, 0.04, 0.32, -0.03, -0.14);
+    this.parcelBox3 = makeBoxMesh(0.32, 0.24, 0.28, -0.22, 0, 0.28, 0.22);
+
+    parcelGroup.add(this.parcelBox1, this.parcelBox2, this.parcelBox3);
+    parcelGroup.visible = false;
+    this.parcelGroup = parcelGroup;
+    this.furnitureGroup.add(parcelGroup);
   }
 
   buildCozyRug() {
@@ -2883,7 +2973,8 @@ export class FreelancerRoomScene {
 
   buildSingleBed() {
     const bedGroup = new THREE.Group();
-    bedGroup.position.set(2.65, 0, 2.05);
+    bedGroup.position.set(3.00, 0, 2.25);
+    this.bedGroup = bedGroup;
     this.furnitureGroup.add(bedGroup);
 
     const preset = resolveBedSheetStyle(this.bedSheetId);
@@ -2937,7 +3028,7 @@ export class FreelancerRoomScene {
     pillow.castShadow = true;
     bedGroup.add(pillow);
 
-    [frame, headboard, mattress, blanket, pillow].forEach(m => this.addInteractive(m, "bed"));
+    [frame, headboard, mattress, blanket, pillow].forEach(m => this.addInteractive(m, "bed", "single_bed"));
     // Rebind after addInteractive() because addInteractive clones per-mesh materials for hover glow
     this.bedSheetMat = mattress.material;
     this.bedBlanketMat = blanket.material;
@@ -2945,9 +3036,14 @@ export class FreelancerRoomScene {
   }
 
   buildWorkDeskAndMac() {
+    const deskRoot = new THREE.Group();
+    deskRoot.position.set(-0.25, 0, -2.75);
+    this.deskRootGroup = deskRoot;
+    this.furnitureGroup.add(deskRoot);
+
     const workArea = new THREE.Group();
-    workArea.position.set(-0.2, 0, -3.05);
-    this.furnitureGroup.add(workArea);
+    workArea.position.set(0, 0, -0.28);
+    deskRoot.add(workArea);
 
     const deskWood = makeMat("#cfa072", 0.52);
     const deskLegMat = makeMat("#4b5563", 0.45, 0.3);
@@ -2958,7 +3054,16 @@ export class FreelancerRoomScene {
     tableTop.castShadow = true;
     tableTop.receiveShadow = true;
     workArea.add(tableTop);
-    this.addInteractive(tableTop, "computer");
+    this.addInteractive(tableTop, "computer", "work_desk");
+
+    if (this.deskLampLight) {
+      this.deskLampLight.position.set(-0.85, 1.55, 0.10);
+      workArea.add(this.deskLampLight);
+    }
+    if (this.screenGlowLight) {
+      this.screenGlowLight.position.set(0, 1.48, 0.20);
+      workArea.add(this.screenGlowLight);
+    }
 
     // 4 clean legs
     [[-1.02, -0.44], [1.02, -0.44], [-1.02, 0.44], [1.02, 0.44]].forEach(([lx, lz]) => {
@@ -3161,7 +3266,7 @@ export class FreelancerRoomScene {
     workArea.add(lampGroup);
     [lampBase, lampArm, lampShade, lampBulb].forEach(m => this.addInteractive(m, "lamp"));
 
-    // Hover highlight ring around desk setup
+    // Hover highlight ring around desk setup (child of deskRoot so it moves & rotates with desk)
     const ringGeo = new THREE.RingGeometry(0.95, 1.06, 36);
     this.workHoverRingMat = new THREE.MeshBasicMaterial({
       color: "#f59e0b",
@@ -3171,12 +3276,12 @@ export class FreelancerRoomScene {
     });
     const hoverRing = new THREE.Mesh(ringGeo, this.workHoverRingMat);
     hoverRing.rotation.x = -Math.PI / 2;
-    hoverRing.position.set(-0.2, 0.02, -2.55);
-    this.roomGroup.add(hoverRing);
+    hoverRing.position.set(0, 0.02, 0.18);
+    deskRoot.add(hoverRing);
 
-    // Cozy Swivel Desk Chair
+    // Cozy Swivel Desk Chair (child of deskRoot)
     const chair = new THREE.Group();
-    chair.position.set(-0.2, 0, -2.02);
+    chair.position.set(0, 0, 0.55);
     const chairFabric = makeMat("#5b738f", 0.8);
     const chairMetal = makeMat("#475569", 0.35, 0.6);
 
@@ -3201,13 +3306,13 @@ export class FreelancerRoomScene {
 
     chair.visible = !this.ownedItems.ergo_chair;
     this.chairGroup = chair;
-    this.furnitureGroup.add(chair);
-    this.addInteractive(chairSeat, "computer");
-    this.addInteractive(chairBack, "computer");
+    deskRoot.add(chair);
+    this.addInteractive(chairSeat, "computer", "work_desk");
+    this.addInteractive(chairBack, "computer", "work_desk");
 
-    // Shop item: Ergonomic Studio Artist High-Back Chair
+    // Shop item: Ergonomic Studio Artist High-Back Chair (child of deskRoot)
     const ergoChair = new THREE.Group();
-    ergoChair.position.set(-0.2, 0, -2.02);
+    ergoChair.position.set(0, 0, 0.55);
     const ergoMeshMat = makeMat("#4a6580", 0.72);
     const ergoLeatherMat = makeMat("#c98a55", 0.65);
 
@@ -3245,8 +3350,15 @@ export class FreelancerRoomScene {
 
     ergoChair.visible = Boolean(this.ownedItems.ergo_chair);
     this.ergoChairGroup = ergoChair;
-    this.furnitureGroup.add(ergoChair);
-    [eSeat, eBack, eHeadrest].forEach(m => this.addInteractive(m, "computer"));
+    deskRoot.add(ergoChair);
+    [eSeat, eBack, eHeadrest].forEach(m => this.addInteractive(m, "computer", "work_desk"));
+
+    // Propagate movableId "work_desk" cleanly across computer peripherals attached inside workArea
+    workArea.traverse(obj => {
+      if (obj.isMesh && obj.userData.interactType === "computer") {
+        obj.userData.movableId = "work_desk";
+      }
+    });
   }
 
   buildCharacter(config) {
@@ -3471,12 +3583,17 @@ export class FreelancerRoomScene {
     shirtStyle,
     pantsStyle,
     ownedItems,
+    furnitureLayout,
+    pendingParcels,
     customThoughts,
     spectating = false,
     rentMood = null
   } = {}) {
     const nextId = String(characterId || avatar?.name || this.activeCharacterId || "self").trim() || "self";
     this.spectating = Boolean(spectating);
+    if (this.spectating && this.editMode) {
+      this.exitFurnitureEditMode({ commit: false });
+    }
     const isSwitching = nextId !== this.activeCharacterId;
 
     if (isSwitching) {
@@ -3493,7 +3610,16 @@ export class FreelancerRoomScene {
       this._lastCustomThoughtsRef = customThoughts;
       this.customThoughts = [...customThoughts];
     }
-    this.applyOwnedItems(ownedItems || this.ownedItems || {});
+    this.ownedItems = { ...(ownedItems || this.ownedItems || {}) };
+    if (pendingParcels !== undefined) {
+      this.pendingParcels = normalizePendingParcels(pendingParcels, this.ownedItems);
+    }
+    if (furnitureLayout !== undefined && furnitureLayout && typeof furnitureLayout === "object") {
+      this.furnitureLayout = { ...furnitureLayout };
+    }
+    this.applyOwnedItems(this.ownedItems);
+    this.applyPendingParcels(this.pendingParcels);
+    this.applyFurnitureLayout(this.furnitureLayout);
     const targetAvatar = {
       ...DEFAULT_AVATAR,
       ...(avatar || this.avatarConfig || {}),
@@ -3664,31 +3790,716 @@ export class FreelancerRoomScene {
 
   applyOwnedItems(ownedItems = {}) {
     this.ownedItems = { ...(ownedItems || {}) };
-    if (this.wallPosterGroup) this.wallPosterGroup.visible = Boolean(this.ownedItems.wall_poster);
-    if (this.wallTvGroup) this.wallTvGroup.visible = Boolean(this.ownedItems.wall_tv);
-    if (this.sofaGroup) this.sofaGroup.visible = Boolean(this.ownedItems.cozy_sofa);
-    if (this.dolbyAtmosGroup) this.dolbyAtmosGroup.visible = Boolean(this.ownedItems.dolby_atmos);
+    this.pendingParcels = normalizePendingParcels(this.pendingParcels, this.ownedItems);
+    const activePlaced = (id) => Boolean(this.ownedItems[id]) && !this.pendingParcels[id];
+    const editingThis = (id) => Boolean(this.editMode && this.editSelectedId === id);
+
+    if (this.wallPosterGroup) this.wallPosterGroup.visible = activePlaced("wall_poster") || editingThis("wall_poster");
+    if (this.wallTvGroup) this.wallTvGroup.visible = activePlaced("wall_tv") || editingThis("wall_tv");
+    if (this.sofaGroup) this.sofaGroup.visible = activePlaced("cozy_sofa") || editingThis("cozy_sofa");
+    if (this.dolbyAtmosGroup) this.dolbyAtmosGroup.visible = Boolean(this.ownedItems.dolby_atmos && (activePlaced("cozy_sofa") || editingThis("cozy_sofa")));
     if (this.atmosWallGroup) {
-      const westWall = this.walls?.find(w => w.name === "west");
-      const westVisible = westWall ? westWall.upperGroup.visible : true;
-      this.atmosWallGroup.visible = Boolean(this.ownedItems.dolby_atmos && westVisible);
+      const tvHostUpper = this.wallsMap?.[this.tvHostWallName || "west"]?.upperGroup;
+      this.atmosWallGroup.visible = Boolean(
+        this.ownedItems.dolby_atmos
+        && (activePlaced("wall_tv") || editingThis("wall_tv"))
+        && (tvHostUpper ? tvHostUpper.visible : true)
+      );
     }
-    if (this.bedLampGroup) this.bedLampGroup.visible = Boolean(this.ownedItems.bed_lamp);
+    if (this.bedLampGroup) this.bedLampGroup.visible = activePlaced("bed_lamp") || editingThis("bed_lamp");
     if (this.deskPlantGroup) this.deskPlantGroup.visible = Boolean(this.ownedItems.desk_plant);
     if (this.coolKeyboardGroup) this.coolKeyboardGroup.visible = Boolean(this.ownedItems.cool_keyboard);
     if (this.basicKeyboard) this.basicKeyboard.visible = !this.ownedItems.cool_keyboard;
-    if (this.coatRackGroup) this.coatRackGroup.visible = Boolean(this.ownedItems.coat_rack);
-    if (this.floorPlantGroup) this.floorPlantGroup.visible = Boolean(this.ownedItems.floor_plant);
-    if (this.coffeeBarGroup) this.coffeeBarGroup.visible = Boolean(this.ownedItems.coffee_bar);
-    if (this.vinylPlayerGroup) this.vinylPlayerGroup.visible = Boolean(this.ownedItems.vinyl_player);
-    if (this.orangeCatGroup) this.orangeCatGroup.visible = Boolean(this.ownedItems.orange_cat);
-    if (this.hamsterCageGroup) this.hamsterCageGroup.visible = Boolean(this.ownedItems.hamster_cage);
+    if (this.coatRackGroup) this.coatRackGroup.visible = activePlaced("coat_rack") || editingThis("coat_rack");
+    if (this.floorPlantGroup) this.floorPlantGroup.visible = activePlaced("floor_plant") || editingThis("floor_plant");
+    if (this.coffeeBarGroup) this.coffeeBarGroup.visible = activePlaced("coffee_bar") || editingThis("coffee_bar");
+    if (this.vinylPlayerGroup) this.vinylPlayerGroup.visible = activePlaced("vinyl_player") || editingThis("vinyl_player");
+    if (this.orangeCatGroup) this.orangeCatGroup.visible = activePlaced("orange_cat") || editingThis("orange_cat");
+    if (this.hamsterCageGroup) this.hamsterCageGroup.visible = activePlaced("hamster_cage") || editingThis("hamster_cage");
     if (this.smartToiletGroup) this.smartToiletGroup.visible = Boolean(this.ownedItems.smart_toilet);
     if (this.basicToiletGroup) this.basicToiletGroup.visible = !this.ownedItems.smart_toilet;
     if (this.dualMonitorGroup) this.dualMonitorGroup.visible = Boolean(this.ownedItems.dual_monitor);
     if (this.ergoChairGroup) this.ergoChairGroup.visible = Boolean(this.ownedItems.ergo_chair);
     if (this.chairGroup) this.chairGroup.visible = !this.ownedItems.ergo_chair;
+    this.updateParcelVisuals();
     this.renderIfPaused();
+  }
+
+  registerMovableFurniture() {
+    this.movableGroups = {
+      work_desk: this.deskRootGroup,
+      single_bed: this.bedGroup,
+      hamster_cage: this.hamsterCageGroup,
+      coffee_bar: this.coffeeBarGroup,
+      cozy_sofa: this.sofaGroup,
+      coat_rack: this.coatRackGroup,
+      vinyl_player: this.vinylPlayerGroup,
+      orange_cat: this.orangeCatGroup,
+      bed_lamp: this.bedLampGroup,
+      floor_plant: this.floorPlantGroup,
+      wall_poster: this.wallPosterGroup,
+      wall_tv: this.wallTvGroup
+    };
+  }
+
+  buildGridVisuals() {
+    // 1. Floor 16x16 grid overlay (visible during Edit Mode)
+    const floorGrid = new THREE.Group();
+    floorGrid.visible = false;
+
+    const linePts = [];
+    for (let i = 0; i <= GRID_CELLS; i++) {
+      const coord = -4.0 + i * GRID_STEP;
+      linePts.push(-4.0, 0.022, coord, 4.0, 0.022, coord);
+      linePts.push(coord, 0.022, -4.0, coord, 0.022, 4.0);
+    }
+    const lineGeo = new THREE.BufferGeometry();
+    lineGeo.setAttribute("position", new THREE.Float32BufferAttribute(linePts, 3));
+    const lineMat = new THREE.LineBasicMaterial({ color: "#334155", transparent: true, opacity: 0.32 });
+    floorGrid.add(new THREE.LineSegments(lineGeo, lineMat));
+
+    const reservedCellMat = new THREE.MeshBasicMaterial({
+      color: "#ef4444",
+      transparent: true,
+      opacity: 0.14,
+      side: THREE.DoubleSide
+    });
+    const cellGeo = new THREE.PlaneGeometry(GRID_STEP * 0.94, GRID_STEP * 0.94);
+    for (let gx = 0; gx < GRID_CELLS; gx++) {
+      for (let gz = 0; gz < GRID_CELLS; gz++) {
+        if (!isFloorCellReserved(gx, gz)) continue;
+        const m = new THREE.Mesh(cellGeo, reservedCellMat);
+        m.rotation.x = -Math.PI / 2;
+        m.position.set(-4.0 + (gx + 0.5) * GRID_STEP, 0.018, -4.0 + (gz + 0.5) * GRID_STEP);
+        floorGrid.add(m);
+      }
+    }
+    this.floorGridGroup = floorGrid;
+    this.roomGroup.add(floorGrid);
+
+    // 2. Wall placement grids mapped cleanly to each wall's upperGroup so cutaways work automatically
+    this.wallGridPanels = {};
+    const wallLineMat = new THREE.LineBasicMaterial({ color: "#2563eb", transparent: true, opacity: 0.36 });
+    const wallBlockedMat = new THREE.MeshBasicMaterial({
+      color: "#ef4444",
+      transparent: true,
+      opacity: 0.18,
+      side: THREE.DoubleSide
+    });
+    const wallSlotGeo = new THREE.PlaneGeometry(GRID_STEP * 0.92, 1.35);
+
+    WALL_NAMES.forEach(wallName => {
+      const hostWall = this.wallsMap?.[wallName];
+      if (!hostWall) return;
+      const wg = new THREE.Group();
+      wg.visible = false;
+      const pts = [];
+      for (let pos = 0; pos <= GRID_CELLS; pos++) {
+        const off = -4.0 + pos * GRID_STEP;
+        if (wallName === "north") pts.push(off, 0.95, -3.96, off, 2.45, -3.96);
+        else if (wallName === "south") pts.push(off, 0.95, 3.96, off, 2.45, 3.96);
+        else if (wallName === "west") pts.push(-3.96, 0.95, off, -3.96, 2.45, off);
+        else pts.push(3.96, 0.95, off, 3.96, 2.45, off);
+      }
+      [0.95, 1.45, 1.95, 2.45].forEach(hy => {
+        if (wallName === "north") pts.push(-4.0, hy, -3.96, 4.0, hy, -3.96);
+        else if (wallName === "south") pts.push(-4.0, hy, 3.96, 4.0, hy, 3.96);
+        else if (wallName === "west") pts.push(-3.96, hy, -4.0, -3.96, hy, 4.0);
+        else pts.push(3.96, hy, -4.0, 3.96, hy, 4.0);
+      });
+      const wGeo = new THREE.BufferGeometry();
+      wGeo.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+      wg.add(new THREE.LineSegments(wGeo, wallLineMat));
+
+      for (let pos = 0; pos < GRID_CELLS; pos++) {
+        if (!isWallCellReserved(wallName, pos)) continue;
+        const wPos = wallPlacementToLocal("coat_rack", wallName, pos, 1.7);
+        const bm = new THREE.Mesh(wallSlotGeo, wallBlockedMat);
+        bm.position.set(wPos.x - wPos.normalX * 0.015, 1.7, wPos.z - wPos.normalZ * 0.015);
+        bm.rotation.y = wPos.rotY;
+        wg.add(bm);
+      }
+
+      this.wallGridPanels[wallName] = wg;
+      hostWall.upperGroup.add(wg);
+    });
+
+    // 3. Footprint Ghost Pad + Wireframe Box for active furniture placement
+    this.editPreviewMat = new THREE.MeshBasicMaterial({
+      color: "#22c55e",
+      transparent: true,
+      opacity: 0.38,
+      side: THREE.DoubleSide
+    });
+    this.editPreviewOutlineMat = new THREE.LineBasicMaterial({ color: "#16a34a" });
+    this.editPreviewGroup = new THREE.Group();
+    this.editPreviewGroup.visible = false;
+    this.editPreviewPad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.editPreviewMat);
+    this.editPreviewPad.rotation.x = -Math.PI / 2;
+    this.editPreviewBox = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 0.9, 1)),
+      this.editPreviewOutlineMat
+    );
+    this.editPreviewBox.position.y = 0.45;
+    this.editPreviewGroup.add(this.editPreviewPad, this.editPreviewBox);
+    this.roomGroup.add(this.editPreviewGroup);
+
+    // Subtle ground highlight planes along inside of perimeter walls for wall raycasting
+    this.wallPlanes = {
+      north: new THREE.Plane(new THREE.Vector3(0, 0, 1), 3.98),
+      east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), 3.98),
+      south: new THREE.Plane(new THREE.Vector3(0, 0, -1), 3.98),
+      west: new THREE.Plane(new THREE.Vector3(1, 0, 0), 3.98)
+    };
+  }
+
+  updateParcelVisuals() {
+    const count = Object.keys(this.pendingParcels || {}).length;
+    if (this.parcelGroup) {
+      this.parcelGroup.visible = count > 0;
+      if (this.parcelBox1) this.parcelBox1.visible = count >= 1;
+      if (this.parcelBox2) this.parcelBox2.visible = count >= 2;
+      if (this.parcelBox3) this.parcelBox3.visible = count >= 3;
+    }
+    if (this.parcelBadgeEl) {
+      if (count > 0 && !this.spectating && !this.editMode) {
+        this.parcelBadgeEl.textContent = count > 1
+          ? `📦 貨到了！點擊拆箱擺放 (${count})`
+          : "📦 貨到了！點擊開箱擺放";
+        this.parcelBadgeEl.classList.remove("hidden");
+      } else if (count > 0 && this.spectating) {
+        this.parcelBadgeEl.textContent = `📦 ${count} 件待拆包裹`;
+        this.parcelBadgeEl.classList.remove("hidden");
+      } else {
+        this.parcelBadgeEl.classList.add("hidden");
+      }
+    }
+  }
+
+  applyPendingParcels(rawPending = {}) {
+    this.pendingParcels = normalizePendingParcels(rawPending, this.ownedItems);
+    this.applyOwnedItems(this.ownedItems);
+  }
+
+  setOwnedAndParcels(ownedItems = {}, rawPending = {}) {
+    this.ownedItems = { ...(ownedItems || {}) };
+    this.pendingParcels = normalizePendingParcels(rawPending, this.ownedItems);
+    this.applyOwnedItems(this.ownedItems);
+  }
+
+  applyFurnitureLayout(rawLayout = {}) {
+    this.furnitureLayout = (rawLayout && typeof rawLayout === "object")
+      ? { ...rawLayout }
+      : {};
+    const effective = resolveEffectiveLayout(this.ownedItems, this.furnitureLayout, this.pendingParcels);
+    this.effectiveLayout = effective;
+
+    for (const [id, group] of Object.entries(this.movableGroups || {})) {
+      if (!group) continue;
+      if (this.editMode && this.editSelectedId === id && this.editPreviewEntry) continue;
+      const entry = effective[id] || DEFAULT_FURNITURE_LAYOUT[id];
+      if (!entry) continue;
+      if (entry.surface === "wall") {
+        const wallY = id === "wall_poster" ? 1.92 : 1.56;
+        const wPos = wallPlacementToLocal(id, entry.wall, entry.pos, wallY);
+        const targetParent = this.wallsMap?.[entry.wall]?.upperGroup;
+        if (targetParent && group.parent !== targetParent) {
+          group.parent?.remove(group);
+          targetParent.add(group);
+        }
+        group.position.set(wPos.x, wPos.y, wPos.z);
+        group.rotation.y = wPos.rotY;
+        if (id === "wall_tv") this.tvHostWallName = entry.wall;
+        if (id === "wall_poster") this.posterHostWallName = entry.wall;
+      } else {
+        const w = floorPlacementToWorld(id, entry.gx, entry.gz, entry.rot);
+        group.position.set(w.x, 0, w.z);
+        group.rotation.y = w.rotY;
+      }
+    }
+
+    this.syncDynamicLayoutAnchors();
+    this.renderIfPaused();
+  }
+
+  syncDynamicLayoutAnchors() {
+    const insidePt = (x, z) => new THREE.Vector3(
+      THREE.MathUtils.clamp(x, -3.55, 3.55),
+      0,
+      THREE.MathUtils.clamp(z, -3.55, 3.55)
+    );
+    const localToWorld = (group, lx, lz) => {
+      if (!group) return insidePt(lx, lz);
+      group.updateWorldMatrix(true, false);
+      const v = new THREE.Vector3(lx, 0, lz);
+      group.localToWorld(v);
+      return insidePt(v.x, v.z);
+    };
+    const pickSafeSideSpot = (group, candidates, rotOffset) => {
+      for (const [lx, lz, extraRot] of candidates) {
+        const wp = group ? (() => {
+          group.updateWorldMatrix(true, false);
+          const v = new THREE.Vector3(lx, 0, lz);
+          group.localToWorld(v);
+          return v;
+        })() : new THREE.Vector3(lx, 0, lz);
+        if (Math.abs(wp.x) <= 3.55 && Math.abs(wp.z) <= 3.55) {
+          const clamped = this.clampWalkableFloorPoint(wp);
+          if (clamped.distanceTo(wp) < 0.35) {
+            return { pos: clamped, rotY: (group?.rotation.y || 0) + (extraRot ?? rotOffset) };
+          }
+        }
+      }
+      const fallback = this.clampWalkableFloorPoint(localToWorld(group, candidates[0][0], candidates[0][1]));
+      return { pos: fallback, rotY: (group?.rotation.y || 0) + (candidates[0][2] ?? rotOffset) };
+    };
+
+    // Desk anchors
+    if (this.deskRootGroup) {
+      const workWorld = localToWorld(this.deskRootGroup, 0, 0.55);
+      const exitWorld = this.clampWalkableFloorPoint(localToWorld(this.deskRootGroup, 0, 1.25));
+      const plantWorld = pickSafeSideSpot(this.deskRootGroup, [[0.98, 0.58, Math.PI], [0, 1.15, Math.PI]], Math.PI);
+      const deskRot = this.deskRootGroup.rotation.y + Math.PI;
+      this.deskWorkAnchor.copy(workWorld);
+      this.deskExitAnchor.copy(exitWorld);
+      const readSpot = this.chillSpots.find(s => s.id === "read");
+      const gameSpot = this.chillSpots.find(s => s.id === "gaming");
+      if (readSpot) { readSpot.pos.copy(workWorld); readSpot.rotY = deskRot; }
+      if (gameSpot) { gameSpot.pos.copy(workWorld); gameSpot.rotY = deskRot; }
+      this.actionSpots.water_plant.pos.copy(plantWorld.pos);
+      this.actionSpots.water_plant.rotY = plantWorld.rotY;
+    }
+
+    // Bed anchors
+    if (this.bedGroup) {
+      const bedRot = this.bedGroup.rotation.y;
+      const sidePick = pickSafeSideSpot(this.bedGroup, [
+        [-1.12, 0, -Math.PI / 2],
+        [1.12, 0, Math.PI / 2],
+        [0, -1.55, Math.PI]
+      ], -Math.PI / 2);
+      this.bedSideAnchor.copy(sidePick.pos);
+      const sleepSpot = this.chillSpots.find(s => s.id === "sleep");
+      if (sleepSpot) {
+        sleepSpot.pos.copy(localToWorld(this.bedGroup, 0, -0.57));
+        sleepSpot.rotY = bedRot + Math.PI;
+      }
+      const phoneSpot = this.chillSpots.find(s => s.id === "phone");
+      if (phoneSpot) {
+        const useRightSide = sidePick.pos.distanceTo(localToWorld(this.bedGroup, 1.12, 0)) < 0.6;
+        phoneSpot.pos.copy(localToWorld(this.bedGroup, useRightSide ? 0.71 : -0.71, -0.10));
+        phoneSpot.rotY = bedRot + (useRightSide ? Math.PI / 2 : -Math.PI / 2);
+      }
+    }
+
+    // Sofa anchors
+    if (this.sofaGroup) {
+      const sofaRot = this.sofaGroup.rotation.y;
+      const sofaPos = this.sofaGroup.position;
+      this.sofaFrontAnchor.copy(this.clampWalkableFloorPoint(localToWorld(this.sofaGroup, 0, 0.76)));
+      this.actionSpots.sofa_read.pos.set(sofaPos.x, 0, sofaPos.z);
+      this.actionSpots.sofa_read.rotY = sofaRot;
+      this.actionSpots.sofa_tv.pos.set(sofaPos.x, 0, sofaPos.z);
+      this.actionSpots.sofa_tv.rotY = sofaRot;
+    }
+
+    // Floor decor spots
+    if (this.hamsterCageGroup) {
+      const p = pickSafeSideSpot(this.hamsterCageGroup, [[0, 0.76, Math.PI], [0.76, 0, -Math.PI / 2], [-0.76, 0, Math.PI / 2], [0, -0.76, 0]], Math.PI);
+      this.actionSpots.watch_hamster.pos.copy(p.pos);
+      this.actionSpots.watch_hamster.rotY = p.rotY;
+    }
+    if (this.coffeeBarGroup) {
+      const p = pickSafeSideSpot(this.coffeeBarGroup, [[0, 0.62, Math.PI], [0, -0.62, 0], [0.75, 0, -Math.PI / 2]], Math.PI);
+      this.actionSpots.coffee_break.pos.copy(p.pos);
+      this.actionSpots.coffee_break.rotY = p.rotY;
+    }
+    if (this.vinylPlayerGroup) {
+      const p = pickSafeSideSpot(this.vinylPlayerGroup, [[0, 0.65, Math.PI], [0, -0.65, 0]], Math.PI);
+      this.actionSpots.listen_vinyl.pos.copy(p.pos);
+      this.actionSpots.listen_vinyl.rotY = p.rotY;
+    }
+    if (this.orangeCatGroup) {
+      const p = pickSafeSideSpot(this.orangeCatGroup, [[0, 0.68, Math.PI], [-0.68, 0, Math.PI / 2], [0.68, 0, -Math.PI / 2]], Math.PI);
+      this.actionSpots.pet_cat.pos.copy(p.pos);
+      this.actionSpots.pet_cat.rotY = p.rotY;
+    }
+    if (this.coatRackGroup) {
+      const p = pickSafeSideSpot(this.coatRackGroup, [[0, 0.62, Math.PI], [0.62, 0, -Math.PI / 2], [-0.62, 0, Math.PI / 2], [0, -0.62, 0]], Math.PI);
+      this.actionSpots.check_coat.pos.copy(p.pos);
+      this.actionSpots.check_coat.rotY = p.rotY;
+    }
+    if (this.floorPlantGroup) {
+      const p = pickSafeSideSpot(this.floorPlantGroup, [[-0.68, 0, Math.PI / 2], [0, 0.68, Math.PI], [0.68, 0, -Math.PI / 2], [0, -0.68, 0]], Math.PI / 2);
+      this.actionSpots.water_floor_plant.pos.copy(p.pos);
+      this.actionSpots.water_floor_plant.rotY = p.rotY;
+    }
+
+    // Wall item approach spots
+    const eff = this.effectiveLayout || resolveEffectiveLayout(this.ownedItems, this.furnitureLayout, this.pendingParcels);
+    const tvEntry = eff.wall_tv || DEFAULT_FURNITURE_LAYOUT.wall_tv;
+    if (tvEntry) {
+      const wp = wallPlacementToLocal("wall_tv", tvEntry.wall, tvEntry.pos, 1.56);
+      const stand = this.clampWalkableFloorPoint(new THREE.Vector3(wp.x + wp.normalX * 1.15, 0, wp.z + wp.normalZ * 1.15));
+      this.actionSpots.watch_tv.pos.copy(stand);
+      this.actionSpots.watch_tv.rotY = Math.atan2(-wp.normalX, -wp.normalZ);
+    }
+    const postEntry = eff.wall_poster || DEFAULT_FURNITURE_LAYOUT.wall_poster;
+    if (postEntry) {
+      const wp = wallPlacementToLocal("wall_poster", postEntry.wall, postEntry.pos, 1.92);
+      const stand = this.clampWalkableFloorPoint(new THREE.Vector3(wp.x + wp.normalX * 0.95, 0, wp.z + wp.normalZ * 0.95));
+      this.actionSpots.admire_poster.pos.copy(stand);
+      this.actionSpots.admire_poster.rotY = Math.atan2(-wp.normalX, -wp.normalZ);
+    }
+  }
+
+  openNextParcelBox() {
+    if (this.spectating) return false;
+    const ids = Object.keys(this.pendingParcels || {});
+    if (ids.length === 0) return false;
+    const nextId = ids[0];
+    this.enterFurnitureEditMode({ itemId: nextId, fromParcel: true });
+    return true;
+  }
+
+  enterFurnitureEditMode({ itemId = null, fromParcel = false } = {}) {
+    if (this.spectating) return;
+    this.editMode = true;
+    this.editSelectedId = null;
+    this.editHoldingFromParcel = false;
+    this.editPreviewEntry = null;
+    this.editCanPlace = false;
+    this.updateParcelVisuals();
+    if (itemId && PLACEABLE_FURNITURE_META[itemId]) {
+      this.selectFurnitureForPlacement(itemId, { fromParcel });
+    } else {
+      this.updateGridOverlayVisibility();
+      this.notifyEditModeState();
+    }
+    this.renderIfPaused();
+  }
+
+  exitFurnitureEditMode({ commit = true } = {}) {
+    if (this.editSelectedId && this.editHoldingFromParcel) {
+      // Unplaced parcel returned gently back into entrance cardboard box so user never loses an item
+      this.pendingParcels[this.editSelectedId] = true;
+    }
+    this.editMode = false;
+    this.editSelectedId = null;
+    this.editHoldingFromParcel = false;
+    this.editPreviewEntry = null;
+    this.editCanPlace = false;
+    if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
+    this.updateGridOverlayVisibility();
+    this.applyOwnedItems(this.ownedItems);
+    this.applyFurnitureLayout(this.furnitureLayout);
+    // Safely keep idle character inside current updated bounds
+    if (this.charState === "IDLE" && this.currentActivity) {
+      const curSpot = this.getActivitySpotById(this.currentActivity);
+      if (curSpot && this.charRoot) {
+        this.charRoot.position.copy(curSpot.pos);
+        this.charRoot.rotation.y = curSpot.rotY;
+      }
+    }
+    if (commit) {
+      this.onSaveLayout({
+        furnitureLayout: { ...this.furnitureLayout },
+        pendingParcels: { ...this.pendingParcels }
+      });
+    }
+    this.notifyEditModeState();
+    this.renderIfPaused();
+  }
+
+  selectFurnitureForPlacement(itemId, { fromParcel = false } = {}) {
+    const meta = PLACEABLE_FURNITURE_META[itemId];
+    if (!meta || !this.editMode) return false;
+    if (!meta.starter && this.ownedItems?.[itemId] !== true) return false;
+
+    this.editSelectedId = itemId;
+    this.editHoldingFromParcel = Boolean(fromParcel);
+
+    const eff = resolveEffectiveLayout(this.ownedItems, this.furnitureLayout, this.pendingParcels);
+    let startEntry = eff[itemId] || findFirstValidPlacement(itemId, this.ownedItems, this.furnitureLayout, this.pendingParcels);
+    if (!startEntry) {
+      startEntry = { ...DEFAULT_FURNITURE_LAYOUT[itemId] };
+    }
+    this.editPreviewRot = startEntry.rot ?? 0;
+    this.editPreviewEntry = { ...startEntry };
+    if (this.editHoldingFromParcel) {
+      delete this.pendingParcels[itemId];
+    }
+    this.applyOwnedItems(this.ownedItems);
+    this.updateGridOverlayVisibility();
+    this.updateEditPreviewMesh();
+    this.notifyEditModeState(meta.name);
+    this.renderIfPaused();
+    return true;
+  }
+
+  rotateEditingFurniture(delta = 1) {
+    if (!this.editMode || !this.editSelectedId) return;
+    const meta = PLACEABLE_FURNITURE_META[this.editSelectedId];
+    if (!meta) return;
+    if (meta.surface === "wall") {
+      // Cycle visible or all walls smoothly clockwise/counter-clockwise when holding wall item
+      const curWall = this.editPreviewEntry?.wall || "north";
+      const idx = WALL_NAMES.indexOf(curWall);
+      const nextWall = WALL_NAMES[(idx + (delta >= 0 ? 1 : 3)) % WALL_NAMES.length];
+      let nextPos = this.editPreviewEntry?.pos ?? 2;
+      if (nextPos + meta.gridW > GRID_CELLS) nextPos = GRID_CELLS - meta.gridW;
+      if (!canPlaceWallItem(this.editSelectedId, nextWall, nextPos, this.ownedItems, this.furnitureLayout, this.pendingParcels)) {
+        for (let p = 0; p <= GRID_CELLS - meta.gridW; p++) {
+          if (canPlaceWallItem(this.editSelectedId, nextWall, p, this.ownedItems, this.furnitureLayout, this.pendingParcels)) {
+            nextPos = p;
+            break;
+          }
+        }
+      }
+      this.editPreviewEntry = { surface: "wall", wall: nextWall, pos: nextPos };
+    } else {
+      this.editPreviewRot = ((this.editPreviewRot + (delta >= 0 ? 1 : 3)) % 4 + 4) % 4;
+      const curGx = this.editPreviewEntry?.gx ?? 0;
+      const curGz = this.editPreviewEntry?.gz ?? 0;
+      const { w, d } = getRotatedDims(this.editSelectedId, this.editPreviewRot);
+      this.editPreviewEntry = {
+        surface: "floor",
+        gx: THREE.MathUtils.clamp(curGx, 0, Math.max(0, GRID_CELLS - w)),
+        gz: THREE.MathUtils.clamp(curGz, 0, Math.max(0, GRID_CELLS - d)),
+        rot: this.editPreviewRot
+      };
+    }
+    this.updateEditPreviewMesh();
+    this.notifyEditModeState(meta.name);
+    this.renderIfPaused();
+  }
+
+  putEditingParcelBack() {
+    if (!this.editMode || !this.editSelectedId) return;
+    if (this.editHoldingFromParcel) {
+      this.pendingParcels[this.editSelectedId] = true;
+    }
+    this.editSelectedId = null;
+    this.editHoldingFromParcel = false;
+    this.editPreviewEntry = null;
+    this.editCanPlace = false;
+    this.exitFurnitureEditMode({ commit: true });
+  }
+
+  resetFurnitureLayout() {
+    if (this.spectating) return;
+    this.furnitureLayout = {};
+    this.editSelectedId = null;
+    this.editHoldingFromParcel = false;
+    this.editPreviewEntry = null;
+    this.applyOwnedItems(this.ownedItems);
+    this.applyFurnitureLayout(this.furnitureLayout);
+    this.updateGridOverlayVisibility();
+    this.updateEditPreviewMesh();
+    this.onSaveLayout({
+      furnitureLayout: {},
+      pendingParcels: { ...this.pendingParcels }
+    });
+    this.notifyEditModeState();
+    this.renderIfPaused();
+  }
+
+  updateGridOverlayVisibility() {
+    const showFloor = Boolean(
+      this.editMode
+      && (!this.editSelectedId || PLACEABLE_FURNITURE_META[this.editSelectedId]?.surface === "floor")
+    );
+    const showWall = Boolean(
+      this.editMode
+      && this.editSelectedId
+      && PLACEABLE_FURNITURE_META[this.editSelectedId]?.surface === "wall"
+    );
+    if (this.floorGridGroup) this.floorGridGroup.visible = showFloor;
+    if (this.wallGridPanels) {
+      WALL_NAMES.forEach(wName => {
+        const panel = this.wallGridPanels[wName];
+        const wallObj = this.wallsMap?.[wName];
+        if (panel) panel.visible = Boolean(showWall && (wallObj ? wallObj.upperGroup.visible : true));
+      });
+    }
+  }
+
+  updateEditPreviewMesh() {
+    if (!this.editMode || !this.editSelectedId || !this.editPreviewEntry) {
+      if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
+      return;
+    }
+    const id = this.editSelectedId;
+    const meta = PLACEABLE_FURNITURE_META[id];
+    const entry = this.editPreviewEntry;
+    const group = this.movableGroups?.[id];
+
+    if (meta.surface === "wall") {
+      this.editCanPlace = canPlaceWallItem(
+        id,
+        entry.wall,
+        entry.pos,
+        this.ownedItems,
+        this.furnitureLayout,
+        this.pendingParcels
+      );
+      const wallY = id === "wall_poster" ? 1.92 : 1.56;
+      const wPos = wallPlacementToLocal(id, entry.wall, entry.pos, wallY);
+      if (group) {
+        const targetParent = this.wallsMap?.[entry.wall]?.upperGroup;
+        if (targetParent && group.parent !== targetParent) {
+          group.parent?.remove(group);
+          targetParent.add(group);
+        }
+        group.visible = true;
+        group.position.set(wPos.x, wPos.y, wPos.z);
+        group.rotation.y = wPos.rotY;
+      }
+      this.editPreviewGroup.visible = true;
+      this.editPreviewGroup.position.set(wPos.x + wPos.normalX * 0.04, wallY, wPos.z + wPos.normalZ * 0.04);
+      this.editPreviewGroup.rotation.y = wPos.rotY;
+      this.editPreviewPad.rotation.set(0, 0, 0);
+      this.editPreviewPad.position.set(0, 0, 0.02);
+      this.editPreviewPad.scale.set(meta.gridW * GRID_STEP, id === "wall_tv" ? 0.96 : 1.24, 1);
+      this.editPreviewBox.position.set(0, 0, 0.04);
+      this.editPreviewBox.scale.set(meta.gridW * GRID_STEP, id === "wall_tv" ? 0.96 : 1.24, 0.16);
+    } else {
+      this.editCanPlace = canPlaceFloorItem(
+        id,
+        entry.gx,
+        entry.gz,
+        entry.rot,
+        this.ownedItems,
+        this.furnitureLayout,
+        this.pendingParcels
+      );
+      const w = floorPlacementToWorld(id, entry.gx, entry.gz, entry.rot);
+      if (group) {
+        group.visible = true;
+        group.position.set(w.x, 0.05, w.z);
+        group.rotation.y = w.rotY;
+      }
+      this.editPreviewGroup.visible = true;
+      this.editPreviewGroup.position.set(w.x, 0.032, w.z);
+      this.editPreviewGroup.rotation.y = 0;
+      this.editPreviewPad.rotation.set(-Math.PI / 2, 0, 0);
+      this.editPreviewPad.position.set(0, 0, 0);
+      this.editPreviewPad.scale.set(w.w * GRID_STEP * 0.97, w.d * GRID_STEP * 0.97, 1);
+      this.editPreviewBox.position.set(0, 0.45, 0);
+      this.editPreviewBox.scale.set(w.w * GRID_STEP * 0.97, 1.0, w.d * GRID_STEP * 0.97);
+    }
+
+    const col = this.editCanPlace ? 0x22c55e : 0xef4444;
+    const outlineCol = this.editCanPlace ? 0x16a34a : 0xdc2626;
+    this.editPreviewMat.color.setHex(col);
+    this.editPreviewOutlineMat.color.setHex(outlineCol);
+  }
+
+  commitActiveFurniturePlacement() {
+    if (!this.editMode || !this.editSelectedId || !this.editPreviewEntry || !this.editCanPlace) {
+      return false;
+    }
+    const id = this.editSelectedId;
+    const wasParcel = this.editHoldingFromParcel;
+    this.furnitureLayout = {
+      ...this.furnitureLayout,
+      [id]: { ...this.editPreviewEntry }
+    };
+    delete this.pendingParcels[id];
+    this.editSelectedId = null;
+    this.editHoldingFromParcel = false;
+    this.editPreviewEntry = null;
+    this.editCanPlace = false;
+    if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
+
+    this.applyOwnedItems(this.ownedItems);
+    this.applyFurnitureLayout(this.furnitureLayout);
+    this.updateGridOverlayVisibility();
+    this.onSaveLayout({
+      furnitureLayout: { ...this.furnitureLayout },
+      pendingParcels: { ...this.pendingParcels }
+    });
+
+    if (wasParcel && Object.keys(this.pendingParcels).length === 0) {
+      // Automatically return cleanly to room play right after placing the newly unboxed item
+      this.exitFurnitureEditMode({ commit: false });
+    } else if (wasParcel && Object.keys(this.pendingParcels).length > 0) {
+      this.openNextParcelBox();
+    } else {
+      this.notifyEditModeState();
+    }
+    this.renderIfPaused();
+    return true;
+  }
+
+  notifyEditModeState(hoverName = "") {
+    const meta = this.editSelectedId ? PLACEABLE_FURNITURE_META[this.editSelectedId] : null;
+    this.onEditModeChange({
+      active: this.editMode,
+      selectedId: this.editSelectedId,
+      selectedName: meta?.name || "",
+      surface: meta?.surface || "floor",
+      gridDims: meta
+        ? (meta.surface === "wall" ? `${meta.gridW} 格牆面` : `${meta.gridW}×${meta.gridD} 格地面`)
+        : "",
+      canPlace: this.editCanPlace,
+      fromParcel: this.editHoldingFromParcel,
+      pendingParcelCount: Object.keys(this.pendingParcels || {}).length,
+      hoverName
+    });
+  }
+
+  raycastEditGridTarget() {
+    if (!this.editMode || !this.editSelectedId) return false;
+    const meta = PLACEABLE_FURNITURE_META[this.editSelectedId];
+    if (!meta) return false;
+
+    if (meta.surface === "wall") {
+      let bestWall = null;
+      let bestDist = Infinity;
+      let bestHit = null;
+      for (const wallName of WALL_NAMES) {
+        if (!this.wallsMap?.[wallName]?.upperGroup?.visible) continue;
+        const plane = this.wallPlanes?.[wallName];
+        if (!plane) continue;
+        const pt = new THREE.Vector3();
+        if (this.raycaster.ray.intersectPlane(plane, pt)) {
+          const coord = (wallName === "north" || wallName === "south") ? pt.x : pt.z;
+          if (coord >= -4.2 && coord <= 4.2 && pt.y >= 0.4 && pt.y <= 3.1) {
+            const d = pt.distanceTo(this.camera.position);
+            if (d < bestDist) {
+              bestDist = d;
+              bestWall = wallName;
+              bestHit = pt;
+            }
+          }
+        }
+      }
+      if (bestWall && bestHit) {
+        const coord = (bestWall === "north" || bestWall === "south") ? bestHit.x : bestHit.z;
+        const rawPos = Math.round((coord + 4.0) / GRID_STEP - meta.gridW * 0.5);
+        const clampedPos = THREE.MathUtils.clamp(rawPos, 0, GRID_CELLS - meta.gridW);
+        this.editPreviewEntry = { surface: "wall", wall: bestWall, pos: clampedPos };
+        this.updateEditPreviewMesh();
+        this.notifyEditModeState(meta.name);
+        return true;
+      }
+      return false;
+    }
+
+    const pt = new THREE.Vector3();
+    if (this.floorPlane && this.raycaster.ray.intersectPlane(this.floorPlane, pt)) {
+      const { w, d } = getRotatedDims(this.editSelectedId, this.editPreviewRot);
+      const rawGx = Math.round((pt.x + 4.0) / GRID_STEP - w * 0.5);
+      const rawGz = Math.round((pt.z + 4.0) / GRID_STEP - d * 0.5);
+      const gx = THREE.MathUtils.clamp(rawGx, 0, Math.max(0, GRID_CELLS - w));
+      const gz = THREE.MathUtils.clamp(rawGz, 0, Math.max(0, GRID_CELLS - d));
+      this.editPreviewEntry = { surface: "floor", gx, gz, rot: this.editPreviewRot };
+      this.updateEditPreviewMesh();
+      this.notifyEditModeState(meta.name);
+      return true;
+    }
+    return false;
   }
 
   setQuarter(quarter) {
@@ -3953,41 +4764,62 @@ export class FreelancerRoomScene {
 
   isOnBed(pos = this.charRoot?.position) {
     if (!pos) return false;
+    if (this.bedGroup) {
+      this.bedGroup.updateWorldMatrix(true, false);
+      const local = pos.clone();
+      this.bedGroup.worldToLocal(local);
+      return Math.abs(local.x) <= 0.92 && Math.abs(local.z) <= 1.28;
+    }
     return pos.x >= 1.75 && pos.x <= 3.55 && pos.z >= 0.75 && pos.z <= 3.35;
   }
 
   isOnSofa(pos = this.charRoot?.position) {
     if (!pos) return false;
+    if (this.sofaGroup) {
+      this.sofaGroup.updateWorldMatrix(true, false);
+      const local = pos.clone();
+      this.sofaGroup.worldToLocal(local);
+      return Math.abs(local.x) <= 0.95 && Math.abs(local.z) <= 0.52;
+    }
     return pos.x >= -2.26 && pos.x <= -1.25 && pos.z >= -1.25 && pos.z <= 0.55;
   }
 
   isNearDesk(pos = this.charRoot?.position) {
     if (!pos) return false;
+    if (this.deskRootGroup) {
+      this.deskRootGroup.updateWorldMatrix(true, false);
+      const local = pos.clone();
+      this.deskRootGroup.worldToLocal(local);
+      return Math.abs(local.x) <= 1.4 && local.z >= -0.9 && local.z <= 1.25;
+    }
     return pos.z < -1.7 && pos.x < 1.3 && pos.x > -1.6;
   }
 
   clampWalkableFloorPoint(rawPt) {
     let x = THREE.MathUtils.clamp(rawPt.x, -3.55, 3.55);
     let z = THREE.MathUtils.clamp(rawPt.z, -3.55, 3.55);
-    const owned = this.ownedItems || {};
 
-    // Active furniture/wall obstacle footprints with character clearance
+    // Fixed bathroom walls/fixtures + dynamic grid blockers for every placed floor furniture item
     const blockers = [
-      { minX: -1.52, maxX: 1.16, minZ: -3.95, maxZ: -1.72 }, // Desk & swivel chair
-      { minX: 1.66, maxX: 3.95, minZ: 0.65, maxZ: 3.85 },   // Single bed
       { minX: 1.32, maxX: 1.74, minZ: -3.95, maxZ: -2.28 }, // Bath frosted West partition
       { minX: 2.38, maxX: 3.95, minZ: -1.72, maxZ: -1.30 }, // Bath frosted South partition
       { minX: 1.80, maxX: 2.66, minZ: -3.95, maxZ: -3.02 }, // Sink
       { minX: 2.88, maxX: 3.88, minZ: -3.95, maxZ: -2.84 }  // Toilet
     ];
-    if (owned.bed_lamp) blockers.push({ minX: 1.10, maxX: 1.76, minZ: 2.75, maxZ: 3.55 });
-    if (owned.cozy_sofa) blockers.push({ minX: -2.35, maxX: -1.20, minZ: -1.35, maxZ: 0.65 });
-    if (owned.coat_rack) blockers.push({ minX: -3.95, maxX: -3.05, minZ: 2.95, maxZ: 3.95 });
-    if (owned.coffee_bar) blockers.push({ minX: -3.95, maxX: -2.98, minZ: -2.95, maxZ: -1.68 });
-    if (owned.vinyl_player) blockers.push({ minX: -1.55, maxX: 0.05, minZ: 3.10, maxZ: 3.95 });
-    if (owned.orange_cat) blockers.push({ minX: 0.50, maxX: 1.45, minZ: 3.05, maxZ: 3.95 });
-    if (owned.hamster_cage) blockers.push({ minX: -2.35, maxX: -1.36, minZ: -3.55, maxZ: -2.55 });
-    if (owned.floor_plant) blockers.push({ minX: 3.10, maxX: 3.95, minZ: -1.05, maxZ: -0.05 });
+    const eff = this.effectiveLayout || resolveEffectiveLayout(this.ownedItems, this.furnitureLayout, this.pendingParcels);
+    for (const [id, entry] of Object.entries(eff)) {
+      if (entry.surface !== "floor") continue;
+      if (this.editMode && this.editSelectedId === id) continue;
+      const box = getFloorFootprintWorldBox(id, entry);
+      if (!box) continue;
+      const pad = 0.08;
+      blockers.push({
+        minX: box.minX - pad,
+        maxX: box.maxX + pad,
+        minZ: box.minZ - pad,
+        maxZ: box.maxZ + pad
+      });
+    }
 
     for (let pass = 0; pass < 2; pass++) {
       for (const b of blockers) {
@@ -4268,13 +5100,29 @@ export class FreelancerRoomScene {
 
     // Cutaway Auto-Invisibility: hide the 2 perimeter walls facing closest to camera
     const camDir = new THREE.Vector3(camX, 0, camZ).normalize();
+    const wallEditActive = Boolean(
+      this.editMode
+      && this.editSelectedId
+      && PLACEABLE_FURNITURE_META[this.editSelectedId]?.surface === "wall"
+    );
     this.walls.forEach(w => {
       const facingCamera = w.normal.dot(camDir) > 0.05;
       w.upperGroup.visible = !facingCamera;
-      if (w.name === "west" && this.atmosWallGroup) {
-        this.atmosWallGroup.visible = Boolean(this.ownedItems?.dolby_atmos && w.upperGroup.visible);
+      if (this.wallGridPanels?.[w.name]) {
+        this.wallGridPanels[w.name].visible = Boolean(wallEditActive && w.upperGroup.visible);
       }
     });
+    if (this.atmosWallGroup) {
+      const tvActivePlaced = Boolean(this.ownedItems?.wall_tv && !this.pendingParcels?.wall_tv);
+      const tvEditing = Boolean(this.editMode && this.editSelectedId === "wall_tv");
+      const hostWallName = (tvEditing ? this.editPreviewEntry?.wall : null) || this.tvHostWallName || "west";
+      const hostUpper = this.wallsMap?.[hostWallName]?.upperGroup;
+      this.atmosWallGroup.visible = Boolean(
+        this.ownedItems?.dolby_atmos
+        && (tvActivePlaced || tvEditing)
+        && (hostUpper ? hostUpper.visible : true)
+      );
+    }
   }
 
   resetLimbs() {
@@ -4636,6 +5484,13 @@ export class FreelancerRoomScene {
     if (this.bubbleEl && !this.bubbleEl.classList.contains("hidden")) {
       this.bubbleEl.style.transform = `translate(${x}px, ${y - 30}px) translate(-50%, -100%)`;
     }
+    if (this.parcelBadgeEl && !this.parcelBadgeEl.classList.contains("hidden")) {
+      const parcelWorld = new THREE.Vector3(-3.36, 0.72, 2.05);
+      parcelWorld.project(this.camera);
+      const px = (parcelWorld.x * 0.5 + 0.5) * width;
+      const py = (-parcelWorld.y * 0.5 + 0.5) * height;
+      this.parcelBadgeEl.style.transform = `translate(${px}px, ${py}px) translate(-50%, -100%)`;
+    }
     this.updateTvScreenOverlay();
   }
 
@@ -4675,12 +5530,14 @@ export class FreelancerRoomScene {
 
   updateTvScreenOverlay() {
     if (!this.tvOverlayWrap || !this.tvScreenMesh || !this.camera) return;
+    const hostUpper = this.wallsMap?.[this.tvHostWallName || "west"]?.upperGroup || this.westWallUpperGroup;
     const canShow = Boolean(
       this.tvActiveVideoId
       && !this.tvSuspended
       && this.ownedItems?.wall_tv
+      && !this.pendingParcels?.wall_tv
       && this.wallTvGroup?.visible
-      && this.westWallUpperGroup?.visible
+      && hostUpper?.visible
     );
     if (!canShow) {
       this.tvOverlayWrap.style.display = "none";
@@ -4733,6 +5590,45 @@ export class FreelancerRoomScene {
 
       this.camera.updateMatrixWorld();
       this.raycaster.setFromCamera(this.pointerNDC, this.camera);
+
+      // Furniture Edit Mode: either snap currently held item onto floor/wall grid or pick up an existing piece
+      if (this.editMode) {
+        if (this.walkHoverRingMat) this.walkHoverRingMat.opacity = 0;
+        this.hoveredFloorPoint = null;
+        if (this.editSelectedId) {
+          this.raycastEditGridTarget();
+          dom.style.cursor = this.editCanPlace ? "grabbing" : "not-allowed";
+          this.onHoverChange(
+            this.editCanPlace
+              ? `點擊確認放置「${PLACEABLE_FURNITURE_META[this.editSelectedId]?.name}」（按 R 鍵旋轉）`
+              : "目前格位重疊或受限，請移到綠色網格或按 R 旋轉"
+          );
+          return;
+        }
+        const editHits = this.raycaster.intersectObjects(this.allInteractTargets, false);
+        const visibleEditHit = editHits.find(h => {
+          if (!h.object?.userData?.movableId) return false;
+          let obj = h.object;
+          while (obj) {
+            if (!obj.visible) return false;
+            obj = obj.parent;
+          }
+          return true;
+        });
+        if (visibleEditHit) {
+          const mId = visibleEditHit.object.userData.movableId;
+          this.hoveredTarget = visibleEditHit.object.userData.interactType;
+          dom.style.cursor = "grab";
+          const mName = PLACEABLE_FURNITURE_META[mId]?.name || "家具";
+          this.onHoverChange(`點擊拿起並移動／旋轉「${mName}」`);
+          return;
+        }
+        this.hoveredTarget = null;
+        dom.style.cursor = "default";
+        this.onHoverChange("點擊房間內的任何家具即可依網格重新擺放與旋轉");
+        return;
+      }
+
       const hits = this.raycaster.intersectObjects(this.allInteractTargets, false);
       const visibleHit = hits.find(h => {
         let obj = h.object;
@@ -4748,7 +5644,9 @@ export class FreelancerRoomScene {
         this.hoveredFloorPoint = null;
         if (this.walkHoverRingMat) this.walkHoverRingMat.opacity = 0;
         dom.style.cursor = "pointer";
-        if (type === "lamp") {
+        if (type === "parcel") {
+          this.onHoverChange(this.spectating ? "貨到了（唯讀參觀中）" : "📦 貨到了！點擊打開紙箱並在網格中擺放新家具");
+        } else if (type === "lamp") {
           this.onHoverChange("點擊開關檯燈");
         } else if (type === "bedLamp") {
           this.onHoverChange("點擊開關床邊小夜燈");
@@ -4803,8 +5701,32 @@ export class FreelancerRoomScene {
     };
 
     this.onClick = (e) => {
+      if (this.editMode) {
+        this.onPointerMove(e);
+        if (this.editSelectedId) {
+          this.commitActiveFurniturePlacement();
+          return;
+        }
+        const editHits = this.raycaster.intersectObjects(this.allInteractTargets, false);
+        const visibleEditHit = editHits.find(h => {
+          if (!h.object?.userData?.movableId) return false;
+          let obj = h.object;
+          while (obj) {
+            if (!obj.visible) return false;
+            obj = obj.parent;
+          }
+          return true;
+        });
+        if (visibleEditHit?.object?.userData?.movableId) {
+          this.selectFurnitureForPlacement(visibleEditHit.object.userData.movableId, { fromParcel: false });
+        }
+        return;
+      }
+
       this.onPointerMove(e);
-      if (this.hoveredTarget === "lamp") {
+      if (this.hoveredTarget === "parcel") {
+        if (!this.spectating) this.openNextParcelBox();
+      } else if (this.hoveredTarget === "lamp") {
         this.setDeskLamp(!this.deskLampOn);
         this.onLampToggle(this.deskLampOn);
       } else if (this.hoveredTarget === "bedLamp") {
@@ -4886,10 +5808,35 @@ export class FreelancerRoomScene {
       dom.style.cursor = "default";
     };
 
+    this.onEditKeyDown = (e) => {
+      if (!this.editMode) return;
+      if (e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        this.rotateEditingFurniture(e.shiftKey ? -1 : 1);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        if (this.editSelectedId && this.editHoldingFromParcel) {
+          this.putEditingParcelBack();
+        } else if (this.editSelectedId) {
+          this.editSelectedId = null;
+          this.editPreviewEntry = null;
+          this.editCanPlace = false;
+          if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
+          this.applyFurnitureLayout(this.furnitureLayout);
+          this.updateGridOverlayVisibility();
+          this.notifyEditModeState();
+          this.renderIfPaused();
+        } else {
+          this.exitFurnitureEditMode({ commit: true });
+        }
+      }
+    };
+
     dom.addEventListener("pointermove", this.onPointerMove);
     dom.addEventListener("pointerleave", this.onPointerLeave);
     dom.addEventListener("click", this.onClick);
     window.addEventListener("resize", this.onResize);
+    window.addEventListener("keydown", this.onEditKeyDown);
   }
 
   renderIfPaused() {
@@ -4978,6 +5925,11 @@ export class FreelancerRoomScene {
       if (this.vinylOn || this.currentActivity === "listen_vinyl") {
         this.vinylDiscGroup.rotation.y += dt * 1.9;
       }
+    }
+
+    // Subtle doormat parcel bob when waiting to be opened
+    if (this.parcelGroup?.visible) {
+      this.parcelGroup.position.y = 0.04 + Math.abs(Math.sin(elapsedSec * 2.2)) * 0.018;
     }
 
     // Gentle wagging tail + breathing on orange tabby cat
@@ -5095,6 +6047,9 @@ export class FreelancerRoomScene {
       dom.removeEventListener("click", this.onClick);
     }
     window.removeEventListener("resize", this.onResize);
+    if (this.onEditKeyDown) {
+      window.removeEventListener("keydown", this.onEditKeyDown);
+    }
     clearTimeout(this.bubbleTimer);
     if (this.customPosterTex) {
       this.customPosterTex.dispose();

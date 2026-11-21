@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121l";
+} from "./room-scene.js?v=20261121m";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -56,7 +56,14 @@ import {
   getShopItem,
   getMissingShopPrerequisites,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261121l";
+} from "./shop-catalog.js?v=20261121m";
+import {
+  PLACEABLE_FURNITURE_META,
+  isShopParcelItem,
+  computeRoomGridStats,
+  checkShopItemGridAvailability,
+  normalizePendingParcels
+} from "./room-grid.js?v=20261121m";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -77,9 +84,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121l";
+} from "./app-helpers.js?v=20261121m";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121l";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121m";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -694,11 +701,43 @@ function showOnboardingScreen(isEditing = false) {
   sync3dSceneLifecycle();
 }
 
+function syncEditModeToolbarUI(state = null) {
+  const toolbar = document.getElementById("room-edit-toolbar");
+  const layoutBtn = document.getElementById("room-edit-layout-btn");
+  const statusEl = document.getElementById("room-edit-status-text");
+  const rotLBtn = document.getElementById("edit-rotate-left-btn");
+  const rotRBtn = document.getElementById("edit-rotate-right-btn");
+  const putBackBtn = document.getElementById("edit-putback-btn");
+  const resetBtn = document.getElementById("edit-reset-layout-btn");
+
+  const active = Boolean(state?.active && !spectatingStudentUid);
+  toolbar?.classList.toggle("hidden", !active);
+  layoutBtn?.classList.toggle("is-active", active);
+  if (!active) return;
+
+  const hasSelected = Boolean(state?.selectedId);
+  rotLBtn?.classList.toggle("hidden", !hasSelected);
+  rotRBtn?.classList.toggle("hidden", !hasSelected);
+  putBackBtn?.classList.toggle("hidden", !(hasSelected && state?.fromParcel));
+  resetBtn?.classList.toggle("hidden", Boolean(hasSelected && state?.fromParcel));
+
+  if (statusEl) {
+    if (hasSelected) {
+      const dimsNote = state.gridDims ? ` · ${state.gridDims}` : "";
+      const validNote = state.canPlace ? "✅ 綠格可放置" : "⚠️ 空間衝突，移至綠格或按 R 轉向";
+      statusEl.textContent = `${state.fromParcel ? "📦 拆箱擺放" : "📐 移動"}：${state.selectedName}${dimsNote}（${validNote}）`;
+    } else {
+      statusEl.textContent = "📐 編輯家具位置：點擊房間內任意家具拿起移動／按 R 旋轉";
+    }
+  }
+}
+
 function syncRoomHUD() {
   const isSpectating = Boolean(spectatingStudentUid);
   const spectateBar = document.getElementById("room-spectate-bar");
   const visitOthersBtn = document.getElementById("room-visit-others-btn");
   const shopBtn = document.getElementById("room-shop-btn");
+  const layoutBtn = document.getElementById("room-edit-layout-btn");
   const avatarBtn = document.getElementById("room-edit-avatar-btn");
   const financeBtn = document.getElementById("room-finance-btn");
   const isAdminUser = currentRole === "super_admin" || currentRole === "admin";
@@ -706,8 +745,12 @@ function syncRoomHUD() {
   spectateBar?.classList.toggle("hidden", !isSpectating);
   visitOthersBtn?.classList.toggle("hidden", isSpectating || !isAdminUser);
   shopBtn?.classList.toggle("hidden", isSpectating);
+  layoutBtn?.classList.toggle("hidden", isSpectating);
   avatarBtn?.classList.toggle("hidden", isSpectating);
   financeBtn?.classList.toggle("hidden", isSpectating);
+  if (isSpectating) {
+    syncEditModeToolbarUI({ active: false });
+  }
 
   if (isSpectating) {
     const stu = cachedStudents.find(s => s.uid === spectatingStudentUid);
@@ -757,6 +800,11 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
     fallbackDueAt: getNextMonthFirstEpoch()
   });
 
+  const pendingParcels = normalizePendingParcels(rs.pendingParcels, owned);
+  const furnitureLayout = (rs.furnitureLayout && typeof rs.furnitureLayout === "object")
+    ? { ...rs.furnitureLayout }
+    : {};
+
   if (!roomScene) {
     roomScene = new FreelancerRoomScene(wrap, {
       characterId: targetCharacterId,
@@ -773,6 +821,8 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
       rugStyle: rs.rugStyle || DEFAULT_RUG_STYLE,
       posterImage: rs.posterImage || "",
       ownedItems: owned,
+      furnitureLayout,
+      pendingParcels,
       customThoughts: pendingThoughtRows,
       usesSharedTvIframe: true,
       onEnterWork: () => {
@@ -787,6 +837,15 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
       },
       onVinylToggle: (isOn) => {
         persistRoomState({ vinylOn: isOn });
+      },
+      onSaveLayout: ({ furnitureLayout: nextLayout, pendingParcels: nextParcels }) => {
+        persistRoomState({
+          furnitureLayout: nextLayout || {},
+          pendingParcels: nextParcels || {}
+        });
+      },
+      onEditModeChange: (editState) => {
+        syncEditModeToolbarUI(editState);
       },
       onOpenTv: () => {
         if (spectatingStudentUid) return;
@@ -808,6 +867,8 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
       shirtStyle: rs.shirtStyle || DEFAULT_SHIRT_STYLE,
       pantsStyle: rs.pantsStyle || DEFAULT_PANTS_STYLE,
       ownedItems: owned,
+      furnitureLayout,
+      pendingParcels,
       customThoughts: pendingThoughtRows,
       spectating: isSpectatingTarget,
       rentMood
@@ -2809,6 +2870,21 @@ function renderShopDialog() {
   const activeRugStyle = currentUserProfile?.roomState?.rugStyle || DEFAULT_RUG_STYLE;
   const activeShirtStyle = currentUserProfile?.roomState?.shirtStyle || DEFAULT_SHIRT_STYLE;
   const activePantsStyle = currentUserProfile?.roomState?.pantsStyle || DEFAULT_PANTS_STYLE;
+  const activeLayout = currentUserProfile?.roomState?.furnitureLayout || {};
+  const activeParcels = normalizePendingParcels(currentUserProfile?.roomState?.pendingParcels, owned);
+  const gridStats = computeRoomGridStats(owned, activeLayout, activeParcels);
+
+  const capacityEl = document.getElementById("shop-grid-capacity-bar");
+  if (capacityEl) {
+    const parcelNote = Object.keys(activeParcels).length > 0
+      ? `<span>📦 門口待領包裹：<strong>${Object.keys(activeParcels).length}</strong> 箱（含預扣格數）</span>`
+      : "";
+    capacityEl.innerHTML = `
+      <span>📐 剩餘地面網格：<strong class="${gridStats.floorRemaining < 8 ? "is-low" : ""}">${gridStats.floorRemaining}</strong> / ${gridStats.floorTotal} 格</span>
+      <span>🧱 剩餘牆面網格：<strong class="${gridStats.wallRemaining < 3 ? "is-low" : ""}">${gridStats.wallRemaining}</strong> / ${gridStats.wallTotal} 格</span>
+      ${parcelNote}
+    `;
+  }
 
   balanceEl.textContent = isSuperAdmin ? "∞" : String(clams);
   tabsEl.innerHTML = "";
@@ -2893,6 +2969,11 @@ function renderShopDialog() {
     );
     const missingPrereqs = isPermanentOwned ? [] : getMissingShopPrerequisites(item, owned);
     const isLocked = missingPrereqs.length > 0;
+    const isInParcel = Boolean(isPermanentOwned && activeParcels[item.id]);
+    const gridMeta = PLACEABLE_FURNITURE_META[item.id] || null;
+    const gridAvail = (!isPaint && !isTextile && !isPermanentOwned && gridMeta)
+      ? checkShopItemGridAvailability(item.id, owned, activeLayout, activeParcels)
+      : { ok: true, placeable: false, neededCells: 0, reason: "" };
 
     const card = document.createElement("div");
     card.className = `shop-item-card${(isActivePaint || (isTextile ? isActiveTextile : isPermanentOwned)) ? " is-owned" : ""}${isLocked ? " is-locked" : ""}`;
@@ -2987,6 +3068,15 @@ function renderShopDialog() {
     desc.className = "shop-item-desc";
     desc.textContent = item.desc;
 
+    let gridBadgeEl = null;
+    if (gridMeta) {
+      gridBadgeEl = document.createElement("div");
+      gridBadgeEl.className = `shop-grid-badge${(!isPermanentOwned && !gridAvail.ok) ? " is-full" : ""}`;
+      gridBadgeEl.textContent = gridMeta.surface === "wall"
+        ? `🧱 佔用 ${gridMeta.gridW} 格牆面網格`
+        : `📐 佔用 ${gridMeta.gridW}×${gridMeta.gridD}（${gridMeta.gridW * gridMeta.gridD} 格地面）`;
+    }
+
     const actionBtn = document.createElement("button");
     actionBtn.type = "button";
     actionBtn.className = "btn";
@@ -3002,12 +3092,20 @@ function renderShopDialog() {
       actionBtn.classList.add("btn-primary");
       actionBtn.textContent = isApparel ? "換穿這件（免費）" : "套用更換（免費）";
       actionBtn.onclick = () => equipShopTextile(item.textileKind, item.id, actionBtn);
+    } else if (isInParcel) {
+      actionBtn.textContent = "📦 包裹已送達門口（待拆箱擺放）";
+      actionBtn.disabled = true;
     } else if (isPermanentOwned) {
       actionBtn.textContent = "已擺進房間 ✓";
       actionBtn.disabled = true;
     } else if (isLocked) {
       actionBtn.textContent = `🔒 需先購買：${missingPrereqs.map(p => p.name).join(" ＋ ")}`;
       actionBtn.disabled = true;
+    } else if (gridAvail.placeable && !gridAvail.ok) {
+      actionBtn.textContent = `空間不夠（需 ${gridAvail.neededCells} 格）`;
+      actionBtn.onclick = () => {
+        showFeedback("shop-feedback", "error", gridAvail.reason);
+      };
     } else if (!isSuperAdmin && clams < item.price) {
       actionBtn.textContent = `還差 ${item.price - clams} 英蚌`;
       actionBtn.disabled = true;
@@ -3019,11 +3117,17 @@ function renderShopDialog() {
           ? "購買並立刻換穿"
           : isTextile
             ? "購買並立刻換上"
-            : "購買並放進房間";
+            : isShopParcelItem(item.id)
+              ? "購買並宅配到門口"
+              : "購買並放進房間";
       actionBtn.onclick = () => purchaseShopItem(item.id, actionBtn);
     }
 
-    card.append(previewBox, head, desc, actionBtn);
+    if (gridBadgeEl) {
+      card.append(previewBox, head, gridBadgeEl, desc, actionBtn);
+    } else {
+      card.append(previewBox, head, desc, actionBtn);
+    }
     gridEl.appendChild(card);
   });
   if (dialogBodyEl) {
@@ -3094,6 +3198,16 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       if (missingPrereqs.length > 0) {
         throw new Error(`需先購買「${missingPrereqs.map(p => p.name).join("」與「")}」才能解鎖此商品！`);
       }
+      const prevParcels = normalizePendingParcels(prevRoomState.pendingParcels, prevOwned);
+      const gridCheck = checkShopItemGridAvailability(
+        item.id,
+        prevOwned,
+        prevRoomState.furnitureLayout,
+        prevParcels
+      );
+      if (!gridCheck.ok) {
+        throw new Error(gridCheck.reason);
+      }
       if (!isSuperAdmin && currentClams < item.price) {
         throw new Error("英蚌餘額不足，先去電腦完成接案學習賺錢吧！");
       }
@@ -3103,13 +3217,17 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       const xpGain = calculateShopPurchaseXp(item.price);
       const nextXp = Math.min(10000000, currentXp + xpGain);
       const nextOwned = { ...prevOwned, [item.id]: true };
-      let nextRoomState = prevRoomState;
+      let nextRoomState = { ...prevRoomState };
       let shouldUpdateRoomState = false;
+      if (isShopParcelItem(item.id)) {
+        nextRoomState.pendingParcels = { ...prevParcels, [item.id]: true };
+        shouldUpdateRoomState = true;
+      }
       if (item.id === "bed_lamp") {
-        nextRoomState = { ...prevRoomState, bedLampOn: true };
+        nextRoomState.bedLampOn = true;
         shouldUpdateRoomState = true;
       } else if (["bedSheet", "rugStyle", "shirtStyle", "pantsStyle"].includes(item.textileKind)) {
-        nextRoomState = { ...prevRoomState, [item.textileKind]: item.id };
+        nextRoomState[item.textileKind] = item.id;
         shouldUpdateRoomState = true;
       }
 
@@ -3160,7 +3278,11 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
     );
     syncXpProgressUI({ allowCelebrate: true });
     const normalizedOwned = normalizeOwnedItems(result.nextOwned);
-    roomScene?.applyOwnedItems(normalizedOwned);
+    if (result.nextRoomState?.pendingParcels) {
+      roomScene?.setOwnedAndParcels(normalizedOwned, result.nextRoomState.pendingParcels);
+    } else {
+      roomScene?.applyOwnedItems(normalizedOwned);
+    }
     const xpMsg = result.xpGranted > 0 ? `，獲得 +${result.xpGranted} XP` : "";
     if (item.wallColor) {
       roomScene?.setWallColor(item.wallColor);
@@ -3178,10 +3300,12 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
     } else if (item.textileKind === "pantsStyle") {
       roomScene?.setPantsStyle(item.id);
       showFeedback("shop-feedback", "success", `已購入「${item.name}」並立刻換穿${xpMsg}！`);
-    } else {
+    } else if (isShopParcelItem(item.id)) {
       if (item.id === "bed_lamp") {
         roomScene?.setBedLamp(true);
       }
+      showFeedback("shop-feedback", "success", `已購買「${item.name}」${xpMsg}！📦 包裹已送到門口地毯，關閉商店點擊箱子即可拆開並自由擺放！`);
+    } else {
       showFeedback("shop-feedback", "success", `已購買「${item.name}」並直接放進租屋處${xpMsg}！`);
     }
     renderShopDialog();
@@ -4140,6 +4264,35 @@ setInterval(() => {
   maybeCollectMonthlyRent();
 }, 1000);
 
+document.getElementById("room-edit-layout-btn")?.addEventListener("click", () => {
+  if (spectatingStudentUid || !roomScene) return;
+  if (roomScene.editMode) {
+    roomScene.exitFurnitureEditMode({ commit: true });
+  } else {
+    roomScene.enterFurnitureEditMode();
+  }
+});
+
+document.getElementById("edit-rotate-left-btn")?.addEventListener("click", () => {
+  roomScene?.rotateEditingFurniture(-1);
+});
+
+document.getElementById("edit-rotate-right-btn")?.addEventListener("click", () => {
+  roomScene?.rotateEditingFurniture(1);
+});
+
+document.getElementById("edit-putback-btn")?.addEventListener("click", () => {
+  roomScene?.putEditingParcelBack();
+});
+
+document.getElementById("edit-reset-layout-btn")?.addEventListener("click", () => {
+  roomScene?.resetFurnitureLayout();
+});
+
+document.getElementById("edit-done-layout-btn")?.addEventListener("click", () => {
+  roomScene?.exitFurnitureEditMode({ commit: true });
+});
+
 document.getElementById("room-edit-avatar-btn").addEventListener("click", () => {
   if (spectatingStudentUid) return;
   showOnboardingScreen(true);
@@ -4390,6 +4543,7 @@ function startUserRealtimeListener(uid, nonce) {
     syncXpProgressUI({ allowCelebrate: true });
     if (roomScene && !spectatingStudentUid) {
       const rs = data.roomState || {};
+      const nextOwned = normalizeOwnedItems(data.ownedItems);
       roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
       roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
       roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
@@ -4397,7 +4551,12 @@ function startUserRealtimeListener(uid, nonce) {
       roomScene.setPantsStyle(rs.pantsStyle || DEFAULT_PANTS_STYLE);
       roomScene.setPosterImage(rs.posterImage || "");
       roomScene.setVinylOn(Boolean(rs.vinylOn ?? false));
-      roomScene.applyOwnedItems(normalizeOwnedItems(data.ownedItems));
+      if (!roomScene.editMode) {
+        roomScene.setOwnedAndParcels(nextOwned, rs.pendingParcels || {});
+        roomScene.applyFurnitureLayout(rs.furnitureLayout || {});
+      } else {
+        roomScene.applyOwnedItems(nextOwned);
+      }
     }
     if (shopDialog.open) {
       renderShopDialog();

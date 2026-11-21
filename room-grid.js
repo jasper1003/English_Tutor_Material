@@ -1,0 +1,465 @@
+export const GRID_STEP = 0.5;
+export const GRID_CELLS = 16; // 16 x 16 cells across [-4.0, +4.0] room floor & walls
+
+// Non-movable reserved floor zones: bathroom corner + doorway landing + entrance doormat swing zone
+export const RESERVED_FLOOR_RECTS = [
+  { minX: 11, maxX: 15, minZ: 0, maxZ: 4, reason: "浴室空間" },
+  { minX: 11, maxX: 12, minZ: 5, maxZ: 5, reason: "浴室出入口" },
+  { minX: 0, maxX: 1, minZ: 11, maxZ: 13, reason: "大門與門口地毯（收貨區）" }
+];
+
+// Non-movable reserved wall segments (`pos` 0..15 along [-4.0..+4.0])
+export const RESERVED_WALL_SPANS = {
+  north: [
+    { minPos: 5, maxPos: 9, reason: "北側大窗戶" },
+    { minPos: 11, maxPos: 15, reason: "浴室牆面" }
+  ],
+  east: [
+    { minPos: 0, maxPos: 4, reason: "浴室牆面" }
+  ],
+  south: [],
+  west: [
+    { minPos: 10, maxPos: 13, reason: "租屋大門" }
+  ]
+};
+
+export const WALL_NAMES = ["north", "east", "south", "west"];
+
+export const PLACEABLE_FURNITURE_META = {
+  work_desk: {
+    id: "work_desk",
+    name: "接案書桌與電腦組",
+    icon: "🖥️",
+    starter: true,
+    surface: "floor",
+    gridW: 5,
+    gridD: 3
+  },
+  single_bed: {
+    id: "single_bed",
+    name: "單人溫馨床鋪",
+    icon: "🛏️",
+    starter: true,
+    surface: "floor",
+    gridW: 4,
+    gridD: 5
+  },
+  hamster_cage: {
+    id: "hamster_cage",
+    name: "布丁倉鼠「麻糬」與小抽屜桌",
+    icon: "🐹",
+    starter: false,
+    surface: "floor",
+    gridW: 2,
+    gridD: 2
+  },
+  coffee_bar: {
+    id: "coffee_bar",
+    name: "文青手沖咖啡吧台",
+    icon: "☕",
+    starter: false,
+    surface: "floor",
+    gridW: 2,
+    gridD: 1
+  },
+  cozy_sofa: {
+    id: "cozy_sofa",
+    name: "雙人布藝沙發",
+    icon: "🛋️",
+    starter: false,
+    surface: "floor",
+    gridW: 4,
+    gridD: 2
+  },
+  coat_rack: {
+    id: "coat_rack",
+    name: "門旁直立式掛衣架",
+    icon: "🧥",
+    starter: false,
+    surface: "floor",
+    gridW: 1,
+    gridD: 1
+  },
+  vinyl_player: {
+    id: "vinyl_player",
+    name: "復古黑膠唱片音響櫃",
+    icon: "🎵",
+    starter: false,
+    surface: "floor",
+    gridW: 3,
+    gridD: 1
+  },
+  orange_cat: {
+    id: "orange_cat",
+    name: "橘貓室友「阿橘」與貓窩",
+    icon: "🐈",
+    starter: false,
+    surface: "floor",
+    gridW: 2,
+    gridD: 2
+  },
+  bed_lamp: {
+    id: "bed_lamp",
+    name: "床邊暖光小夜燈",
+    icon: "💡",
+    starter: false,
+    surface: "floor",
+    gridW: 1,
+    gridD: 1
+  },
+  floor_plant: {
+    id: "floor_plant",
+    name: "琴葉榕編織落地盆栽",
+    icon: "🌿",
+    starter: false,
+    surface: "floor",
+    gridW: 1,
+    gridD: 1
+  },
+  wall_poster: {
+    id: "wall_poster",
+    name: "插畫海報掛畫",
+    icon: "🖼️",
+    starter: false,
+    surface: "wall",
+    gridW: 2,
+    gridD: 1
+  },
+  wall_tv: {
+    id: "wall_tv",
+    name: "壁掛平面小電視",
+    icon: "📺",
+    starter: false,
+    surface: "wall",
+    gridW: 3,
+    gridD: 1
+  }
+};
+
+export const DEFAULT_FURNITURE_LAYOUT = {
+  work_desk: { surface: "floor", gx: 5, gz: 1, rot: 0 },
+  single_bed: { surface: "floor", gx: 12, gz: 10, rot: 0 },
+  hamster_cage: { surface: "floor", gx: 3, gz: 1, rot: 0 },
+  coffee_bar: { surface: "floor", gx: 0, gz: 3, rot: 1 },
+  cozy_sofa: { surface: "floor", gx: 4, gz: 5, rot: 3 },
+  coat_rack: { surface: "floor", gx: 1, gz: 14, rot: 0 },
+  vinyl_player: { surface: "floor", gx: 5, gz: 15, rot: 2 },
+  orange_cat: { surface: "floor", gx: 9, gz: 14, rot: 2 },
+  bed_lamp: { surface: "floor", gx: 11, gz: 14, rot: 0 },
+  floor_plant: { surface: "floor", gx: 14, gz: 6, rot: 0 },
+  wall_poster: { surface: "wall", wall: "north", pos: 2 },
+  wall_tv: { surface: "wall", wall: "west", pos: 6 }
+};
+
+export function isPlaceableItem(itemId) {
+  return Boolean(PLACEABLE_FURNITURE_META[itemId]);
+}
+
+export function isShopParcelItem(itemId) {
+  const meta = PLACEABLE_FURNITURE_META[itemId];
+  return Boolean(meta && !meta.starter);
+}
+
+export function getRotatedDims(itemId, rot = 0) {
+  const meta = PLACEABLE_FURNITURE_META[itemId];
+  if (!meta) return { w: 1, d: 1 };
+  const cleanRot = ((Math.trunc(Number(rot) || 0) % 4) + 4) % 4;
+  return (cleanRot % 2 === 1)
+    ? { w: meta.gridD, d: meta.gridW }
+    : { w: meta.gridW, d: meta.gridD };
+}
+
+export function getFloorCellKey(gx, gz) {
+  return `${gx},${gz}`;
+}
+
+export function getWallCellKey(wall, pos) {
+  return `${wall}:${pos}`;
+}
+
+export function isFloorCellReserved(gx, gz) {
+  if (gx < 0 || gx >= GRID_CELLS || gz < 0 || gz >= GRID_CELLS) return true;
+  return RESERVED_FLOOR_RECTS.some(
+    r => gx >= r.minX && gx <= r.maxX && gz >= r.minZ && gz <= r.maxZ
+  );
+}
+
+export function isWallCellReserved(wall, pos) {
+  if (!WALL_NAMES.includes(wall) || pos < 0 || pos >= GRID_CELLS) return true;
+  const spans = RESERVED_WALL_SPANS[wall] || [];
+  return spans.some(s => pos >= s.minPos && pos <= s.maxPos);
+}
+
+export function getTotalBuildableFloorCells() {
+  let count = 0;
+  for (let gx = 0; gx < GRID_CELLS; gx++) {
+    for (let gz = 0; gz < GRID_CELLS; gz++) {
+      if (!isFloorCellReserved(gx, gz)) count += 1;
+    }
+  }
+  return count;
+}
+
+export function getTotalBuildableWallCells() {
+  let count = 0;
+  for (const wall of WALL_NAMES) {
+    for (let pos = 0; pos < GRID_CELLS; pos++) {
+      if (!isWallCellReserved(wall, pos)) count += 1;
+    }
+  }
+  return count;
+}
+
+export function normalizePendingParcels(raw, ownedItems = {}) {
+  const out = {};
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    for (const [id, val] of Object.entries(raw)) {
+      if (val === true && isShopParcelItem(id) && ownedItems?.[id] === true) {
+        out[id] = true;
+      }
+    }
+  }
+  return out;
+}
+
+export function resolveEffectiveLayout(ownedItems = {}, rawLayout = {}, rawPendingParcels = {}) {
+  const pending = normalizePendingParcels(rawPendingParcels, ownedItems);
+  const layout = {};
+  for (const [id, meta] of Object.entries(PLACEABLE_FURNITURE_META)) {
+    const active = meta.starter || (ownedItems?.[id] === true && !pending[id]);
+    if (!active) continue;
+    const saved = rawLayout?.[id];
+    const fallback = DEFAULT_FURNITURE_LAYOUT[id];
+    if (meta.surface === "wall") {
+      const wall = WALL_NAMES.includes(saved?.wall) ? saved.wall : fallback.wall;
+      const pos = Number.isInteger(saved?.pos) ? saved.pos : fallback.pos;
+      layout[id] = { surface: "wall", wall, pos };
+    } else {
+      const gx = Number.isInteger(saved?.gx) ? saved.gx : fallback.gx;
+      const gz = Number.isInteger(saved?.gz) ? saved.gz : fallback.gz;
+      const rot = Number.isInteger(saved?.rot) ? ((saved.rot % 4) + 4) % 4 : fallback.rot;
+      layout[id] = { surface: "floor", gx, gz, rot };
+    }
+  }
+  return layout;
+}
+
+export function buildOccupancyMaps(ownedItems = {}, rawLayout = {}, rawPendingParcels = {}, excludeItemId = null) {
+  const floorOccupied = new Map();
+  const wallOccupied = new Map();
+  const layout = resolveEffectiveLayout(ownedItems, rawLayout, rawPendingParcels);
+
+  for (const [id, entry] of Object.entries(layout)) {
+    if (excludeItemId && id === excludeItemId) continue;
+    const meta = PLACEABLE_FURNITURE_META[id];
+    if (!meta) continue;
+    if (entry.surface === "wall") {
+      for (let i = 0; i < meta.gridW; i++) {
+        wallOccupied.set(getWallCellKey(entry.wall, entry.pos + i), id);
+      }
+    } else {
+      const { w, d } = getRotatedDims(id, entry.rot);
+      for (let ix = 0; ix < w; ix++) {
+        for (let iz = 0; iz < d; iz++) {
+          floorOccupied.set(getFloorCellKey(entry.gx + ix, entry.gz + iz), id);
+        }
+      }
+    }
+  }
+  return { floorOccupied, wallOccupied, layout };
+}
+
+export function canPlaceFloorItem(itemId, gx, gz, rot, ownedItems = {}, rawLayout = {}, rawPendingParcels = {}) {
+  const meta = PLACEABLE_FURNITURE_META[itemId];
+  if (!meta || meta.surface !== "floor") return false;
+  if (!Number.isInteger(gx) || !Number.isInteger(gz)) return false;
+  const { w, d } = getRotatedDims(itemId, rot);
+  if (gx < 0 || gz < 0 || gx + w > GRID_CELLS || gz + d > GRID_CELLS) return false;
+  const { floorOccupied } = buildOccupancyMaps(ownedItems, rawLayout, rawPendingParcels, itemId);
+  for (let ix = 0; ix < w; ix++) {
+    for (let iz = 0; iz < d; iz++) {
+      const cx = gx + ix;
+      const cz = gz + iz;
+      if (isFloorCellReserved(cx, cz)) return false;
+      if (floorOccupied.has(getFloorCellKey(cx, cz))) return false;
+    }
+  }
+  return true;
+}
+
+export function canPlaceWallItem(itemId, wall, pos, ownedItems = {}, rawLayout = {}, rawPendingParcels = {}) {
+  const meta = PLACEABLE_FURNITURE_META[itemId];
+  if (!meta || meta.surface !== "wall") return false;
+  if (!WALL_NAMES.includes(wall) || !Number.isInteger(pos)) return false;
+  if (pos < 0 || pos + meta.gridW > GRID_CELLS) return false;
+  const { wallOccupied } = buildOccupancyMaps(ownedItems, rawLayout, rawPendingParcels, itemId);
+  for (let i = 0; i < meta.gridW; i++) {
+    const p = pos + i;
+    if (isWallCellReserved(wall, p)) return false;
+    if (wallOccupied.has(getWallCellKey(wall, p))) return false;
+  }
+  return true;
+}
+
+export function findFirstValidPlacement(itemId, ownedItems = {}, rawLayout = {}, rawPendingParcels = {}) {
+  const meta = PLACEABLE_FURNITURE_META[itemId];
+  if (!meta) return null;
+  const def = DEFAULT_FURNITURE_LAYOUT[itemId];
+  if (meta.surface === "wall") {
+    if (def && canPlaceWallItem(itemId, def.wall, def.pos, ownedItems, rawLayout, rawPendingParcels)) {
+      return { ...def };
+    }
+    for (const wall of WALL_NAMES) {
+      for (let pos = 0; pos <= GRID_CELLS - meta.gridW; pos++) {
+        if (canPlaceWallItem(itemId, wall, pos, ownedItems, rawLayout, rawPendingParcels)) {
+          return { surface: "wall", wall, pos };
+        }
+      }
+    }
+    return null;
+  }
+  if (def && canPlaceFloorItem(itemId, def.gx, def.gz, def.rot, ownedItems, rawLayout, rawPendingParcels)) {
+    return { ...def };
+  }
+  for (let rot = 0; rot < 4; rot++) {
+    const { w, d } = getRotatedDims(itemId, rot);
+    for (let gz = 0; gz <= GRID_CELLS - d; gz++) {
+      for (let gx = 0; gx <= GRID_CELLS - w; gx++) {
+        if (canPlaceFloorItem(itemId, gx, gz, rot, ownedItems, rawLayout, rawPendingParcels)) {
+          return { surface: "floor", gx, gz, rot };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+export function computeRoomGridStats(ownedItems = {}, rawLayout = {}, rawPendingParcels = {}, gridOverrides = null) {
+  const floorTotal = Number.isInteger(gridOverrides?.floorTotal)
+    ? gridOverrides.floorTotal
+    : getTotalBuildableFloorCells();
+  const wallTotal = Number.isInteger(gridOverrides?.wallTotal)
+    ? gridOverrides.wallTotal
+    : getTotalBuildableWallCells();
+
+  const { floorOccupied, wallOccupied, layout } = buildOccupancyMaps(ownedItems, rawLayout, rawPendingParcels);
+  const pending = normalizePendingParcels(rawPendingParcels, ownedItems);
+
+  let pendingFloorCells = 0;
+  let pendingWallCells = 0;
+  for (const parcelId of Object.keys(pending)) {
+    const meta = PLACEABLE_FURNITURE_META[parcelId];
+    if (!meta) continue;
+    if (meta.surface === "wall") {
+      pendingWallCells += meta.gridW;
+    } else {
+      pendingFloorCells += meta.gridW * meta.gridD;
+    }
+  }
+
+  const floorUsed = floorOccupied.size + pendingFloorCells;
+  const wallUsed = wallOccupied.size + pendingWallCells;
+  return {
+    floorTotal,
+    floorPlaced: floorOccupied.size,
+    floorPending: pendingFloorCells,
+    floorUsed,
+    floorRemaining: Math.max(0, floorTotal - floorUsed),
+    wallTotal,
+    wallPlaced: wallOccupied.size,
+    wallPending: pendingWallCells,
+    wallUsed,
+    wallRemaining: Math.max(0, wallTotal - wallUsed),
+    layout,
+    pendingParcels: pending
+  };
+}
+
+export function checkShopItemGridAvailability(itemId, ownedItems = {}, rawLayout = {}, rawPendingParcels = {}, gridOverrides = null) {
+  const meta = PLACEABLE_FURNITURE_META[itemId];
+  if (!meta) {
+    return {
+      ok: true,
+      placeable: false,
+      surface: null,
+      neededCells: 0,
+      remainingCells: 0,
+      reason: ""
+    };
+  }
+  const stats = computeRoomGridStats(ownedItems, rawLayout, rawPendingParcels, gridOverrides);
+  const neededCells = meta.surface === "wall" ? meta.gridW : (meta.gridW * meta.gridD);
+  const remainingCells = meta.surface === "wall" ? stats.wallRemaining : stats.floorRemaining;
+  const surfaceLabel = meta.surface === "wall" ? "牆面" : "地面";
+
+  if (remainingCells < neededCells) {
+    return {
+      ok: false,
+      placeable: true,
+      surface: meta.surface,
+      neededCells,
+      remainingCells,
+      reason: `空間不夠！目前僅剩 ${remainingCells} 格${surfaceLabel}網格，但「${meta.name}」需佔用 ${neededCells} 格${surfaceLabel}網格，無法購買。`
+    };
+  }
+
+  const slot = findFirstValidPlacement(itemId, ownedItems, rawLayout, rawPendingParcels);
+  if (!slot) {
+    return {
+      ok: false,
+      placeable: true,
+      surface: meta.surface,
+      neededCells,
+      remainingCells,
+      reason: `目前剩餘的 ${remainingCells} 格${surfaceLabel}網格過於零碎，無法塞進「${meta.name}」，請先調整現有家具擺設！`
+    };
+  }
+
+  return {
+    ok: true,
+    placeable: true,
+    surface: meta.surface,
+    neededCells,
+    remainingCells,
+    reason: ""
+  };
+}
+
+export function floorPlacementToWorld(itemId, gx, gz, rot) {
+  const { w, d } = getRotatedDims(itemId, rot);
+  const cleanRot = ((Math.trunc(Number(rot) || 0) % 4) + 4) % 4;
+  return {
+    x: -4.0 + (gx + w * 0.5) * GRID_STEP,
+    z: -4.0 + (gz + d * 0.5) * GRID_STEP,
+    rotY: cleanRot * (Math.PI / 2),
+    w,
+    d
+  };
+}
+
+export function wallPlacementToLocal(itemId, wall, pos, wallY = 1.6) {
+  const meta = PLACEABLE_FURNITURE_META[itemId];
+  const w = meta?.gridW || 2;
+  const offset = -4.0 + (pos + w * 0.5) * GRID_STEP;
+  switch (wall) {
+    case "north":
+      return { x: offset, y: wallY, z: -3.98, rotY: 0, normalX: 0, normalZ: 1 };
+    case "east":
+      return { x: 3.98, y: wallY, z: offset, rotY: -Math.PI / 2, normalX: -1, normalZ: 0 };
+    case "south":
+      return { x: offset, y: wallY, z: 3.98, rotY: Math.PI, normalX: 0, normalZ: -1 };
+    case "west":
+    default:
+      return { x: -3.98, y: wallY, z: offset, rotY: Math.PI / 2, normalX: 1, normalZ: 0 };
+  }
+}
+
+export function getFloorFootprintWorldBox(itemId, entry) {
+  if (!entry || entry.surface !== "floor") return null;
+  const { w, d } = getRotatedDims(itemId, entry.rot);
+  const minX = -4.0 + entry.gx * GRID_STEP;
+  const maxX = minX + w * GRID_STEP;
+  const minZ = -4.0 + entry.gz * GRID_STEP;
+  const maxZ = minZ + d * GRID_STEP;
+  return { minX, maxX, minZ, maxZ };
+}

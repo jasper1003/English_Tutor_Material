@@ -3572,6 +3572,147 @@ dialog.settings-dialog::backdrop {
   }
 }
 
+.room-hud-corner-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.room-hud-icon-btn.is-active {
+  background: rgba(37, 99, 235, 0.92);
+  border-color: rgba(147, 197, 253, 0.95);
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+}
+
+.room-parcel-badge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 6;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 1px solid rgba(251, 191, 36, 0.85);
+  background: linear-gradient(135deg, rgba(180, 83, 9, 0.96), rgba(217, 119, 6, 0.94));
+  color: #fffbeb;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.34);
+  animation: parcelPulse 2.1s ease-in-out infinite;
+}
+
+.room-parcel-badge:hover {
+  filter: brightness(1.1);
+}
+
+@keyframes parcelPulse {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(251, 191, 36, 0.4)); }
+  50% { filter: drop-shadow(0 0 9px rgba(251, 191, 36, 0.85)); }
+}
+
+.room-edit-toolbar {
+  position: absolute;
+  top: 3.45rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  max-width: calc(100% - 1.5rem);
+  padding: 0.48rem 0.78rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(96, 165, 250, 0.55);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 26px rgba(2, 6, 23, 0.42);
+  color: #f8fafc;
+}
+
+.room-edit-status {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+
+.room-edit-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36rem;
+  flex-wrap: wrap;
+}
+
+.room-edit-btn {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(30, 41, 59, 0.9);
+  color: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.28rem 0.62rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.room-edit-btn:hover {
+  background: rgba(51, 65, 85, 0.96);
+}
+
+.room-edit-btn.is-primary {
+  background: #22c55e;
+  border-color: #4ade80;
+  color: #052e16;
+}
+
+.room-edit-btn.is-primary:hover {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.shop-grid-capacity-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.65rem;
+  border-radius: 10px;
+  background: light-dark(#f1f5f9, rgba(30, 41, 59, 0.82));
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.shop-grid-capacity-bar .is-low {
+  color: light-dark(#dc2626, #f87171);
+  font-weight: 700;
+}
+
+.shop-grid-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.16rem 0.48rem;
+  border-radius: 6px;
+  background: light-dark(#e2e8f0, rgba(51, 65, 85, 0.85));
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+
+.shop-grid-badge.is-full {
+  background: light-dark(#fee2e2, rgba(127, 29, 29, 0.65));
+  color: light-dark(#b91c1c, #fca5a5);
+}
+
 .hidden {
   display: none !important;
 }
