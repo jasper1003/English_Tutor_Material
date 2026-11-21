@@ -357,3 +357,334 @@ export function translateAuthError(err) {
       return err?.message ? `操作失敗：${err.message}` : "操作失敗，請稍後再試。";
   }
 }
+
+export function hashString32(input) {
+  const str = String(input ?? "");
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+export function createSeededRng(seed) {
+  let a = (Number(seed) >>> 0) || 1;
+  return function nextRand() {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export const CHARACTER_PERSONAS = [
+  {
+    id: "gamer_owl",
+    label: "夜貓電玩宅",
+    preferred: ["gaming", "phone", "sofa_tv", "watch_tv", "coffee_break", "eat"],
+    nightSleepWeight: 1,
+    idleMinSec: 72,
+    idleSpanSec: 36,
+    thoughtMinSec: 6.5,
+    thoughtSpanSec: 6.0,
+    walkSpeedScale: 1.05,
+    energyRate: 1.12,
+    signatureThoughts: [
+      "Frame rate is buttery smooth today—one more round!",
+      "Alright {name}, clear one quest first, snack second.",
+      "Do my keyboards glow brighter at midnight? Yes, definitely!",
+      "Secret shortcut unlocked—my reflexes are sharp tonight!"
+    ],
+    thoughtsByActivity: {
+      gaming: [
+        "No lag, clean combo—{name} is on fire!",
+        "Boss stage incoming! Hands steady on the controller!"
+      ],
+      phone: [
+        "Checking new indie game trailers on my feed!",
+        "Wait, that pixel art shader is crazy good!"
+      ],
+      coffee_break: [
+        "Midnight caffeine buff activated!",
+        "One cup of dark roast keeps my reaction speed high."
+      ]
+    }
+  },
+  {
+    id: "cozy_homebody",
+    label: "慵懶居家派",
+    preferred: ["sofa_tv", "sofa_read", "pet_cat", "sleep", "eat", "listen_vinyl"],
+    nightSleepWeight: 4,
+    idleMinSec: 112,
+    idleSpanSec: 44,
+    thoughtMinSec: 11.2,
+    thoughtSpanSec: 8.8,
+    walkSpeedScale: 0.85,
+    energyRate: 0.84,
+    signatureThoughts: [
+      "Zero rush today... soft pillows win every argument.",
+      "Honestly, {name}, staying cozy inside is an underrated art.",
+      "Soft socks, warm blanket, gentle breeze—pure peace.",
+      "Let's move slowly and savor every quiet minute."
+    ],
+    thoughtsByActivity: {
+      sofa_read: [
+        "Nothing beats curling up with a gentle chapter.",
+        "I could nap right on this cushion anytime..."
+      ],
+      pet_cat: [
+        "Stay right here, kitty—nobody needs to go anywhere.",
+        "Warm fluffy fur beats any alarm clock."
+      ],
+      sleep: [
+        "Five more minutes turns into thirty... zzZ...",
+        "Best studio corner? Definitely this soft bed!"
+      ]
+    }
+  },
+  {
+    id: "fitness_sprinter",
+    label: "自律元氣派",
+    preferred: ["exercise", "wash", "water_plant", "water_floor_plant", "eat", "check_coat"],
+    nightSleepWeight: 2,
+    idleMinSec: 64,
+    idleSpanSec: 32,
+    thoughtMinSec: 7.4,
+    thoughtSpanSec: 6.2,
+    walkSpeedScale: 1.16,
+    energyRate: 1.2,
+    signatureThoughts: [
+      "Posture check! Shoulders back, {name}, deep breath!",
+      "Hydrate, stretch, crush the next drawing sprint!",
+      "Movement wakes up my brain faster than coffee!",
+      "Clean room, clear mind—every habit counts!"
+    ],
+    thoughtsByActivity: {
+      exercise: [
+        "Keep the core tight—{name} never skips warm-ups!",
+        "Twenty clean reps before checking the tablet again!"
+      ],
+      eat: [
+        "Good protein and warm veggies keep stamina steady!",
+        "Fueling up right so I can draw strong all evening."
+      ],
+      wash: [
+        "Splash cold water, towel dry, full reset!"
+      ]
+    }
+  },
+  {
+    id: "art_dreamer",
+    label: "浪漫靈感家",
+    preferred: ["admire_poster", "listen_vinyl", "read", "sofa_read", "water_floor_plant", "coffee_break"],
+    nightSleepWeight: 2,
+    idleMinSec: 92,
+    idleSpanSec: 40,
+    thoughtMinSec: 9.6,
+    thoughtSpanSec: 8.2,
+    walkSpeedScale: 0.93,
+    energyRate: 0.92,
+    signatureThoughts: [
+      "Notice how afternoon shadows turn lavender along that wall?",
+      "Ooh, that melody sounds like a pastel sunset, {name}.",
+      "Every tiny corner in this studio holds a color palette.",
+      "Daydreaming counts as creative research, right?"
+    ],
+    thoughtsByActivity: {
+      admire_poster: [
+        "That brush texture still gives me butterflies!",
+        "Warm ochre beside slate blue—{name}, remember that pairing!"
+      ],
+      listen_vinyl: [
+        "Analog warmth softens every thought in the room.",
+        "I paint better whenever jazz vinyl is spinning."
+      ],
+      read: [
+        "Just one sketchbook page can spark ten new scenes."
+      ]
+    }
+  },
+  {
+    id: "caffeine_crafter",
+    label: "咖啡因畫師",
+    preferred: ["coffee_break", "read", "water_plant", "phone", "gaming", "listen_vinyl"],
+    nightSleepWeight: 1,
+    idleMinSec: 78,
+    idleSpanSec: 36,
+    thoughtMinSec: 8.0,
+    thoughtSpanSec: 7.0,
+    walkSpeedScale: 1.09,
+    energyRate: 1.07,
+    signatureThoughts: [
+      "Deadline countdown keeps {name} weirdly sharp!",
+      "Step 1: pour coffee. Step 2: fix layer masks. Step 3: thrive!",
+      "Organized brushes equal calm mornings!",
+      "Maybe I should test a bolder shadow tone next piece."
+    ],
+    thoughtsByActivity: {
+      coffee_break: [
+        "Second pour-over of the shift—now we're talking!",
+        "Steady hand for pouring, steady hand for line art!"
+      ],
+      work: [
+        "Layers labeled, values balanced—{name} stays pro!",
+        "One crisp highlight right on the rim... perfection."
+      ],
+      water_plant: [
+        "Both this desk plant and I need fresh hydration today."
+      ]
+    }
+  },
+  {
+    id: "curious_spark",
+    label: "好奇觀察家",
+    preferred: ["pet_cat", "check_coat", "admire_poster", "watch_tv", "eat", "toilet"],
+    nightSleepWeight: 2,
+    idleMinSec: 68,
+    idleSpanSec: 34,
+    thoughtMinSec: 6.8,
+    thoughtSpanSec: 6.4,
+    walkSpeedScale: 1.07,
+    energyRate: 1.14,
+    signatureThoughts: [
+      "Wait—did I leave my favorite pen by the sofa again?",
+      "Hey! Has anyone ever noticed how cozy this room sounds, {name}?",
+      "Always discovering fun little details around the house!",
+      "Hmm, should I rearrange the rug next weekend?"
+    ],
+    thoughtsByActivity: {
+      check_coat: [
+        "Pocket check: sketchbook, mints, spare stylus nibs!",
+        "Maybe a quick breeze outside will spark a weird idea."
+      ],
+      watch_tv: [
+        "Wait, pause! That documentary narrator has the coolest facts!"
+      ],
+      floor_stand: [
+        "Standing right here gives {name} the best room view!"
+      ]
+    }
+  }
+];
+
+export function listAvailableRoomActivities(ownedItems = {}, isNightTime = false) {
+  const owned = ownedItems || {};
+  const readActivity = owned.cozy_sofa ? "sofa_read" : "read";
+  const activities = ["phone", "exercise", readActivity, "eat", "gaming"];
+  if (isNightTime) {
+    activities.push("sleep");
+  }
+  if (owned.cozy_sofa && owned.wall_tv) {
+    activities.push("sofa_tv");
+  } else if (owned.wall_tv) {
+    activities.push("watch_tv");
+  }
+  if (owned.desk_plant) activities.push("water_plant");
+  if (owned.wall_poster) activities.push("admire_poster");
+  if (owned.coat_rack) activities.push("check_coat");
+  if (owned.coffee_bar) activities.push("coffee_break");
+  if (owned.vinyl_player) activities.push("listen_vinyl");
+  if (owned.orange_cat) activities.push("pet_cat");
+  if (owned.floor_plant) activities.push("water_floor_plant");
+  return activities;
+}
+
+export function buildCharacterPersona(characterId, avatarCfg = {}, ownedItems = {}) {
+  const rawId = String(characterId || avatarCfg?.name || "self").trim() || "self";
+  const seed = hashString32(rawId);
+  const rng = createSeededRng(seed ^ 0x517cc1b7);
+  const archetype = CHARACTER_PERSONAS[seed % CHARACTER_PERSONAS.length];
+  const allPool = listAvailableRoomActivities(ownedItems, false);
+  const personalSpotId = allPool[Math.floor(rng() * allPool.length)] || archetype.preferred[0];
+  const displayName = String(avatarCfg?.name || "繪師").trim() || "繪師";
+
+  const speedJitter = 0.96 + rng() * 0.08;
+  const energyJitter = 0.94 + rng() * 0.12;
+  const thoughtJitter = (rng() - 0.5) * 2.2;
+
+  const formatLine = (line) => String(line || "").replace(/\{name\}/g, displayName);
+
+  const thoughtsByActivity = {};
+  for (const [k, lines] of Object.entries(archetype.thoughtsByActivity || {})) {
+    thoughtsByActivity[k] = lines.map(formatLine);
+  }
+
+  return {
+    id: archetype.id,
+    label: archetype.label,
+    characterId: rawId,
+    seed,
+    displayName,
+    preferred: [...archetype.preferred],
+    personalSpotId,
+    nightSleepWeight: archetype.nightSleepWeight,
+    idleMinSec: Math.round(archetype.idleMinSec * (0.9 + rng() * 0.2)),
+    idleSpanSec: archetype.idleSpanSec,
+    thoughtMinSec: Math.max(5.5, archetype.thoughtMinSec + thoughtJitter),
+    thoughtSpanSec: archetype.thoughtSpanSec,
+    walkSpeedScale: Number((archetype.walkSpeedScale * speedJitter).toFixed(3)),
+    energyRate: Number((archetype.energyRate * energyJitter).toFixed(3)),
+    animPhaseOffset: Number((rng() * 120).toFixed(2)),
+    signatureThoughts: archetype.signatureThoughts.map(formatLine),
+    thoughtsByActivity
+  };
+}
+
+export function pickPersonaWeightedActivity(
+  persona,
+  ownedItems = {},
+  isNightTime = false,
+  excludeActivityId = null,
+  randFn = Math.random
+) {
+  const pool = listAvailableRoomActivities(ownedItems, isNightTime);
+  const filtered = pool.filter(id => id !== excludeActivityId);
+  const candidates = filtered.length > 0 ? filtered : pool;
+
+  const preferredSet = new Set(persona?.preferred || []);
+  const personalId = persona?.personalSpotId || "";
+  const nightSleepW = Number(persona?.nightSleepWeight) || 2;
+
+  const weighted = candidates.map(id => {
+    let weight = 1;
+    if (preferredSet.has(id)) weight += 2.2;
+    if (id === personalId) weight += 1.6;
+    if (id === "sleep") {
+      weight = isNightTime ? (weight + nightSleepW) : 0.4;
+    }
+    return { id, weight };
+  });
+
+  const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
+  if (totalWeight <= 0) return candidates[0] || "phone";
+  let roll = randFn() * totalWeight;
+  for (const item of weighted) {
+    roll -= item.weight;
+    if (roll <= 0) return item.id;
+  }
+  return weighted[weighted.length - 1].id;
+}
+
+export function evaluateProfileRentMood(
+  profile,
+  role = "student",
+  { monthlyRentClams = 600, starterClams = 500, monthKey = "", nowMs = Date.now(), fallbackDueAt = nowMs + 86400000 * 30 } = {}
+) {
+  const dueAt = Number(profile?.nextRentDueAt || fallbackDueAt);
+  const msLeft = dueAt - nowMs;
+  const isDue = msLeft <= 0;
+  const clams = Math.max(0, Math.trunc(Number(profile?.clams ?? starterClams)));
+  const isSuperAdmin = role === "super_admin";
+  const hasRentAlert = Boolean(isDue && !isSuperAdmin);
+  const daysLeft = isDue ? 0 : Math.max(1, Math.ceil(msLeft / 86400000));
+  const paidThisMonth = Boolean(profile?.lastRentPaidMonth && monthKey && profile.lastRentPaidMonth === monthKey);
+  const deficit = Math.max(0, monthlyRentClams - clams);
+  const status = (!isSuperAdmin && (isDue || (daysLeft <= 5 && deficit > 0)))
+    ? "urgent"
+    : (paidThisMonth && daysLeft >= 20)
+    ? "paid"
+    : "chill";
+  return { status, isDue, hasRentAlert, daysLeft, deficit, paidThisMonth };
+}

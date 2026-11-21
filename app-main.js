@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121i";
+} from "./room-scene.js?v=20261121j";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -58,7 +58,9 @@ import {
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
+  buildCharacterPersona,
   calculateShopPurchaseXp,
+  evaluateProfileRentMood,
   isLessonCompletedFromMaps,
   parseYouTubeVideoId,
   resolveXpProgress,
@@ -73,9 +75,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121i";
+} from "./app-helpers.js?v=20261121j";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121i";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121j";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -738,9 +740,20 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
     ...DEFAULT_AVATAR,
     name: profile?.displayName || (profile?.email ? profile.email.split("@")[0] : "繪師")
   };
+  const isSpectatingTarget = Boolean(spectatingStudentUid);
+  const targetCharacterId = String(profile?.uid || currentUser?.uid || avatarCfg.name || "self").trim() || "self";
+  const targetRole = isSpectatingTarget ? (profile?.role || "student") : currentRole;
+  const rentMood = evaluateProfileRentMood(profile, targetRole, {
+    monthlyRentClams: MONTHLY_RENT_CLAMS,
+    starterClams: STARTER_CLAMS,
+    monthKey: getMonthKey(),
+    fallbackDueAt: getNextMonthFirstEpoch()
+  });
 
   if (!roomScene) {
     roomScene = new FreelancerRoomScene(wrap, {
+      characterId: targetCharacterId,
+      spectating: isSpectatingTarget,
       avatar: avatarCfg,
       cameraQuarter: Number.isInteger(rs.cameraQuarter) ? rs.cameraQuarter : 0,
       deskLampOn: typeof rs.deskLampOn === "boolean" ? rs.deskLampOn : true,
@@ -778,8 +791,16 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
         document.getElementById("room-clock-pill").textContent = `🕒 ${clockText}`;
       }
     });
+    roomScene.setRentMood(rentMood, { silent: true });
   } else {
-    roomScene.updateAvatarConfig(avatarCfg);
+    roomScene.setCharacterProfileContext({
+      characterId: targetCharacterId,
+      avatar: avatarCfg,
+      ownedItems: owned,
+      customThoughts: pendingThoughtRows,
+      spectating: isSpectatingTarget,
+      rentMood
+    });
     roomScene.setDeskLamp(typeof rs.deskLampOn === "boolean" ? rs.deskLampOn : true);
     roomScene.setBedLamp(typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false);
     roomScene.setVinylOn(typeof rs.vinylOn === "boolean" ? rs.vinylOn : false);
@@ -787,10 +808,6 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
     roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
     roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
     roomScene.setPosterImage(rs.posterImage || "");
-    roomScene.applyOwnedItems(owned);
-    if (pendingThoughtRows) {
-      roomScene.applyCustomThoughts(pendingThoughtRows);
-    }
     if (!preserveCamera && Number.isInteger(rs.cameraQuarter)) {
       roomScene.setQuarter(rs.cameraQuarter);
     }
@@ -820,8 +837,10 @@ function populateSpectateStudentSelect(selectedUid) {
     opt.value = stu.uid;
     const labelName = stu.avatar?.name || stu.displayName || stu.email || "繪師";
     const lv = resolveXpProgress(stu.xp ?? 0, XP_PER_LEVEL).level;
-    const itemCount = Object.values(stu.ownedItems || {}).filter(Boolean).length;
-    opt.textContent = `${labelName} · Lv.${lv} · ${itemCount}件`;
+    const owned = normalizeOwnedItems(stu.ownedItems);
+    const itemCount = Object.values(owned).filter(Boolean).length;
+    const persona = buildCharacterPersona(stu.uid, stu.avatar || { name: labelName }, owned);
+    opt.textContent = `${labelName}（${persona.label}）· Lv.${lv} · ${itemCount}件`;
     selEl.appendChild(opt);
   });
   if (selectedUid && candidates.some(s => s.uid === selectedUid)) {
@@ -845,7 +864,6 @@ function spectateStudentRoom(targetUid, { preserveCamera = false } = {}) {
   document.getElementById("room-view").classList.remove("hidden");
 
   applyProfileToRoomScene(targetStu, { preserveCamera });
-  roomScene?.setRentMood({ status: "chill", daysLeft: 30, deficit: 0, paidThisMonth: true });
   populateSpectateStudentSelect(targetStu.uid);
   sync3dSceneLifecycle();
   syncRoomHUD();
@@ -3564,26 +3582,27 @@ function updateRentCountdownUI() {
   const payBtn = document.getElementById("finance-pay-rent-btn");
   const testBtn = document.getElementById("finance-test-rent-btn");
   const profile = currentUserProfile;
-  const dueAt = Number(profile?.nextRentDueAt || getNextMonthFirstEpoch());
-  const msLeft = dueAt - Date.now();
-  const isDue = msLeft <= 0;
-  const clams = Math.max(0, Math.trunc(Number(profile?.clams ?? STARTER_CLAMS)));
-  const isSuperAdmin = currentRole === "super_admin";
-  const hasRentAlert = Boolean(isDue && !isSuperAdmin);
-  const daysLeft = isDue ? 0 : Math.max(1, Math.ceil(msLeft / 86400000));
-  const paidThisMonth = Boolean(profile?.lastRentPaidMonth && profile.lastRentPaidMonth === getMonthKey());
-  const rentDeficit = Math.max(0, MONTHLY_RENT_CLAMS - clams);
-  const rentMoodStatus = (!isSuperAdmin && (isDue || (daysLeft <= 5 && rentDeficit > 0)))
-    ? "urgent"
-    : (paidThisMonth && daysLeft >= 20)
-    ? "paid"
-    : "chill";
-  roomScene?.setRentMood({
+  const {
     status: rentMoodStatus,
+    isDue,
+    hasRentAlert,
     daysLeft,
     deficit: rentDeficit,
     paidThisMonth
+  } = evaluateProfileRentMood(profile, currentRole, {
+    monthlyRentClams: MONTHLY_RENT_CLAMS,
+    starterClams: STARTER_CLAMS,
+    monthKey: getMonthKey(),
+    fallbackDueAt: getNextMonthFirstEpoch()
   });
+  if (!spectatingStudentUid) {
+    roomScene?.setRentMood({
+      status: rentMoodStatus,
+      daysLeft,
+      deficit: rentDeficit,
+      paidThisMonth
+    });
+  }
 
   if (btn) {
     btn.classList.toggle("is-rent-alert", hasRentAlert);

@@ -6,7 +6,12 @@ import {
   resolveBedSheetStyle,
   resolveRugStyle
 } from "./shop-catalog.js?v=20261120e";
-import { sampleDayNightCycle } from "./app-helpers.js?v=20261121i";
+import {
+  sampleDayNightCycle,
+  buildCharacterPersona,
+  pickPersonaWeightedActivity,
+  createSeededRng
+} from "./app-helpers.js?v=20261121j";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -1289,6 +1294,11 @@ export class FreelancerRoomScene {
     this.posterArtMesh = null;
     this.ownedItems = { ...(options.ownedItems || {}) };
     this.avatarConfig = { ...DEFAULT_AVATAR, ...(options.avatar || {}) };
+    this.activeCharacterId = String(options.characterId || this.avatarConfig.name || "self").trim() || "self";
+    this.spectating = Boolean(options.spectating);
+    this.characterStates = new Map();
+    this.customThoughts = Array.isArray(options.customThoughts) ? [...options.customThoughts] : [];
+    this.persona = buildCharacterPersona(this.activeCharacterId, this.avatarConfig, this.ownedItems);
 
     // Room bounds & obstacle-free routing anchors
     this.deskWorkAnchor = new THREE.Vector3(-0.2, 0, -2.02);
@@ -1336,14 +1346,11 @@ export class FreelancerRoomScene {
     this.thoughtCooldown = 2.0;
     this.thoughtBags = {};
     this.lastThoughtByActivity = {};
+    this.lastSignatureThought = "";
     this.rentMood = { status: "chill", daysLeft: 30, deficit: 0, paidThisMonth: false };
     this.postCelebrateSpot = null;
-    this.thoughtBank = Object.fromEntries(
-      Object.entries(THOUGHT_BANK).map(([k, v]) => [k, [...v]])
-    );
-    if (Array.isArray(options.customThoughts)) {
-      this.applyCustomThoughts(options.customThoughts);
-    }
+    this.thoughtBank = {};
+    this.rebuildThoughtBank();
     this.walkWaypoints = [];
     this.walkCallback = null;
     this.targetActivityId = null;
@@ -2958,13 +2965,244 @@ export class FreelancerRoomScene {
     }
   }
 
-  placeCharacterAtIdleStart() {
-    const startSpot = this.chillSpots[0];
+  getActivitySpotById(activityId) {
+    return this.chillSpots.find(s => s.id === activityId)
+      || this.actionSpots[activityId]
+      || this.chillSpots[0];
+  }
+
+  getSeededActivityRng(extraSalt = 0) {
+    const timeBucket = Math.floor(Date.now() / 180000);
+    const seed = ((this.persona?.seed || 1) ^ Math.imul(timeBucket, 0x9e3779b1) ^ extraSalt) >>> 0;
+    return createSeededRng(seed);
+  }
+
+  placeCharacterAtIdleStart(isNightTime = ((Date.now() % DAY_CYCLE_MS) / DAY_CYCLE_MS) >= 0.5) {
+    this.hideAllProps();
+    const rng = this.getSeededActivityRng(0x3c6ef372);
+    const startActivityId = pickPersonaWeightedActivity(
+      this.persona,
+      this.ownedItems,
+      isNightTime,
+      null,
+      rng
+    );
+    const startSpot = this.getActivitySpotById(startActivityId);
+    const minSec = this.persona?.idleMinSec ?? IDLE_MIN_SEC;
+    const spanSec = this.persona?.idleSpanSec ?? IDLE_SPAN_SEC;
+    const fullDur = minSec + rng() * spanSec;
+
+    this.charState = "IDLE";
+    this.targetActivityId = null;
+    this.walkWaypoints = [];
+    this.walkCallback = null;
+    this.postCelebrateSpot = null;
     this.charRoot.position.copy(startSpot.pos);
     this.charRoot.rotation.y = startSpot.rotY;
     this.currentActivity = startSpot.id;
-    this.thoughtCooldown = 1.6 + Math.random() * 1.8;
+    this.activityTimer = Math.max(12, Math.round(fullDur * (0.25 + rng() * 0.72)));
+    this.thoughtCooldown = 0.8 + rng() * 3.8;
+    this.updateToiletLid(1);
     this.onActivityChange(startSpot.label);
+  }
+
+  exportCharacterRuntimeState() {
+    return {
+      charState: this.charState,
+      currentActivity: this.currentActivity,
+      targetActivityId: this.targetActivityId,
+      activityTimer: this.activityTimer,
+      postWorkCooldown: this.postWorkCooldown,
+      thoughtCooldown: this.thoughtCooldown,
+      postCelebrateSpotId: this.postCelebrateSpot?.id || null,
+      walkWaypoints: (this.walkWaypoints || []).map(pt => pt.clone()),
+      pos: this.charRoot ? this.charRoot.position.clone() : this.chillSpots[0].pos.clone(),
+      rotY: this.charRoot ? this.charRoot.rotation.y : 0,
+      toiletLidAngle: this.toiletLidAngle || 0,
+      thoughtBags: Object.fromEntries(
+        Object.entries(this.thoughtBags || {}).map(([k, v]) => [k, [...v]])
+      ),
+      lastThoughtByActivity: { ...(this.lastThoughtByActivity || {}) },
+      lastSignatureThought: this.lastSignatureThought || "",
+      rentMood: { ...(this.rentMood || {}) },
+      savedAtMs: Date.now()
+    };
+  }
+
+  applyCharacterRuntimeState(saved, isNightTime = ((Date.now() % DAY_CYCLE_MS) / DAY_CYCLE_MS) >= 0.5) {
+    if (!saved) {
+      this.placeCharacterAtIdleStart(isNightTime);
+      return;
+    }
+    this.hideAllProps();
+    this.thoughtBags = Object.fromEntries(
+      Object.entries(saved.thoughtBags || {}).map(([k, v]) => [k, [...v]])
+    );
+    this.lastThoughtByActivity = { ...(saved.lastThoughtByActivity || {}) };
+    this.lastSignatureThought = saved.lastSignatureThought || "";
+    this.rentMood = { ...(saved.rentMood || { status: "chill", daysLeft: 30, deficit: 0, paidThisMonth: false }) };
+    this.postCelebrateSpot = saved.postCelebrateSpotId ? this.getActivitySpotById(saved.postCelebrateSpotId) : null;
+
+    let elapsedSec = Math.min(1800, Math.max(0, (Date.now() - (saved.savedAtMs || Date.now())) / 1000));
+    this.charState = saved.charState || "IDLE";
+    this.currentActivity = saved.currentActivity || "phone";
+    this.targetActivityId = saved.targetActivityId || null;
+    this.activityTimer = Number.isFinite(saved.activityTimer) ? saved.activityTimer : IDLE_MIN_SEC;
+    this.postWorkCooldown = Number.isFinite(saved.postWorkCooldown) ? saved.postWorkCooldown : 0;
+    this.thoughtCooldown = Number.isFinite(saved.thoughtCooldown) ? saved.thoughtCooldown : 2.0;
+    this.toiletLidAngle = Number.isFinite(saved.toiletLidAngle) ? saved.toiletLidAngle : 0;
+    this.walkWaypoints = (saved.walkWaypoints || []).map(pt => pt.clone());
+    this.walkCallback = null;
+
+    if (this.charRoot && saved.pos) {
+      this.charRoot.position.copy(saved.pos);
+      this.charRoot.rotation.y = Number.isFinite(saved.rotY) ? saved.rotY : 0;
+    }
+
+    // Advance character simulation silently while viewer was away in another room
+    if (elapsedSec > 1.5) {
+      if (this.charState === "WALK_TO_WORK") {
+        this.charRoot.position.copy(this.deskWorkAnchor);
+        this.charRoot.rotation.y = Math.PI;
+        this.charState = "WORKING";
+        this.postWorkCooldown = Math.max(0, POST_WORK_COOLDOWN_SEC - Math.min(elapsedSec, 6));
+        this.walkWaypoints = [];
+        elapsedSec = Math.max(0, elapsedSec - 3);
+      } else if (this.charState === "WALK_TO_ACTIVITY") {
+        const spot = this.getActivitySpotById(this.targetActivityId);
+        this.charState = "IDLE";
+        this.currentActivity = spot.id;
+        this.targetActivityId = null;
+        this.walkWaypoints = [];
+        this.charRoot.position.copy(spot.pos);
+        this.charRoot.rotation.y = spot.rotY;
+        const minSec = this.persona?.idleMinSec ?? IDLE_MIN_SEC;
+        const spanSec = this.persona?.idleSpanSec ?? IDLE_SPAN_SEC;
+        this.activityTimer = minSec + Math.random() * spanSec;
+        elapsedSec = Math.max(0, elapsedSec - 3);
+      }
+
+      if (this.charState === "WORKING") {
+        if (this.postWorkCooldown > 0 && elapsedSec >= this.postWorkCooldown) {
+          elapsedSec -= this.postWorkCooldown;
+          this.postWorkCooldown = 0;
+          const nextId = pickPersonaWeightedActivity(this.persona, this.ownedItems, isNightTime, null);
+          const nextSpot = this.getActivitySpotById(nextId);
+          this.charState = "IDLE";
+          this.currentActivity = nextSpot.id;
+          this.charRoot.position.copy(nextSpot.pos);
+          this.charRoot.rotation.y = nextSpot.rotY;
+          const minSec = this.persona?.idleMinSec ?? IDLE_MIN_SEC;
+          const spanSec = this.persona?.idleSpanSec ?? IDLE_SPAN_SEC;
+          this.activityTimer = minSec + Math.random() * spanSec;
+        } else {
+          this.postWorkCooldown = Math.max(0, this.postWorkCooldown - elapsedSec);
+          elapsedSec = 0;
+        }
+      }
+
+      let safetyRolls = 0;
+      while (this.charState === "IDLE" && elapsedSec >= this.activityTimer && safetyRolls < 8) {
+        elapsedSec -= Math.max(1, this.activityTimer);
+        const nextId = (this.currentActivity === "work_celebrate" && this.postCelebrateSpot)
+          ? this.postCelebrateSpot.id
+          : pickPersonaWeightedActivity(this.persona, this.ownedItems, isNightTime, this.currentActivity);
+        this.postCelebrateSpot = null;
+        const nextSpot = this.getActivitySpotById(nextId);
+        this.currentActivity = nextSpot.id;
+        this.charRoot.position.copy(nextSpot.pos);
+        this.charRoot.rotation.y = nextSpot.rotY;
+        const minSec = this.persona?.idleMinSec ?? IDLE_MIN_SEC;
+        const spanSec = this.persona?.idleSpanSec ?? IDLE_SPAN_SEC;
+        this.activityTimer = minSec + Math.random() * spanSec;
+        safetyRolls += 1;
+      }
+      if (this.charState === "IDLE") {
+        this.activityTimer = Math.max(8, this.activityTimer - elapsedSec);
+      }
+    }
+
+    // Rebuild walk callback if restored mid-walk
+    if (this.charState === "WALK_TO_ACTIVITY" && this.targetActivityId) {
+      const targetSpot = this.getActivitySpotById(this.targetActivityId);
+      this.walkCallback = () => {
+        this.charState = "IDLE";
+        this.currentActivity = targetSpot.id;
+        this.targetActivityId = null;
+        const minSec = this.persona?.idleMinSec ?? IDLE_MIN_SEC;
+        const spanSec = this.persona?.idleSpanSec ?? IDLE_SPAN_SEC;
+        this.activityTimer = minSec + Math.random() * spanSec;
+        this.thoughtCooldown = 1.0 + Math.random() * 2.4;
+        this.charRoot.position.copy(targetSpot.pos);
+        this.charRoot.rotation.y = targetSpot.rotY;
+        this.onActivityChange(targetSpot.label);
+      };
+    } else if (this.charState === "WALK_TO_WORK") {
+      this.walkCallback = () => {
+        this.enterWorkingPose();
+        this.onEnterWork();
+      };
+    }
+
+    this.thoughtCooldown = Math.max(0.8, Math.min(this.thoughtCooldown, 4.5));
+    this.updateToiletLid(1);
+    const activeSpot = this.getActivitySpotById(this.currentActivity);
+    this.onActivityChange(this.charState === "WORKING" ? "專心創作接案中" : activeSpot.label);
+  }
+
+  setCharacterProfileContext({
+    characterId,
+    avatar,
+    ownedItems,
+    customThoughts,
+    spectating = false,
+    rentMood = null
+  } = {}) {
+    const nextId = String(characterId || avatar?.name || this.activeCharacterId || "self").trim() || "self";
+    this.spectating = Boolean(spectating);
+    const isSwitching = nextId !== this.activeCharacterId;
+
+    if (isSwitching) {
+      this.characterStates.set(this.activeCharacterId, this.exportCharacterRuntimeState());
+      this.hideBubble();
+      this.hideAllProps();
+      this.walkWaypoints = [];
+      this.walkCallback = null;
+      this.targetActivityId = null;
+      this.activeCharacterId = nextId;
+    }
+
+    if (Array.isArray(customThoughts) && customThoughts !== this._lastCustomThoughtsRef) {
+      this._lastCustomThoughtsRef = customThoughts;
+      this.customThoughts = [...customThoughts];
+    }
+    this.applyOwnedItems(ownedItems || this.ownedItems || {});
+    const targetAvatar = avatar || this.avatarConfig;
+    this.persona = buildCharacterPersona(nextId, targetAvatar, this.ownedItems);
+
+    if (isSwitching) {
+      this.rebuildThoughtBank();
+      this.buildCharacter(targetAvatar);
+      const isNightTime = ((Date.now() % DAY_CYCLE_MS) / DAY_CYCLE_MS) >= 0.5;
+      if (this.characterStates.has(nextId)) {
+        this.applyCharacterRuntimeState(this.characterStates.get(nextId), isNightTime);
+      } else {
+        this.placeCharacterAtIdleStart(isNightTime);
+      }
+      if (rentMood) {
+        this.setRentMood(rentMood, { silent: true });
+      }
+    } else {
+      this.updateAvatarConfig(targetAvatar);
+      if (Array.isArray(customThoughts) && customThoughts === this._lastCustomThoughtsRef && !this._customThoughtsAppliedOnce) {
+        this._customThoughtsAppliedOnce = true;
+        this.rebuildThoughtBank();
+      }
+      if (rentMood) {
+        this.setRentMood(rentMood);
+      }
+    }
+    this.renderIfPaused();
   }
 
   updateAvatarConfig(nextConfig) {
@@ -3190,7 +3428,7 @@ export class FreelancerRoomScene {
     return options[Math.floor(Math.random() * options.length)] || this.chillSpots[0];
   }
 
-  setRentMood(mood = {}) {
+  setRentMood(mood = {}, { silent = false } = {}) {
     const prevStatus = this.rentMood?.status || "chill";
     const status = String(mood.status || "chill");
     this.rentMood = {
@@ -3199,6 +3437,7 @@ export class FreelancerRoomScene {
       deficit: Math.max(0, Math.trunc(Number(mood.deficit) || 0)),
       paidThisMonth: Boolean(mood.paidThisMonth)
     };
+    if (silent) return;
     if (status === "urgent" && prevStatus !== "urgent" && this.charState === "IDLE" && this.currentActivity !== "sleep") {
       this.showBubble(this.pickRandomThought("rent_urgent"), 4800);
       this.thoughtCooldown = 7;
@@ -3257,8 +3496,28 @@ export class FreelancerRoomScene {
     this.onActivityChange("專心創作接案中");
   }
 
-  applyCustomThoughts(rows = []) {
+  rebuildThoughtBank() {
+    this.thoughtBank = Object.fromEntries(
+      Object.entries(THOUGHT_BANK).map(([k, v]) => [k, [...v]])
+    );
+    if (Array.isArray(this.customThoughts) && this.customThoughts.length > 0) {
+      this.applyCustomThoughts(this.customThoughts, { record: false });
+    }
+    const personaLines = this.persona?.thoughtsByActivity || {};
+    for (const [activity, lines] of Object.entries(personaLines)) {
+      if (!Array.isArray(lines) || lines.length === 0) continue;
+      const existing = this.thoughtBank[activity] || [];
+      this.thoughtBank[activity] = [...new Set([...lines, ...existing])];
+    }
+    this.thoughtBags = {};
+    this.lastThoughtByActivity = {};
+  }
+
+  applyCustomThoughts(rows = [], { record = true } = {}) {
     if (!Array.isArray(rows) || rows.length === 0) return;
+    if (record) {
+      this.customThoughts = [...rows];
+    }
     const grouped = {};
     for (const row of rows) {
       const activity = String(row?.activity || "").trim();
@@ -3269,9 +3528,11 @@ export class FreelancerRoomScene {
       if (!grouped[activity]) grouped[activity] = [];
       grouped[activity].push(text);
     }
+    const personaLines = this.persona?.thoughtsByActivity || {};
     for (const [activity, lines] of Object.entries(grouped)) {
       if (lines.length > 0) {
-        this.thoughtBank[activity] = lines;
+        const extra = Array.isArray(personaLines[activity]) ? personaLines[activity] : [];
+        this.thoughtBank[activity] = [...new Set([...extra, ...lines])];
         if (this.thoughtBags) {
           delete this.thoughtBags[activity];
         }
@@ -3285,6 +3546,19 @@ export class FreelancerRoomScene {
       : activityKey;
     if (resolvedKey === "sofa_tv" && this.ownedItems?.dolby_atmos && Math.random() < 0.55) {
       resolvedKey = "dolby_atmos";
+    }
+    const sigLines = this.persona?.signatureThoughts;
+    if (
+      Array.isArray(sigLines)
+      && sigLines.length > 0
+      && !["sleep", "rent_urgent", "rent_paid", "work_celebrate", "dolby_atmos"].includes(resolvedKey)
+      && Math.random() < 0.24
+    ) {
+      const candidates = sigLines.filter(line => line !== this.lastSignatureThought);
+      const pickPool = candidates.length > 0 ? candidates : sigLines;
+      const sigLine = pickPool[Math.floor(Math.random() * pickPool.length)];
+      this.lastSignatureThought = sigLine;
+      return sigLine;
     }
     const bank = this.thoughtBank?.[resolvedKey] || THOUGHT_BANK[resolvedKey];
     if (!bank || bank.length === 0) return "";
@@ -3556,47 +3830,28 @@ export class FreelancerRoomScene {
     };
   }
 
+  getNextIdleDurationSec() {
+    const minSec = this.persona?.idleMinSec ?? IDLE_MIN_SEC;
+    const spanSec = this.persona?.idleSpanSec ?? IDLE_SPAN_SEC;
+    return minSec + Math.random() * spanSec;
+  }
+
+  getNextThoughtCooldownSec(baseBonus = 0) {
+    const minSec = this.persona?.thoughtMinSec ?? 8.5;
+    const spanSec = this.persona?.thoughtSpanSec ?? 7.5;
+    return minSec + baseBonus + Math.random() * spanSec;
+  }
+
   pickNextIdleActivity(isNightTime) {
-    const owned = this.ownedItems || {};
-    const readActivity = owned.cozy_sofa ? "sofa_read" : "read";
-    const candidates = isNightTime
-      ? ["sleep", "sleep", "phone", "gaming", readActivity]
-      : ["phone", "exercise", readActivity, "eat", "gaming"];
-
-    if (owned.cozy_sofa && owned.wall_tv) {
-      candidates.push("sofa_tv");
-    } else if (owned.wall_tv) {
-      candidates.push("watch_tv");
-    }
-    if (owned.desk_plant) {
-      candidates.push("water_plant");
-    }
-    if (owned.wall_poster) {
-      candidates.push("admire_poster");
-    }
-    if (owned.coat_rack) {
-      candidates.push("check_coat");
-    }
-    if (owned.coffee_bar) {
-      candidates.push("coffee_break");
-    }
-    if (owned.vinyl_player) {
-      candidates.push("listen_vinyl");
-    }
-    if (owned.orange_cat) {
-      candidates.push("pet_cat");
-    }
-    if (owned.floor_plant) {
-      candidates.push("water_floor_plant");
-    }
-
-    const choices = candidates.filter(id => id !== this.currentActivity);
-    const chosenId = choices[Math.floor(Math.random() * choices.length)] || "phone";
-    const spot = this.chillSpots.find(s => s.id === chosenId)
-      || this.actionSpots[chosenId]
-      || this.chillSpots[0];
-
-    this.commandActivity(spot, IDLE_MIN_SEC + Math.random() * IDLE_SPAN_SEC);
+    const chosenId = pickPersonaWeightedActivity(
+      this.persona,
+      this.ownedItems,
+      isNightTime,
+      this.currentActivity,
+      Math.random
+    );
+    const spot = this.getActivitySpotById(chosenId);
+    this.commandActivity(spot, this.getNextIdleDurationSec());
   }
 
   updateDayNightLighting() {
@@ -3713,7 +3968,8 @@ export class FreelancerRoomScene {
     }
   }
 
-  updateCharacter(dt, elapsedSec, isNightTime) {
+  updateCharacter(dt, rawElapsedSec, isNightTime) {
+    const elapsedSec = (rawElapsedSec + (this.persona?.animPhaseOffset || 0)) * (this.persona?.energyRate || 1.0);
     this.resetLimbs();
     this.updateToiletLid(dt);
 
@@ -3726,7 +3982,8 @@ export class FreelancerRoomScene {
       const delta = target.clone().sub(this.charRoot.position);
       delta.y = 0;
       const dist = delta.length();
-      const speed = this.charState === "WALK_TO_WORK" ? 7.2 : 3.2;
+      const baseSpeed = this.charState === "WALK_TO_WORK" ? 7.2 : 3.2;
+      const speed = baseSpeed * (this.persona?.walkSpeedScale || 1.0);
 
       if (dist <= speed * dt + 0.05) {
         this.charRoot.position.copy(target);
@@ -3774,7 +4031,7 @@ export class FreelancerRoomScene {
       this.thoughtCooldown -= dt;
       if (this.thoughtCooldown <= 0) {
         this.showBubble(this.pickRandomThought("work"), 4200);
-        this.thoughtCooldown = 8 + Math.random() * 7;
+        this.thoughtCooldown = this.getNextThoughtCooldownSec();
       }
       return;
     }
@@ -3785,7 +4042,7 @@ export class FreelancerRoomScene {
       if (this.currentActivity === "work_celebrate" && this.postCelebrateSpot) {
         const nextSpot = this.postCelebrateSpot;
         this.postCelebrateSpot = null;
-        this.commandActivity(nextSpot, IDLE_MIN_SEC + Math.random() * IDLE_SPAN_SEC);
+        this.commandActivity(nextSpot, this.getNextIdleDurationSec());
         return;
       }
       this.pickNextIdleActivity(isNightTime);
@@ -3810,7 +4067,7 @@ export class FreelancerRoomScene {
         thoughtKey = "rent_paid";
       }
       this.showBubble(this.pickRandomThought(thoughtKey), 4200);
-      this.thoughtCooldown = 9 + Math.random() * 9;
+      this.thoughtCooldown = this.getNextThoughtCooldownSec(1.0);
     }
 
     switch (this.currentActivity) {
@@ -4200,11 +4457,13 @@ export class FreelancerRoomScene {
         this.setBedLamp(!this.bedLampOn);
         this.onBedLampToggle(this.bedLampOn);
       } else if (this.hoveredTarget === "computer") {
-        this.goToWork();
+        if (!this.spectating) this.goToWork();
       } else if (this.hoveredTarget === "tv") {
-        const spot = this.ownedItems.cozy_sofa ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
-        this.commandActivity(spot, 180);
-        this.onOpenTv();
+        if (!this.spectating) {
+          const spot = this.ownedItems.cozy_sofa ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
+          this.commandActivity(spot, 180);
+          this.onOpenTv();
+        }
       } else if (this.hoveredTarget === "atmos") {
         this.playAtmosChime();
         this.commandActivity(this.actionSpots.sofa_tv, 180);
@@ -4232,7 +4491,7 @@ export class FreelancerRoomScene {
       } else if (this.hoveredTarget === "plant") {
         this.commandActivity(this.actionSpots.water_plant, 10);
       } else if (this.hoveredTarget === "poster") {
-        this.onOpenPoster();
+        if (!this.spectating) this.onOpenPoster();
       } else if (this.hoveredTarget === "bed") {
         const sleepSpot = this.chillSpots.find(s => s.id === "sleep");
         this.commandActivity(sleepSpot, COMMANDED_SLEEP_SEC);
