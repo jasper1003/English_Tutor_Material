@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121n";
+} from "./room-scene.js?v=20261121o";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -56,14 +56,14 @@ import {
   getShopItem,
   getMissingShopPrerequisites,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261121n";
+} from "./shop-catalog.js?v=20261121o";
 import {
   PLACEABLE_FURNITURE_META,
   isShopParcelItem,
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261121n";
+} from "./room-grid.js?v=20261121o";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -84,9 +84,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121n";
+} from "./app-helpers.js?v=20261121o";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121n";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121o";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -710,8 +710,10 @@ function syncEditModeToolbarUI(state = null) {
   const statusEl = document.getElementById("room-edit-status-text");
   const rotLBtn = document.getElementById("edit-rotate-left-btn");
   const rotRBtn = document.getElementById("edit-rotate-right-btn");
+  const confirmBtn = document.getElementById("edit-confirm-item-btn");
   const putBackBtn = document.getElementById("edit-putback-btn");
   const resetBtn = document.getElementById("edit-reset-layout-btn");
+  const doneBtn = document.getElementById("edit-done-layout-btn");
 
   const active = Boolean(state?.active && !spectatingStudentUid);
   toolbar?.classList.toggle("hidden", !active);
@@ -721,16 +723,21 @@ function syncEditModeToolbarUI(state = null) {
   const hasSelected = Boolean(state?.selectedId);
   rotLBtn?.classList.toggle("hidden", !hasSelected);
   rotRBtn?.classList.toggle("hidden", !hasSelected);
+  confirmBtn?.classList.toggle("hidden", !hasSelected);
+  if (confirmBtn) confirmBtn.disabled = !state?.canPlace;
   putBackBtn?.classList.toggle("hidden", !(hasSelected && state?.fromParcel));
   resetBtn?.classList.toggle("hidden", Boolean(hasSelected && state?.fromParcel));
+  doneBtn?.classList.toggle("is-primary", !hasSelected);
 
   if (statusEl) {
     if (hasSelected) {
       const dimsNote = state.gridDims ? ` · ${state.gridDims}` : "";
-      const validNote = state.canPlace ? "✅ 綠格可放置" : "⚠️ 空間衝突，移至綠格或按 R 轉向";
-      statusEl.textContent = `${state.fromParcel ? "📦 拆箱擺放" : "📐 移動"}：${state.selectedName}${dimsNote}（${validNote}）`;
+      const validNote = state.canPlace
+        ? "✅ 綠格可放置（拖曳改位置・按 ←/→ 旋轉）"
+        : "⚠️ 空間衝突，拖曳至綠格或按 ←/→ 轉向";
+      statusEl.textContent = `${state.fromParcel ? "📦 拆箱擺放" : "📐 已選取"}：${state.selectedName}${dimsNote}（${validNote}）`;
     } else {
-      statusEl.textContent = "📐 編輯家具位置：點擊房間內任意家具拿起移動／按 R 旋轉";
+      statusEl.textContent = "📐 編輯家具位置：點擊家具選取後，按住拖曳位置或按 ← / → 旋轉";
     }
   }
 }
@@ -4251,6 +4258,7 @@ function startTransactionsRealtimeListener(uid, nonce) {
 
 document.getElementById("room-finance-btn").addEventListener("click", () => {
   if (spectatingStudentUid) return;
+  if (roomScene?.editMode) roomScene.exitFurnitureEditMode({ commit: true });
   clearFeedback("finance-feedback");
   renderFinanceDialog();
   if (!financeDialog.open) financeDialog.showModal();
@@ -4288,6 +4296,10 @@ document.getElementById("edit-rotate-left-btn")?.addEventListener("click", () =>
 
 document.getElementById("edit-rotate-right-btn")?.addEventListener("click", () => {
   roomScene?.rotateEditingFurniture(1);
+});
+
+document.getElementById("edit-confirm-item-btn")?.addEventListener("click", () => {
+  roomScene?.commitActiveFurniturePlacement();
 });
 
 document.getElementById("edit-putback-btn")?.addEventListener("click", () => {
@@ -5030,6 +5042,7 @@ document.getElementById("admin-visit-room-btn")?.addEventListener("click", () =>
 
 document.getElementById("room-visit-others-btn")?.addEventListener("click", () => {
   if (currentRole !== "super_admin" && currentRole !== "admin") return;
+  if (roomScene?.editMode) roomScene.exitFurnitureEditMode({ commit: true });
   const others = cachedStudents.filter(s => s.uid !== currentUser?.uid);
   const target = others[0] || cachedStudents[0];
   if (target) {

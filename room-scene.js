@@ -9,13 +9,13 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261121n";
+} from "./shop-catalog.js?v=20261121o";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261121n";
+} from "./app-helpers.js?v=20261121o";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -33,7 +33,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261121n";
+} from "./room-grid.js?v=20261121o";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -1437,6 +1437,13 @@ export class FreelancerRoomScene {
     this.editPreviewRot = 0;
     this.editPreviewEntry = null;
     this.editCanPlace = false;
+    this.editDragging = false;
+    this.editDragMoved = false;
+    this.editDragPending = null;
+    this.editDragOffset = { wall: null, x: 0, z: 0, coord: 0 };
+    this.editItemDirty = false;
+    this._editSuppressNextClick = false;
+    this._editPointerDownHandled = false;
     this.layoutDirty = false;
     this.movableGroups = {};
     this.tvHostWallName = "west";
@@ -3970,7 +3977,12 @@ export class FreelancerRoomScene {
       this.editPreviewOutlineMat
     );
     this.editPreviewBox.position.y = 0.45;
-    this.editPreviewGroup.add(this.editPreviewPad, this.editPreviewBox);
+    this.editPreviewHitBox = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 0.9, 1),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    this.editPreviewHitBox.position.y = 0.45;
+    this.editPreviewGroup.add(this.editPreviewPad, this.editPreviewBox, this.editPreviewHitBox);
     this.roomGroup.add(this.editPreviewGroup);
 
     // Subtle ground highlight planes along inside of perimeter walls for wall raycasting
@@ -4220,6 +4232,15 @@ export class FreelancerRoomScene {
     this.renderIfPaused();
   }
 
+  resetEditDragState() {
+    this.editDragging = false;
+    this.editDragMoved = false;
+    this.editDragPending = null;
+    this.editDragOffset = { wall: null, x: 0, z: 0, coord: 0 };
+    this._editSuppressNextClick = false;
+    this._editPointerDownHandled = false;
+  }
+
   enterFurnitureEditMode({ itemId = null, fromParcel = false } = {}) {
     if (this.spectating) return;
     this.editMode = true;
@@ -4228,6 +4249,8 @@ export class FreelancerRoomScene {
     this.editHoldingFromParcel = false;
     this.editPreviewEntry = null;
     this.editCanPlace = false;
+    this.editItemDirty = false;
+    this.resetEditDragState();
     if (this.renderer?.domElement) {
       this.renderer.domElement.style.touchAction = "none";
     }
@@ -4242,7 +4265,14 @@ export class FreelancerRoomScene {
   }
 
   exitFurnitureEditMode({ commit = true } = {}) {
-    if (this.editSelectedId && this.editHoldingFromParcel) {
+    if (commit && this.editSelectedId && this.editPreviewEntry && this.editCanPlace && (this.editItemDirty || this.editHoldingFromParcel)) {
+      this.furnitureLayout = {
+        ...this.furnitureLayout,
+        [this.editSelectedId]: { ...this.editPreviewEntry }
+      };
+      delete this.pendingParcels[this.editSelectedId];
+      this.layoutDirty = true;
+    } else if (this.editSelectedId && this.editHoldingFromParcel) {
       // Unplaced parcel returned gently back into entrance cardboard box so user never loses an item
       this.pendingParcels[this.editSelectedId] = true;
     }
@@ -4251,8 +4281,11 @@ export class FreelancerRoomScene {
     this.editHoldingFromParcel = false;
     this.editPreviewEntry = null;
     this.editCanPlace = false;
+    this.editItemDirty = false;
+    this.resetEditDragState();
     if (this.renderer?.domElement) {
       this.renderer.domElement.style.touchAction = "manipulation";
+      this.renderer.domElement.style.cursor = "default";
     }
     if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
     this.updateGridOverlayVisibility();
@@ -4286,6 +4319,11 @@ export class FreelancerRoomScene {
     if (!meta || !this.editMode) return false;
     if (!meta.starter && this.ownedItems?.[itemId] !== true) return false;
 
+    this.editDragging = false;
+    this.editDragMoved = false;
+    this.editDragPending = null;
+    this.editDragOffset = { wall: null, x: 0, z: 0, coord: 0 };
+    this.editItemDirty = false;
     this.editSelectedId = itemId;
     this.editHoldingFromParcel = Boolean(fromParcel);
 
@@ -4343,6 +4381,7 @@ export class FreelancerRoomScene {
         rot: this.editPreviewRot
       };
     }
+    this.editItemDirty = true;
     this.updateEditPreviewMesh();
     this.notifyEditModeState(meta.name);
     this.renderIfPaused();
@@ -4357,6 +4396,7 @@ export class FreelancerRoomScene {
     this.editHoldingFromParcel = false;
     this.editPreviewEntry = null;
     this.editCanPlace = false;
+    this.editItemDirty = false;
     this.exitFurnitureEditMode({ commit: true });
   }
 
@@ -4366,6 +4406,10 @@ export class FreelancerRoomScene {
     this.editSelectedId = null;
     this.editHoldingFromParcel = false;
     this.editPreviewEntry = null;
+    this.editCanPlace = false;
+    this.editItemDirty = false;
+    this.layoutDirty = false;
+    this.resetEditDragState();
     this.applyOwnedItems(this.ownedItems);
     this.applyFurnitureLayout(this.furnitureLayout);
     this.updateGridOverlayVisibility();
@@ -4467,6 +4511,11 @@ export class FreelancerRoomScene {
       this.editPreviewBox.scale.set(w.w * GRID_STEP * 0.97, 1.0, w.d * GRID_STEP * 0.97);
     }
 
+    if (this.editPreviewHitBox) {
+      this.editPreviewHitBox.position.copy(this.editPreviewBox.position);
+      this.editPreviewHitBox.scale.copy(this.editPreviewBox.scale);
+    }
+
     const col = this.editCanPlace ? 0x22c55e : 0xef4444;
     const outlineCol = this.editCanPlace ? 0x16a34a : 0xdc2626;
     this.editPreviewMat.color.setHex(col);
@@ -4489,6 +4538,11 @@ export class FreelancerRoomScene {
     this.editHoldingFromParcel = false;
     this.editPreviewEntry = null;
     this.editCanPlace = false;
+    this.editItemDirty = false;
+    this.editDragging = false;
+    this.editDragMoved = false;
+    this.editDragPending = null;
+    this.editDragOffset = { wall: null, x: 0, z: 0, coord: 0 };
     if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
 
     this.applyOwnedItems(this.ownedItems);
@@ -4528,10 +4582,85 @@ export class FreelancerRoomScene {
     });
   }
 
-  raycastEditGridTarget() {
+  getEditRaycastHit() {
+    const movableHits = this.raycaster.intersectObjects(this.allInteractTargets, false);
+    const visibleMovableHit = movableHits.find(h => {
+      if (!h.object?.userData?.movableId) return false;
+      let obj = h.object;
+      while (obj) {
+        if (!obj.visible) return false;
+        obj = obj.parent;
+      }
+      return true;
+    }) || null;
+
+    let hitActivePreview = false;
+    if (this.editSelectedId && this.editPreviewGroup?.visible) {
+      const previewTargets = [this.editPreviewHitBox, this.editPreviewPad].filter(Boolean);
+      const pHits = this.raycaster.intersectObjects(previewTargets, false);
+      hitActivePreview = pHits.length > 0;
+    }
+    return {
+      movableId: visibleMovableHit?.object?.userData?.movableId || null,
+      interactType: visibleMovableHit?.object?.userData?.interactType || null,
+      hitActivePreview
+    };
+  }
+
+  startEditDragPending(e, itemId) {
+    const meta = PLACEABLE_FURNITURE_META[itemId];
+    const entry = this.editPreviewEntry;
+    let offset = { wall: null, x: 0, z: 0, coord: 0 };
+    if (meta && entry) {
+      if (meta.surface === "wall") {
+        const wallName = entry.wall;
+        const plane = this.wallPlanes?.[wallName];
+        const wHit = new THREE.Vector3();
+        if (plane && this.raycaster.ray.intersectPlane(plane, wHit)) {
+          const hitCoord = (wallName === "north" || wallName === "south") ? wHit.x : wHit.z;
+          const curCoord = -4.0 + (entry.pos + meta.gridW * 0.5) * GRID_STEP;
+          offset = {
+            wall: wallName,
+            coord: THREE.MathUtils.clamp(curCoord - hitCoord, -1.5, 1.5),
+            x: 0,
+            z: 0
+          };
+        }
+      } else {
+        const fHit = new THREE.Vector3();
+        if (this.floorPlane && this.raycaster.ray.intersectPlane(this.floorPlane, fHit)) {
+          const w = floorPlacementToWorld(itemId, entry.gx, entry.gz, entry.rot);
+          offset = {
+            wall: null,
+            coord: 0,
+            x: THREE.MathUtils.clamp(w.x - fHit.x, -2.5, 2.5),
+            z: THREE.MathUtils.clamp(w.z - fHit.z, -2.5, 2.5)
+          };
+        }
+      }
+    }
+    this.editDragOffset = offset;
+    this.editDragMoved = false;
+    this.editDragging = false;
+    this.editDragPending = {
+      id: itemId,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      clickedEmpty: false
+    };
+    try {
+      this.renderer?.domElement?.setPointerCapture?.(e.pointerId);
+    } catch {
+      // Ignore unsupported synthetic pointer capture
+    }
+  }
+
+  raycastEditGridTarget(useDragOffset = true) {
     if (!this.editMode || !this.editSelectedId) return false;
     const meta = PLACEABLE_FURNITURE_META[this.editSelectedId];
     if (!meta) return false;
+    const prev = this.editPreviewEntry;
 
     if (meta.surface === "wall") {
       let bestWall = null;
@@ -4556,8 +4685,14 @@ export class FreelancerRoomScene {
       }
       if (bestWall && bestHit) {
         const coord = (bestWall === "north" || bestWall === "south") ? bestHit.x : bestHit.z;
-        const rawPos = Math.round((coord + 4.0) / GRID_STEP - meta.gridW * 0.5);
+        const wallOffset = (useDragOffset && bestWall === this.editDragOffset?.wall)
+          ? (this.editDragOffset.coord || 0)
+          : 0;
+        const rawPos = Math.round((coord + wallOffset + 4.0) / GRID_STEP - meta.gridW * 0.5);
         const clampedPos = THREE.MathUtils.clamp(rawPos, 0, GRID_CELLS - meta.gridW);
+        if (!prev || prev.wall !== bestWall || prev.pos !== clampedPos) {
+          this.editItemDirty = true;
+        }
         this.editPreviewEntry = { surface: "wall", wall: bestWall, pos: clampedPos };
         this.updateEditPreviewMesh();
         this.notifyEditModeState(meta.name);
@@ -4568,11 +4703,16 @@ export class FreelancerRoomScene {
 
     const pt = new THREE.Vector3();
     if (this.floorPlane && this.raycaster.ray.intersectPlane(this.floorPlane, pt)) {
+      const offX = useDragOffset ? (this.editDragOffset?.x || 0) : 0;
+      const offZ = useDragOffset ? (this.editDragOffset?.z || 0) : 0;
       const { w, d } = getRotatedDims(this.editSelectedId, this.editPreviewRot);
-      const rawGx = Math.round((pt.x + 4.0) / GRID_STEP - w * 0.5);
-      const rawGz = Math.round((pt.z + 4.0) / GRID_STEP - d * 0.5);
+      const rawGx = Math.round(((pt.x + offX) + 4.0) / GRID_STEP - w * 0.5);
+      const rawGz = Math.round(((pt.z + offZ) + 4.0) / GRID_STEP - d * 0.5);
       const gx = THREE.MathUtils.clamp(rawGx, 0, Math.max(0, GRID_CELLS - w));
       const gz = THREE.MathUtils.clamp(rawGz, 0, Math.max(0, GRID_CELLS - d));
+      if (!prev || prev.gx !== gx || prev.gz !== gz || prev.rot !== this.editPreviewRot) {
+        this.editItemDirty = true;
+      }
       this.editPreviewEntry = { surface: "floor", gx, gz, rot: this.editPreviewRot };
       this.updateEditPreviewMesh();
       this.notifyEditModeState(meta.name);
@@ -5675,41 +5815,63 @@ export class FreelancerRoomScene {
       this.camera.updateMatrixWorld();
       this.raycaster.setFromCamera(this.pointerNDC, this.camera);
 
-      // Furniture Edit Mode: either snap currently held item onto floor/wall grid or pick up an existing piece
+      // Furniture Edit Mode: drag selected item to move across grid (hovering never moves furniture)
       if (this.editMode) {
         if (this.walkHoverRingMat) this.walkHoverRingMat.opacity = 0;
         this.hoveredFloorPoint = null;
+
+        if (this.editDragPending && !this.editDragPending.clickedEmpty && this.editSelectedId) {
+          if (e.pointerId === undefined || this.editDragPending.pointerId === undefined || e.pointerId === this.editDragPending.pointerId) {
+            const distPx = Math.hypot(
+              e.clientX - this.editDragPending.startX,
+              e.clientY - this.editDragPending.startY
+            );
+            if (!this.editDragging && distPx >= 6) {
+              this.editDragging = true;
+              this.editDragMoved = true;
+            }
+            if (this.editDragging) {
+              this.raycastEditGridTarget(true);
+              dom.style.cursor = this.editCanPlace ? "grabbing" : "not-allowed";
+              const dragName = PLACEABLE_FURNITURE_META[this.editSelectedId]?.name || "家具";
+              this.onHoverChange(
+                this.editCanPlace
+                  ? `拖曳移動「${dragName}」中，放開後可按 ← / → 鍵旋轉或確認放置`
+                  : "目前格位重疊或受限，請拖往綠色網格或放開後按 ← / → 轉向"
+              );
+              return;
+            }
+          }
+        }
+
+        const { movableId, interactType, hitActivePreview } = this.getEditRaycastHit();
         if (this.editSelectedId) {
-          this.raycastEditGridTarget();
-          dom.style.cursor = this.editCanPlace ? "grabbing" : "not-allowed";
-          this.onHoverChange(
-            this.editCanPlace
-              ? `點擊確認放置「${PLACEABLE_FURNITURE_META[this.editSelectedId]?.name}」（按 R 鍵旋轉）`
-              : "目前格位重疊或受限，請移到綠色網格或按 R 旋轉"
-          );
+          const selName = PLACEABLE_FURNITURE_META[this.editSelectedId]?.name || "家具";
+          if (hitActivePreview || movableId === this.editSelectedId) {
+            this.hoveredTarget = interactType || this.hoveredTarget;
+            dom.style.cursor = "grab";
+            this.onHoverChange(`按住並拖曳「${selName}」移動位置，或按 ← / → 鍵／按鈕旋轉`);
+          } else if (movableId && !this.editHoldingFromParcel) {
+            this.hoveredTarget = interactType;
+            dom.style.cursor = "grab";
+            this.onHoverChange(`點擊切換選取「${PLACEABLE_FURNITURE_META[movableId]?.name || "家具"}」`);
+          } else {
+            this.hoveredTarget = null;
+            dom.style.cursor = "default";
+            this.onHoverChange(`已選取「${selName}」：拖曳家具改位置，按 ← / → 鍵旋轉`);
+          }
           return;
         }
-        const editHits = this.raycaster.intersectObjects(this.allInteractTargets, false);
-        const visibleEditHit = editHits.find(h => {
-          if (!h.object?.userData?.movableId) return false;
-          let obj = h.object;
-          while (obj) {
-            if (!obj.visible) return false;
-            obj = obj.parent;
-          }
-          return true;
-        });
-        if (visibleEditHit) {
-          const mId = visibleEditHit.object.userData.movableId;
-          this.hoveredTarget = visibleEditHit.object.userData.interactType;
+        if (movableId) {
+          this.hoveredTarget = interactType;
           dom.style.cursor = "grab";
-          const mName = PLACEABLE_FURNITURE_META[mId]?.name || "家具";
-          this.onHoverChange(`點擊拿起並移動／旋轉「${mName}」`);
+          const mName = PLACEABLE_FURNITURE_META[movableId]?.name || "家具";
+          this.onHoverChange(`點擊選取「${mName}」，拖曳移動或按 ← / → 旋轉`);
           return;
         }
         this.hoveredTarget = null;
         dom.style.cursor = "default";
-        this.onHoverChange("點擊房間內的任何家具即可依網格重新擺放與旋轉");
+        this.onHoverChange("點擊房間內的任何家具即可依網格選取、拖曳與旋轉");
         return;
       }
 
@@ -5784,25 +5946,127 @@ export class FreelancerRoomScene {
       }
     };
 
+    this.onEditPointerDown = (e) => {
+      if (!this.editMode) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+
+      const rect = dom.getBoundingClientRect();
+      this.pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      this.pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      this.camera.updateMatrixWorld();
+      this.raycaster.setFromCamera(this.pointerNDC, this.camera);
+
+      const { movableId, hitActivePreview } = this.getEditRaycastHit();
+      const hitSelected = Boolean(
+        this.editSelectedId
+        && (hitActivePreview || movableId === this.editSelectedId)
+      );
+
+      this._editPointerDownHandled = false;
+      this._editSuppressNextClick = false;
+
+      if (hitSelected) {
+        this._editPointerDownHandled = true;
+        this.startEditDragPending(e, this.editSelectedId);
+        return;
+      }
+
+      if (movableId) {
+        this._editPointerDownHandled = true;
+        if (this.editSelectedId && this.editSelectedId !== movableId) {
+          if (this.editHoldingFromParcel) {
+            // Keep focus on unboxed parcel until placed or put back in box
+            return;
+          }
+          if (this.editItemDirty && this.editCanPlace) {
+            this.commitActiveFurniturePlacement();
+          } else {
+            this.editSelectedId = null;
+            this.editPreviewEntry = null;
+            this.editCanPlace = false;
+            this.editItemDirty = false;
+            this.applyFurnitureLayout(this.furnitureLayout);
+          }
+        }
+        this.selectFurnitureForPlacement(movableId, { fromParcel: false });
+        this.startEditDragPending(e, movableId);
+        return;
+      }
+
+      this.editDragPending = {
+        id: null,
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        clickedEmpty: true
+      };
+    };
+
+    this.onEditWindowPointerMove = (e) => {
+      if (this.editMode && this.editDragPending && !this.editDragPending.clickedEmpty && e.target !== dom) {
+        this.onPointerMove(e);
+      }
+    };
+
+    this.onEditPointerUp = (e) => {
+      if (this.editDragPending) {
+        const pid = this.editDragPending.pointerId;
+        if (pid !== undefined) {
+          try {
+            if (dom.hasPointerCapture?.(pid)) dom.releasePointerCapture(pid);
+          } catch {
+            // Ignore
+          }
+        }
+      }
+      if (this.editDragMoved) {
+        this._editSuppressNextClick = true;
+      }
+      this.editDragging = false;
+      this.editDragMoved = false;
+      this.editDragPending = null;
+      this.editDragOffset = { wall: null, x: 0, z: 0, coord: 0 };
+      if (this.editMode && this.editSelectedId) {
+        dom.style.cursor = "grab";
+      }
+    };
+
     this.onClick = (e) => {
       if (this.editMode) {
-        this.onPointerMove(e);
-        if (this.editSelectedId) {
-          this.commitActiveFurniturePlacement();
+        if (this._editSuppressNextClick) {
+          this._editSuppressNextClick = false;
+          this._editPointerDownHandled = false;
           return;
         }
-        const editHits = this.raycaster.intersectObjects(this.allInteractTargets, false);
-        const visibleEditHit = editHits.find(h => {
-          if (!h.object?.userData?.movableId) return false;
-          let obj = h.object;
-          while (obj) {
-            if (!obj.visible) return false;
-            obj = obj.parent;
+        if (this._editPointerDownHandled) {
+          this._editPointerDownHandled = false;
+          return;
+        }
+        // Fallback for synthetic clicks without pointerdown or clicks on empty canvas to finish item
+        const rect = dom.getBoundingClientRect();
+        this.pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        this.pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        this.camera.updateMatrixWorld();
+        this.raycaster.setFromCamera(this.pointerNDC, this.camera);
+        const { movableId, hitActivePreview } = this.getEditRaycastHit();
+        if (!this.editSelectedId && movableId) {
+          this.selectFurnitureForPlacement(movableId, { fromParcel: false });
+          return;
+        }
+        if (this.editSelectedId && !hitActivePreview && movableId !== this.editSelectedId && !this.editHoldingFromParcel) {
+          if (this.editItemDirty && this.editCanPlace) {
+            this.commitActiveFurniturePlacement();
+          } else {
+            this.editSelectedId = null;
+            this.editPreviewEntry = null;
+            this.editCanPlace = false;
+            this.editItemDirty = false;
+            if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
+            this.applyFurnitureLayout(this.furnitureLayout);
+            this.updateGridOverlayVisibility();
+            this.notifyEditModeState();
+            this.renderIfPaused();
           }
-          return true;
-        });
-        if (visibleEditHit?.object?.userData?.movableId) {
-          this.selectFurnitureForPlacement(visibleEditHit.object.userData.movableId, { fromParcel: false });
         }
         return;
       }
@@ -5883,6 +6147,7 @@ export class FreelancerRoomScene {
     };
 
     this.onPointerLeave = () => {
+      if (this.editDragging) return;
       this.hoveredFloorPoint = null;
       if (this.walkHoverRingMat) this.walkHoverRingMat.opacity = 0;
       if (this.hoveredTarget !== null) {
@@ -5894,9 +6159,21 @@ export class FreelancerRoomScene {
 
     this.onEditKeyDown = (e) => {
       if (!this.editMode) return;
-      if (e.key === "r" || e.key === "R") {
+      const activeTag = document.activeElement?.tagName;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(activeTag)) return;
+      if (e.key === "ArrowLeft") {
+        if (!this.editSelectedId) return;
         e.preventDefault();
-        this.rotateEditingFurniture(e.shiftKey ? -1 : 1);
+        this.rotateEditingFurniture(-1);
+      } else if (e.key === "ArrowRight") {
+        if (!this.editSelectedId) return;
+        e.preventDefault();
+        this.rotateEditingFurniture(1);
+      } else if (e.key === "Enter" && activeTag !== "BUTTON") {
+        if (this.editSelectedId && this.editCanPlace) {
+          e.preventDefault();
+          this.commitActiveFurniturePlacement();
+        }
       } else if (e.key === "Escape") {
         e.preventDefault();
         if (this.editSelectedId && this.editHoldingFromParcel) {
@@ -5905,6 +6182,8 @@ export class FreelancerRoomScene {
           this.editSelectedId = null;
           this.editPreviewEntry = null;
           this.editCanPlace = false;
+          this.editItemDirty = false;
+          this.resetEditDragState();
           if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
           this.applyFurnitureLayout(this.furnitureLayout);
           this.updateGridOverlayVisibility();
@@ -5916,9 +6195,13 @@ export class FreelancerRoomScene {
       }
     };
 
+    dom.addEventListener("pointerdown", this.onEditPointerDown);
     dom.addEventListener("pointermove", this.onPointerMove);
     dom.addEventListener("pointerleave", this.onPointerLeave);
     dom.addEventListener("click", this.onClick);
+    window.addEventListener("pointermove", this.onEditWindowPointerMove);
+    window.addEventListener("pointerup", this.onEditPointerUp);
+    window.addEventListener("pointercancel", this.onEditPointerUp);
     window.addEventListener("resize", this.onResize);
     window.addEventListener("keydown", this.onEditKeyDown);
   }
@@ -6126,10 +6409,14 @@ export class FreelancerRoomScene {
     if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
     const dom = this.renderer?.domElement;
     if (dom) {
+      dom.removeEventListener("pointerdown", this.onEditPointerDown);
       dom.removeEventListener("pointermove", this.onPointerMove);
       dom.removeEventListener("pointerleave", this.onPointerLeave);
       dom.removeEventListener("click", this.onClick);
     }
+    window.removeEventListener("pointermove", this.onEditWindowPointerMove);
+    window.removeEventListener("pointerup", this.onEditPointerUp);
+    window.removeEventListener("pointercancel", this.onEditPointerUp);
     window.removeEventListener("resize", this.onResize);
     if (this.onEditKeyDown) {
       window.removeEventListener("keydown", this.onEditKeyDown);

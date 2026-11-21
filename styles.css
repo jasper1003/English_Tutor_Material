@@ -3668,8 +3668,13 @@ dialog.settings-dialog::backdrop {
   cursor: pointer;
 }
 
-.room-edit-btn:hover {
+.room-edit-btn:hover:not(:disabled) {
   background: rgba(51, 65, 85, 0.96);
+}
+
+.room-edit-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .room-edit-btn.is-primary {
