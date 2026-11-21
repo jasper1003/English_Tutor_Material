@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121m";
+} from "./room-scene.js?v=20261121n";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -56,14 +56,14 @@ import {
   getShopItem,
   getMissingShopPrerequisites,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261121m";
+} from "./shop-catalog.js?v=20261121n";
 import {
   PLACEABLE_FURNITURE_META,
   isShopParcelItem,
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261121m";
+} from "./room-grid.js?v=20261121n";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -84,9 +84,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121m";
+} from "./app-helpers.js?v=20261121n";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121m";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121n";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -667,6 +667,9 @@ function updateHeaderAccountUI(user, role, displayName, clams = currentUserProfi
 }
 
 function hideAllPrimaryScreens() {
+  if (roomScene?.editMode) {
+    roomScene.exitFurnitureEditMode({ commit: true });
+  }
   ["error-view", "auth-view", "onboarding-view", "room-view", "home-view", "lesson-view"].forEach(id => {
     document.getElementById(id).classList.add("hidden");
   });
@@ -2084,6 +2087,9 @@ document.querySelectorAll("dialog").forEach(dlg => {
 });
 
 openSettingsBtn.addEventListener("click", () => {
+  if (roomScene?.editMode) {
+    roomScene.exitFurnitureEditMode({ commit: true });
+  }
   populateSettingsDialog();
 });
 
@@ -3853,6 +3859,9 @@ const { openPosterCustomizer, cleanupPosterObjectUrl } = createPosterCustomizer(
 
 document.getElementById("room-shop-btn").addEventListener("click", () => {
   if (spectatingStudentUid) return;
+  if (roomScene?.editMode) {
+    roomScene.exitFurnitureEditMode({ commit: true });
+  }
   clearFeedback("shop-feedback");
   renderShopDialog();
   shopDialog.showModal();

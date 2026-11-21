@@ -9,13 +9,13 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261121m";
+} from "./shop-catalog.js?v=20261121n";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261121m";
+} from "./app-helpers.js?v=20261121n";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -33,7 +33,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261121m";
+} from "./room-grid.js?v=20261121n";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -1437,6 +1437,7 @@ export class FreelancerRoomScene {
     this.editPreviewRot = 0;
     this.editPreviewEntry = null;
     this.editCanPlace = false;
+    this.layoutDirty = false;
     this.movableGroups = {};
     this.tvHostWallName = "west";
     this.posterHostWallName = "north";
@@ -1445,8 +1446,8 @@ export class FreelancerRoomScene {
     this.persona = buildCharacterPersona(this.activeCharacterId, this.avatarConfig, this.ownedItems);
 
     // Room bounds & obstacle-free routing anchors
-    this.deskWorkAnchor = new THREE.Vector3(-0.2, 0, -2.02);
-    this.deskExitAnchor = new THREE.Vector3(-0.2, 0, -1.45);
+    this.deskWorkAnchor = new THREE.Vector3(-0.25, 0, -2.32);
+    this.deskExitAnchor = new THREE.Vector3(-0.25, 0, -1.60);
     this.bedSideAnchor = new THREE.Vector3(1.48, 0, 2.05);
     this.sofaFrontAnchor = new THREE.Vector3(-2.48, 0, -0.35);
     this.sofaCorridorWest = new THREE.Vector3(-2.48, 0, 0.88);
@@ -1569,6 +1570,7 @@ export class FreelancerRoomScene {
     this.renderer.domElement.style.zIndex = "1";
     this.renderer.domElement.style.width = "100%";
     this.renderer.domElement.style.height = "100%";
+    this.renderer.domElement.style.touchAction = "manipulation";
     this.container.appendChild(this.renderer.domElement);
 
     // Live 3D-aligned YouTube screen overlay projected onto the West-wall TV
@@ -1945,7 +1947,7 @@ export class FreelancerRoomScene {
     const cushionMat = makeMat("#a2b8ae", 0.86);
     const pillowAccentMat = makeMat("#e07a5f", 0.84);
 
-    [[-0.72, -0.32], [0.72, -0.32], [-0.72, 0.32], [0.72, 0.32]].forEach(([lx, lz]) => {
+    [[-0.72, -0.24], [0.72, -0.24], [-0.72, 0.40], [0.72, 0.40]].forEach(([lx, lz]) => {
       const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.14, 10), sofaLegMat);
       leg.position.set(lx, 0.07, lz);
       leg.castShadow = true;
@@ -1953,35 +1955,35 @@ export class FreelancerRoomScene {
     });
 
     const sofaBase = new THREE.Mesh(new RoundedBoxGeometry(1.72, 0.24, 0.84, 4, 0.06), sofaFabricMat);
-    sofaBase.position.set(0, 0.24, 0);
+    sofaBase.position.set(0, 0.24, 0.08);
     sofaBase.castShadow = true;
     sofaBase.receiveShadow = true;
     sofaGroup.add(sofaBase);
 
     [-0.36, 0.36].forEach(cx => {
       const seat = new THREE.Mesh(new RoundedBoxGeometry(0.68, 0.14, 0.68, 4, 0.06), cushionMat);
-      seat.position.set(cx, 0.4, 0.05);
+      seat.position.set(cx, 0.4, 0.13);
       seat.castShadow = true;
       seat.receiveShadow = true;
       sofaGroup.add(seat);
     });
 
     const backrest = new THREE.Mesh(new RoundedBoxGeometry(1.72, 0.52, 0.2, 4, 0.07), sofaFabricMat);
-    backrest.position.set(0, 0.56, -0.32);
+    backrest.position.set(0, 0.56, -0.24);
     backrest.rotation.x = -0.08;
     backrest.castShadow = true;
     sofaGroup.add(backrest);
 
     [-0.77, 0.77].forEach(ax => {
       const arm = new THREE.Mesh(new RoundedBoxGeometry(0.18, 0.38, 0.84, 4, 0.06), sofaFabricMat);
-      arm.position.set(ax, 0.44, 0);
+      arm.position.set(ax, 0.44, 0.08);
       arm.castShadow = true;
       sofaGroup.add(arm);
     });
 
     [-0.44, 0.44].forEach((px, idx) => {
       const throwPillow = new THREE.Mesh(new RoundedBoxGeometry(0.28, 0.24, 0.12, 3, 0.04), pillowAccentMat);
-      throwPillow.position.set(px, 0.58, -0.15);
+      throwPillow.position.set(px, 0.58, -0.07);
       throwPillow.rotation.set(-0.22, idx === 0 ? 0.25 : -0.25, 0);
       throwPillow.castShadow = true;
       sofaGroup.add(throwPillow);
@@ -1990,7 +1992,9 @@ export class FreelancerRoomScene {
     sofaGroup.visible = Boolean(this.ownedItems.cozy_sofa);
     this.sofaGroup = sofaGroup;
     this.furnitureGroup.add(sofaGroup);
-    sofaGroup.children.forEach(m => this.addInteractive(m, "sofa", "cozy_sofa"));
+    sofaGroup.traverse(m => {
+      if (m.isMesh) this.addInteractive(m, "sofa", "cozy_sofa");
+    });
 
     // 2. Shop item: Bedside Nightstand + Clickable Warm Night Lamp beside Bed Headboard
     const bedLampGroup = new THREE.Group();
@@ -2110,7 +2114,9 @@ export class FreelancerRoomScene {
     coatRack.visible = Boolean(this.ownedItems.coat_rack);
     this.coatRackGroup = coatRack;
     this.furnitureGroup.add(coatRack);
-    coatRack.children.forEach(m => this.addInteractive(m, "coatRack", "coat_rack"));
+    coatRack.traverse(m => {
+      if (m.isMesh) this.addInteractive(m, "coatRack", "coat_rack");
+    });
 
     // 2. Floor Fiddle-Leaf Fig in Woven Basket (East side between bath & bed)
     const floorPlant = new THREE.Group();
@@ -2161,7 +2167,9 @@ export class FreelancerRoomScene {
     floorPlant.visible = Boolean(this.ownedItems.floor_plant);
     this.floorPlantGroup = floorPlant;
     this.furnitureGroup.add(floorPlant);
-    floorPlant.children.forEach(m => this.addInteractive(m, "floorPlant", "floor_plant"));
+    floorPlant.traverse(m => {
+      if (m.isMesh) this.addInteractive(m, "floorPlant", "floor_plant");
+    });
 
     // 3. Coffee Bar Station (West wall north of TV)
     const coffeeBar = new THREE.Group();
@@ -2213,7 +2221,9 @@ export class FreelancerRoomScene {
     coffeeBar.visible = Boolean(this.ownedItems.coffee_bar);
     this.coffeeBarGroup = coffeeBar;
     this.furnitureGroup.add(coffeeBar);
-    coffeeBar.children.forEach(m => this.addInteractive(m, "coffeeBar", "coffee_bar"));
+    coffeeBar.traverse(m => {
+      if (m.isMesh) this.addInteractive(m, "coffeeBar", "coffee_bar");
+    });
 
     // 4. Mid-century Vinyl Turntable & Record Console (South wall)
     const vinylGroup = new THREE.Group();
@@ -2284,7 +2294,9 @@ export class FreelancerRoomScene {
     vinylGroup.visible = Boolean(this.ownedItems.vinyl_player);
     this.vinylPlayerGroup = vinylGroup;
     this.furnitureGroup.add(vinylGroup);
-    vinylGroup.children.forEach(m => this.addInteractive(m, "vinyl", "vinyl_player"));
+    vinylGroup.traverse(m => {
+      if (m.isMesh) this.addInteractive(m, "vinyl", "vinyl_player");
+    });
 
     // 5. Orange Tabby Cat Roommate + Fleece Pet Bed (South corner near bed)
     const catGroup = new THREE.Group();
@@ -2349,7 +2361,9 @@ export class FreelancerRoomScene {
     catGroup.visible = Boolean(this.ownedItems.orange_cat);
     this.orangeCatGroup = catGroup;
     this.furnitureGroup.add(catGroup);
-    catVisual.children.forEach(m => this.addInteractive(m, "cat", "orange_cat"));
+    catVisual.traverse(m => {
+      if (m.isMesh) this.addInteractive(m, "cat", "orange_cat");
+    });
 
     // 6. Unlocked Combo Cinema Upgrade: Dolby Atmos Surround Sound System (follows wallTvGroup & sofaGroup!)
     const tvAtmosGroup = new THREE.Group();
@@ -2383,27 +2397,27 @@ export class FreelancerRoomScene {
     soundbar.add(sbLed);
     tvAtmosGroup.add(soundbar);
 
-    // 6b. Wireless Floor Subwoofer tucked neatly under/beside TV shelf
+    // 6b. Wireless Floor Subwoofer tucked neatly under/beside TV shelf (within 3-cell TV span)
     const subGroup = new THREE.Group();
-    subGroup.position.set(0.88, -1.56, 0.24);
-    const subBox = new THREE.Mesh(new RoundedBoxGeometry(0.38, 0.42, 0.36, 4, 0.05), chassisMat);
-    subBox.position.y = 0.23;
+    subGroup.position.set(0.54, -1.56, 0.24);
+    const subBox = new THREE.Mesh(new RoundedBoxGeometry(0.36, 0.40, 0.34, 4, 0.05), chassisMat);
+    subBox.position.y = 0.22;
     subBox.castShadow = true;
     subBox.receiveShadow = true;
     subGroup.add(subBox);
-    const subRing = new THREE.Mesh(new THREE.TorusGeometry(0.115, 0.018, 12, 24), copperConeMat);
-    subRing.position.set(0, 0.23, 0.18);
-    const subCone = new THREE.Mesh(new THREE.CircleGeometry(0.105, 22), grilleMat);
-    subCone.position.set(0, 0.23, 0.182);
+    const subRing = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.018, 12, 24), copperConeMat);
+    subRing.position.set(0, 0.22, 0.17);
+    const subCone = new THREE.Mesh(new THREE.CircleGeometry(0.10, 22), grilleMat);
+    subCone.position.set(0, 0.22, 0.172);
     const subLed = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), this.atmosLedMat);
-    subLed.position.set(0.12, 0.39, 0.182);
+    subLed.position.set(0.11, 0.37, 0.172);
     subGroup.add(subRing, subCone, subLed);
     tvAtmosGroup.add(subGroup);
 
-    // 6c. Twin Front Height / Atmos Modules flanking above wall TV
-    [-0.88, 0.88].forEach(mx => {
+    // 6c. Twin Front Height / Atmos Modules flanking above wall TV (within 3-cell span)
+    [-0.62, 0.62].forEach(mx => {
       const heightMod = new THREE.Group();
-      heightMod.position.set(mx, 0.52, 0.08);
+      heightMod.position.set(mx, 0.54, 0.08);
       heightMod.rotation.x = 0.26;
       const modBox = new THREE.Mesh(new RoundedBoxGeometry(0.19, 0.23, 0.14, 3, 0.025), chassisMat);
       modBox.castShadow = true;
@@ -2417,15 +2431,15 @@ export class FreelancerRoomScene {
       tvAtmosGroup.add(heightMod);
     });
 
-    // 6d. Twin Rear Surround Satellite Towers behind Cozy Sofa corners
+    // 6d. Twin Rear Surround Satellite Towers neatly behind sofa corners (inside 4x2 sofa footprint)
     [
-      [-0.56, -0.56, -0.45],
-      [0.56, -0.56, 0.45]
+      [-0.56, -0.41, -0.35],
+      [0.56, -0.41, 0.35]
     ].forEach(([tx, tz, ry]) => {
       const tower = new THREE.Group();
       tower.position.set(tx, 0, tz);
       tower.rotation.y = ry;
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.14, 0.024, 18), titaniumMat);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.09, 0.024, 18), titaniumMat);
       base.position.y = 0.012;
       base.receiveShadow = true;
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.86, 10), titaniumMat);
@@ -2448,12 +2462,15 @@ export class FreelancerRoomScene {
     this.dolbyAtmosGroup = sofaAtmosGroup;
     if (this.wallTvGroup) this.wallTvGroup.add(tvAtmosGroup);
     if (this.sofaGroup) this.sofaGroup.add(sofaAtmosGroup);
-    [tvAtmosGroup, sofaAtmosGroup].forEach(grp => {
-      grp.traverse(obj => {
-        if (obj.isMesh && obj.material !== this.atmosLedMat) {
-          this.addInteractive(obj, "atmos");
-        }
-      });
+    tvAtmosGroup.traverse(obj => {
+      if (obj.isMesh && obj.material !== this.atmosLedMat) {
+        this.addInteractive(obj, "atmos", "wall_tv");
+      }
+    });
+    sofaAtmosGroup.traverse(obj => {
+      if (obj.isMesh && obj.material !== this.atmosLedMat) {
+        this.addInteractive(obj, "atmos", "cozy_sofa");
+      }
     });
 
     // 7. Two-Drawer Oak Side Table + Aligned Acrylic Hamster Cage & Wheel (immediately left of the desk)
@@ -3042,7 +3059,7 @@ export class FreelancerRoomScene {
     this.furnitureGroup.add(deskRoot);
 
     const workArea = new THREE.Group();
-    workArea.position.set(0, 0, -0.28);
+    workArea.position.set(0, 0, -0.19);
     deskRoot.add(workArea);
 
     const deskWood = makeMat("#cfa072", 0.52);
@@ -3281,7 +3298,7 @@ export class FreelancerRoomScene {
 
     // Cozy Swivel Desk Chair (child of deskRoot)
     const chair = new THREE.Group();
-    chair.position.set(0, 0, 0.55);
+    chair.position.set(0, 0, 0.43);
     const chairFabric = makeMat("#5b738f", 0.8);
     const chairMetal = makeMat("#475569", 0.35, 0.6);
 
@@ -3312,7 +3329,7 @@ export class FreelancerRoomScene {
 
     // Shop item: Ergonomic Studio Artist High-Back Chair (child of deskRoot)
     const ergoChair = new THREE.Group();
-    ergoChair.position.set(0, 0, 0.55);
+    ergoChair.position.set(0, 0, 0.43);
     const ergoMeshMat = makeMat("#4a6580", 0.72);
     const ergoLeatherMat = makeMat("#c98a55", 0.65);
 
@@ -3353,9 +3370,9 @@ export class FreelancerRoomScene {
     deskRoot.add(ergoChair);
     [eSeat, eBack, eHeadrest].forEach(m => this.addInteractive(m, "computer", "work_desk"));
 
-    // Propagate movableId "work_desk" cleanly across computer peripherals attached inside workArea
-    workArea.traverse(obj => {
-      if (obj.isMesh && obj.userData.interactType === "computer") {
+    // Propagate movableId "work_desk" across all desk, chair, ergoChair, monitor, lamp, and plant meshes inside deskRoot
+    deskRoot.traverse(obj => {
+      if (obj.isMesh && !obj.userData.movableId) {
         obj.userData.movableId = "work_desk";
       }
     });
@@ -3388,7 +3405,7 @@ export class FreelancerRoomScene {
     this.nameTagEl.textContent = (this.avatarConfig.name || "接案繪師").trim();
     if (this.charState === "WORKING") {
       this.charRoot.position.copy(this.deskWorkAnchor);
-      this.charRoot.rotation.y = Math.PI;
+      this.charRoot.rotation.y = (this.deskRootGroup?.rotation.y || 0) + Math.PI;
     }
   }
 
@@ -3404,12 +3421,24 @@ export class FreelancerRoomScene {
     return createSeededRng(seed);
   }
 
+  getPlacedOwnedItems() {
+    const rawOwned = this.ownedItems || {};
+    const pending = this.pendingParcels || {};
+    const placed = {};
+    for (const [key, val] of Object.entries(rawOwned)) {
+      if (val && !pending[key]) {
+        placed[key] = val;
+      }
+    }
+    return placed;
+  }
+
   placeCharacterAtIdleStart(isNightTime = ((Date.now() % DAY_CYCLE_MS) / DAY_CYCLE_MS) >= 0.5) {
     this.hideAllProps();
     const rng = this.getSeededActivityRng(0x3c6ef372);
     const startActivityId = pickPersonaWeightedActivity(
       this.persona,
-      this.ownedItems,
+      this.getPlacedOwnedItems(),
       isNightTime,
       null,
       rng
@@ -3490,7 +3519,7 @@ export class FreelancerRoomScene {
     if (elapsedSec > 1.5) {
       if (this.charState === "WALK_TO_WORK") {
         this.charRoot.position.copy(this.deskWorkAnchor);
-        this.charRoot.rotation.y = Math.PI;
+        this.charRoot.rotation.y = (this.deskRootGroup?.rotation.y || 0) + Math.PI;
         this.charState = "WORKING";
         this.postWorkCooldown = Math.max(0, POST_WORK_COOLDOWN_SEC - Math.min(elapsedSec, 6));
         this.walkWaypoints = [];
@@ -3513,7 +3542,7 @@ export class FreelancerRoomScene {
         if (this.postWorkCooldown > 0 && elapsedSec >= this.postWorkCooldown) {
           elapsedSec -= this.postWorkCooldown;
           this.postWorkCooldown = 0;
-          const nextId = pickPersonaWeightedActivity(this.persona, this.ownedItems, isNightTime, null);
+          const nextId = pickPersonaWeightedActivity(this.persona, this.getPlacedOwnedItems(), isNightTime, null);
           const nextSpot = this.getActivitySpotById(nextId);
           this.charState = "IDLE";
           this.currentActivity = nextSpot.id;
@@ -3533,7 +3562,7 @@ export class FreelancerRoomScene {
         elapsedSec -= Math.max(1, this.activityTimer);
         const nextId = (this.currentActivity === "work_celebrate" && this.postCelebrateSpot)
           ? this.postCelebrateSpot.id
-          : pickPersonaWeightedActivity(this.persona, this.ownedItems, isNightTime, this.currentActivity);
+          : pickPersonaWeightedActivity(this.persona, this.getPlacedOwnedItems(), isNightTime, this.currentActivity);
         this.postCelebrateSpot = null;
         const nextSpot = this.getActivitySpotById(nextId);
         this.currentActivity = nextSpot.id;
@@ -3850,8 +3879,8 @@ export class FreelancerRoomScene {
     const linePts = [];
     for (let i = 0; i <= GRID_CELLS; i++) {
       const coord = -4.0 + i * GRID_STEP;
-      linePts.push(-4.0, 0.022, coord, 4.0, 0.022, coord);
-      linePts.push(coord, 0.022, -4.0, coord, 0.022, 4.0);
+      linePts.push(-4.0, 0.045, coord, 4.0, 0.045, coord);
+      linePts.push(coord, 0.045, -4.0, coord, 0.045, 4.0);
     }
     const lineGeo = new THREE.BufferGeometry();
     lineGeo.setAttribute("position", new THREE.Float32BufferAttribute(linePts, 3));
@@ -3870,7 +3899,7 @@ export class FreelancerRoomScene {
         if (!isFloorCellReserved(gx, gz)) continue;
         const m = new THREE.Mesh(cellGeo, reservedCellMat);
         m.rotation.x = -Math.PI / 2;
-        m.position.set(-4.0 + (gx + 0.5) * GRID_STEP, 0.018, -4.0 + (gz + 0.5) * GRID_STEP);
+        m.position.set(-4.0 + (gx + 0.5) * GRID_STEP, 0.042, -4.0 + (gz + 0.5) * GRID_STEP);
         floorGrid.add(m);
       }
     }
@@ -4056,8 +4085,8 @@ export class FreelancerRoomScene {
 
     // Desk anchors
     if (this.deskRootGroup) {
-      const workWorld = localToWorld(this.deskRootGroup, 0, 0.55);
-      const exitWorld = this.clampWalkableFloorPoint(localToWorld(this.deskRootGroup, 0, 1.25));
+      const workWorld = localToWorld(this.deskRootGroup, 0, 0.43);
+      const exitWorld = this.clampWalkableFloorPoint(localToWorld(this.deskRootGroup, 0, 1.15));
       const plantWorld = pickSafeSideSpot(this.deskRootGroup, [[0.98, 0.58, Math.PI], [0, 1.15, Math.PI]], Math.PI);
       const deskRot = this.deskRootGroup.rotation.y + Math.PI;
       this.deskWorkAnchor.copy(workWorld);
@@ -4074,8 +4103,8 @@ export class FreelancerRoomScene {
     if (this.bedGroup) {
       const bedRot = this.bedGroup.rotation.y;
       const sidePick = pickSafeSideSpot(this.bedGroup, [
-        [-1.12, 0, -Math.PI / 2],
-        [1.12, 0, Math.PI / 2],
+        [-1.22, 0, -Math.PI / 2],
+        [1.22, 0, Math.PI / 2],
         [0, -1.55, Math.PI]
       ], -Math.PI / 2);
       this.bedSideAnchor.copy(sidePick.pos);
@@ -4086,7 +4115,7 @@ export class FreelancerRoomScene {
       }
       const phoneSpot = this.chillSpots.find(s => s.id === "phone");
       if (phoneSpot) {
-        const useRightSide = sidePick.pos.distanceTo(localToWorld(this.bedGroup, 1.12, 0)) < 0.6;
+        const useRightSide = sidePick.pos.distanceTo(localToWorld(this.bedGroup, 1.22, 0)) < 0.6;
         phoneSpot.pos.copy(localToWorld(this.bedGroup, useRightSide ? 0.71 : -0.71, -0.10));
         phoneSpot.rotY = bedRot + (useRightSide ? Math.PI / 2 : -Math.PI / 2);
       }
@@ -4095,11 +4124,11 @@ export class FreelancerRoomScene {
     // Sofa anchors
     if (this.sofaGroup) {
       const sofaRot = this.sofaGroup.rotation.y;
-      const sofaPos = this.sofaGroup.position;
-      this.sofaFrontAnchor.copy(this.clampWalkableFloorPoint(localToWorld(this.sofaGroup, 0, 0.76)));
-      this.actionSpots.sofa_read.pos.set(sofaPos.x, 0, sofaPos.z);
+      const sofaSeatWorld = localToWorld(this.sofaGroup, 0, 0.08);
+      this.sofaFrontAnchor.copy(this.clampWalkableFloorPoint(localToWorld(this.sofaGroup, 0, 0.84)));
+      this.actionSpots.sofa_read.pos.copy(sofaSeatWorld);
       this.actionSpots.sofa_read.rotY = sofaRot;
-      this.actionSpots.sofa_tv.pos.set(sofaPos.x, 0, sofaPos.z);
+      this.actionSpots.sofa_tv.pos.copy(sofaSeatWorld);
       this.actionSpots.sofa_tv.rotY = sofaRot;
     }
 
@@ -4151,6 +4180,16 @@ export class FreelancerRoomScene {
       this.actionSpots.admire_poster.pos.copy(stand);
       this.actionSpots.admire_poster.rotY = Math.atan2(-wp.normalX, -wp.normalZ);
     }
+
+    // Clamp open-floor chill spots away from relocated furniture obstacles
+    const exerciseSpot = this.chillSpots.find(s => s.id === "exercise");
+    if (exerciseSpot) {
+      exerciseSpot.pos.copy(this.clampWalkableFloorPoint(new THREE.Vector3(-0.55, 0, 0.72)));
+    }
+    const eatSpot = this.chillSpots.find(s => s.id === "eat");
+    if (eatSpot) {
+      eatSpot.pos.copy(this.clampWalkableFloorPoint(new THREE.Vector3(0.85, 0, 2.45)));
+    }
   }
 
   openNextParcelBox() {
@@ -4162,13 +4201,36 @@ export class FreelancerRoomScene {
     return true;
   }
 
+  ensureWallVisibleInCamera(wallName) {
+    const visibleQuartersByWall = {
+      north: [0, 3],
+      east: [2, 3],
+      south: [1, 2],
+      west: [0, 1]
+    };
+    const allowed = visibleQuartersByWall[wallName];
+    if (!allowed) return;
+    const curQ = ((this.targetQuarter % 4) + 4) % 4;
+    if (allowed.includes(curQ)) return;
+    const dist = q => Math.min((q - curQ + 4) % 4, (curQ - q + 4) % 4);
+    const nextQ = allowed.slice().sort((a, b) => dist(a) - dist(b))[0];
+    this.targetQuarter = nextQ;
+    this.updateCameraTransform(true);
+    this.updateGridOverlayVisibility();
+    this.renderIfPaused();
+  }
+
   enterFurnitureEditMode({ itemId = null, fromParcel = false } = {}) {
     if (this.spectating) return;
     this.editMode = true;
+    this.layoutDirty = false;
     this.editSelectedId = null;
     this.editHoldingFromParcel = false;
     this.editPreviewEntry = null;
     this.editCanPlace = false;
+    if (this.renderer?.domElement) {
+      this.renderer.domElement.style.touchAction = "none";
+    }
     this.updateParcelVisuals();
     if (itemId && PLACEABLE_FURNITURE_META[itemId]) {
       this.selectFurnitureForPlacement(itemId, { fromParcel });
@@ -4189,19 +4251,27 @@ export class FreelancerRoomScene {
     this.editHoldingFromParcel = false;
     this.editPreviewEntry = null;
     this.editCanPlace = false;
+    if (this.renderer?.domElement) {
+      this.renderer.domElement.style.touchAction = "manipulation";
+    }
     if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
     this.updateGridOverlayVisibility();
     this.applyOwnedItems(this.ownedItems);
     this.applyFurnitureLayout(this.furnitureLayout);
     // Safely keep idle character inside current updated bounds
-    if (this.charState === "IDLE" && this.currentActivity) {
-      const curSpot = this.getActivitySpotById(this.currentActivity);
-      if (curSpot && this.charRoot) {
-        this.charRoot.position.copy(curSpot.pos);
-        this.charRoot.rotation.y = curSpot.rotY;
+    if (this.charState === "IDLE" && this.currentActivity && this.charRoot) {
+      if (this.currentActivity === "floor_stand") {
+        this.charRoot.position.copy(this.clampWalkableFloorPoint(this.charRoot.position));
+      } else {
+        const curSpot = this.getActivitySpotById(this.currentActivity);
+        if (curSpot) {
+          this.charRoot.position.copy(curSpot.pos);
+          this.charRoot.rotation.y = curSpot.rotY;
+        }
       }
     }
-    if (commit) {
+    if (commit && this.layoutDirty) {
+      this.layoutDirty = false;
       this.onSaveLayout({
         furnitureLayout: { ...this.furnitureLayout },
         pendingParcels: { ...this.pendingParcels }
@@ -4230,6 +4300,9 @@ export class FreelancerRoomScene {
       delete this.pendingParcels[itemId];
     }
     this.applyOwnedItems(this.ownedItems);
+    if (meta.surface === "wall" && startEntry.wall) {
+      this.ensureWallVisibleInCamera(startEntry.wall);
+    }
     this.updateGridOverlayVisibility();
     this.updateEditPreviewMesh();
     this.notifyEditModeState(meta.name);
@@ -4257,6 +4330,7 @@ export class FreelancerRoomScene {
         }
       }
       this.editPreviewEntry = { surface: "wall", wall: nextWall, pos: nextPos };
+      this.ensureWallVisibleInCamera(nextWall);
     } else {
       this.editPreviewRot = ((this.editPreviewRot + (delta >= 0 ? 1 : 3)) % 4 + 4) % 4;
       const curGx = this.editPreviewEntry?.gx ?? 0;
@@ -4355,6 +4429,10 @@ export class FreelancerRoomScene {
         group.position.set(wPos.x, wPos.y, wPos.z);
         group.rotation.y = wPos.rotY;
       }
+      if (id === "wall_tv") {
+        this.tvHostWallName = entry.wall;
+        this.updateTvScreenOverlay();
+      }
       this.editPreviewGroup.visible = true;
       this.editPreviewGroup.position.set(wPos.x + wPos.normalX * 0.04, wallY, wPos.z + wPos.normalZ * 0.04);
       this.editPreviewGroup.rotation.y = wPos.rotY;
@@ -4380,7 +4458,7 @@ export class FreelancerRoomScene {
         group.rotation.y = w.rotY;
       }
       this.editPreviewGroup.visible = true;
-      this.editPreviewGroup.position.set(w.x, 0.032, w.z);
+      this.editPreviewGroup.position.set(w.x, 0.049, w.z);
       this.editPreviewGroup.rotation.y = 0;
       this.editPreviewPad.rotation.set(-Math.PI / 2, 0, 0);
       this.editPreviewPad.position.set(0, 0, 0);
@@ -4406,6 +4484,7 @@ export class FreelancerRoomScene {
       [id]: { ...this.editPreviewEntry }
     };
     delete this.pendingParcels[id];
+    this.layoutDirty = false;
     this.editSelectedId = null;
     this.editHoldingFromParcel = false;
     this.editPreviewEntry = null;
@@ -4566,7 +4645,7 @@ export class FreelancerRoomScene {
   }
 
   pickCelebrateLeisureSpot() {
-    const owned = this.ownedItems || {};
+    const owned = this.getPlacedOwnedItems();
     const options = [];
     if (owned.orange_cat) options.push(this.actionSpots.pet_cat);
     if (owned.hamster_cage) options.push(this.actionSpots.watch_hamster);
@@ -4637,7 +4716,7 @@ export class FreelancerRoomScene {
     this.postWorkCooldown = POST_WORK_COOLDOWN_SEC;
     this.thoughtCooldown = 1.4 + Math.random() * 1.6;
     this.charRoot.position.copy(this.deskWorkAnchor);
-    this.charRoot.rotation.y = Math.PI;
+    this.charRoot.rotation.y = (this.deskRootGroup?.rotation.y || 0) + Math.PI;
     this.onActivityChange("正在電繪板前收尾創作（稍後休息）");
   }
 
@@ -4646,7 +4725,7 @@ export class FreelancerRoomScene {
     this.postWorkCooldown = POST_WORK_COOLDOWN_SEC;
     this.thoughtCooldown = 1.4 + Math.random() * 1.6;
     this.charRoot.position.copy(this.deskWorkAnchor);
-    this.charRoot.rotation.y = Math.PI;
+    this.charRoot.rotation.y = (this.deskRootGroup?.rotation.y || 0) + Math.PI;
     this.onActivityChange("專心創作接案中");
   }
 
@@ -4905,14 +4984,19 @@ export class FreelancerRoomScene {
     else if (targetOnBed && !currentlyOnBed) entryPt = this.bedSideAnchor;
     else if (targetOnSofa && !currentlyOnSofa) entryPt = this.sofaFrontAnchor;
 
-    // 2. Route safely around sofa (-2.26..-1.25, -1.25..0.55) when crossing between West TV/sofa front and room interior
+    // 2. Route safely around default sofa position (-2.26..-1.25, -1.25..0.55) only when sofa is placed there
     const startPt = rawWaypoints.length > 0 ? rawWaypoints[rawWaypoints.length - 1] : curPos;
     const isWestSofaSide = (p) => p.x < -1.9 && p.z > -1.4 && p.z < 0.72;
     const isEastInterior = (p) => p.x > -1.45 && p.z < 2.6;
-    if (isWestSofaSide(startPt) && isEastInterior(entryPt)) {
+    const sofaBlocking = Boolean(
+      this.sofaGroup?.visible
+      && !this.pendingParcels?.cozy_sofa
+      && this.sofaGroup.position.distanceTo(new THREE.Vector3(-1.78, 0, -0.35)) < 0.75
+    );
+    if (sofaBlocking && isWestSofaSide(startPt) && isEastInterior(entryPt)) {
       rawWaypoints.push(this.sofaCorridorWest.clone());
       rawWaypoints.push(this.sofaCorridorEast.clone());
-    } else if (isEastInterior(startPt) && isWestSofaSide(entryPt)) {
+    } else if (sofaBlocking && isEastInterior(startPt) && isWestSofaSide(entryPt)) {
       rawWaypoints.push(this.sofaCorridorEast.clone());
       rawWaypoints.push(this.sofaCorridorWest.clone());
     }
@@ -5021,7 +5105,7 @@ export class FreelancerRoomScene {
   pickNextIdleActivity(isNightTime) {
     const chosenId = pickPersonaWeightedActivity(
       this.persona,
-      this.ownedItems,
+      this.getPlacedOwnedItems(),
       isNightTime,
       this.currentActivity,
       Math.random
@@ -5736,7 +5820,7 @@ export class FreelancerRoomScene {
         if (!this.spectating) this.goToWork();
       } else if (this.hoveredTarget === "tv") {
         if (!this.spectating) {
-          const spot = this.ownedItems.cozy_sofa ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
+          const spot = this.getPlacedOwnedItems().cozy_sofa ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
           this.commandActivity(spot, 180);
           this.onOpenTv();
         }

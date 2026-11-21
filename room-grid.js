@@ -375,6 +375,32 @@ export function computeRoomGridStats(ownedItems = {}, rawLayout = {}, rawPending
   };
 }
 
+export function canPackPlaceableItems(itemIds = [], ownedItems = {}, rawLayout = {}, rawPendingParcels = {}) {
+  const queue = (itemIds || []).filter(id => Boolean(PLACEABLE_FURNITURE_META[id]));
+  if (queue.length === 0) return true;
+  // Pack larger-footprint items first so big multi-cell parcels claim contiguous slots cleanly
+  queue.sort((a, b) => {
+    const ma = PLACEABLE_FURNITURE_META[a];
+    const mb = PLACEABLE_FURNITURE_META[b];
+    const areaA = ma.surface === "wall" ? ma.gridW : ma.gridW * ma.gridD;
+    const areaB = mb.surface === "wall" ? mb.gridW : mb.gridW * mb.gridD;
+    return areaB - areaA;
+  });
+
+  const simOwned = { ...(ownedItems || {}) };
+  const simLayout = { ...(rawLayout || {}) };
+  const simPending = { ...(rawPendingParcels || {}) };
+
+  for (const id of queue) {
+    simOwned[id] = true;
+    delete simPending[id];
+    const slot = findFirstValidPlacement(id, simOwned, simLayout, simPending);
+    if (!slot) return false;
+    simLayout[id] = slot;
+  }
+  return true;
+}
+
 export function checkShopItemGridAvailability(itemId, ownedItems = {}, rawLayout = {}, rawPendingParcels = {}, gridOverrides = null) {
   const meta = PLACEABLE_FURNITURE_META[itemId];
   if (!meta) {
@@ -403,15 +429,23 @@ export function checkShopItemGridAvailability(itemId, ownedItems = {}, rawLayout
     };
   }
 
-  const slot = findFirstValidPlacement(itemId, ownedItems, rawLayout, rawPendingParcels);
-  if (!slot) {
+  const sameSurfacePending = Object.keys(stats.pendingParcels || {}).filter(
+    id => PLACEABLE_FURNITURE_META[id]?.surface === meta.surface
+  );
+  const canPackAll = canPackPlaceableItems(
+    [...sameSurfacePending, itemId],
+    ownedItems,
+    rawLayout,
+    stats.pendingParcels
+  );
+  if (!canPackAll) {
     return {
       ok: false,
       placeable: true,
       surface: meta.surface,
       neededCells,
       remainingCells,
-      reason: `目前剩餘的 ${remainingCells} 格${surfaceLabel}網格過於零碎，無法塞進「${meta.name}」，請先調整現有家具擺設！`
+      reason: `目前剩餘的 ${remainingCells} 格${surfaceLabel}網格過於零碎，無法與門口待拆包裹一同放入「${meta.name}」，請先拆箱並調整現有家具擺設！`
     };
   }
 
