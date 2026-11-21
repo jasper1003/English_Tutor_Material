@@ -9,13 +9,13 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261121p";
+} from "./shop-catalog.js?v=20261121q";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261121p";
+} from "./app-helpers.js?v=20261121q";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -33,7 +33,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261121p";
+} from "./room-grid.js?v=20261121q";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -4400,6 +4400,30 @@ export class FreelancerRoomScene {
     this.exitFurnitureEditMode({ commit: true });
   }
 
+  cancelEditingFurniture() {
+    if (!this.editMode) return false;
+    if (!this.editSelectedId) {
+      this.exitFurnitureEditMode({ commit: true });
+      return true;
+    }
+    if (this.editHoldingFromParcel) {
+      this.putEditingParcelBack();
+      return true;
+    }
+    this.editSelectedId = null;
+    this.editHoldingFromParcel = false;
+    this.editPreviewEntry = null;
+    this.editCanPlace = false;
+    this.editItemDirty = false;
+    this.resetEditDragState();
+    if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
+    this.applyFurnitureLayout(this.furnitureLayout);
+    this.updateGridOverlayVisibility();
+    this.notifyEditModeState();
+    this.renderIfPaused();
+    return true;
+  }
+
   resetFurnitureLayout() {
     if (this.spectating) return;
     this.furnitureLayout = {};
@@ -6176,22 +6200,7 @@ export class FreelancerRoomScene {
         }
       } else if (e.key === "Escape") {
         e.preventDefault();
-        if (this.editSelectedId && this.editHoldingFromParcel) {
-          this.putEditingParcelBack();
-        } else if (this.editSelectedId) {
-          this.editSelectedId = null;
-          this.editPreviewEntry = null;
-          this.editCanPlace = false;
-          this.editItemDirty = false;
-          this.resetEditDragState();
-          if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
-          this.applyFurnitureLayout(this.furnitureLayout);
-          this.updateGridOverlayVisibility();
-          this.notifyEditModeState();
-          this.renderIfPaused();
-        } else {
-          this.exitFurnitureEditMode({ commit: true });
-        }
+        this.cancelEditingFurniture();
       }
     };
 

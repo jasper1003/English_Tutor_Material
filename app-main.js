@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121p";
+} from "./room-scene.js?v=20261121q";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -56,14 +56,14 @@ import {
   getShopItem,
   getMissingShopPrerequisites,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261121p";
+} from "./shop-catalog.js?v=20261121q";
 import {
   PLACEABLE_FURNITURE_META,
   isShopParcelItem,
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261121p";
+} from "./room-grid.js?v=20261121q";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -84,9 +84,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121p";
+} from "./app-helpers.js?v=20261121q";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121p";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121q";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -708,28 +708,29 @@ function syncEditModeToolbarUI(state = null) {
   const toolbar = document.getElementById("room-edit-toolbar");
   const layoutBtn = document.getElementById("room-edit-layout-btn");
   const statusEl = document.getElementById("room-edit-status-text");
-  const rotLBtn = document.getElementById("edit-rotate-left-btn");
-  const rotRBtn = document.getElementById("edit-rotate-right-btn");
+  const actionsEl = document.getElementById("room-edit-actions");
   const confirmBtn = document.getElementById("edit-confirm-item-btn");
-  const putBackBtn = document.getElementById("edit-putback-btn");
-  const resetBtn = document.getElementById("edit-reset-layout-btn");
+  const cancelBtn = document.getElementById("edit-cancel-item-btn");
 
   const active = Boolean(state?.active && !spectatingStudentUid);
   toolbar?.classList.toggle("hidden", !active);
   layoutBtn?.classList.toggle("is-active", active);
+  if (layoutBtn) {
+    layoutBtn.title = active ? "結束編輯家具擺設" : "編輯家具擺設（網格移動與旋轉）";
+  }
   if (!active) return;
 
   const hasSelected = Boolean(state?.selectedId);
-  rotLBtn?.classList.toggle("hidden", !hasSelected);
-  rotRBtn?.classList.toggle("hidden", !hasSelected);
+  actionsEl?.classList.toggle("hidden", !hasSelected);
   if (confirmBtn) {
-    confirmBtn.disabled = Boolean(hasSelected && !state?.canPlace);
-    confirmBtn.title = hasSelected
-      ? "確認將目前家具放置在此網格位置 (快捷鍵 Enter)"
-      : "確認目前房間擺設並結束編輯 (快捷鍵 Esc)";
+    confirmBtn.disabled = !state?.canPlace;
+    confirmBtn.title = "確認將目前家具放置在此網格位置 (快捷鍵 Enter)";
   }
-  putBackBtn?.classList.toggle("hidden", !(hasSelected && state?.fromParcel));
-  resetBtn?.classList.toggle("hidden", Boolean(hasSelected && state?.fromParcel));
+  if (cancelBtn) {
+    cancelBtn.title = state?.fromParcel
+      ? "取消放置並放回門口紙箱 (快捷鍵 Esc)"
+      : "取消修改，回到原本狀態 (快捷鍵 Esc)";
+  }
 
   if (statusEl) {
     if (hasSelected) {
@@ -739,7 +740,7 @@ function syncEditModeToolbarUI(state = null) {
         : "⚠️ 空間衝突，拖曳至綠格或按 ←/→ 轉向";
       statusEl.textContent = `${state.fromParcel ? "📦 拆箱擺放" : "已選取"}：${state.selectedName}${dimsNote}（${validNote}）`;
     } else {
-      statusEl.textContent = "編輯家具位置：點擊家具選取後，按住拖曳位置或按 ← / → 旋轉";
+      statusEl.textContent = "點擊傢俱以編輯傢俱位置";
     }
   }
 }
@@ -4304,17 +4305,11 @@ document.getElementById("edit-confirm-item-btn")?.addEventListener("click", () =
   if (!roomScene?.editMode) return;
   if (roomScene.editSelectedId) {
     roomScene.commitActiveFurniturePlacement();
-  } else {
-    roomScene.exitFurnitureEditMode({ commit: true });
   }
 });
 
-document.getElementById("edit-putback-btn")?.addEventListener("click", () => {
-  roomScene?.putEditingParcelBack();
-});
-
-document.getElementById("edit-reset-layout-btn")?.addEventListener("click", () => {
-  roomScene?.resetFurnitureLayout();
+document.getElementById("edit-cancel-item-btn")?.addEventListener("click", () => {
+  roomScene?.cancelEditingFurniture();
 });
 
 document.getElementById("room-edit-avatar-btn").addEventListener("click", () => {

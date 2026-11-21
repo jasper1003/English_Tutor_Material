@@ -24,7 +24,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261121p" />
+  <link rel="stylesheet" href="./styles.css?v=20261121q" />
 </head>
 <body>
 
@@ -755,13 +755,12 @@
         </div>
 
         <div class="room-edit-toolbar hidden" id="room-edit-toolbar" role="region" aria-label="家具網格編輯工具列">
-          <span class="room-edit-status" id="room-edit-status-text">家具編輯模式：點擊家具選取後，拖曳改位置或按 ← → 旋轉</span>
-          <div class="room-edit-actions">
-            <button type="button" class="room-edit-btn hidden" id="edit-rotate-left-btn" title="向左轉 90° (快捷鍵 ←)">↺ 左轉 (←)</button>
-            <button type="button" class="room-edit-btn hidden" id="edit-rotate-right-btn" title="向右轉 90° (快捷鍵 →)">↻ 右轉 (→)</button>
+          <span class="room-edit-status" id="room-edit-status-text">點擊傢俱以編輯傢俱位置</span>
+          <div class="room-edit-actions hidden" id="room-edit-actions">
+            <button type="button" class="room-edit-btn" id="edit-rotate-left-btn" title="向左轉 90° (快捷鍵 ←)">↺ 左轉 (←)</button>
+            <button type="button" class="room-edit-btn" id="edit-rotate-right-btn" title="向右轉 90° (快捷鍵 →)">↻ 右轉 (→)</button>
             <button type="button" class="room-edit-btn is-primary" id="edit-confirm-item-btn" title="確認將家具放置在此網格位置 (快捷鍵 Enter)">✓ 確認放置</button>
-            <button type="button" class="room-edit-btn hidden" id="edit-putback-btn" title="先放回門口紙箱">📦 放回紙箱</button>
-            <button type="button" class="room-edit-btn" id="edit-reset-layout-btn" title="恢復所有家具回預設位置">↺ 預設擺設</button>
+            <button type="button" class="room-edit-btn" id="edit-cancel-item-btn" title="取消修改，回到原本狀態 (快捷鍵 Esc)">✕ 取消</button>
           </div>
         </div>
 
@@ -959,6 +958,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261121p"></script>
+  <script type="module" src="./app-main.js?v=20261121q"></script>
 </body>
 </html>
