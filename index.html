@@ -24,7 +24,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261121s" />
+  <link rel="stylesheet" href="./styles.css?v=20261121t" />
 </head>
 <body>
 
@@ -841,6 +841,39 @@
               </svg>
             </button>
             <div class="room-hud-corner-stack">
+              <div class="room-zoom-anchor">
+                <button
+                  type="button"
+                  class="room-hud-btn room-hud-icon-btn"
+                  id="room-zoom-toggle-btn"
+                  aria-label="調整房間檢視比例（自由縮放）"
+                  aria-expanded="false"
+                  aria-controls="room-zoom-panel"
+                  title="自由縮放檢視房間"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                    <path d="M11 8v6"></path>
+                    <path d="M8 11h6"></path>
+                  </svg>
+                </button>
+                <div class="room-zoom-panel hidden" id="room-zoom-panel" role="region" aria-label="房間檢視縮放控制">
+                  <button type="button" class="room-zoom-step-btn" id="room-zoom-out-btn" aria-label="縮小房間檢視" title="縮小檢視">−</button>
+                  <input
+                    type="range"
+                    class="room-zoom-slider"
+                    id="room-zoom-slider"
+                    min="60"
+                    max="220"
+                    step="5"
+                    value="100"
+                    aria-label="房間縮放比例（%）"
+                  />
+                  <button type="button" class="room-zoom-step-btn" id="room-zoom-in-btn" aria-label="放大房間檢視" title="放大檢視">+</button>
+                  <button type="button" class="room-zoom-pct-btn" id="room-zoom-reset-btn" title="重設為 100% 預設比例">100%</button>
+                </div>
+              </div>
               <button
                 type="button"
                 class="room-hud-btn room-hud-icon-btn"
@@ -958,6 +991,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261121s"></script>
+  <script type="module" src="./app-main.js?v=20261121t"></script>
 </body>
 </html>

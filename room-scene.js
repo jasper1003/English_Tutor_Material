@@ -9,13 +9,13 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261121s";
+} from "./shop-catalog.js?v=20261121t";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261121s";
+} from "./app-helpers.js?v=20261121t";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -34,7 +34,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261121s";
+} from "./room-grid.js?v=20261121t";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -1397,6 +1397,7 @@ export class FreelancerRoomScene {
     this.onHoverChange = options.onHoverChange || (() => {});
     this.onSaveLayout = options.onSaveLayout || (() => {});
     this.onEditModeChange = options.onEditModeChange || (() => {});
+    this.onZoomChange = options.onZoomChange || (() => {});
     this.usesSharedTvIframe = Boolean(options.usesSharedTvIframe);
 
     this.disposed = false;
@@ -1404,9 +1405,16 @@ export class FreelancerRoomScene {
     this.animFrameId = null;
     this.lastFrameTime = performance.now();
 
-    // Camera quarter 0..3 (rotated by 90 deg)
+    // Camera quarter 0..3 (rotated by 90 deg) & free zoom factor
     this.targetQuarter = ((options.cameraQuarter ?? 0) % 4 + 4) % 4;
     this.currentAngle = this.targetQuarter * (Math.PI / 2) + Math.PI / 4;
+    this.minCameraZoom = 0.6;
+    this.maxCameraZoom = 2.2;
+    const initZoom = Number(options.cameraZoom);
+    this.targetCameraZoom = Number.isFinite(initZoom)
+      ? THREE.MathUtils.clamp(initZoom, this.minCameraZoom, this.maxCameraZoom)
+      : 1.0;
+    this.cameraZoom = this.targetCameraZoom;
 
     this.deskLampOn = Boolean(options.deskLampOn ?? true);
     this.bedLampOn = Boolean(options.bedLampOn ?? false);
@@ -1567,6 +1575,8 @@ export class FreelancerRoomScene {
       0.1,
       60
     );
+    this.camera.zoom = this.cameraZoom;
+    this.camera.updateProjectionMatrix();
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     this.renderer.setSize(width, height);
@@ -4873,6 +4883,37 @@ export class FreelancerRoomScene {
     return this.targetQuarter;
   }
 
+  setCameraZoom(zoom, { instant = false } = {}) {
+    const numeric = Number(zoom);
+    const nextZoom = THREE.MathUtils.clamp(
+      Number.isFinite(numeric) ? numeric : 1.0,
+      this.minCameraZoom,
+      this.maxCameraZoom
+    );
+    this.targetCameraZoom = Math.round(nextZoom * 100) / 100;
+    if ((instant || this.paused) && this.camera) {
+      this.cameraZoom = this.targetCameraZoom;
+      this.camera.zoom = this.cameraZoom;
+      this.camera.updateProjectionMatrix();
+      this.updateOverlayPositions();
+      this.renderIfPaused();
+    }
+    this.onZoomChange(this.targetCameraZoom);
+    return this.targetCameraZoom;
+  }
+
+  adjustCameraZoom(delta = 0.15) {
+    return this.setCameraZoom(this.targetCameraZoom + delta, { instant: true });
+  }
+
+  resetCameraZoom() {
+    return this.setCameraZoom(1.0, { instant: true });
+  }
+
+  getCameraZoom() {
+    return this.targetCameraZoom;
+  }
+
   // Triggered when clicking the computer/desk (or pressing keyboard shortcut)
   goToWork() {
     if (this.charState === "WALK_TO_WORK") return;
@@ -5459,6 +5500,19 @@ export class FreelancerRoomScene {
     const camZ = Math.cos(this.currentAngle) * radius;
     this.camera.position.set(camX, 10.6, camZ);
     this.camera.lookAt(0, 0.95, 0);
+
+    if (Math.abs(this.targetCameraZoom - this.cameraZoom) > 0.001) {
+      this.cameraZoom = instant
+        ? this.targetCameraZoom
+        : (this.cameraZoom + (this.targetCameraZoom - this.cameraZoom) * 0.22);
+      if (Math.abs(this.targetCameraZoom - this.cameraZoom) <= 0.001) {
+        this.cameraZoom = this.targetCameraZoom;
+      }
+      if (this.camera) {
+        this.camera.zoom = this.cameraZoom;
+        this.camera.updateProjectionMatrix();
+      }
+    }
 
     // Cutaway Auto-Invisibility: hide the 2 perimeter walls facing closest to camera
     const camDir = new THREE.Vector3(camX, 0, camZ).normalize();
@@ -6269,9 +6323,18 @@ export class FreelancerRoomScene {
       this.camera.right = this.baseViewSize * aspect;
       this.camera.top = this.baseViewSize;
       this.camera.bottom = -this.baseViewSize;
+      this.camera.zoom = this.cameraZoom;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(w, h);
+      this.updateOverlayPositions();
       this.renderIfPaused();
+    };
+
+    this.onWheel = (e) => {
+      if (this.disposed) return;
+      e.preventDefault();
+      const step = THREE.MathUtils.clamp(-e.deltaY * 0.0018, -0.18, 0.18);
+      this.setCameraZoom(this.targetCameraZoom * (1 + step), { instant: true });
     };
 
     this.onPointerLeave = () => {
@@ -6312,6 +6375,7 @@ export class FreelancerRoomScene {
     dom.addEventListener("pointermove", this.onPointerMove);
     dom.addEventListener("pointerleave", this.onPointerLeave);
     dom.addEventListener("click", this.onClick);
+    dom.addEventListener("wheel", this.onWheel, { passive: false });
     window.addEventListener("pointermove", this.onEditWindowPointerMove);
     window.addEventListener("pointerup", this.onEditPointerUp);
     window.addEventListener("pointercancel", this.onEditPointerUp);
@@ -6322,7 +6386,7 @@ export class FreelancerRoomScene {
   renderIfPaused() {
     if (this.paused && !this.disposed && this.renderer && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera);
-      this.updateTvScreenOverlay();
+      this.updateOverlayPositions();
     }
   }
 
@@ -6526,6 +6590,7 @@ export class FreelancerRoomScene {
       dom.removeEventListener("pointermove", this.onPointerMove);
       dom.removeEventListener("pointerleave", this.onPointerLeave);
       dom.removeEventListener("click", this.onClick);
+      dom.removeEventListener("wheel", this.onWheel);
     }
     window.removeEventListener("pointermove", this.onEditWindowPointerMove);
     window.removeEventListener("pointerup", this.onEditPointerUp);

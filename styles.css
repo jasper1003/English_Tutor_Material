@@ -3579,6 +3579,88 @@ dialog.settings-dialog::backdrop {
   gap: 0.45rem;
 }
 
+.room-zoom-anchor {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.room-zoom-panel {
+  position: absolute;
+  right: calc(100% + 0.55rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.42);
+  color: #f8fafc;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+.room-zoom-step-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(30, 41, 59, 0.92);
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.room-zoom-step-btn:hover:not(:disabled) {
+  background: rgba(51, 65, 85, 0.96);
+}
+
+.room-zoom-step-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.room-zoom-slider {
+  width: 108px;
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
+.room-zoom-pct-btn {
+  min-width: 44px;
+  padding: 0.2rem 0.42rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(30, 41, 59, 0.85);
+  color: #e2e8f0;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.room-zoom-pct-btn:hover {
+  background: rgba(51, 65, 85, 0.95);
+  color: #ffffff;
+}
+
+@media (max-width: 480px) {
+  .room-zoom-slider {
+    width: 82px;
+  }
+}
+
 .room-hud-icon-btn.is-active {
   background: rgba(37, 99, 235, 0.92);
   border-color: rgba(147, 197, 253, 0.95);

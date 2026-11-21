@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121s";
+} from "./room-scene.js?v=20261121t";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -58,7 +58,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261121s";
+} from "./shop-catalog.js?v=20261121t";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -66,7 +66,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261121s";
+} from "./room-grid.js?v=20261121t";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -88,9 +88,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121s";
+} from "./app-helpers.js?v=20261121t";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121s";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121t";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -674,6 +674,13 @@ function hideAllPrimaryScreens() {
   if (roomScene?.editMode) {
     roomScene.exitFurnitureEditMode({ commit: true });
   }
+  const zoomPanel = document.getElementById("room-zoom-panel");
+  const zoomToggleBtn = document.getElementById("room-zoom-toggle-btn");
+  if (zoomPanel) zoomPanel.classList.add("hidden");
+  if (zoomToggleBtn) {
+    zoomToggleBtn.classList.remove("is-active");
+    zoomToggleBtn.setAttribute("aria-expanded", "false");
+  }
   ["error-view", "auth-view", "onboarding-view", "room-view", "home-view", "lesson-view"].forEach(id => {
     document.getElementById(id).classList.add("hidden");
   });
@@ -747,6 +754,42 @@ function syncEditModeToolbarUI(state = null) {
       statusEl.textContent = "點擊傢俱以編輯傢俱位置";
     }
   }
+}
+
+const ROOM_ZOOM_STORAGE_KEY = "room_camera_zoom_v1";
+
+function loadSavedCameraZoom() {
+  try {
+    const raw = Number(localStorage.getItem(ROOM_ZOOM_STORAGE_KEY));
+    if (Number.isFinite(raw) && raw >= 0.6 && raw <= 2.2) return raw;
+  } catch {
+    // Ignore storage unavailability
+  }
+  return 1.0;
+}
+
+function saveCameraZoom(zoom) {
+  try {
+    localStorage.setItem(ROOM_ZOOM_STORAGE_KEY, String(zoom));
+  } catch {
+    // Ignore storage unavailability
+  }
+}
+
+function syncRoomZoomUI(zoom = null) {
+  const val = Number.isFinite(Number(zoom))
+    ? Number(zoom)
+    : (roomScene?.getCameraZoom?.() ?? loadSavedCameraZoom());
+  const clamped = Math.min(2.2, Math.max(0.6, Math.round(val * 100) / 100));
+  const pct = Math.round(clamped * 100);
+  const sliderEl = document.getElementById("room-zoom-slider");
+  const resetBtn = document.getElementById("room-zoom-reset-btn");
+  const outBtn = document.getElementById("room-zoom-out-btn");
+  const inBtn = document.getElementById("room-zoom-in-btn");
+  if (sliderEl) sliderEl.value = String(pct);
+  if (resetBtn) resetBtn.textContent = `${pct}%`;
+  if (outBtn) outBtn.disabled = clamped <= 0.601;
+  if (inBtn) inBtn.disabled = clamped >= 2.199;
 }
 
 function syncRoomHUD() {
@@ -863,6 +906,11 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
       },
       onEditModeChange: (editState) => {
         syncEditModeToolbarUI(editState);
+      },
+      cameraZoom: loadSavedCameraZoom(),
+      onZoomChange: (zoom) => {
+        saveCameraZoom(zoom);
+        syncRoomZoomUI(zoom);
       },
       onOpenTv: () => {
         if (spectatingStudentUid) return;
@@ -4499,6 +4547,38 @@ document.getElementById("room-edit-layout-btn")?.addEventListener("click", () =>
     roomScene.enterFurnitureEditMode();
   }
 });
+
+document.getElementById("room-zoom-toggle-btn")?.addEventListener("click", () => {
+  const panel = document.getElementById("room-zoom-panel");
+  const toggleBtn = document.getElementById("room-zoom-toggle-btn");
+  if (!panel || !toggleBtn) return;
+  const opening = panel.classList.contains("hidden");
+  panel.classList.toggle("hidden", !opening);
+  toggleBtn.classList.toggle("is-active", opening);
+  toggleBtn.setAttribute("aria-expanded", String(opening));
+  syncRoomZoomUI();
+});
+
+document.getElementById("room-zoom-out-btn")?.addEventListener("click", () => {
+  roomScene?.adjustCameraZoom(-0.15);
+});
+
+document.getElementById("room-zoom-in-btn")?.addEventListener("click", () => {
+  roomScene?.adjustCameraZoom(0.15);
+});
+
+document.getElementById("room-zoom-slider")?.addEventListener("input", (e) => {
+  const pct = Number(e.target.value);
+  if (Number.isFinite(pct)) {
+    roomScene?.setCameraZoom(pct / 100, { instant: true });
+  }
+});
+
+document.getElementById("room-zoom-reset-btn")?.addEventListener("click", () => {
+  roomScene?.resetCameraZoom();
+});
+
+syncRoomZoomUI();
 
 document.getElementById("edit-rotate-left-btn")?.addEventListener("click", () => {
   roomScene?.rotateEditingFurniture(-1);
