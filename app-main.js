@@ -31,6 +31,7 @@ import {
   orderBy,
   limit,
   runTransaction,
+  writeBatch,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 import {
@@ -58,6 +59,7 @@ import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
   calculateShopPurchaseXp,
+  isLessonCompletedFromMaps,
   parseYouTubeVideoId,
   resolveXpProgress,
   sanitizeBoolMap,
@@ -71,9 +73,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121a";
+} from "./app-helpers.js?v=20261121g";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121a";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121g";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -203,20 +205,12 @@ async function fetchOptionalSheetTab(sheetName) {
   }
 }
 
-const DEFAULT_COMPLETED_BEFORE = "2026-10-28";
 const LOCKED_NODES_AHEAD = 4;
 const WAVE_OFFSETS_PX = [0, -76, -108, -76, 0, 76, 108, 76];
 let questResizeObserver = null;
 
 function isLessonCompleted(dateStr) {
-  if (Object.prototype.hasOwnProperty.call(userApprovedLessons, dateStr)) {
-    if (userApprovedLessons[dateStr]) return true;
-  }
-  if (Object.prototype.hasOwnProperty.call(userCompletionOverrides, dateStr)) {
-    return Boolean(userCompletionOverrides[dateStr]);
-  }
-  // 歷史歸檔單元（早於 2026-10-28）預設自動標記為已驗收完成
-  return dateStr < DEFAULT_COMPLETED_BEFORE;
+  return isLessonCompletedFromMaps(userApprovedLessons, userCompletionOverrides, dateStr);
 }
 
 function isLessonSubmitted(dateStr) {
@@ -4391,9 +4385,8 @@ function renderSelectedStudentReview() {
   const overrides = stu.completionOverrides || {};
   const submitted = stu.submittedLessons || {};
 
-  // Sort lessons: pending submissions first, then unapproved >= 2026-10-28, then approved
+  // Sort all lessons: pending submissions first, then unapproved, then approved
   const activeLessons = [...db.lessons]
-    .filter(l => l.Date >= DEFAULT_COMPLETED_BEFORE || submitted[l.Date] || approved[l.Date])
     .sort((a, b) => {
       const sa = submitted[a.Date] && !approved[a.Date] ? 0 : (approved[a.Date] || overrides[a.Date] ? 2 : 1);
       const sb = submitted[b.Date] && !approved[b.Date] ? 0 : (approved[b.Date] || overrides[b.Date] ? 2 : 1);
@@ -4501,6 +4494,67 @@ openAdminReviewBtn?.addEventListener("click", () => {
 });
 document.getElementById("refresh-review-btn").addEventListener("click", () => {
   loadStudentsForReview(document.getElementById("review-student-select").value);
+});
+document.getElementById("admin-reset-all-lessons-btn")?.addEventListener("click", async (e) => {
+  if (currentRole !== "super_admin" && currentRole !== "admin") return;
+  const btn = e.currentTarget;
+  if (!window.confirm("確定要將所有玩家帳號的所有關卡完成狀態、交稿紀錄與單關 XP 領取標記全部歸零嗎？\n（會保留大家現有的英蚌餘額、家具與等級，重新完成每單元可再度獲得英蚌與經驗值）")) {
+    return;
+  }
+  const prevText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "歸零處理中…";
+  clearFeedback("admin-review-feedback");
+  try {
+    const snap = await getDocs(collection(firestoreDb, "users"));
+    const targets = snap.docs.filter(docSnap => {
+      const d = docSnap.data() || {};
+      return (
+        Object.keys(d.approvedLessons || {}).length > 0
+        || Object.keys(d.submittedLessons || {}).length > 0
+        || Object.keys(d.completionOverrides || {}).length > 0
+        || Object.keys(d.xpAwardedLessons || {}).length > 0
+      );
+    });
+    for (let i = 0; i < targets.length; i += 400) {
+      const batch = writeBatch(firestoreDb);
+      targets.slice(i, i + 400).forEach(docSnap => {
+        batch.update(docSnap.ref, {
+          approvedLessons: {},
+          submittedLessons: {},
+          completionOverrides: {},
+          xpAwardedLessons: {},
+          updatedAt: serverTimestamp()
+        });
+      });
+      await batch.commit();
+    }
+    if (currentUser && currentUserProfile) {
+      userApprovedLessons = {};
+      userSubmittedLessons = {};
+      userCompletionOverrides = {};
+      userXpAwardedLessons = {};
+      currentUserProfile.approvedLessons = {};
+      currentUserProfile.submittedLessons = {};
+      currentUserProfile.completionOverrides = {};
+      currentUserProfile.xpAwardedLessons = {};
+      if (currentScreen === "desktop") renderHome();
+      if (currentScreen === "lesson" && activeLessonDate) activeLessonSyncCommission?.();
+    }
+    await loadStudentsForReview(document.getElementById("review-student-select").value);
+    showFeedback(
+      "admin-review-feedback",
+      "success",
+      targets.length > 0
+        ? `已將 ${targets.length} 位玩家的所有關卡完成狀態歸零！重新完成單元一樣可領取英蚌與 XP。`
+        : "所有玩家的關卡完成狀態原本就都已歸零囉！"
+    );
+  } catch (err) {
+    showFeedback("admin-review-feedback", "error", err?.message || translateAuthError(err));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevText;
+  }
 });
 document.getElementById("review-student-select").addEventListener("change", () => {
   clearFeedback("admin-review-feedback");

@@ -48,6 +48,14 @@ export function calculateShopPurchaseXp(price) {
 }
 
 /**
+ * Determine whether a lesson date is completed strictly from explicit Firestore maps
+ * (no automatic historical date cutoff).
+ */
+export function isLessonCompletedFromMaps(approvedMap, overridesMap, dateStr) {
+  return Boolean(approvedMap?.[dateStr] || overridesMap?.[dateStr]);
+}
+
+/**
  * Extract an 11-character YouTube video ID from a URL or raw ID.
  * Returns null if the input is not a recognized YouTube video reference.
  */

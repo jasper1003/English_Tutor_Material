@@ -404,14 +404,16 @@
           <div id="review-student-summary" class="form-hint">請選擇一位學生檢視接案狀態。</div>
           <div id="review-lessons-list" style="display: flex; flex-direction: column; gap: 0.65rem;"></div>
         </div>
-        <div class="dialog-footer">
+        <div class="dialog-footer" style="flex-wrap: wrap;">
           <button type="button" class="btn" id="refresh-review-btn">重新整理名單</button>
+          <button type="button" class="btn tv-power-off-btn" id="admin-reset-all-lessons-btn">🔄 全部玩家關卡歸零</button>
           <button
             type="button"
             class="btn btn-primary"
             id="footer-close-admin-review-btn"
             command="close"
             commandfor="admin-review-dialog"
+            style="margin-inline-start: auto;"
           >關閉</button>
         </div>
       </div>
@@ -901,6 +903,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261121f"></script>
+  <script type="module" src="./app-main.js?v=20261121g"></script>
 </body>
 </html>
