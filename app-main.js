@@ -143,6 +143,7 @@ let avatarPreviewScene = null;
 let isEditingAvatarFromRoom = false;
 let activeTvVideo = null;
 let tvPowerOffRequested = false;
+let spectatingStudentUid = null;
 
 function sync3dSceneLifecycle() {
   const blocked = document.hidden || Boolean(document.querySelector("dialog[open]"));
@@ -360,9 +361,12 @@ function flushPendingRankUpToast() {
   showRankUpToast(prevProgress, nextProgress);
 }
 
-function syncXpProgressUI({ allowCelebrate = false } = {}) {
+function syncXpProgressUI({ allowCelebrate = false, overrideXp = null } = {}) {
   initRankUpToastEvents();
-  const totalXp = getTotalEarnedXp();
+  const isSpectatingPreview = overrideXp !== null;
+  const totalXp = isSpectatingPreview
+    ? Math.max(0, Math.trunc(Number(overrideXp) || 0))
+    : getTotalEarnedXp();
   const progress = resolveXpProgress(totalXp, XP_PER_LEVEL);
 
   const roomEmblemEl = document.getElementById("room-xp-emblem");
@@ -384,7 +388,7 @@ function syncXpProgressUI({ allowCelebrate = false } = {}) {
   }
 
   const bannerEl = document.getElementById("home-xp-banner");
-  if (bannerEl) {
+  if (bannerEl && !isSpectatingPreview) {
     const nextHint = progress.isMaxNamedRank && progress.level >= XP_RANK_LADDER.length
       ? `總計 ${progress.totalXp} XP · 最高段位`
       : `→ Lv.${progress.level + 1} ${escapeHtml(progress.nextTitle)}（+${progress.xpToNextLevel} XP）`;
@@ -412,7 +416,7 @@ function syncXpProgressUI({ allowCelebrate = false } = {}) {
     `;
   }
 
-  if (currentUser && currentUserProfile && authResolved) {
+  if (!isSpectatingPreview && currentUser && currentUserProfile && authResolved) {
     if (!hasInitializedXpBaseline) {
       hasInitializedXpBaseline = true;
       lastKnownXpRankIndex = progress.rankIndex;
@@ -682,11 +686,30 @@ function showOnboardingScreen(isEditing = false) {
 }
 
 function syncRoomHUD() {
-  syncXpProgressUI({ allowCelebrate: false });
+  const isSpectating = Boolean(spectatingStudentUid);
+  const spectateBar = document.getElementById("room-spectate-bar");
+  const visitOthersBtn = document.getElementById("room-visit-others-btn");
+  const shopBtn = document.getElementById("room-shop-btn");
+  const avatarBtn = document.getElementById("room-edit-avatar-btn");
+  const financeBtn = document.getElementById("room-finance-btn");
+  const isAdminUser = currentRole === "super_admin" || currentRole === "admin";
+
+  spectateBar?.classList.toggle("hidden", !isSpectating);
+  visitOthersBtn?.classList.toggle("hidden", isSpectating || !isAdminUser);
+  shopBtn?.classList.toggle("hidden", isSpectating);
+  avatarBtn?.classList.toggle("hidden", isSpectating);
+  financeBtn?.classList.toggle("hidden", isSpectating);
+
+  if (isSpectating) {
+    const stu = cachedStudents.find(s => s.uid === spectatingStudentUid);
+    syncXpProgressUI({ allowCelebrate: false, overrideXp: stu?.xp ?? 0 });
+  } else {
+    syncXpProgressUI({ allowCelebrate: false });
+  }
 }
 
 async function persistRoomState(patch) {
-  if (!currentUser || !currentUserProfile) return;
+  if (!currentUser || !currentUserProfile || spectatingStudentUid) return;
   const nextRoomState = {
     ...(currentUserProfile.roomState || {
       cameraQuarter: 0,
@@ -707,26 +730,18 @@ async function persistRoomState(patch) {
   }
 }
 
-function enterRoomView(fromWorkDesktop = false) {
-  if (!currentUser || !currentUserProfile?.avatar) {
-    if (currentUser) showOnboardingScreen(false);
-    return;
-  }
-
-  currentScreen = "room";
-  activeLessonDate = null;
-  activeLessonSyncCommission = null;
-  hideAllPrimaryScreens();
-  const roomView = document.getElementById("room-view");
-  roomView.classList.remove("hidden");
-
+function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCamera = false } = {}) {
   const wrap = document.getElementById("room-canvas-wrap");
-  const rs = currentUserProfile.roomState || {};
-  const owned = normalizeOwnedItems(currentUserProfile.ownedItems);
+  const rs = profile?.roomState || {};
+  const owned = normalizeOwnedItems(profile?.ownedItems);
+  const avatarCfg = profile?.avatar || {
+    ...DEFAULT_AVATAR,
+    name: profile?.displayName || (profile?.email ? profile.email.split("@")[0] : "繪師")
+  };
 
   if (!roomScene) {
     roomScene = new FreelancerRoomScene(wrap, {
-      avatar: currentUserProfile.avatar,
+      avatar: avatarCfg,
       cameraQuarter: Number.isInteger(rs.cameraQuarter) ? rs.cameraQuarter : 0,
       deskLampOn: typeof rs.deskLampOn === "boolean" ? rs.deskLampOn : true,
       bedLampOn: typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false,
@@ -739,6 +754,7 @@ function enterRoomView(fromWorkDesktop = false) {
       customThoughts: pendingThoughtRows,
       usesSharedTvIframe: true,
       onEnterWork: () => {
+        if (spectatingStudentUid) return;
         openWorkDesktop();
       },
       onLampToggle: (isOn) => {
@@ -751,9 +767,11 @@ function enterRoomView(fromWorkDesktop = false) {
         persistRoomState({ vinylOn: isOn });
       },
       onOpenTv: () => {
+        if (spectatingStudentUid) return;
         openTvPlayer();
       },
       onOpenPoster: () => {
+        if (spectatingStudentUid) return;
         openPosterCustomizer();
       },
       onTimeUpdate: ({ clockText }) => {
@@ -761,7 +779,7 @@ function enterRoomView(fromWorkDesktop = false) {
       }
     });
   } else {
-    roomScene.updateAvatarConfig(currentUserProfile.avatar);
+    roomScene.updateAvatarConfig(avatarCfg);
     roomScene.setDeskLamp(typeof rs.deskLampOn === "boolean" ? rs.deskLampOn : true);
     roomScene.setBedLamp(typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false);
     roomScene.setVinylOn(typeof rs.vinylOn === "boolean" ? rs.vinylOn : false);
@@ -773,13 +791,86 @@ function enterRoomView(fromWorkDesktop = false) {
     if (pendingThoughtRows) {
       roomScene.applyCustomThoughts(pendingThoughtRows);
     }
-    if (Number.isInteger(rs.cameraQuarter)) roomScene.setQuarter(rs.cameraQuarter);
-    const celebration = fromWorkDesktop ? (pendingWorkCelebration || "none") : "none";
-    if (fromWorkDesktop) {
+    if (!preserveCamera && Number.isInteger(rs.cameraQuarter)) {
+      roomScene.setQuarter(rs.cameraQuarter);
+    }
+    const celebration = (!spectatingStudentUid && fromWorkDesktop) ? (pendingWorkCelebration || "none") : "none";
+    if (!spectatingStudentUid && fromWorkDesktop) {
       pendingWorkCelebration = null;
       roomScene.returnFromWork(celebration);
     }
   }
+}
+
+function populateSpectateStudentSelect(selectedUid) {
+  const selEl = document.getElementById("spectate-student-select");
+  if (!selEl) return;
+  const list = cachedStudents.filter(s => s.uid !== currentUser?.uid);
+  const candidates = list.length > 0 ? list : cachedStudents;
+  selEl.innerHTML = "";
+  if (candidates.length === 0) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "尚無其他玩家帳號";
+    selEl.appendChild(opt);
+    return;
+  }
+  candidates.forEach(stu => {
+    const opt = document.createElement("option");
+    opt.value = stu.uid;
+    const labelName = stu.avatar?.name || stu.displayName || stu.email || "繪師";
+    const lv = resolveXpProgress(stu.xp ?? 0, XP_PER_LEVEL).level;
+    const itemCount = Object.values(stu.ownedItems || {}).filter(Boolean).length;
+    opt.textContent = `${labelName} · Lv.${lv} · ${itemCount}件`;
+    selEl.appendChild(opt);
+  });
+  if (selectedUid && candidates.some(s => s.uid === selectedUid)) {
+    selEl.value = selectedUid;
+  }
+}
+
+function spectateStudentRoom(targetUid, { preserveCamera = false } = {}) {
+  if (currentRole !== "super_admin" && currentRole !== "admin") return;
+  const targetStu = cachedStudents.find(s => s.uid === targetUid);
+  if (!targetStu) return;
+
+  if (adminReviewDialog.open) adminReviewDialog.close();
+  stopRoomTvPlayback();
+  spectatingStudentUid = targetStu.uid;
+
+  currentScreen = "room";
+  activeLessonDate = null;
+  activeLessonSyncCommission = null;
+  hideAllPrimaryScreens();
+  document.getElementById("room-view").classList.remove("hidden");
+
+  applyProfileToRoomScene(targetStu, { preserveCamera });
+  roomScene?.setRentMood({ status: "chill", daysLeft: 30, deficit: 0, paidThisMonth: true });
+  populateSpectateStudentSelect(targetStu.uid);
+  sync3dSceneLifecycle();
+  syncRoomHUD();
+}
+
+function exitSpectateRoom() {
+  spectatingStudentUid = null;
+  enterRoomView(false);
+}
+
+function enterRoomView(fromWorkDesktop = false) {
+  spectatingStudentUid = null;
+  if (!currentUser || !currentUserProfile?.avatar) {
+    if (currentUser) showOnboardingScreen(false);
+    return;
+  }
+
+  currentScreen = "room";
+  activeLessonDate = null;
+  activeLessonSyncCommission = null;
+  hideAllPrimaryScreens();
+  const roomView = document.getElementById("room-view");
+  roomView.classList.remove("hidden");
+
+  applyProfileToRoomScene(currentUserProfile, { fromWorkDesktop });
 
   sync3dSceneLifecycle();
   syncRoomHUD();
@@ -3417,7 +3508,7 @@ tvDialog.addEventListener("close", () => {
 
 // Wall Art Poster Customizer & Interactive Cropper
 async function savePosterCustomization(nextPosterUrl) {
-  if (!currentUser || !currentUserProfile) return;
+  if (!currentUser || !currentUserProfile || spectatingStudentUid) return;
   const nextRoomState = {
     ...(currentUserProfile.roomState || {
       cameraQuarter: 0,
@@ -3452,6 +3543,7 @@ const { openPosterCustomizer, cleanupPosterObjectUrl } = createPosterCustomizer(
 });
 
 document.getElementById("room-shop-btn").addEventListener("click", () => {
+  if (spectatingStudentUid) return;
   clearFeedback("shop-feedback");
   renderShopDialog();
   shopDialog.showModal();
@@ -3839,6 +3931,7 @@ function startTransactionsRealtimeListener(uid, nonce) {
 }
 
 document.getElementById("room-finance-btn").addEventListener("click", () => {
+  if (spectatingStudentUid) return;
   clearFeedback("finance-feedback");
   renderFinanceDialog();
   if (!financeDialog.open) financeDialog.showModal();
@@ -3862,6 +3955,7 @@ setInterval(() => {
 }, 1000);
 
 document.getElementById("room-edit-avatar-btn").addEventListener("click", () => {
+  if (spectatingStudentUid) return;
   showOnboardingScreen(true);
 });
 
@@ -3927,6 +4021,15 @@ function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
   if (pendingBadge) {
     pendingBadge.textContent = String(totalPending);
     pendingBadge.classList.toggle("hidden", totalPending <= 0);
+  }
+
+  if (spectatingStudentUid && currentScreen === "room") {
+    const liveStu = cachedStudents.find(s => s.uid === spectatingStudentUid);
+    populateSpectateStudentSelect(spectatingStudentUid);
+    if (liveStu && roomScene) {
+      applyProfileToRoomScene(liveStu, { preserveCamera: true });
+      syncRoomHUD();
+    }
   }
 
   if (!adminReviewDialog.open) return;
@@ -4099,7 +4202,7 @@ function startUserRealtimeListener(uid, nonce) {
     const displayName = formatDisplayName(currentUser, data);
     updateHeaderAccountUI(currentUser, currentRole, displayName, data.clams ?? STARTER_CLAMS);
     syncXpProgressUI({ allowCelebrate: true });
-    if (roomScene) {
+    if (roomScene && !spectatingStudentUid) {
       const rs = data.roomState || {};
       roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
       roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
@@ -4114,7 +4217,9 @@ function startUserRealtimeListener(uid, nonce) {
     if (financeDialog.open) {
       renderFinanceDialog();
     }
-    updateRentCountdownUI();
+    if (!spectatingStudentUid) {
+      updateRentCountdownUI();
+    }
     if (currentScreen === "desktop") {
       renderHome();
     } else if (currentScreen === "lesson" && activeLessonDate) {
@@ -4561,6 +4666,40 @@ document.getElementById("review-student-select").addEventListener("change", () =
   renderSelectedStudentReview();
 });
 
+document.getElementById("admin-visit-room-btn")?.addEventListener("click", () => {
+  const targetUid = document.getElementById("review-student-select")?.value;
+  if (!targetUid) return;
+  spectateStudentRoom(targetUid);
+});
+
+document.getElementById("room-visit-others-btn")?.addEventListener("click", () => {
+  if (currentRole !== "super_admin" && currentRole !== "admin") return;
+  const others = cachedStudents.filter(s => s.uid !== currentUser?.uid);
+  const target = others[0] || cachedStudents[0];
+  if (target) {
+    spectateStudentRoom(target.uid);
+  } else if (adminReviewDialog) {
+    adminReviewDialog.showModal();
+    loadStudentsForReview();
+  }
+});
+
+document.getElementById("spectate-student-select")?.addEventListener("change", (e) => {
+  if (e.target.value) spectateStudentRoom(e.target.value, { preserveCamera: true });
+});
+
+const cycleSpectateStudent = (dir) => {
+  const others = cachedStudents.filter(s => s.uid !== currentUser?.uid);
+  const pool = others.length > 0 ? others : cachedStudents;
+  if (pool.length === 0) return;
+  const curIdx = pool.findIndex(s => s.uid === spectatingStudentUid);
+  const nextIdx = curIdx < 0 ? 0 : (curIdx + dir + pool.length) % pool.length;
+  spectateStudentRoom(pool[nextIdx].uid, { preserveCamera: true });
+};
+document.getElementById("spectate-prev-btn")?.addEventListener("click", () => cycleSpectateStudent(-1));
+document.getElementById("spectate-next-btn")?.addEventListener("click", () => cycleSpectateStudent(1));
+document.getElementById("spectate-exit-btn")?.addEventListener("click", exitSpectateRoom);
+
 document.getElementById("home-btn").addEventListener("click", () => {
   if (currentUser && currentUserProfile?.avatar) {
     enterRoomView(currentScreen === "desktop" || currentScreen === "lesson");
@@ -4572,6 +4711,7 @@ document.getElementById("map-back-room-btn").addEventListener("click", () => ent
 
 onAuthStateChanged(auth, async (user) => {
   const nonce = ++authSessionNonce;
+  spectatingStudentUid = null;
   stopRealtimeListeners();
   currentUser = user;
   currentUserProfile = null;
@@ -4622,7 +4762,7 @@ onAuthStateChanged(auth, async (user) => {
     if (nonce === authSessionNonce) {
       authResolved = true;
       renderAppState();
-      syncXpProgressUI({ allowCelebrate: false });
+      syncRoomHUD();
     }
   }
 });

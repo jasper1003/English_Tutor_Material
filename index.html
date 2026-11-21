@@ -24,7 +24,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261121e" />
+  <link rel="stylesheet" href="./styles.css?v=20261121h" />
 </head>
 <body>
 
@@ -398,8 +398,16 @@
           <div id="review-pending-queue" style="display: flex; flex-direction: column; gap: 0.55rem;"></div>
           <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.35rem 0;" />
           <div class="form-group" style="margin-block-end: 0;">
-            <label for="review-student-select">選擇指定繪師（直接發錢／調整餘額或檢視所有課程）</label>
-            <select id="review-student-select" class="form-control"></select>
+            <label for="review-student-select">選擇指定繪師（直接發錢／調整餘額、悄悄參觀房間或檢視課程）</label>
+            <div class="inline-form-row">
+              <select id="review-student-select" class="form-control" style="flex: 1;"></select>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                id="admin-visit-room-btn"
+                title="悄悄參觀該玩家的租屋處佈置（唯讀模式，對方不會察覺）"
+              >👀 參觀房間</button>
+            </div>
           </div>
           <div id="review-student-summary" class="form-hint">請選擇一位學生檢視接案狀態。</div>
           <div id="review-lessons-list" style="display: flex; flex-direction: column; gap: 0.65rem;"></div>
@@ -732,6 +740,13 @@
           <div class="room-hud-group">
             <div class="room-hud-pill" id="room-clock-pill" style="font-variant-numeric: tabular-nums;">🕒 12:00</div>
           </div>
+          <div class="room-spectate-bar hidden" id="room-spectate-bar" role="region" aria-label="管理員參觀其他玩家房間（唯讀）">
+            <span class="room-spectate-badge" title="唯讀參觀模式，對方不會收到任何通知">👁️ 參觀中</span>
+            <button type="button" class="room-tv-remote-btn" id="spectate-prev-btn" aria-label="上一位玩家房間" title="上一位玩家">◀</button>
+            <select id="spectate-student-select" class="room-spectate-select" aria-label="切換要參觀的玩家房間"></select>
+            <button type="button" class="room-tv-remote-btn" id="spectate-next-btn" aria-label="下一位玩家房間" title="下一位玩家">▶</button>
+            <button type="button" class="room-spectate-exit-btn" id="spectate-exit-btn" title="回到自己的房間">🏠 回自己房間</button>
+          </div>
           <div class="room-hud-group">
             <button type="button" class="room-hud-btn" id="room-rot-left-btn" aria-label="向左旋轉 90 度" style="width: 38px; height: 38px; padding: 0; font-size: 1.15rem;">↺</button>
             <button type="button" class="room-hud-btn" id="room-rot-right-btn" aria-label="向右旋轉 90 度" style="width: 38px; height: 38px; padding: 0; font-size: 1.15rem;">↻</button>
@@ -789,6 +804,18 @@
             </button>
           </div>
           <div class="room-hud-group" style="gap: 0.5rem;">
+            <button
+              type="button"
+              class="room-hud-btn room-hud-icon-btn hidden"
+              id="room-visit-others-btn"
+              aria-label="悄悄參觀其他玩家房間"
+              title="悄悄參觀其他玩家房間（僅管理員可見）"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
             <button
               type="button"
               class="room-hud-btn room-hud-icon-btn"
@@ -903,6 +930,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261121g"></script>
+  <script type="module" src="./app-main.js?v=20261121h"></script>
 </body>
 </html>
