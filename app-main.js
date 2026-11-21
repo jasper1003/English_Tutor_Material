@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121o";
+} from "./room-scene.js?v=20261121p";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -56,14 +56,14 @@ import {
   getShopItem,
   getMissingShopPrerequisites,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261121o";
+} from "./shop-catalog.js?v=20261121p";
 import {
   PLACEABLE_FURNITURE_META,
   isShopParcelItem,
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261121o";
+} from "./room-grid.js?v=20261121p";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -84,9 +84,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121o";
+} from "./app-helpers.js?v=20261121p";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121o";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121p";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -713,7 +713,6 @@ function syncEditModeToolbarUI(state = null) {
   const confirmBtn = document.getElementById("edit-confirm-item-btn");
   const putBackBtn = document.getElementById("edit-putback-btn");
   const resetBtn = document.getElementById("edit-reset-layout-btn");
-  const doneBtn = document.getElementById("edit-done-layout-btn");
 
   const active = Boolean(state?.active && !spectatingStudentUid);
   toolbar?.classList.toggle("hidden", !active);
@@ -723,11 +722,14 @@ function syncEditModeToolbarUI(state = null) {
   const hasSelected = Boolean(state?.selectedId);
   rotLBtn?.classList.toggle("hidden", !hasSelected);
   rotRBtn?.classList.toggle("hidden", !hasSelected);
-  confirmBtn?.classList.toggle("hidden", !hasSelected);
-  if (confirmBtn) confirmBtn.disabled = !state?.canPlace;
+  if (confirmBtn) {
+    confirmBtn.disabled = Boolean(hasSelected && !state?.canPlace);
+    confirmBtn.title = hasSelected
+      ? "確認將目前家具放置在此網格位置 (快捷鍵 Enter)"
+      : "確認目前房間擺設並結束編輯 (快捷鍵 Esc)";
+  }
   putBackBtn?.classList.toggle("hidden", !(hasSelected && state?.fromParcel));
   resetBtn?.classList.toggle("hidden", Boolean(hasSelected && state?.fromParcel));
-  doneBtn?.classList.toggle("is-primary", !hasSelected);
 
   if (statusEl) {
     if (hasSelected) {
@@ -735,9 +737,9 @@ function syncEditModeToolbarUI(state = null) {
       const validNote = state.canPlace
         ? "✅ 綠格可放置（拖曳改位置・按 ←/→ 旋轉）"
         : "⚠️ 空間衝突，拖曳至綠格或按 ←/→ 轉向";
-      statusEl.textContent = `${state.fromParcel ? "📦 拆箱擺放" : "📐 已選取"}：${state.selectedName}${dimsNote}（${validNote}）`;
+      statusEl.textContent = `${state.fromParcel ? "📦 拆箱擺放" : "已選取"}：${state.selectedName}${dimsNote}（${validNote}）`;
     } else {
-      statusEl.textContent = "📐 編輯家具位置：點擊家具選取後，按住拖曳位置或按 ← / → 旋轉";
+      statusEl.textContent = "編輯家具位置：點擊家具選取後，按住拖曳位置或按 ← / → 旋轉";
     }
   }
 }
@@ -4299,7 +4301,12 @@ document.getElementById("edit-rotate-right-btn")?.addEventListener("click", () =
 });
 
 document.getElementById("edit-confirm-item-btn")?.addEventListener("click", () => {
-  roomScene?.commitActiveFurniturePlacement();
+  if (!roomScene?.editMode) return;
+  if (roomScene.editSelectedId) {
+    roomScene.commitActiveFurniturePlacement();
+  } else {
+    roomScene.exitFurnitureEditMode({ commit: true });
+  }
 });
 
 document.getElementById("edit-putback-btn")?.addEventListener("click", () => {
@@ -4308,10 +4315,6 @@ document.getElementById("edit-putback-btn")?.addEventListener("click", () => {
 
 document.getElementById("edit-reset-layout-btn")?.addEventListener("click", () => {
   roomScene?.resetFurnitureLayout();
-});
-
-document.getElementById("edit-done-layout-btn")?.addEventListener("click", () => {
-  roomScene?.exitFurnitureEditMode({ commit: true });
 });
 
 document.getElementById("room-edit-avatar-btn").addEventListener("click", () => {
