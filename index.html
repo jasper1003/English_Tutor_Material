@@ -24,7 +24,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261121t" />
+  <link rel="stylesheet" href="./styles.css?v=20261122a" />
 </head>
 <body>
 
@@ -414,6 +414,8 @@
         </div>
         <div class="dialog-footer" style="flex-wrap: wrap;">
           <button type="button" class="btn" id="refresh-review-btn">重新整理名單</button>
+          <button type="button" class="btn" id="admin-preview-story-btn" title="在自己房間立即重播視覺小說開場故事橫幅（不更動帳號已讀狀態）">🎬 測試開場故事</button>
+          <button type="button" class="btn" id="admin-reset-my-story-btn" title="將目前管理員帳號重置為「尚未看過開場故事」，可實測創帳後只顯示一次與重整不再出現">🔁 重置自身開場狀態</button>
           <button type="button" class="btn tv-power-off-btn" id="admin-reset-all-lessons-btn">🔄 全部玩家關卡歸零</button>
           <button
             type="button"
@@ -906,6 +908,27 @@
           </div>
         </div>
       </div>
+
+      <!-- Visual-Novel Style Bottom Story Banner (Account Creation Intro Only, No Face Portrait) -->
+      <div
+        class="room-story-banner hidden"
+        id="room-story-banner"
+        role="region"
+        aria-label="接案繪師開場故事背景"
+      >
+        <div class="room-story-header">
+          <div class="room-story-speaker-wrap">
+            <span class="room-story-speaker" id="room-story-speaker">故事背景</span>
+            <span class="room-story-step" id="room-story-step">1 / 4</span>
+          </div>
+          <button type="button" class="room-story-skip-btn" id="room-story-skip-btn">跳過</button>
+        </div>
+        <p class="room-story-text" id="room-story-text" aria-live="polite"></p>
+        <div class="room-story-footer">
+          <div class="room-story-dots" id="room-story-dots" aria-hidden="true"></div>
+          <button type="button" class="room-story-next-btn" id="room-story-next-btn">下一步 ▸</button>
+        </div>
+      </div>
     </section>
 
     <!-- Learning Desktop (Only reachable by clicking computer inside Room) -->
@@ -991,6 +1014,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261121t"></script>
+  <script type="module" src="./app-main.js?v=20261122a"></script>
 </body>
 </html>

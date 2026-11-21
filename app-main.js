@@ -626,7 +626,8 @@ async function loadOrCreateUserProfile(user) {
       cameraQuarter: 0,
       deskLampOn: true,
       bedLampOn: false,
-      wallColor: DEFAULT_WALL_COLOR
+      wallColor: DEFAULT_WALL_COLOR,
+      introStorySeen: false
     },
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
@@ -681,6 +682,7 @@ function hideAllPrimaryScreens() {
     zoomToggleBtn.classList.remove("is-active");
     zoomToggleBtn.setAttribute("aria-expanded", "false");
   }
+  closeIntroStoryBanner({ markSeen: false });
   ["error-view", "auth-view", "onboarding-view", "room-view", "home-view", "lesson-view"].forEach(id => {
     document.getElementById(id).classList.add("hidden");
   });
@@ -729,6 +731,9 @@ function syncEditModeToolbarUI(state = null) {
   if (layoutBtn) {
     layoutBtn.title = active ? "結束編輯家具擺設" : "編輯家具擺設（網格移動與旋轉）";
   }
+  if (active) {
+    closeIntroStoryBanner({ markSeen: false });
+  }
   if (!active) return;
 
   const hasSelected = Boolean(state?.selectedId);
@@ -753,6 +758,138 @@ function syncEditModeToolbarUI(state = null) {
     } else {
       statusEl.textContent = "點擊傢俱以編輯傢俱位置";
     }
+  }
+}
+
+const INTRO_STORY_SEEN_KEY_PREFIX = "room_intro_story_seen_v1:";
+let introStoryActive = false;
+let introStoryPreviewMode = false;
+let introStoryIndex = 0;
+let introStorySteps = [];
+
+function getLocalIntroStorySeen(uid) {
+  if (!uid) return false;
+  try {
+    return localStorage.getItem(`${INTRO_STORY_SEEN_KEY_PREFIX}${uid}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setLocalIntroStorySeen(uid, seen) {
+  if (!uid) return;
+  try {
+    const key = `${INTRO_STORY_SEEN_KEY_PREFIX}${uid}`;
+    if (seen) localStorage.setItem(key, "1");
+    else localStorage.removeItem(key);
+  } catch {
+    // Ignore storage unavailability
+  }
+}
+
+function buildIntroStorySteps(profile = currentUserProfile) {
+  const artistName = String(profile?.avatar?.name || profile?.displayName || "你").trim() || "你";
+  const rentAmount = Math.max(1, Math.trunc(Number(MONTHLY_RENT_CLAMS || 300)));
+  return [
+    {
+      speaker: "🏠 搬入第一天",
+      text: "總算搬進這間屬於自己的單人租屋處了！雖然家具還很陽春，但從今天開始，這裡就是你的接案小天地。"
+    },
+    {
+      speaker: `🎨 ${artistName}的獨白`,
+      text: `作為剛起步的外包接案繪師，一個人在外租屋處處都要花錢——每個月還得準時繳 ${rentAmount} 英蚌房租。`
+    },
+    {
+      speaker: `🎨 ${artistName}的獨白`,
+      text: "還好有甲方案主持續發來跨國繪圖與英語配合委託！只要完成任務並通過驗收，就能賺進報酬「英蚌」與繪師聲望經驗。"
+    },
+    {
+      speaker: "💻 準備開工",
+      text: "房租、生活開銷和想添購的房間家具，全都要靠接案賺錢來支撐——現在就點擊房內的電腦桌，打開工作台開始接第一筆案子吧！"
+    }
+  ];
+}
+
+function renderIntroStoryStep() {
+  const step = introStorySteps[introStoryIndex];
+  if (!step) return;
+  const speakerEl = document.getElementById("room-story-speaker");
+  const stepEl = document.getElementById("room-story-step");
+  const textEl = document.getElementById("room-story-text");
+  const dotsEl = document.getElementById("room-story-dots");
+  const nextBtn = document.getElementById("room-story-next-btn");
+
+  if (speakerEl) speakerEl.textContent = step.speaker;
+  if (stepEl) stepEl.textContent = `${introStoryIndex + 1} / ${introStorySteps.length}`;
+  if (textEl) textEl.textContent = step.text;
+  if (dotsEl) {
+    const dots = introStorySteps.map((_, idx) => {
+      const dot = document.createElement("span");
+      dot.className = `room-story-dot${idx === introStoryIndex ? " is-active" : ""}`;
+      return dot;
+    });
+    dotsEl.replaceChildren(...dots);
+  }
+  if (nextBtn) {
+    const isLast = introStoryIndex >= introStorySteps.length - 1;
+    nextBtn.textContent = isLast ? "✓ 開始接案生活" : "下一步 ▸";
+  }
+}
+
+function openIntroStoryBanner({ preview = false, profile = currentUserProfile } = {}) {
+  const banner = document.getElementById("room-story-banner");
+  if (!banner) return;
+  const zoomPanel = document.getElementById("room-zoom-panel");
+  const zoomToggleBtn = document.getElementById("room-zoom-toggle-btn");
+  if (zoomPanel) zoomPanel.classList.add("hidden");
+  if (zoomToggleBtn) {
+    zoomToggleBtn.classList.remove("is-active");
+    zoomToggleBtn.setAttribute("aria-expanded", "false");
+  }
+  introStorySteps = buildIntroStorySteps(profile);
+  introStoryActive = true;
+  introStoryPreviewMode = Boolean(preview);
+  introStoryIndex = 0;
+  renderIntroStoryStep();
+  banner.classList.remove("hidden");
+}
+
+function closeIntroStoryBanner({ markSeen = false } = {}) {
+  const banner = document.getElementById("room-story-banner");
+  const wasPreview = introStoryPreviewMode;
+  introStoryActive = false;
+  introStoryPreviewMode = false;
+  introStoryIndex = 0;
+  if (banner) banner.classList.add("hidden");
+
+  if (markSeen && !wasPreview && currentUser && currentUserProfile && !spectatingStudentUid) {
+    setLocalIntroStorySeen(currentUser.uid, true);
+    persistRoomState({ introStorySeen: true });
+  }
+}
+
+function advanceIntroStoryBanner() {
+  if (!introStoryActive) return;
+  if (introStoryIndex < introStorySteps.length - 1) {
+    introStoryIndex += 1;
+    renderIntroStoryStep();
+  } else {
+    closeIntroStoryBanner({ markSeen: true });
+  }
+}
+
+function shouldAutoShowIntroStory() {
+  if (!currentUser || !currentUserProfile) return false;
+  if (currentScreen !== "room" || spectatingStudentUid || roomScene?.editMode) return false;
+  if (!currentUserProfile.avatar) return false;
+  if (currentUserProfile.roomState?.introStorySeen !== false) return false;
+  if (getLocalIntroStorySeen(currentUser.uid)) return false;
+  return true;
+}
+
+function maybeShowIntroStoryBanner() {
+  if (shouldAutoShowIntroStory() && !introStoryActive) {
+    openIntroStoryBanner({ preview: false, profile: currentUserProfile });
   }
 }
 
@@ -821,7 +958,7 @@ function syncRoomHUD() {
 }
 
 async function persistRoomState(patch) {
-  if (!currentUser || !currentUserProfile || spectatingStudentUid) return;
+  if (!currentUser || !currentUserProfile || spectatingStudentUid) return false;
   const nextRoomState = {
     ...(currentUserProfile.roomState || {
       cameraQuarter: 0,
@@ -837,8 +974,10 @@ async function persistRoomState(patch) {
       roomState: nextRoomState,
       updatedAt: serverTimestamp()
     });
+    return true;
   } catch (err) {
     console.error("Failed to save roomState:", err);
+    return false;
   }
 }
 
@@ -1030,6 +1169,7 @@ function enterRoomView(fromWorkDesktop = false) {
   sync3dSceneLifecycle();
   syncRoomHUD();
   updateRentCountdownUI();
+  maybeShowIntroStoryBanner();
 }
 
 function openWorkDesktop() {
@@ -2172,6 +2312,7 @@ setupModalDialogFallbacks(
   [document.getElementById("close-admin-review-btn"), document.getElementById("footer-close-admin-review-btn")],
   () => {
     clearFeedback("admin-review-feedback");
+    maybeShowIntroStoryBanner();
   }
 );
 
@@ -4557,6 +4698,39 @@ document.getElementById("room-zoom-toggle-btn")?.addEventListener("click", () =>
   toggleBtn.classList.toggle("is-active", opening);
   toggleBtn.setAttribute("aria-expanded", String(opening));
   syncRoomZoomUI();
+
+document.getElementById("room-story-next-btn")?.addEventListener("click", () => {
+  advanceIntroStoryBanner();
+});
+
+document.getElementById("room-story-text")?.addEventListener("click", () => {
+  advanceIntroStoryBanner();
+});
+
+document.getElementById("room-story-skip-btn")?.addEventListener("click", () => {
+  closeIntroStoryBanner({ markSeen: true });
+});
+
+document.addEventListener("keydown", (e) => {
+  if (!introStoryActive || currentScreen !== "room") return;
+  if (document.querySelector("dialog[open]")) return;
+  const tag = e.target?.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  if (e.key === "Escape") {
+    e.preventDefault();
+    closeIntroStoryBanner({ markSeen: true });
+    return;
+  }
+  if (e.key === "ArrowRight") {
+    e.preventDefault();
+    advanceIntroStoryBanner();
+    return;
+  }
+  if ((e.key === "Enter" || e.key === " ") && tag !== "BUTTON") {
+    e.preventDefault();
+    advanceIntroStoryBanner();
+  }
+});
 });
 
 document.getElementById("room-zoom-out-btn")?.addEventListener("click", () => {
@@ -4579,6 +4753,39 @@ document.getElementById("room-zoom-reset-btn")?.addEventListener("click", () => 
 });
 
 syncRoomZoomUI();
+
+document.getElementById("room-story-next-btn")?.addEventListener("click", () => {
+  advanceIntroStoryBanner();
+});
+
+document.getElementById("room-story-text")?.addEventListener("click", () => {
+  advanceIntroStoryBanner();
+});
+
+document.getElementById("room-story-skip-btn")?.addEventListener("click", () => {
+  closeIntroStoryBanner({ markSeen: true });
+});
+
+document.addEventListener("keydown", (e) => {
+  if (!introStoryActive || currentScreen !== "room") return;
+  if (document.querySelector("dialog[open]")) return;
+  const tag = e.target?.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  if (e.key === "Escape") {
+    e.preventDefault();
+    closeIntroStoryBanner({ markSeen: true });
+    return;
+  }
+  if (e.key === "ArrowRight") {
+    e.preventDefault();
+    advanceIntroStoryBanner();
+    return;
+  }
+  if ((e.key === "Enter" || e.key === " ") && tag !== "BUTTON") {
+    e.preventDefault();
+    advanceIntroStoryBanner();
+  }
+});
 
 document.getElementById("edit-rotate-left-btn")?.addEventListener("click", () => {
   roomScene?.rotateEditingFurniture(-1);
@@ -5252,6 +5459,42 @@ openAdminReviewBtn?.addEventListener("click", () => {
 });
 document.getElementById("refresh-review-btn").addEventListener("click", () => {
   loadStudentsForReview(document.getElementById("review-student-select").value);
+});
+document.getElementById("admin-preview-story-btn")?.addEventListener("click", () => {
+  if (currentRole !== "super_admin" && currentRole !== "admin") return;
+  clearFeedback("admin-review-feedback");
+  if (!currentUserProfile?.avatar) {
+    showFeedback("admin-review-feedback", "error", "請先建立並保存自己的角色外觀，才能在房間內預覽開場故事橫幅。");
+    return;
+  }
+  if (adminReviewDialog.open) adminReviewDialog.close();
+  enterRoomView(false);
+  openIntroStoryBanner({ preview: true, profile: currentUserProfile });
+});
+document.getElementById("admin-reset-my-story-btn")?.addEventListener("click", async (e) => {
+  if (currentRole !== "super_admin" && currentRole !== "admin" || !currentUser) return;
+  const btn = e.currentTarget;
+  const prevText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "重置中…";
+  clearFeedback("admin-review-feedback");
+  try {
+    setLocalIntroStorySeen(currentUser.uid, false);
+    const saved = await persistRoomState({ introStorySeen: false });
+    if (!saved) {
+      throw new Error("寫入 Firestore 失敗，請確認安全規則已部署。");
+    }
+    showFeedback(
+      "admin-review-feedback",
+      "success",
+      "已將目前帳號的開場劇情狀態重置為「尚未觀看」！關閉驗收台回到房間（或重新整理頁面）即可實測首次進房自動出現；看完或按「跳過」後便不會再出現。"
+    );
+  } catch (err) {
+    showFeedback("admin-review-feedback", "error", err?.message || translateAuthError(err));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevText;
+  }
 });
 document.getElementById("admin-reset-all-lessons-btn")?.addEventListener("click", async (e) => {
   if (currentRole !== "super_admin" && currentRole !== "admin") return;
