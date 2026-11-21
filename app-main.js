@@ -43,18 +43,20 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121j";
+} from "./room-scene.js?v=20261121k";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
   DEFAULT_WALL_COLOR,
   DEFAULT_BED_SHEET,
   DEFAULT_RUG_STYLE,
+  DEFAULT_SHIRT_STYLE,
+  DEFAULT_PANTS_STYLE,
   applyRemoteShopConfig,
   getShopItem,
   getMissingShopPrerequisites,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261120e";
+} from "./shop-catalog.js?v=20261121k";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -75,9 +77,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121j";
+} from "./app-helpers.js?v=20261121k";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121j";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121k";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -678,7 +680,12 @@ function showOnboardingScreen(isEditing = false) {
   document.getElementById("onboarding-view").classList.remove("hidden");
 
   const stageEl = document.getElementById("avatar-preview-stage");
-  const currentValues = readAvatarFormValues();
+  const baseValues = readAvatarFormValues();
+  const currentValues = {
+    ...baseValues,
+    shirtStyle: isEditing ? (currentUserProfile?.roomState?.shirtStyle || DEFAULT_SHIRT_STYLE) : DEFAULT_SHIRT_STYLE,
+    pantsStyle: isEditing ? (currentUserProfile?.roomState?.pantsStyle || DEFAULT_PANTS_STYLE) : DEFAULT_PANTS_STYLE
+  };
   if (!avatarPreviewScene) {
     avatarPreviewScene = new AvatarPreviewScene(stageEl, currentValues);
   } else {
@@ -755,6 +762,8 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
       characterId: targetCharacterId,
       spectating: isSpectatingTarget,
       avatar: avatarCfg,
+      shirtStyle: rs.shirtStyle || DEFAULT_SHIRT_STYLE,
+      pantsStyle: rs.pantsStyle || DEFAULT_PANTS_STYLE,
       cameraQuarter: Number.isInteger(rs.cameraQuarter) ? rs.cameraQuarter : 0,
       deskLampOn: typeof rs.deskLampOn === "boolean" ? rs.deskLampOn : true,
       bedLampOn: typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false,
@@ -796,6 +805,8 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
     roomScene.setCharacterProfileContext({
       characterId: targetCharacterId,
       avatar: avatarCfg,
+      shirtStyle: rs.shirtStyle || DEFAULT_SHIRT_STYLE,
+      pantsStyle: rs.pantsStyle || DEFAULT_PANTS_STYLE,
       ownedItems: owned,
       customThoughts: pendingThoughtRows,
       spectating: isSpectatingTarget,
@@ -2429,9 +2440,20 @@ function readAvatarFormValues() {
 
 function syncLiveAvatarPreview() {
   const cfg = readAvatarFormValues();
+  const baseShirtColor = currentUserProfile?.avatar?.outfitColor;
+  const activeShirtStyle = (isEditingAvatarFromRoom && cfg.outfitColor === baseShirtColor)
+    ? (currentUserProfile?.roomState?.shirtStyle || DEFAULT_SHIRT_STYLE)
+    : DEFAULT_SHIRT_STYLE;
+  const activePantsStyle = isEditingAvatarFromRoom
+    ? (currentUserProfile?.roomState?.pantsStyle || DEFAULT_PANTS_STYLE)
+    : DEFAULT_PANTS_STYLE;
   document.getElementById("avatar-preview-name").textContent = cfg.name || "接案繪師";
   if (avatarPreviewScene) {
-    avatarPreviewScene.updateAvatar(cfg);
+    avatarPreviewScene.updateAvatar({
+      ...cfg,
+      shirtStyle: activeShirtStyle,
+      pantsStyle: activePantsStyle
+    });
   }
 }
 
@@ -2503,10 +2525,27 @@ document.getElementById("avatar-form").addEventListener("submit", async (e) => {
   const btn = document.getElementById("save-avatar-btn");
   btn.disabled = true;
   try {
-    await updateDoc(doc(firestoreDb, "users", currentUser.uid), {
+    const updatePatch = {
       avatar: avatarPayload,
       updatedAt: serverTimestamp()
-    });
+    };
+    const prevOutfit = currentUserProfile?.avatar?.outfitColor;
+    const prevShirtStyle = currentUserProfile?.roomState?.shirtStyle;
+    if (
+      isEditingAvatarFromRoom
+      && prevOutfit
+      && avatarPayload.outfitColor !== prevOutfit
+      && prevShirtStyle
+      && prevShirtStyle !== DEFAULT_SHIRT_STYLE
+    ) {
+      const nextRoomState = {
+        ...(currentUserProfile?.roomState || {}),
+        shirtStyle: DEFAULT_SHIRT_STYLE
+      };
+      updatePatch.roomState = nextRoomState;
+      if (currentUserProfile) currentUserProfile.roomState = nextRoomState;
+    }
+    await updateDoc(doc(firestoreDb, "users", currentUser.uid), updatePatch);
     if (currentUserProfile) currentUserProfile.avatar = avatarPayload;
     enterRoomView(false);
   } catch (err) {
@@ -2621,12 +2660,87 @@ function buildTextilePreviewSvg(item) {
       </svg>
     `;
   }
+  if (item.shirtStyle) {
+    const sh = item.shirtStyle;
+    const bodyCol = sh.shirtColor || "#d96b43";
+    const sleeveCol = sh.sleeveColor || bodyCol;
+    const collarCol = sh.collarColor || "#f5f1e6";
+    const detCol = sh.detailColor || collarCol;
+    let detailSvg = "";
+    if (sh.detailType === "pocket") {
+      detailSvg = `<rect x="131" y="76" width="16" height="18" rx="3" fill="${detCol}" stroke="rgba(15,23,42,0.12)" stroke-width="1" />`;
+    } else if (sh.detailType === "cardigan") {
+      detailSvg = `<rect x="108" y="54" width="24" height="90" rx="3" fill="${detCol}" stroke="rgba(15,23,42,0.1)" stroke-width="1" />`;
+    } else if (sh.detailType === "stripe") {
+      detailSvg = `<rect x="82" y="84" width="76" height="16" fill="${detCol}" />`;
+    } else if (sh.detailType === "hoodie") {
+      detailSvg = `
+        <path d="M98,49 Q120,33 142,49" fill="none" stroke="${bodyCol}" stroke-width="8" stroke-linecap="round" />
+        <line x1="112" y1="62" x2="112" y2="86" stroke="${detCol}" stroke-width="2.6" stroke-linecap="round" />
+        <line x1="128" y1="62" x2="128" y2="84" stroke="${detCol}" stroke-width="2.6" stroke-linecap="round" />
+      `;
+    }
+    return `
+      <svg class="shop-paint-preview-svg" viewBox="0 0 240 180" aria-hidden="true">
+        <defs>
+          <linearGradient id="bg-${item.id}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f7f2ea" />
+            <stop offset="100%" stop-color="#e9e0d3" />
+          </linearGradient>
+        </defs>
+        <rect width="240" height="180" fill="url(#bg-${item.id})" />
+        <!-- Wooden Hanger -->
+        <path d="M120,25 C120,18 127,18 127,23 C127,27 120,28 120,33" fill="none" stroke="#8d6241" stroke-width="2.6" stroke-linecap="round" />
+        <path d="M74,55 L120,35 L166,55" fill="none" stroke="#9c6b45" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+        <!-- Sleeves -->
+        <polygon points="82,48 52,70 64,92 86,78" fill="${sleeveCol}" stroke="rgba(15,23,42,0.1)" stroke-width="1.2" />
+        <polygon points="158,48 188,70 176,92 154,78" fill="${sleeveCol}" stroke="rgba(15,23,42,0.1)" stroke-width="1.2" />
+        <!-- Shirt Body -->
+        <path d="M82,48 L104,48 Q120,62 136,48 L158,48 L158,144 Q120,147 82,144 Z" fill="${bodyCol}" stroke="rgba(15,23,42,0.1)" stroke-width="1.2" />
+        <!-- Collar -->
+        <path d="M101,48 Q120,65 139,48" fill="none" stroke="${collarCol}" stroke-width="5.5" stroke-linecap="round" />
+        ${detailSvg}
+      </svg>
+    `;
+  }
+  if (item.pantsStyle) {
+    const pt = item.pantsStyle;
+    const pCol = pt.pantsColor || "#374151";
+    const beltCol = pt.beltColor || pCol;
+    const legH = pt.isShorts ? 104 : 152;
+    const cuffSvg = (!pt.isShorts && pt.cuffColor)
+      ? `
+        <rect x="82" y="142" width="32" height="11" rx="2" fill="${pt.cuffColor}" />
+        <rect x="126" y="142" width="32" height="11" rx="2" fill="${pt.cuffColor}" />
+      `
+      : "";
+    return `
+      <svg class="shop-paint-preview-svg" viewBox="0 0 240 180" aria-hidden="true">
+        <defs>
+          <linearGradient id="bg-${item.id}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f7f2ea" />
+            <stop offset="100%" stop-color="#e9e0d3" />
+          </linearGradient>
+        </defs>
+        <rect width="240" height="180" fill="url(#bg-${item.id})" />
+        <!-- Pants Legs -->
+        <path d="M82,34 L158,34 L158,${legH} L126,${legH} L120,76 L114,${legH} L82,${legH} Z" fill="${pCol}" stroke="rgba(15,23,42,0.12)" stroke-width="1.3" stroke-linejoin="round" />
+        <!-- Waistband & Belt -->
+        <rect x="82" y="28" width="76" height="10" rx="2.5" fill="${beltCol}" stroke="rgba(15,23,42,0.12)" stroke-width="1" />
+        <rect x="115" y="28" width="10" height="10" rx="1.5" fill="none" stroke="#f5f0e6" stroke-width="1.4" opacity="0.8" />
+        <!-- Pocket Seam Accent -->
+        <path d="M83,50 Q94,52 98,39" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.4" />
+        <path d="M157,50 Q146,52 142,39" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.4" />
+        ${cuffSvg}
+      </svg>
+    `;
+  }
   return "";
 }
 
 async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
   if (!currentUser || !currentUserProfile || shopPurchaseBusy) return;
-  if (textileKind !== "bedSheet" && textileKind !== "rugStyle") return;
+  if (!["bedSheet", "rugStyle", "shirtStyle", "pantsStyle"].includes(textileKind)) return;
   clearFeedback("shop-feedback");
   shopPurchaseBusy = true;
   const prevBtnText = triggerBtn ? triggerBtn.textContent : "";
@@ -2651,14 +2765,22 @@ async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
     currentUserProfile.roomState = nextRoomState;
     if (textileKind === "bedSheet") {
       roomScene?.setBedSheet(nextId);
-    } else {
+    } else if (textileKind === "rugStyle") {
       roomScene?.setRugStyle(nextId);
+    } else if (textileKind === "shirtStyle") {
+      roomScene?.setShirtStyle(nextId);
+    } else if (textileKind === "pantsStyle") {
+      roomScene?.setPantsStyle(nextId);
     }
-    const label = nextId === DEFAULT_BED_SHEET
-      ? "經典海鹽藍床組"
-      : nextId === DEFAULT_RUG_STYLE
-        ? "奶油燕麥原味地毯"
-        : (getShopItem(nextId)?.name || nextId);
+    const defaultLabels = {
+      bedSheet: "經典海鹽藍床組",
+      rugStyle: "奶油燕麥原味地毯",
+      shirtStyle: "基本素色上衣",
+      pantsStyle: "經典深灰長褲"
+    };
+    const label = nextId === "default"
+      ? (defaultLabels[textileKind] || nextId)
+      : (getShopItem(nextId)?.name || nextId);
     showFeedback("shop-feedback", "success", `已免費切換為「${label}」！`);
     renderShopDialog();
   } catch (err) {
@@ -2685,6 +2807,8 @@ function renderShopDialog() {
   const activeWallColor = (currentUserProfile?.roomState?.wallColor || DEFAULT_WALL_COLOR).toLowerCase();
   const activeBedSheet = currentUserProfile?.roomState?.bedSheet || DEFAULT_BED_SHEET;
   const activeRugStyle = currentUserProfile?.roomState?.rugStyle || DEFAULT_RUG_STYLE;
+  const activeShirtStyle = currentUserProfile?.roomState?.shirtStyle || DEFAULT_SHIRT_STYLE;
+  const activePantsStyle = currentUserProfile?.roomState?.pantsStyle || DEFAULT_PANTS_STYLE;
 
   balanceEl.textContent = isSuperAdmin ? "∞" : String(clams);
   tabsEl.innerHTML = "";
@@ -2701,16 +2825,21 @@ function renderShopDialog() {
     tabsEl.appendChild(btn);
   });
 
-  const showResetBar = (activeShopCategory === "textile" || activeShopCategory === "all")
-    && (activeBedSheet !== DEFAULT_BED_SHEET || activeRugStyle !== DEFAULT_RUG_STYLE);
+  const hasCustomTextile = activeBedSheet !== DEFAULT_BED_SHEET || activeRugStyle !== DEFAULT_RUG_STYLE;
+  const hasCustomShirt = activeShirtStyle !== DEFAULT_SHIRT_STYLE;
+  const hasCustomPants = activePantsStyle !== DEFAULT_PANTS_STYLE;
+  const showResetBar =
+    ((activeShopCategory === "textile" || activeShopCategory === "all") && hasCustomTextile)
+    || ((activeShopCategory === "shirt" || activeShopCategory === "all") && hasCustomShirt)
+    || ((activeShopCategory === "pants" || activeShopCategory === "all") && hasCustomPants);
   textileBarEl.innerHTML = "";
   textileBarEl.classList.toggle("hidden", !showResetBar);
   if (showResetBar) {
     const note = document.createElement("span");
     note.style.marginInlineEnd = "auto";
-    note.textContent = "目前使用自訂織品中，可隨時換回預設：";
+    note.textContent = "目前套用造型／織品中，可隨時換回預設：";
     textileBarEl.appendChild(note);
-    if (activeBedSheet !== DEFAULT_BED_SHEET) {
+    if ((activeShopCategory === "textile" || activeShopCategory === "all") && activeBedSheet !== DEFAULT_BED_SHEET) {
       const resetSheetBtn = document.createElement("button");
       resetSheetBtn.type = "button";
       resetSheetBtn.className = "btn";
@@ -2718,13 +2847,29 @@ function renderShopDialog() {
       resetSheetBtn.onclick = () => equipShopTextile("bedSheet", DEFAULT_BED_SHEET, resetSheetBtn);
       textileBarEl.appendChild(resetSheetBtn);
     }
-    if (activeRugStyle !== DEFAULT_RUG_STYLE) {
+    if ((activeShopCategory === "textile" || activeShopCategory === "all") && activeRugStyle !== DEFAULT_RUG_STYLE) {
       const resetRugBtn = document.createElement("button");
       resetRugBtn.type = "button";
       resetRugBtn.className = "btn";
       resetRugBtn.textContent = "換回奶油燕麥地毯";
       resetRugBtn.onclick = () => equipShopTextile("rugStyle", DEFAULT_RUG_STYLE, resetRugBtn);
       textileBarEl.appendChild(resetRugBtn);
+    }
+    if ((activeShopCategory === "shirt" || activeShopCategory === "all") && hasCustomShirt) {
+      const resetShirtBtn = document.createElement("button");
+      resetShirtBtn.type = "button";
+      resetShirtBtn.className = "btn";
+      resetShirtBtn.textContent = "換回基本素色上衣";
+      resetShirtBtn.onclick = () => equipShopTextile("shirtStyle", DEFAULT_SHIRT_STYLE, resetShirtBtn);
+      textileBarEl.appendChild(resetShirtBtn);
+    }
+    if ((activeShopCategory === "pants" || activeShopCategory === "all") && hasCustomPants) {
+      const resetPantsBtn = document.createElement("button");
+      resetPantsBtn.type = "button";
+      resetPantsBtn.className = "btn";
+      resetPantsBtn.textContent = "換回經典深灰長褲";
+      resetPantsBtn.onclick = () => equipShopTextile("pantsStyle", DEFAULT_PANTS_STYLE, resetPantsBtn);
+      textileBarEl.appendChild(resetPantsBtn);
     }
   }
 
@@ -2737,11 +2882,14 @@ function renderShopDialog() {
   visibleItems.forEach(item => {
     const isPaint = Boolean(item.consumable && item.wallColor);
     const isTextile = Boolean(item.textileKind);
+    const isApparel = item.textileKind === "shirtStyle" || item.textileKind === "pantsStyle";
     const isActivePaint = isPaint && item.wallColor.toLowerCase() === activeWallColor;
     const isPermanentOwned = !isPaint && Boolean(owned[item.id]);
     const isActiveTextile = isTextile && (
       (item.textileKind === "bedSheet" && activeBedSheet === item.id) ||
-      (item.textileKind === "rugStyle" && activeRugStyle === item.id)
+      (item.textileKind === "rugStyle" && activeRugStyle === item.id) ||
+      (item.textileKind === "shirtStyle" && activeShirtStyle === item.id) ||
+      (item.textileKind === "pantsStyle" && activePantsStyle === item.id)
     );
     const missingPrereqs = isPermanentOwned ? [] : getMissingShopPrerequisites(item, owned);
     const isLocked = missingPrereqs.length > 0;
@@ -2788,7 +2936,7 @@ function renderShopDialog() {
           <path d="M106,89 L114,104 L106,120" fill="none" stroke="#64748b" stroke-width="2.4" stroke-linecap="round" />
         </svg>
       `;
-    } else if (item.sheetStyle || item.rugStyle) {
+    } else if (item.sheetStyle || item.rugStyle || item.shirtStyle || item.pantsStyle) {
       previewBox.innerHTML = buildTextilePreviewSvg(item);
     }
     if (isLocked) {
@@ -2803,7 +2951,11 @@ function renderShopDialog() {
 
     const iconBox = document.createElement("div");
     iconBox.className = "shop-item-icon";
-    const swatchHex = item.wallColor || item.sheetStyle?.blanketColor || item.rugStyle?.baseColor;
+    const swatchHex = item.wallColor
+      || item.sheetStyle?.blanketColor
+      || item.rugStyle?.baseColor
+      || item.shirtStyle?.shirtColor
+      || item.pantsStyle?.pantsColor;
     if (swatchHex) {
       const dot = document.createElement("span");
       dot.className = "shop-item-swatch";
@@ -2844,11 +2996,11 @@ function renderShopDialog() {
       actionBtn.textContent = "目前牆色 ✓";
       actionBtn.disabled = true;
     } else if (isActiveTextile) {
-      actionBtn.textContent = "目前使用中 ✓";
+      actionBtn.textContent = isApparel ? "目前穿著中 ✓" : "目前使用中 ✓";
       actionBtn.disabled = true;
     } else if (isTextile && isPermanentOwned) {
       actionBtn.classList.add("btn-primary");
-      actionBtn.textContent = "套用更換（免費）";
+      actionBtn.textContent = isApparel ? "換穿這件（免費）" : "套用更換（免費）";
       actionBtn.onclick = () => equipShopTextile(item.textileKind, item.id, actionBtn);
     } else if (isPermanentOwned) {
       actionBtn.textContent = "已擺進房間 ✓";
@@ -2863,9 +3015,11 @@ function renderShopDialog() {
       actionBtn.classList.add("btn-primary");
       actionBtn.textContent = isPaint
         ? "購買並重新粉刷"
-        : isTextile
-          ? "購買並立刻換上"
-          : "購買並放進房間";
+        : isApparel
+          ? "購買並立刻換穿"
+          : isTextile
+            ? "購買並立刻換上"
+            : "購買並放進房間";
       actionBtn.onclick = () => purchaseShopItem(item.id, actionBtn);
     }
 
@@ -2954,7 +3108,7 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       if (item.id === "bed_lamp") {
         nextRoomState = { ...prevRoomState, bedLampOn: true };
         shouldUpdateRoomState = true;
-      } else if (item.textileKind === "bedSheet" || item.textileKind === "rugStyle") {
+      } else if (["bedSheet", "rugStyle", "shirtStyle", "pantsStyle"].includes(item.textileKind)) {
         nextRoomState = { ...prevRoomState, [item.textileKind]: item.id };
         shouldUpdateRoomState = true;
       }
@@ -2970,10 +3124,17 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       }
       tx.update(userRef, patch);
       if (item.price > 0) {
+        const ledgerPrefix = item.textileKind === "shirtStyle"
+          ? "購入上衣"
+          : item.textileKind === "pantsStyle"
+            ? "購入褲子"
+            : item.textileKind
+              ? "購入織品"
+              : "購買家具";
         queueLedgerTransaction(tx, currentUser.uid, {
           type: "purchase",
           category: item.category,
-          title: item.textileKind ? `購入織品：${item.name}` : `購買家具：${item.name}`,
+          title: `${ledgerPrefix}：${item.name}`,
           amount: -item.price
         });
       }
@@ -3011,6 +3172,12 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
     } else if (item.textileKind === "rugStyle") {
       roomScene?.setRugStyle(item.id);
       showFeedback("shop-feedback", "success", `已購入「${item.name}」並立即鋪好${xpMsg}！`);
+    } else if (item.textileKind === "shirtStyle") {
+      roomScene?.setShirtStyle(item.id);
+      showFeedback("shop-feedback", "success", `已購入「${item.name}」並立刻換穿${xpMsg}！`);
+    } else if (item.textileKind === "pantsStyle") {
+      roomScene?.setPantsStyle(item.id);
+      showFeedback("shop-feedback", "success", `已購入「${item.name}」並立刻換穿${xpMsg}！`);
     } else {
       if (item.id === "bed_lamp") {
         roomScene?.setBedLamp(true);
@@ -4226,6 +4393,8 @@ function startUserRealtimeListener(uid, nonce) {
       roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
       roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
       roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
+      roomScene.setShirtStyle(rs.shirtStyle || DEFAULT_SHIRT_STYLE);
+      roomScene.setPantsStyle(rs.pantsStyle || DEFAULT_PANTS_STYLE);
       roomScene.setPosterImage(rs.posterImage || "");
       roomScene.setVinylOn(Boolean(rs.vinylOn ?? false));
       roomScene.applyOwnedItems(normalizeOwnedItems(data.ownedItems));

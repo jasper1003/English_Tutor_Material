@@ -2,6 +2,8 @@ export const SHOP_CATEGORIES = [
   { id: "all", label: "全部商品" },
   { id: "paint", label: "牆面粉刷" },
   { id: "textile", label: "床單地毯" },
+  { id: "shirt", label: "上衣穿搭" },
+  { id: "pants", label: "褲款下著" },
   { id: "decor", label: "生活家具" },
   { id: "gear", label: "接案設備" }
 ];
@@ -9,6 +11,223 @@ export const SHOP_CATEGORIES = [
 export const DEFAULT_WALL_COLOR = "#f3eadc";
 export const DEFAULT_BED_SHEET = "default";
 export const DEFAULT_RUG_STYLE = "default";
+export const DEFAULT_SHIRT_STYLE = "default";
+export const DEFAULT_PANTS_STYLE = "default";
+
+export const SHIRT_STYLE_PRESETS = {
+  default: {
+    id: "default",
+    name: "基本素色上衣",
+    shirtColor: null,
+    sleeveColor: null,
+    collarColor: null,
+    detailColor: null,
+    detailType: "basic"
+  },
+  shirt_linen_oat: {
+    id: "shirt_linen_oat",
+    name: "亞麻燕麥襯衫",
+    shirtColor: "#ebe2d2",
+    sleeveColor: "#ebe2d2",
+    collarColor: "#f7f3eb",
+    detailColor: "#d1c1aa",
+    detailType: "pocket"
+  },
+  shirt_sage_tee: {
+    id: "shirt_sage_tee",
+    name: "鼠尾草棉質寬T",
+    shirtColor: "#7d9b84",
+    sleeveColor: "#7d9b84",
+    collarColor: "#f5f1e6",
+    detailColor: "#65826c",
+    detailType: "collar"
+  },
+  shirt_chambray_blue: {
+    id: "shirt_chambray_blue",
+    name: "水洗丹寧襯衫",
+    shirtColor: "#6e8aa8",
+    sleeveColor: "#6e8aa8",
+    collarColor: "#f4f1ea",
+    detailColor: "#577290",
+    detailType: "pocket"
+  },
+  shirt_sand_cardigan: {
+    id: "shirt_sand_cardigan",
+    name: "暖沙針織開襟衫",
+    shirtColor: "#c9ae8c",
+    sleeveColor: "#c9ae8c",
+    collarColor: "#f7f2e9",
+    detailColor: "#f7f2e9",
+    detailType: "cardigan"
+  },
+  shirt_moss_raglan: {
+    id: "shirt_moss_raglan",
+    name: "森霧拼色七分袖",
+    shirtColor: "#f1ebe0",
+    sleeveColor: "#5f7f67",
+    collarColor: "#5f7f67",
+    detailColor: "#5f7f67",
+    detailType: "raglan"
+  },
+  shirt_terracotta_knit: {
+    id: "shirt_terracotta_knit",
+    name: "赤陶條紋針織衫",
+    shirtColor: "#c97053",
+    sleeveColor: "#c97053",
+    collarColor: "#efe6d6",
+    detailColor: "#efe6d6",
+    detailType: "stripe"
+  },
+  shirt_mist_hoodie: {
+    id: "shirt_mist_hoodie",
+    name: "晨霧棉柔連帽T",
+    shirtColor: "#8ea4b8",
+    sleeveColor: "#8ea4b8",
+    collarColor: "#f2efe9",
+    detailColor: "#f2efe9",
+    detailType: "hoodie"
+  },
+  shirt_olive_chore: {
+    id: "shirt_olive_chore",
+    name: "橄欖綠工裝夾克",
+    shirtColor: "#6c7656",
+    sleeveColor: "#6c7656",
+    collarColor: "#efe8da",
+    detailColor: "#efe8da",
+    detailType: "cardigan"
+  },
+  shirt_espresso_waffle: {
+    id: "shirt_espresso_waffle",
+    name: "深焙可可華夫格長袖",
+    shirtColor: "#5e463a",
+    sleeveColor: "#5e463a",
+    collarColor: "#e6d8c5",
+    detailColor: "#e6d8c5",
+    detailType: "collar"
+  },
+  shirt_blush_linen: {
+    id: "shirt_blush_linen",
+    name: "煙粉柔棉亞麻衫",
+    shirtColor: "#cfa09c",
+    sleeveColor: "#cfa09c",
+    collarColor: "#f7efe9",
+    detailColor: "#b88783",
+    detailType: "pocket"
+  }
+};
+
+export const PANTS_STYLE_PRESETS = {
+  default: {
+    id: "default",
+    name: "經典深灰長褲",
+    pantsColor: "#374151",
+    beltColor: null,
+    cuffColor: null,
+    shoeColor: "#f8fafc",
+    detailType: "basic",
+    isShorts: false
+  },
+  pants_raw_denim: {
+    id: "pants_raw_denim",
+    name: "原色丹寧直筒褲",
+    pantsColor: "#364d6d",
+    beltColor: "#8a6345",
+    cuffColor: "#6f87a6",
+    shoeColor: "#f6f3ec",
+    detailType: "cuff",
+    isShorts: false
+  },
+  pants_washed_denim: {
+    id: "pants_washed_denim",
+    name: "淺藍水洗牛仔褲",
+    pantsColor: "#7b96b4",
+    beltColor: "#966f4e",
+    cuffColor: "#b8cae0",
+    shoeColor: "#f8fafc",
+    detailType: "cuff",
+    isShorts: false
+  },
+  pants_khaki_chino: {
+    id: "pants_khaki_chino",
+    name: "卡其斜紋休閒褲",
+    pantsColor: "#bfa582",
+    beltColor: "#6e4d37",
+    cuffColor: null,
+    shoeColor: "#f3eee4",
+    detailType: "belt",
+    isShorts: false
+  },
+  pants_olive_cargo: {
+    id: "pants_olive_cargo",
+    name: "軍綠棉質寬版工作褲",
+    pantsColor: "#667056",
+    beltColor: "#4f5742",
+    cuffColor: "#7c876a",
+    shoeColor: "#ebe5da",
+    detailType: "cuff",
+    isShorts: false
+  },
+  pants_oat_linen: {
+    id: "pants_oat_linen",
+    name: "米白亞麻寬褲",
+    pantsColor: "#e7dfd0",
+    beltColor: "#b8a58d",
+    cuffColor: null,
+    shoeColor: "#d6c4ae",
+    detailType: "belt",
+    isShorts: false
+  },
+  pants_mocha_corduroy: {
+    id: "pants_mocha_corduroy",
+    name: "摩卡燈芯絨長褲",
+    pantsColor: "#725644",
+    beltColor: "#cbb8a2",
+    cuffColor: null,
+    shoeColor: "#f1eadf",
+    detailType: "belt",
+    isShorts: false
+  },
+  pants_slate_sweatpants: {
+    id: "pants_slate_sweatpants",
+    name: "霧灰棉柔居家縮口褲",
+    pantsColor: "#939aa3",
+    beltColor: "#e5e7eb",
+    cuffColor: "#78808a",
+    shoeColor: "#f4f4f5",
+    detailType: "cuff",
+    isShorts: false
+  },
+  pants_charcoal_pleated: {
+    id: "pants_charcoal_pleated",
+    name: "曜石灰西裝寬褲",
+    pantsColor: "#454b54",
+    beltColor: "#292d33",
+    cuffColor: null,
+    shoeColor: "#e7e3dc",
+    detailType: "belt",
+    isShorts: false
+  },
+  pants_sand_shorts: {
+    id: "pants_sand_shorts",
+    name: "亞麻沙色五分短褲",
+    pantsColor: "#cfb899",
+    beltColor: "#ece3d4",
+    cuffColor: null,
+    shoeColor: "#f4efe6",
+    detailType: "shorts",
+    isShorts: true
+  },
+  pants_forest_shorts: {
+    id: "pants_forest_shorts",
+    name: "松柏綠戶外休閒短褲",
+    pantsColor: "#4f6d5c",
+    beltColor: "#d9cdb8",
+    cuffColor: null,
+    shoeColor: "#ebe6dc",
+    detailType: "shorts",
+    isShorts: true
+  }
+};
 
 export const BED_SHEET_PRESETS = {
   default: {
@@ -218,6 +437,206 @@ export const DEFAULT_SHOP_CATALOG = [
     desc: "經典奶霜×焦糖可可格紋設計毯，咖啡廳感瞬間拉滿。"
   },
   {
+    id: "shirt_linen_oat",
+    name: "亞麻燕麥襯衫",
+    category: "shirt",
+    textileKind: "shirtStyle",
+    price: 85,
+    icon: "👕",
+    shirtStyle: SHIRT_STYLE_PRESETS.shirt_linen_oat,
+    desc: "透氣亞麻燕麥色日常襯衫，附小胸袋點綴，輕鬆穿出自然文青感。"
+  },
+  {
+    id: "shirt_sage_tee",
+    name: "鼠尾草棉質寬T",
+    category: "shirt",
+    textileKind: "shirtStyle",
+    price: 75,
+    icon: "🌿",
+    shirtStyle: SHIRT_STYLE_PRESETS.shirt_sage_tee,
+    desc: "柔霧鼠尾草綠重磅純棉短T，領口微露奶油白內搭，耐看又清爽。"
+  },
+  {
+    id: "shirt_chambray_blue",
+    name: "水洗丹寧襯衫",
+    category: "shirt",
+    textileKind: "shirtStyle",
+    price: 95,
+    icon: "🩵",
+    shirtStyle: SHIRT_STYLE_PRESETS.shirt_chambray_blue,
+    desc: "水洗淺靛青丹寧布襯衫，寬鬆自在又帶一點率性工作室氣息。"
+  },
+  {
+    id: "shirt_sand_cardigan",
+    name: "暖沙針織開襟衫",
+    category: "shirt",
+    textileKind: "shirtStyle",
+    price: 120,
+    icon: "🧶",
+    shirtStyle: SHIRT_STYLE_PRESETS.shirt_sand_cardigan,
+    desc: "溫潤燕麥沙色毛線開襟外套內搭米白上衣，畫畫久坐也溫暖。"
+  },
+  {
+    id: "shirt_moss_raglan",
+    name: "森霧拼色七分袖",
+    category: "shirt",
+    textileKind: "shirtStyle",
+    price: 90,
+    icon: "🌲",
+    shirtStyle: SHIRT_STYLE_PRESETS.shirt_moss_raglan,
+    desc: "米白衣身搭配森林墨綠插肩袖與滾邊領口，自然又帶點美式休閒。"
+  },
+  {
+    id: "shirt_terracotta_knit",
+    name: "赤陶條紋針織衫",
+    category: "shirt",
+    textileKind: "shirtStyle",
+    price: 105,
+    icon: "🍂",
+    shirtStyle: SHIRT_STYLE_PRESETS.shirt_terracotta_knit,
+    desc: "溫暖赤陶橘紅搭一條奶霜橫紋，低調柔和卻非常顯氣色。"
+  },
+  {
+    id: "shirt_mist_hoodie",
+    name: "晨霧棉柔連帽T",
+    category: "shirt",
+    textileKind: "shirtStyle",
+    price: 115,
+    icon: "☁️",
+    shirtStyle: SHIRT_STYLE_PRESETS.shirt_mist_hoodie,
+    desc: "輕柔霧藍灰連帽衛衣配雙抽繩，在家追劇或深夜趕稿最舒服。"
+  },
+  {
+    id: "shirt_olive_chore",
+    name: "橄欖綠工裝夾克",
+    category: "shirt",
+    textileKind: "shirtStyle",
+    price: 130,
+    icon: "🧥",
+    shirtStyle: SHIRT_STYLE_PRESETS.shirt_olive_chore,
+    desc: "自然橄欖綠斜紋工裝外套內搭米色打底，簡約俐落很有職人味。"
+  },
+  {
+    id: "shirt_espresso_waffle",
+    name: "深焙可可華夫格長袖",
+    category: "shirt",
+    textileKind: "shirtStyle",
+    price: 100,
+    icon: "☕",
+    shirtStyle: SHIRT_STYLE_PRESETS.shirt_espresso_waffle,
+    desc: "濃厚咖啡可可色格紋棉衫配淺杏圓領邊，溫暖沉穩不單調。"
+  },
+  {
+    id: "shirt_blush_linen",
+    name: "煙粉柔棉亞麻衫",
+    category: "shirt",
+    textileKind: "shirtStyle",
+    price: 95,
+    icon: "🌷",
+    shirtStyle: SHIRT_STYLE_PRESETS.shirt_blush_linen,
+    desc: "低飽和煙燻乾燥玫瑰粉純棉上衣，柔和親膚、越洗越有質感。"
+  },
+  {
+    id: "pants_raw_denim",
+    name: "原色丹寧直筒褲",
+    category: "pants",
+    textileKind: "pantsStyle",
+    price: 80,
+    icon: "👖",
+    pantsStyle: PANTS_STYLE_PRESETS.pants_raw_denim,
+    desc: "經典深藍原色赤耳牛仔褲，褲腳微捲露出一圈淺色反折超百搭。"
+  },
+  {
+    id: "pants_washed_denim",
+    name: "淺藍水洗牛仔褲",
+    category: "pants",
+    textileKind: "pantsStyle",
+    price: 85,
+    icon: "🩵",
+    pantsStyle: PANTS_STYLE_PRESETS.pants_washed_denim,
+    desc: "清爽水洗天藍丹寧直筒褲，配任何大地色上衣都自然好看。"
+  },
+  {
+    id: "pants_khaki_chino",
+    name: "卡其斜紋休閒褲",
+    category: "pants",
+    textileKind: "pantsStyle",
+    price: 75,
+    icon: "🌾",
+    pantsStyle: PANTS_STYLE_PRESETS.pants_khaki_chino,
+    desc: "自然卡其棉斜紋長褲搭配深棕細皮帶，日常出門或見客戶都合適。"
+  },
+  {
+    id: "pants_olive_cargo",
+    name: "軍綠棉質寬版工作褲",
+    category: "pants",
+    textileKind: "pantsStyle",
+    price: 95,
+    icon: "🪖",
+    pantsStyle: PANTS_STYLE_PRESETS.pants_olive_cargo,
+    desc: "寬鬆自在的軍綠水洗工裝褲，自然垂墜感讓站姿與走動更隨性。"
+  },
+  {
+    id: "pants_oat_linen",
+    name: "米白亞麻寬褲",
+    category: "pants",
+    textileKind: "pantsStyle",
+    price: 90,
+    icon: "🐚",
+    pantsStyle: PANTS_STYLE_PRESETS.pants_oat_linen,
+    desc: "天然原胚米白亞麻抽繩寬褲，輕盈涼爽又有日系雜誌休閒感。"
+  },
+  {
+    id: "pants_mocha_corduroy",
+    name: "摩卡燈芯絨長褲",
+    category: "pants",
+    textileKind: "pantsStyle",
+    price: 105,
+    icon: "🌰",
+    pantsStyle: PANTS_STYLE_PRESETS.pants_mocha_corduroy,
+    desc: "溫暖摩卡棕細條燈芯絨長褲，秋冬午後在工作室穿起來格外溫馨。"
+  },
+  {
+    id: "pants_slate_sweatpants",
+    name: "霧灰棉柔居家縮口褲",
+    category: "pants",
+    textileKind: "pantsStyle",
+    price: 70,
+    icon: "☁️",
+    pantsStyle: PANTS_STYLE_PRESETS.pants_slate_sweatpants,
+    desc: "花紗淺灰純棉運動縮口褲，沙發追劇或做伏地挺身零束縛。"
+  },
+  {
+    id: "pants_charcoal_pleated",
+    name: "曜石灰西裝寬褲",
+    category: "pants",
+    textileKind: "pantsStyle",
+    price: 110,
+    icon: "🖤",
+    pantsStyle: PANTS_STYLE_PRESETS.pants_charcoal_pleated,
+    desc: "垂墜流暢的木炭深灰打摺寬褲，低調俐落又帶有都會鬆弛感。"
+  },
+  {
+    id: "pants_sand_shorts",
+    name: "亞麻沙色五分短褲",
+    category: "pants",
+    textileKind: "pantsStyle",
+    price: 70,
+    icon: "🏖️",
+    pantsStyle: PANTS_STYLE_PRESETS.pants_sand_shorts,
+    desc: "輕便舒爽的沙色亞麻及膝短褲，夏天泡手沖或出門買麵包超輕鬆。"
+  },
+  {
+    id: "pants_forest_shorts",
+    name: "松柏綠戶外休閒短褲",
+    category: "pants",
+    textileKind: "pantsStyle",
+    price: 75,
+    icon: "🌲",
+    pantsStyle: PANTS_STYLE_PRESETS.pants_forest_shorts,
+    desc: "沈穩松柏綠尼龍棉質及膝短褲配米色抽繩，活潑透氣好活動。"
+  },
+  {
     id: "desk_plant",
     name: "桌上小盆栽",
     category: "decor",
@@ -373,7 +792,7 @@ function parseSheetBool(raw, defaultValue = true) {
 export function applyRemoteShopConfig(rows = []) {
   if (!Array.isArray(rows) || rows.length === 0) return SHOP_CATALOG;
 
-  const validCats = new Set(["paint", "textile", "decor", "gear"]);
+  const validCats = new Set(["paint", "textile", "shirt", "pants", "decor", "gear"]);
   const baseById = new Map(DEFAULT_SHOP_CATALOG.map(item => [item.id, item]));
   const overrides = new Map();
   const extraOrder = [];
@@ -461,4 +880,12 @@ export function resolveBedSheetStyle(bedSheetId) {
 
 export function resolveRugStyle(rugStyleId) {
   return RUG_STYLE_PRESETS[rugStyleId] || RUG_STYLE_PRESETS[DEFAULT_RUG_STYLE];
+}
+
+export function resolveShirtStyle(shirtStyleId) {
+  return SHIRT_STYLE_PRESETS[shirtStyleId] || SHIRT_STYLE_PRESETS[DEFAULT_SHIRT_STYLE];
+}
+
+export function resolvePantsStyle(pantsStyleId) {
+  return PANTS_STYLE_PRESETS[pantsStyleId] || PANTS_STYLE_PRESETS[DEFAULT_PANTS_STYLE];
 }

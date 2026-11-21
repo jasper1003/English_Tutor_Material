@@ -3,15 +3,19 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import {
   DEFAULT_BED_SHEET,
   DEFAULT_RUG_STYLE,
+  DEFAULT_SHIRT_STYLE,
+  DEFAULT_PANTS_STYLE,
   resolveBedSheetStyle,
-  resolveRugStyle
-} from "./shop-catalog.js?v=20261120e";
+  resolveRugStyle,
+  resolveShirtStyle,
+  resolvePantsStyle
+} from "./shop-catalog.js?v=20261121k";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261121j";
+} from "./app-helpers.js?v=20261121k";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -279,7 +283,9 @@ export const DEFAULT_AVATAR = {
   skinTone: "peach",
   hairStyle: "short",
   hairColor: "ink",
-  outfitColor: "terracotta"
+  outfitColor: "terracotta",
+  shirtStyle: DEFAULT_SHIRT_STYLE,
+  pantsStyle: DEFAULT_PANTS_STYLE
 };
 
 function findHex(list, id, fallback) {
@@ -824,12 +830,17 @@ function buildCharacterHairGroup(style, hairMat, accentMat) {
 
 function createCharacterRig(config) {
   const cfg = { ...DEFAULT_AVATAR, ...(config || {}) };
+  const shirtPreset = resolveShirtStyle(cfg.shirtStyle);
+  const pantsPreset = resolvePantsStyle(cfg.pantsStyle);
 
   const skinMat = makeMat(findHex(SKIN_TONES, cfg.skinTone, "#f1c29b"), 0.58);
   const hairMat = makeMat(findHex(HAIR_COLORS, cfg.hairColor, "#1f2430"), 0.78);
-  const shirtMat = makeMat(findHex(OUTFIT_COLORS, cfg.outfitColor, "#d96b43"), 0.78);
-  const pantsMat = makeMat("#374151", 0.85);
-  const shoeMat = makeMat("#f8fafc", 0.65);
+  const baseShirtHex = shirtPreset.shirtColor || findHex(OUTFIT_COLORS, cfg.outfitColor, "#d96b43");
+  const sleeveHex = shirtPreset.sleeveColor || baseShirtHex;
+  const shirtMat = makeMat(baseShirtHex, 0.78);
+  const sleeveMat = sleeveHex === baseShirtHex ? shirtMat : makeMat(sleeveHex, 0.78);
+  const pantsMat = makeMat(pantsPreset.pantsColor || "#374151", 0.85);
+  const shoeMat = makeMat(pantsPreset.shoeColor || "#f8fafc", 0.65);
   const eyeMat = makeMat("#1e293b", 0.2);
   const blushMat = makeMat("#f48c8c", 0.8);
 
@@ -848,15 +859,44 @@ function createCharacterRig(config) {
   leftLegPivot.position.set(-0.11, 0.52, 0);
   const rightLegPivot = new THREE.Group();
   rightLegPivot.position.set(0.11, 0.52, 0);
+  const cuffMat = pantsPreset.cuffColor ? makeMat(pantsPreset.cuffColor, 0.84) : null;
 
   [leftLegPivot, rightLegPivot].forEach(pivot => {
-    const leg = new THREE.Mesh(
-      new THREE.CapsuleGeometry(dims.limbR, 0.34, 8, 12),
-      pantsMat
-    );
-    leg.position.set(0, -0.22, 0);
-    leg.castShadow = true;
-    pivot.add(leg);
+    if (pantsPreset.isShorts) {
+      const shortsLeg = new THREE.Mesh(
+        new THREE.CapsuleGeometry(dims.limbR * 1.06, 0.16, 8, 12),
+        pantsMat
+      );
+      shortsLeg.position.set(0, -0.14, 0);
+      shortsLeg.castShadow = true;
+      pivot.add(shortsLeg);
+
+      const lowerCalf = new THREE.Mesh(
+        new THREE.CapsuleGeometry(dims.limbR * 0.80, 0.16, 8, 12),
+        skinMat
+      );
+      lowerCalf.position.set(0, -0.32, 0);
+      lowerCalf.castShadow = true;
+      pivot.add(lowerCalf);
+    } else {
+      const leg = new THREE.Mesh(
+        new THREE.CapsuleGeometry(dims.limbR, 0.34, 8, 12),
+        pantsMat
+      );
+      leg.position.set(0, -0.22, 0);
+      leg.castShadow = true;
+      pivot.add(leg);
+
+      if (cuffMat) {
+        const cuff = new THREE.Mesh(
+          new THREE.CylinderGeometry(dims.limbR * 1.07, dims.limbR * 1.07, 0.055, 14),
+          cuffMat
+        );
+        cuff.position.set(0, -0.39, 0);
+        cuff.castShadow = true;
+        pivot.add(cuff);
+      }
+    }
 
     const shoe = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.1, 0.23, 3, 0.04), shoeMat);
     shoe.position.set(0, -0.46, 0.04);
@@ -883,6 +923,16 @@ function createCharacterRig(config) {
   hips.castShadow = true;
   torsoGroup.add(hips);
 
+  if (pantsPreset.beltColor) {
+    const beltMat = makeMat(pantsPreset.beltColor, 0.68);
+    const belt = new THREE.Mesh(
+      new RoundedBoxGeometry(dims.hipW + 0.016, 0.046, dims.torsoD * 0.96 + 0.016, 2, 0.016),
+      beltMat
+    );
+    belt.position.set(0, -0.175, 0);
+    torsoGroup.add(belt);
+  }
+
   if (dims.chestBump) {
     const contour = new THREE.Mesh(
       new RoundedBoxGeometry(dims.shoulderW * 0.82, 0.16, 0.08, 4, 0.04),
@@ -890,6 +940,54 @@ function createCharacterRig(config) {
     );
     contour.position.set(0, 0.06, dims.torsoD * 0.45);
     torsoGroup.add(contour);
+  }
+
+  const chestZ = dims.torsoD * 0.5 + (dims.chestBump ? 0.012 : 0.002);
+  if (shirtPreset.collarColor) {
+    const collarMat = makeMat(shirtPreset.collarColor, 0.82);
+    const collarRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.112, 0.022, 8, 20),
+      collarMat
+    );
+    collarRing.rotation.x = Math.PI / 2;
+    collarRing.position.set(0, 0.256, 0.004);
+    torsoGroup.add(collarRing);
+  }
+  if (shirtPreset.detailType === "pocket" && shirtPreset.detailColor) {
+    const pocket = new THREE.Mesh(
+      new RoundedBoxGeometry(0.088, 0.092, 0.022, 2, 0.008),
+      makeMat(shirtPreset.detailColor, 0.82)
+    );
+    pocket.position.set(0.088, 0.065, chestZ);
+    torsoGroup.add(pocket);
+  } else if (shirtPreset.detailType === "cardigan" && shirtPreset.detailColor) {
+    const innerTee = new THREE.Mesh(
+      new RoundedBoxGeometry(0.125, 0.42, 0.024, 3, 0.01),
+      makeMat(shirtPreset.detailColor, 0.84)
+    );
+    innerTee.position.set(0, -0.015, chestZ);
+    torsoGroup.add(innerTee);
+  } else if (shirtPreset.detailType === "stripe" && shirtPreset.detailColor) {
+    const band = new THREE.Mesh(
+      new RoundedBoxGeometry(dims.shoulderW + 0.008, 0.082, dims.torsoD + 0.012, 4, 0.03),
+      makeMat(shirtPreset.detailColor, 0.8)
+    );
+    band.position.set(0, 0.05, 0);
+    torsoGroup.add(band);
+  } else if (shirtPreset.detailType === "hoodie" && shirtPreset.detailColor) {
+    const cordMat = makeMat(shirtPreset.detailColor, 0.82);
+    const hoodLip = new THREE.Mesh(
+      new THREE.TorusGeometry(0.145, 0.038, 8, 20),
+      shirtMat
+    );
+    hoodLip.rotation.x = Math.PI / 2 - 0.16;
+    hoodLip.position.set(0, 0.242, -0.024);
+    torsoGroup.add(hoodLip);
+    [-0.045, 0.045].forEach(dx => {
+      const cord = new THREE.Mesh(new THREE.CapsuleGeometry(0.008, 0.085, 4, 6), cordMat);
+      cord.position.set(dx, 0.135, chestZ + 0.006);
+      torsoGroup.add(cord);
+    });
   }
 
   body.add(torsoGroup);
@@ -902,7 +1000,7 @@ function createCharacterRig(config) {
   [leftArmPivot, rightArmPivot].forEach(pivot => {
     const sleeve = new THREE.Mesh(
       new THREE.CapsuleGeometry(dims.limbR * 0.92, 0.22, 8, 12),
-      shirtMat
+      sleeveMat
     );
     sleeve.position.set(0, -0.14, 0);
     sleeve.castShadow = true;
@@ -1293,7 +1391,12 @@ export class FreelancerRoomScene {
     this.defaultPosterTex = null;
     this.posterArtMesh = null;
     this.ownedItems = { ...(options.ownedItems || {}) };
-    this.avatarConfig = { ...DEFAULT_AVATAR, ...(options.avatar || {}) };
+    this.avatarConfig = {
+      ...DEFAULT_AVATAR,
+      ...(options.avatar || {}),
+      shirtStyle: options.shirtStyle || options.avatar?.shirtStyle || DEFAULT_SHIRT_STYLE,
+      pantsStyle: options.pantsStyle || options.avatar?.pantsStyle || DEFAULT_PANTS_STYLE
+    };
     this.activeCharacterId = String(options.characterId || this.avatarConfig.name || "self").trim() || "self";
     this.spectating = Boolean(options.spectating);
     this.characterStates = new Map();
@@ -3153,6 +3256,8 @@ export class FreelancerRoomScene {
   setCharacterProfileContext({
     characterId,
     avatar,
+    shirtStyle,
+    pantsStyle,
     ownedItems,
     customThoughts,
     spectating = false,
@@ -3177,7 +3282,12 @@ export class FreelancerRoomScene {
       this.customThoughts = [...customThoughts];
     }
     this.applyOwnedItems(ownedItems || this.ownedItems || {});
-    const targetAvatar = avatar || this.avatarConfig;
+    const targetAvatar = {
+      ...DEFAULT_AVATAR,
+      ...(avatar || this.avatarConfig || {}),
+      shirtStyle: shirtStyle || avatar?.shirtStyle || DEFAULT_SHIRT_STYLE,
+      pantsStyle: pantsStyle || avatar?.pantsStyle || DEFAULT_PANTS_STYLE
+    };
     this.persona = buildCharacterPersona(nextId, targetAvatar, this.ownedItems);
 
     if (isSwitching) {
@@ -3208,9 +3318,28 @@ export class FreelancerRoomScene {
   updateAvatarConfig(nextConfig) {
     const prevPos = this.charRoot ? this.charRoot.position.clone() : this.chillSpots[0].pos.clone();
     const prevRot = this.charRoot ? this.charRoot.rotation.y : 0;
-    this.buildCharacter(nextConfig);
+    const mergedCfg = {
+      ...DEFAULT_AVATAR,
+      ...(this.avatarConfig || {}),
+      ...(nextConfig || {})
+    };
+    this.buildCharacter(mergedCfg);
     this.charRoot.position.copy(prevPos);
     this.charRoot.rotation.y = prevRot;
+  }
+
+  setShirtStyle(shirtStyleId) {
+    const nextId = shirtStyleId || DEFAULT_SHIRT_STYLE;
+    if (this.avatarConfig?.shirtStyle === nextId) return;
+    this.updateAvatarConfig({ shirtStyle: nextId });
+    this.renderIfPaused();
+  }
+
+  setPantsStyle(pantsStyleId) {
+    const nextId = pantsStyleId || DEFAULT_PANTS_STYLE;
+    if (this.avatarConfig?.pantsStyle === nextId) return;
+    this.updateAvatarConfig({ pantsStyle: nextId });
+    this.renderIfPaused();
   }
 
   setDeskLamp(isOn) {
