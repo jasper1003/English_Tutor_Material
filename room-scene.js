@@ -6,6 +6,7 @@ import {
   resolveBedSheetStyle,
   resolveRugStyle
 } from "./shop-catalog.js?v=20261120e";
+import { sampleDayNightCycle } from "./app-helpers.js?v=20261121i";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -3600,118 +3601,52 @@ export class FreelancerRoomScene {
 
   updateDayNightLighting() {
     const now = Date.now();
-    // 0.0 -> 0.5 is 15-min Day; 0.5 -> 1.0 is 15-min Night
+    // 0.0 -> 0.5 is 15-min Day; 0.5 -> 1.0 is 15-min Night (continuous C^1 cycle)
     const phase = (now % DAY_CYCLE_MS) / DAY_CYCLE_MS;
-    const isDay = phase < 0.5;
+    const sample = sampleDayNightCycle(phase);
+    const { from, to, alpha, isNight } = sample;
 
-    let sunColor, sunIntensity, hemiSky, hemiGround, hemiIntensity, bgHex, windowSkyHex, orbColor, label;
+    if (!this._tmpColorA) {
+      this._tmpColorA = new THREE.Color();
+      this._tmpColorB = new THREE.Color();
+    }
+    const blendColorTo = (hexA, hexB, targetColor) => {
+      this._tmpColorA.set(hexA);
+      this._tmpColorB.set(hexB);
+      targetColor.copy(this._tmpColorA).lerp(this._tmpColorB, alpha);
+    };
 
-    if (phase < 0.08) {
-      // Sunrise (06:00 -> 08:00)
-      const k = phase / 0.08;
-      sunColor = lerpColor(new THREE.Color("#ff8e53"), new THREE.Color("#ffdca8"), k);
-      sunIntensity = THREE.MathUtils.lerp(1.2, 2.0, k);
-      hemiSky = lerpColor(new THREE.Color("#ffb88c"), new THREE.Color("#fff5e6"), k);
-      hemiGround = new THREE.Color("#c99875");
-      hemiIntensity = THREE.MathUtils.lerp(0.55, 0.78, k);
-      bgHex = lerpColor(new THREE.Color("#e8cbb8"), new THREE.Color("#ece3d5"), k);
-      windowSkyHex = lerpColor(new THREE.Color("#fda4af"), new THREE.Color("#93c5fd"), k);
-      orbColor = new THREE.Color("#fde047");
-      label = "日出清晨";
-    } else if (phase < 0.40) {
-      // Bright Noon / Warm Afternoon
-      sunColor = new THREE.Color("#fff3db");
-      sunIntensity = 2.15;
-      hemiSky = new THREE.Color("#fff8ee");
-      hemiGround = new THREE.Color("#c99a74");
-      hemiIntensity = 0.82;
-      bgHex = new THREE.Color("#ece3d5");
-      windowSkyHex = new THREE.Color("#7dd3fc");
-      orbColor = new THREE.Color("#fef08a");
-      label = "晴朗正午";
-    } else if (phase < 0.52) {
-      // Golden Hour / Sunset
-      const k = (phase - 0.40) / 0.12;
-      sunColor = lerpColor(new THREE.Color("#fff0cf"), new THREE.Color("#ff7b47"), k);
-      sunIntensity = THREE.MathUtils.lerp(2.1, 1.4, k);
-      hemiSky = lerpColor(new THREE.Color("#fff3e0"), new THREE.Color("#d98b82"), k);
-      hemiGround = lerpColor(new THREE.Color("#c99a74"), new THREE.Color("#785563"), k);
-      hemiIntensity = THREE.MathUtils.lerp(0.78, 0.5, k);
-      bgHex = lerpColor(new THREE.Color("#ece3d5"), new THREE.Color("#3b3048"), k);
-      windowSkyHex = lerpColor(new THREE.Color("#7dd3fc"), new THREE.Color("#f97316"), k);
-      orbColor = new THREE.Color("#fb923c");
-      label = "夕陽日落";
-    } else if (phase < 0.58) {
-      // Dusk Twilight
-      const k = (phase - 0.52) / 0.06;
-      sunColor = lerpColor(new THREE.Color("#ff7b47"), new THREE.Color("#7896e0"), k);
-      sunIntensity = THREE.MathUtils.lerp(1.3, 0.65, k);
-      hemiSky = lerpColor(new THREE.Color("#88698c"), new THREE.Color("#293452"), k);
-      hemiGround = new THREE.Color("#352d3c");
-      hemiIntensity = THREE.MathUtils.lerp(0.45, 0.34, k);
-      bgHex = lerpColor(new THREE.Color("#3b3048"), new THREE.Color("#141926"), k);
-      windowSkyHex = lerpColor(new THREE.Color("#9333ea"), new THREE.Color("#1e293b"), k);
-      orbColor = new THREE.Color("#e2e8f0");
-      label = "暮色黃昏";
-    } else if (phase < 0.94) {
-      // Cozy Night
-      sunColor = new THREE.Color("#8aa8eb");
-      sunIntensity = 0.62;
-      hemiSky = new THREE.Color("#263352");
-      hemiGround = new THREE.Color("#2a2220");
-      hemiIntensity = 0.36;
-      bgHex = new THREE.Color("#111622");
-      windowSkyHex = new THREE.Color("#0f172a");
-      orbColor = new THREE.Color("#fef9c3");
-      label = "靜謐夜晚";
-    } else {
-      // Pre-dawn transition
-      const k = (phase - 0.94) / 0.06;
-      sunColor = lerpColor(new THREE.Color("#8aa8eb"), new THREE.Color("#ff8e53"), k);
-      sunIntensity = THREE.MathUtils.lerp(0.65, 1.2, k);
-      hemiSky = lerpColor(new THREE.Color("#263352"), new THREE.Color("#ffb88c"), k);
-      hemiGround = lerpColor(new THREE.Color("#2a2220"), new THREE.Color("#c99875"), k);
-      hemiIntensity = THREE.MathUtils.lerp(0.36, 0.55, k);
-      bgHex = lerpColor(new THREE.Color("#111622"), new THREE.Color("#e8cbb8"), k);
-      windowSkyHex = lerpColor(new THREE.Color("#0f172a"), new THREE.Color("#fda4af"), k);
-      orbColor = new THREE.Color("#fde047");
-      label = "黎明微光";
+    blendColorTo(from.sunColor, to.sunColor, this.sunLight.color);
+    this.sunLight.intensity = sample.sunIntensity;
+    blendColorTo(from.hemiSky, to.hemiSky, this.hemiLight.color);
+    blendColorTo(from.hemiGround, to.hemiGround, this.hemiLight.groundColor);
+    this.hemiLight.intensity = sample.hemiIntensity;
+    blendColorTo(from.bg, to.bg, this.scene.background);
+
+    if (this.windowSkyMat) {
+      blendColorTo(from.sky, to.sky, this.windowSkyMat.color);
     }
 
-    this.sunLight.color.copy(sunColor);
-    this.sunLight.intensity = sunIntensity;
-    this.hemiLight.color.copy(hemiSky);
-    this.hemiLight.groundColor.copy(hemiGround);
-    this.hemiLight.intensity = hemiIntensity;
-    this.scene.background.copy(bgHex);
+    // Continuous smooth 24h orbital sun/moon light sweep (zero shadow jumps)
+    this.sunLight.position.set(sample.sunX, sample.sunY, sample.sunZ);
 
-    if (this.windowSkyMat) this.windowSkyMat.color.copy(windowSkyHex);
-
-    // Move key directional sun shadow across north window through the day
-    const sunArc = isDay ? (phase / 0.5) * Math.PI : ((phase - 0.5) / 0.5) * Math.PI;
-    this.sunLight.position.set(
-      Math.cos(sunArc) * 8.5,
-      5.5 + Math.sin(sunArc) * 6.5,
-      -7.5
-    );
-
-    // Warm desk lamp shines brighter & cozier at sunset/night!
+    // Warm desk lamp & bed lamp smoothly grow richer as outdoor ambient darkness rises
     if (this.deskLampLight) {
-      const darknessBoost = isDay ? (phase > 0.4 ? (phase - 0.4) * 14 : 1.0) : 3.2;
-      this.deskLampLight.intensity = this.deskLampOn ? 1.8 + darknessBoost : 0;
+      const deskIntensity = THREE.MathUtils.lerp(2.3, 5.0, sample.darkness);
+      this.deskLampLight.intensity = this.deskLampOn ? deskIntensity : 0;
     }
     if (this.bedLampLight) {
       const lampOwned = Boolean(this.bedLampGroup?.visible);
-      const bedBoost = isDay ? (phase > 0.4 ? (phase - 0.4) * 10 + 1.2 : 1.0) : 2.6;
-      this.bedLampLight.intensity = (lampOwned && this.bedLampOn) ? bedBoost : 0;
+      const bedIntensity = THREE.MathUtils.lerp(1.0, 2.6, sample.darkness);
+      this.bedLampLight.intensity = (lampOwned && this.bedLampOn) ? bedIntensity : 0;
     }
 
     // Map 0..1 phase to 24h clock starting at 06:00 sunrise
     const totalMinutes = Math.floor(((phase + 0.25) % 1.0) * 1440);
     const hh = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
     const mm = String(totalMinutes % 60).padStart(2, "0");
-    this.onTimeUpdate({ clockText: `${hh}:${mm}`, label, isNight: !isDay });
-    return !isDay;
+    this.onTimeUpdate({ clockText: `${hh}:${mm}`, label: sample.label, isNight });
+    return isNight;
   }
 
   updateCameraTransform(instant = false) {

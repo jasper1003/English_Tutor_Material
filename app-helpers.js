@@ -42,6 +42,60 @@ export const XP_RANK_LADDER = [
   { title: "太古獨尊·無敵寂寞", emblem: "🪩", subtitle: "宇宙星雲都照你的色票調色" }
 ];
 
+export const DAY_NIGHT_KEYFRAMES = [
+  { phase: 0.00, label: "日出清晨", sunColor: "#ffa56e", sunIntensity: 1.25, hemiSky: "#ffc29e", hemiGround: "#ba8b6c", hemiIntensity: 0.56, bg: "#dfc0ab", sky: "#f7a98f", darkness: 0.45 },
+  { phase: 0.09, label: "清晨暖陽", sunColor: "#ffe2b8", sunIntensity: 1.85, hemiSky: "#fff3df", hemiGround: "#c89974", hemiIntensity: 0.74, bg: "#eae0d2", sky: "#94d4fb", darkness: 0.14 },
+  { phase: 0.25, label: "晴朗正午", sunColor: "#fff6e3", sunIntensity: 2.15, hemiSky: "#fffaf2", hemiGround: "#cba07a", hemiIntensity: 0.84, bg: "#eee5d7", sky: "#7dd3fc", darkness: 0.00 },
+  { phase: 0.37, label: "午後陽光", sunColor: "#ffeed4", sunIntensity: 2.02, hemiSky: "#fff4e4", hemiGround: "#c79873", hemiIntensity: 0.78, bg: "#ebe1d3", sky: "#86cbf5", darkness: 0.06 },
+  { phase: 0.46, label: "金黃夕陽", sunColor: "#ffb875", sunIntensity: 1.58, hemiSky: "#f8c79d", hemiGround: "#ad7a66", hemiIntensity: 0.63, bg: "#cfa393", sky: "#f69954", darkness: 0.38 },
+  { phase: 0.52, label: "暮色微醺", sunColor: "#e67c73", sunIntensity: 1.08, hemiSky: "#946f91", hemiGround: "#614957", hemiIntensity: 0.48, bg: "#524161", sky: "#ad5d7a", darkness: 0.68 },
+  { phase: 0.60, label: "入夜藍調", sunColor: "#8ca4e6", sunIntensity: 0.72, hemiSky: "#334268", hemiGround: "#30282b", hemiIntensity: 0.39, bg: "#192030", sky: "#19243b", darkness: 0.92 },
+  { phase: 0.75, label: "靜謐深夜", sunColor: "#7e9de3", sunIntensity: 0.62, hemiSky: "#243252", hemiGround: "#261f1e", hemiIntensity: 0.36, bg: "#111622", sky: "#0f172a", darkness: 1.00 },
+  { phase: 0.90, label: "破曉前夕", sunColor: "#94a8e4", sunIntensity: 0.70, hemiSky: "#384168", hemiGround: "#352b2d", hemiIntensity: 0.40, bg: "#21273c", sky: "#273154", darkness: 0.88 },
+  { phase: 0.96, label: "黎明微光", sunColor: "#df937f", sunIntensity: 0.96, hemiSky: "#997282", hemiGround: "#74574e", hemiIntensity: 0.48, bg: "#785d6b", sky: "#c78b8e", darkness: 0.66 }
+];
+
+/**
+ * Sample continuous C^1 smooth day-night outdoor lighting & sun arc at cycle phase [0, 1).
+ * Uses cosine easing between cyclic keyframes so transitions never snap or jump.
+ */
+export function sampleDayNightCycle(rawPhase) {
+  const n = DAY_NIGHT_KEYFRAMES.length;
+  const p = ((Number(rawPhase) % 1) + 1) % 1;
+
+  let idx = n - 1;
+  for (let i = 0; i < n; i++) {
+    if (p >= DAY_NIGHT_KEYFRAMES[i].phase) idx = i;
+  }
+  const nextIdx = (idx + 1) % n;
+  const from = DAY_NIGHT_KEYFRAMES[idx];
+  const to = DAY_NIGHT_KEYFRAMES[nextIdx];
+
+  const startP = from.phase;
+  const endP = nextIdx === 0 ? 1.0 : to.phase;
+  const span = Math.max(1e-6, endP - startP);
+  const rawK = Math.min(1, Math.max(0, (p - startP) / span));
+  const alpha = 0.5 - 0.5 * Math.cos(Math.PI * rawK);
+
+  const lerpNum = (a, b) => a + (b - a) * alpha;
+  const orbit = p * Math.PI * 2;
+
+  return {
+    phase: p,
+    isNight: p >= 0.5,
+    label: rawK < 0.5 ? from.label : to.label,
+    from,
+    to,
+    alpha,
+    sunIntensity: lerpNum(from.sunIntensity, to.sunIntensity),
+    hemiIntensity: lerpNum(from.hemiIntensity, to.hemiIntensity),
+    darkness: lerpNum(from.darkness, to.darkness),
+    sunX: Math.cos(orbit) * 8.5,
+    sunY: 8.0 + Math.sin(orbit) * 4.2,
+    sunZ: -7.5
+  };
+}
+
 export function calculateShopPurchaseXp(price) {
   const safePrice = Math.max(0, Math.trunc(Number(price) || 0));
   return Math.round(safePrice * 0.2);

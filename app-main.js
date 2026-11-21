@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121f";
+} from "./room-scene.js?v=20261121i";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -73,9 +73,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121g";
+} from "./app-helpers.js?v=20261121i";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121g";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121i";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
