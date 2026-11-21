@@ -540,7 +540,7 @@ export const CHARACTER_PERSONAS = [
   {
     id: "curious_spark",
     label: "好奇觀察家",
-    preferred: ["pet_cat", "check_coat", "admire_poster", "watch_tv", "eat", "toilet"],
+    preferred: ["pet_cat", "watch_hamster", "check_coat", "admire_poster", "watch_tv", "eat", "toilet"],
     nightSleepWeight: 2,
     idleMinSec: 68,
     idleSpanSec: 34,
@@ -587,6 +587,7 @@ export function listAvailableRoomActivities(ownedItems = {}, isNightTime = false
   if (owned.coffee_bar) activities.push("coffee_break");
   if (owned.vinyl_player) activities.push("listen_vinyl");
   if (owned.orange_cat) activities.push("pet_cat");
+  if (owned.hamster_cage) activities.push("watch_hamster");
   if (owned.floor_plant) activities.push("water_floor_plant");
   return activities;
 }

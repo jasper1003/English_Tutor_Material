@@ -9,13 +9,13 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261121k";
+} from "./shop-catalog.js?v=20261121l";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261121k";
+} from "./app-helpers.js?v=20261121l";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -178,6 +178,14 @@ export const THOUGHT_BANK = {
     "Giving chin scratches makes me so happy.",
     "Taking a break to pet the cat is essential.",
     "Purring right next to me is pure magic!"
+  ],
+  watch_hamster: [
+    "Look at Mochi sprinting on that tiny wooden wheel!",
+    "Tiny cheeks full of sunflower seeds—so cute!",
+    "Keep running, little hamster! Faster than my deadline!",
+    "Having a hamster right beside my desk boosts my mood.",
+    "Careful not to tumble off the wheel, little puffball!",
+    "Wait—did you just stash another seed in the corner?"
   ],
   water_floor_plant: [
     "Big shiny leaves make the room feel alive!",
@@ -1437,6 +1445,7 @@ export class FreelancerRoomScene {
       coffee_break: { id: "coffee_break", label: "在手沖吧台泡一杯熱美式咖啡", pos: new THREE.Vector3(-2.62, 0, -2.28), rotY: -Math.PI / 2 },
       listen_vinyl: { id: "listen_vinyl", label: "播放黑膠唱片跟著音樂搖擺中", pos: new THREE.Vector3(-0.75, 0, 2.75), rotY: 0 },
       pet_cat: { id: "pet_cat", label: "蹲下來摸摸橘貓室友「阿橘」", pos: new THREE.Vector3(0.95, 0, 2.82), rotY: 0 },
+      watch_hamster: { id: "watch_hamster", label: "在書桌左邊看倉鼠「麻糬」跑滾輪", pos: new THREE.Vector3(-1.82, 0, -2.28), rotY: Math.PI },
       water_floor_plant: { id: "water_floor_plant", label: "替琴葉榕落地盆栽擦葉澆水中", pos: new THREE.Vector3(2.75, 0, -0.55), rotY: Math.PI / 2 }
     };
 
@@ -2401,6 +2410,209 @@ export class FreelancerRoomScene {
           this.addInteractive(obj, "atmos");
         }
       });
+    });
+
+    // 7. Two-Drawer Oak Side Table + Aligned Acrylic Hamster Cage & Wheel (immediately left of the desk)
+    const HAMSTER_TABLE_TOP_Y = 0.78;
+    this.hamsterTableTopY = HAMSTER_TABLE_TOP_Y;
+
+    const hamsterSet = new THREE.Group();
+    hamsterSet.position.set(-1.82, 0, -3.05);
+
+    const oakFrameMat = makeMat("#c8986b", 0.52);
+    const oakDrawerMat = makeMat("#eddcc4", 0.56);
+    const knobBrassMat = makeMat("#d4a459", 0.3, 0.75);
+    const darkLegMat = makeMat("#4b5563", 0.45, 0.3);
+
+    // 4 tapered legs resting cleanly on floor (y = 0..0.22)
+    [[-0.31, -0.26], [0.31, -0.26], [-0.31, 0.26], [0.31, 0.26]].forEach(([lx, lz]) => {
+      const hLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.024, 0.22, 10), darkLegMat);
+      hLeg.position.set(lx, 0.11, lz);
+      hLeg.castShadow = true;
+      hamsterSet.add(hLeg);
+    });
+
+    // Drawer cabinet body (y = 0.22..0.73)
+    const hCabinet = new THREE.Mesh(new RoundedBoxGeometry(0.74, 0.51, 0.68, 3, 0.03), oakFrameMat);
+    hCabinet.position.set(0, 0.475, 0);
+    hCabinet.castShadow = true;
+    hCabinet.receiveShadow = true;
+    hamsterSet.add(hCabinet);
+
+    // Two cream drawer fronts + brass knobs facing +Z
+    [0.36, 0.59].forEach(dy => {
+      const dPanel = new THREE.Mesh(new RoundedBoxGeometry(0.60, 0.19, 0.03, 2, 0.014), oakDrawerMat);
+      dPanel.position.set(0, dy, 0.34);
+      hamsterSet.add(dPanel);
+
+      const dKnob = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 10), knobBrassMat);
+      dKnob.position.set(0, dy, 0.365);
+      hamsterSet.add(dKnob);
+    });
+
+    // Tabletop slab whose exact top face is HAMSTER_TABLE_TOP_Y (0.755 + 0.05/2 = 0.780)
+    const hTableTop = new THREE.Mesh(new RoundedBoxGeometry(0.80, 0.05, 0.76, 3, 0.018), oakFrameMat);
+    hTableTop.position.set(0, HAMSTER_TABLE_TOP_Y - 0.025, 0);
+    hTableTop.castShadow = true;
+    hTableTop.receiveShadow = true;
+    hamsterSet.add(hTableTop);
+
+    // Cage group sits flush at local y = 0 -> world y = HAMSTER_TABLE_TOP_Y (0.780)
+    const cageRoot = new THREE.Group();
+    cageRoot.position.set(0, HAMSTER_TABLE_TOP_Y, 0);
+    this.hamsterCageSubGroup = cageRoot;
+
+    // Bottom plastic tray: height 0.14 centered at y = 0.070 -> bottom sits strictly at y = 0.000
+    const trayMat = makeMat("#88a894", 0.55);
+    const cageTray = new THREE.Mesh(new RoundedBoxGeometry(0.62, 0.14, 0.50, 3, 0.022), trayMat);
+    cageTray.position.set(0, 0.07, 0);
+    cageTray.castShadow = true;
+    cageTray.receiveShadow = true;
+    cageRoot.add(cageTray);
+
+    // Cozy pale wood-shaving bedding bed inside tray
+    const bedding = new THREE.Mesh(
+      new RoundedBoxGeometry(0.56, 0.035, 0.44, 2, 0.012),
+      makeMat("#ead8be", 0.92)
+    );
+    bedding.position.set(0, 0.128, 0);
+    cageRoot.add(bedding);
+
+    // Transparent acrylic enclosure walls + oak/silver top rim & slim vertical corner posts
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: "#e8f4f8",
+      transparent: true,
+      opacity: 0.22,
+      roughness: 0.12,
+      metalness: 0.05,
+      depthWrite: false
+    });
+    const cageGlass = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.34, 0.46), glassMat);
+    cageGlass.position.set(0, 0.31, 0);
+    cageRoot.add(cageGlass);
+
+    [[-0.285, -0.225], [0.285, -0.225], [-0.285, 0.225], [0.285, 0.225]].forEach(([px, pz]) => {
+      const post = new THREE.Mesh(new RoundedBoxGeometry(0.026, 0.36, 0.026, 2, 0.008), oakFrameMat);
+      post.position.set(px, 0.31, pz);
+      post.castShadow = true;
+      cageRoot.add(post);
+    });
+
+    const cageRoofRim = new THREE.Mesh(new RoundedBoxGeometry(0.60, 0.028, 0.48, 3, 0.01), oakFrameMat);
+    cageRoofRim.position.set(0, 0.484, 0);
+    cageRoofRim.castShadow = true;
+    cageRoot.add(cageRoofRim);
+
+    // Wire bars across the top roof grille
+    const wireMat = makeMat("#cbd5e1", 0.35, 0.72);
+    for (let i = -3; i <= 3; i++) {
+      const topBar = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.44, 6), wireMat);
+      topBar.rotation.x = Math.PI / 2;
+      topBar.position.set(i * 0.07, 0.486, 0);
+      cageRoot.add(topBar);
+    }
+
+    // Wooden Hideout Hut + Tiny Seed Dish + Pastel Water Bottle inside cage
+    const hideout = new THREE.Mesh(new RoundedBoxGeometry(0.16, 0.12, 0.16, 3, 0.025), oakFrameMat);
+    hideout.position.set(0.16, 0.195, -0.10);
+    hideout.castShadow = true;
+    cageRoot.add(hideout);
+
+    const hideDoor = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.02, 12), makeMat("#3e2c23", 0.9));
+    hideDoor.rotation.x = Math.PI / 2;
+    hideDoor.position.set(0.16, 0.175, -0.02);
+    cageRoot.add(hideDoor);
+
+    const seedBowl = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.044, 0.032, 14), makeMat("#f59e0b", 0.45));
+    seedBowl.position.set(0.15, 0.156, 0.11);
+    cageRoot.add(seedBowl);
+
+    const seedsHeap = new THREE.Mesh(new THREE.SphereGeometry(0.036, 10, 8), makeMat("#92400e", 0.85));
+    seedsHeap.scale.set(1.1, 0.48, 1.1);
+    seedsHeap.position.set(0.15, 0.168, 0.11);
+    cageRoot.add(seedsHeap);
+
+    const waterBottle = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.13, 12), makeMat("#7dd3fc", 0.3));
+    waterBottle.position.set(0.255, 0.34, -0.06);
+    cageRoot.add(waterBottle);
+    const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.055, 8), wireMat);
+    spout.rotation.z = 0.65;
+    spout.position.set(0.23, 0.255, -0.06);
+    cageRoot.add(spout);
+
+    // Exercise Wheel Assembly (back-left inside cage)
+    const wheelStand = new THREE.Mesh(new RoundedBoxGeometry(0.03, 0.16, 0.05, 2, 0.008), trayMat);
+    wheelStand.position.set(-0.13, 0.21, -0.05);
+    cageRoot.add(wheelStand);
+
+    const wheelPivot = new THREE.Group();
+    wheelPivot.position.set(-0.13, 0.29, -0.01);
+    const wheelRimMat = makeMat("#e07a5f", 0.55);
+    const wheelRim = new THREE.Mesh(new THREE.TorusGeometry(0.115, 0.015, 10, 24), wheelRimMat);
+    wheelPivot.add(wheelRim);
+    const wheelRimBack = new THREE.Mesh(new THREE.TorusGeometry(0.115, 0.012, 8, 24), wheelRimMat);
+    wheelRimBack.position.z = -0.045;
+    wheelPivot.add(wheelRimBack);
+    for (let s = 0; s < 4; s++) {
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.012, 0.008), makeMat("#f4e8d6", 0.6));
+      spoke.rotation.z = (s * Math.PI) / 4;
+      spoke.position.z = -0.045;
+      wheelPivot.add(spoke);
+    }
+    const wheelHub = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.06, 10), knobBrassMat);
+    wheelHub.rotation.x = Math.PI / 2;
+    wheelHub.position.z = -0.025;
+    wheelPivot.add(wheelHub);
+    this.hamsterWheelPivot = wheelPivot;
+    cageRoot.add(wheelPivot);
+
+    // Adorable Pudding/Golden Hamster "Mochi" inside the wheel
+    const hamsterPivot = new THREE.Group();
+    hamsterPivot.position.set(-0.13, 0.215, -0.02);
+    const hamFurMat = makeMat("#ecc17e", 0.78);
+    const hamCreamMat = makeMat("#fff8eb", 0.84);
+    const hamEyeMat = makeMat("#1e293b", 0.18);
+    const hamPinkMat = makeMat("#f48c8c", 0.75);
+
+    const hamBody = new THREE.Mesh(new THREE.SphereGeometry(0.052, 14, 12), hamFurMat);
+    hamBody.scale.set(1.22, 0.92, 0.94);
+    hamBody.castShadow = true;
+    hamsterPivot.add(hamBody);
+
+    const hamBelly = new THREE.Mesh(new THREE.SphereGeometry(0.042, 12, 10), hamCreamMat);
+    hamBelly.scale.set(1.05, 0.78, 0.82);
+    hamBelly.position.set(0.008, -0.012, 0.012);
+    hamsterPivot.add(hamBelly);
+
+    const hamHead = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 10), hamFurMat);
+    hamHead.position.set(0.042, 0.022, 0.006);
+    hamsterPivot.add(hamHead);
+
+    [-0.022, 0.022].forEach(ez => {
+      const hEar = new THREE.Mesh(new THREE.SphereGeometry(0.013, 8, 8), hamPinkMat);
+      hEar.position.set(0.028, 0.056, ez);
+      hamsterPivot.add(hEar);
+
+      const hEye = new THREE.Mesh(new THREE.SphereGeometry(0.0065, 8, 8), hamEyeMat);
+      hEye.position.set(0.072, 0.030, ez * 0.85);
+      hamsterPivot.add(hEye);
+    });
+
+    const hNose = new THREE.Mesh(new THREE.SphereGeometry(0.006, 8, 8), hamPinkMat);
+    hNose.position.set(0.080, 0.020, 0.006);
+    hamsterPivot.add(hNose);
+
+    this.hamsterBodyMesh = hamsterPivot;
+    cageRoot.add(hamsterPivot);
+    hamsterSet.add(cageRoot);
+
+    hamsterSet.visible = Boolean(this.ownedItems.hamster_cage);
+    this.hamsterCageGroup = hamsterSet;
+    this.furnitureGroup.add(hamsterSet);
+    hamsterSet.traverse(obj => {
+      if (obj.isMesh && obj.material !== glassMat) {
+        this.addInteractive(obj, "hamster");
+      }
     });
   }
 
@@ -3470,6 +3682,7 @@ export class FreelancerRoomScene {
     if (this.coffeeBarGroup) this.coffeeBarGroup.visible = Boolean(this.ownedItems.coffee_bar);
     if (this.vinylPlayerGroup) this.vinylPlayerGroup.visible = Boolean(this.ownedItems.vinyl_player);
     if (this.orangeCatGroup) this.orangeCatGroup.visible = Boolean(this.ownedItems.orange_cat);
+    if (this.hamsterCageGroup) this.hamsterCageGroup.visible = Boolean(this.ownedItems.hamster_cage);
     if (this.smartToiletGroup) this.smartToiletGroup.visible = Boolean(this.ownedItems.smart_toilet);
     if (this.basicToiletGroup) this.basicToiletGroup.visible = !this.ownedItems.smart_toilet;
     if (this.dualMonitorGroup) this.dualMonitorGroup.visible = Boolean(this.ownedItems.dual_monitor);
@@ -3545,6 +3758,7 @@ export class FreelancerRoomScene {
     const owned = this.ownedItems || {};
     const options = [];
     if (owned.orange_cat) options.push(this.actionSpots.pet_cat);
+    if (owned.hamster_cage) options.push(this.actionSpots.watch_hamster);
     if (owned.cozy_sofa && owned.wall_tv) options.push(this.actionSpots.sofa_tv);
     if (owned.vinyl_player) options.push(this.actionSpots.listen_vinyl);
     if (owned.coffee_bar) options.push(this.actionSpots.coffee_break);
@@ -3772,6 +3986,7 @@ export class FreelancerRoomScene {
     if (owned.coffee_bar) blockers.push({ minX: -3.95, maxX: -2.98, minZ: -2.95, maxZ: -1.68 });
     if (owned.vinyl_player) blockers.push({ minX: -1.55, maxX: 0.05, minZ: 3.10, maxZ: 3.95 });
     if (owned.orange_cat) blockers.push({ minX: 0.50, maxX: 1.45, minZ: 3.05, maxZ: 3.95 });
+    if (owned.hamster_cage) blockers.push({ minX: -2.35, maxX: -1.36, minZ: -3.55, maxZ: -2.55 });
     if (owned.floor_plant) blockers.push({ minX: 3.10, maxX: 3.95, minZ: -1.05, maxZ: -0.05 });
 
     for (let pass = 0; pass < 2; pass++) {
@@ -4342,6 +4557,14 @@ export class FreelancerRoomScene {
         this.rightArmPivot.rotation.y = Math.cos(elapsedSec * 4.0) * 0.12;
         this.headGroup.rotation.x = 0.34;
         break;
+      case "watch_hamster":
+        // Leaning lightly at drawer side-table height watching Mochi sprint in the cage
+        this.torsoGroup.rotation.x = 0.18;
+        this.leftArmPivot.rotation.x = -0.62;
+        this.rightArmPivot.rotation.x = -0.66 + Math.sin(elapsedSec * 3.0) * 0.08;
+        this.headGroup.rotation.x = 0.24 + Math.sin(elapsedSec * 2.1) * 0.04;
+        this.headGroup.rotation.y = Math.sin(elapsedSec * 1.4) * 0.07;
+        break;
       case "water_floor_plant":
         // Caring for / wiping glossy fiddle-leaf fig leaves
         this.torsoGroup.rotation.x = 0.12;
@@ -4543,6 +4766,8 @@ export class FreelancerRoomScene {
           this.onHoverChange("點擊沖一杯手沖熱美式咖啡");
         } else if (type === "cat") {
           this.onHoverChange("點擊摸摸橘貓室友「阿橘」");
+        } else if (type === "hamster") {
+          this.onHoverChange("點擊看看書桌旁的布丁倉鼠「麻糬」");
         } else if (type === "poster") {
           this.onHoverChange("點擊更換掛畫圖案／裁切自訂照片");
         } else if (type === "computer") {
@@ -4608,6 +4833,10 @@ export class FreelancerRoomScene {
         this.commandActivity(this.actionSpots.coffee_break, 30);
       } else if (this.hoveredTarget === "cat") {
         this.commandActivity(this.actionSpots.pet_cat, 25);
+      } else if (this.hoveredTarget === "hamster") {
+        this.commandActivity(this.actionSpots.watch_hamster, 30);
+        this.showBubble(this.pickRandomThought("watch_hamster"), 4200);
+        this.thoughtCooldown = 10;
       } else if (this.hoveredTarget === "coatRack") {
         this.commandActivity(this.actionSpots.check_coat, 16);
       } else if (this.hoveredTarget === "floorPlant") {
@@ -4759,6 +4988,29 @@ export class FreelancerRoomScene {
       if (this.catBodyMesh) {
         const breath = 1 + Math.sin(elapsedSec * 1.9) * 0.035;
         this.catBodyMesh.scale.set(1.22, 0.72 * breath, 1.0 * breath);
+      }
+    }
+
+    // Energetic hamster Mochi running inside wheel on drawer side table
+    if (this.hamsterCageGroup?.visible) {
+      const sprintCycle = (elapsedSec % 11) < 8.5;
+      if (this.hamsterWheelPivot) {
+        if (sprintCycle) {
+          this.hamsterWheelPivot.rotation.z -= dt * 7.5;
+        } else {
+          this.hamsterWheelPivot.rotation.z -= dt * 0.4 * Math.cos(elapsedSec * 3);
+        }
+      }
+      if (this.hamsterBodyMesh) {
+        if (sprintCycle) {
+          this.hamsterBodyMesh.position.y = 0.215 + Math.abs(Math.sin(elapsedSec * 18)) * 0.012;
+          this.hamsterBodyMesh.rotation.z = 0.14 + Math.sin(elapsedSec * 18) * 0.08;
+          this.hamsterBodyMesh.rotation.y = Math.sin(elapsedSec * 5) * 0.05;
+        } else {
+          this.hamsterBodyMesh.position.y = 0.212;
+          this.hamsterBodyMesh.rotation.z = 0;
+          this.hamsterBodyMesh.rotation.y = Math.sin(elapsedSec * 4.2) * 0.35;
+        }
       }
     }
 

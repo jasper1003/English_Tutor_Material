@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121k";
+} from "./room-scene.js?v=20261121l";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -56,7 +56,7 @@ import {
   getShopItem,
   getMissingShopPrerequisites,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261121k";
+} from "./shop-catalog.js?v=20261121l";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -77,9 +77,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121k";
+} from "./app-helpers.js?v=20261121l";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121k";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121l";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);

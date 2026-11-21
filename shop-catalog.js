@@ -754,6 +754,15 @@ export const DEFAULT_SHOP_CATALOG = [
     desc: "掛在玄關大門右側牆上，正好對著沙發的纖薄小電視。"
   },
   {
+    id: "hamster_cage",
+    name: "布丁倉鼠「麻糬」與小抽屜桌",
+    category: "decor",
+    price: 380,
+    icon: "🐹",
+    previewImage: "./assets/shop/hamster_cage.jpg",
+    desc: "購買後會在書桌左邊擺上專屬雙抽屜小邊桌，並把透明鼠籠穩穩放在桌面上！可愛倉鼠「麻糬」整天在滾輪上奔跑。"
+  },
+  {
     id: "orange_cat",
     name: "橘貓室友「阿橘」與貓窩",
     category: "decor",
