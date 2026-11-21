@@ -133,6 +133,26 @@ export const PLACEABLE_FURNITURE_META = {
     surface: "wall",
     gridW: 3,
     gridD: 1
+  },
+  dolby_atmos: {
+    id: "dolby_atmos",
+    name: "Dolby Atmos 前置聲霸與重低音",
+    icon: "🔊",
+    starter: false,
+    surface: "floor",
+    gridW: 3,
+    gridD: 1
+  },
+  dolby_atmos_rear: {
+    id: "dolby_atmos_rear",
+    name: "Dolby Atmos 後環繞雙立柱音箱",
+    icon: "🔊",
+    starter: false,
+    ownerKey: "dolby_atmos",
+    companionParcelKey: "dolby_atmos",
+    surface: "floor",
+    gridW: 3,
+    gridD: 1
   }
 };
 
@@ -148,7 +168,9 @@ export const DEFAULT_FURNITURE_LAYOUT = {
   bed_lamp: { surface: "floor", gx: 11, gz: 14, rot: 0 },
   floor_plant: { surface: "floor", gx: 14, gz: 6, rot: 0 },
   wall_poster: { surface: "wall", wall: "north", pos: 2 },
-  wall_tv: { surface: "wall", wall: "west", pos: 6 }
+  wall_tv: { surface: "wall", wall: "west", pos: 6 },
+  dolby_atmos: { surface: "floor", gx: 0, gz: 6, rot: 1 },
+  dolby_atmos_rear: { surface: "floor", gx: 6, gz: 6, rot: 3 }
 };
 
 export function isPlaceableItem(itemId) {
@@ -157,7 +179,13 @@ export function isPlaceableItem(itemId) {
 
 export function isShopParcelItem(itemId) {
   const meta = PLACEABLE_FURNITURE_META[itemId];
-  return Boolean(meta && !meta.starter);
+  return Boolean(meta && !meta.starter && !meta.companionParcelKey);
+}
+
+export function getCompanionPlaceableIds(itemId) {
+  return Object.values(PLACEABLE_FURNITURE_META)
+    .filter(meta => (meta.ownerKey || meta.id) === itemId)
+    .map(meta => meta.id);
 }
 
 export function getRotatedDims(itemId, rot = 0) {
@@ -226,7 +254,9 @@ export function resolveEffectiveLayout(ownedItems = {}, rawLayout = {}, rawPendi
   const pending = normalizePendingParcels(rawPendingParcels, ownedItems);
   const layout = {};
   for (const [id, meta] of Object.entries(PLACEABLE_FURNITURE_META)) {
-    const active = meta.starter || (ownedItems?.[id] === true && !pending[id]);
+    const ownerKey = meta.ownerKey || id;
+    const parcelKey = meta.companionParcelKey || id;
+    const active = meta.starter || (ownedItems?.[ownerKey] === true && !pending[parcelKey]);
     if (!active) continue;
     const saved = rawLayout?.[id];
     const fallback = DEFAULT_FURNITURE_LAYOUT[id];
@@ -248,9 +278,14 @@ export function buildOccupancyMaps(ownedItems = {}, rawLayout = {}, rawPendingPa
   const floorOccupied = new Map();
   const wallOccupied = new Map();
   const layout = resolveEffectiveLayout(ownedItems, rawLayout, rawPendingParcels);
+  const excludedSet = new Set(
+    Array.isArray(excludeItemId)
+      ? excludeItemId
+      : (excludeItemId ? [excludeItemId] : [])
+  );
 
   for (const [id, entry] of Object.entries(layout)) {
-    if (excludeItemId && id === excludeItemId) continue;
+    if (excludedSet.has(id)) continue;
     const meta = PLACEABLE_FURNITURE_META[id];
     if (!meta) continue;
     if (entry.surface === "wall") {
@@ -269,13 +304,14 @@ export function buildOccupancyMaps(ownedItems = {}, rawLayout = {}, rawPendingPa
   return { floorOccupied, wallOccupied, layout };
 }
 
-export function canPlaceFloorItem(itemId, gx, gz, rot, ownedItems = {}, rawLayout = {}, rawPendingParcels = {}) {
+export function canPlaceFloorItem(itemId, gx, gz, rot, ownedItems = {}, rawLayout = {}, rawPendingParcels = {}, excludeIds = null) {
   const meta = PLACEABLE_FURNITURE_META[itemId];
   if (!meta || meta.surface !== "floor") return false;
   if (!Number.isInteger(gx) || !Number.isInteger(gz)) return false;
   const { w, d } = getRotatedDims(itemId, rot);
   if (gx < 0 || gz < 0 || gx + w > GRID_CELLS || gz + d > GRID_CELLS) return false;
-  const { floorOccupied } = buildOccupancyMaps(ownedItems, rawLayout, rawPendingParcels, itemId);
+  const excludes = Array.isArray(excludeIds) ? [itemId, ...excludeIds] : itemId;
+  const { floorOccupied } = buildOccupancyMaps(ownedItems, rawLayout, rawPendingParcels, excludes);
   for (let ix = 0; ix < w; ix++) {
     for (let iz = 0; iz < d; iz++) {
       const cx = gx + ix;
@@ -287,12 +323,13 @@ export function canPlaceFloorItem(itemId, gx, gz, rot, ownedItems = {}, rawLayou
   return true;
 }
 
-export function canPlaceWallItem(itemId, wall, pos, ownedItems = {}, rawLayout = {}, rawPendingParcels = {}) {
+export function canPlaceWallItem(itemId, wall, pos, ownedItems = {}, rawLayout = {}, rawPendingParcels = {}, excludeIds = null) {
   const meta = PLACEABLE_FURNITURE_META[itemId];
   if (!meta || meta.surface !== "wall") return false;
   if (!WALL_NAMES.includes(wall) || !Number.isInteger(pos)) return false;
   if (pos < 0 || pos + meta.gridW > GRID_CELLS) return false;
-  const { wallOccupied } = buildOccupancyMaps(ownedItems, rawLayout, rawPendingParcels, itemId);
+  const excludes = Array.isArray(excludeIds) ? [itemId, ...excludeIds] : itemId;
+  const { wallOccupied } = buildOccupancyMaps(ownedItems, rawLayout, rawPendingParcels, excludes);
   for (let i = 0; i < meta.gridW; i++) {
     const p = pos + i;
     if (isWallCellReserved(wall, p)) return false;
@@ -301,31 +338,31 @@ export function canPlaceWallItem(itemId, wall, pos, ownedItems = {}, rawLayout =
   return true;
 }
 
-export function findFirstValidPlacement(itemId, ownedItems = {}, rawLayout = {}, rawPendingParcels = {}) {
+export function findFirstValidPlacement(itemId, ownedItems = {}, rawLayout = {}, rawPendingParcels = {}, excludeIds = null) {
   const meta = PLACEABLE_FURNITURE_META[itemId];
   if (!meta) return null;
   const def = DEFAULT_FURNITURE_LAYOUT[itemId];
   if (meta.surface === "wall") {
-    if (def && canPlaceWallItem(itemId, def.wall, def.pos, ownedItems, rawLayout, rawPendingParcels)) {
+    if (def && canPlaceWallItem(itemId, def.wall, def.pos, ownedItems, rawLayout, rawPendingParcels, excludeIds)) {
       return { ...def };
     }
     for (const wall of WALL_NAMES) {
       for (let pos = 0; pos <= GRID_CELLS - meta.gridW; pos++) {
-        if (canPlaceWallItem(itemId, wall, pos, ownedItems, rawLayout, rawPendingParcels)) {
+        if (canPlaceWallItem(itemId, wall, pos, ownedItems, rawLayout, rawPendingParcels, excludeIds)) {
           return { surface: "wall", wall, pos };
         }
       }
     }
     return null;
   }
-  if (def && canPlaceFloorItem(itemId, def.gx, def.gz, def.rot, ownedItems, rawLayout, rawPendingParcels)) {
+  if (def && canPlaceFloorItem(itemId, def.gx, def.gz, def.rot, ownedItems, rawLayout, rawPendingParcels, excludeIds)) {
     return { ...def };
   }
   for (let rot = 0; rot < 4; rot++) {
     const { w, d } = getRotatedDims(itemId, rot);
     for (let gz = 0; gz <= GRID_CELLS - d; gz++) {
       for (let gx = 0; gx <= GRID_CELLS - w; gx++) {
-        if (canPlaceFloorItem(itemId, gx, gz, rot, ownedItems, rawLayout, rawPendingParcels)) {
+        if (canPlaceFloorItem(itemId, gx, gz, rot, ownedItems, rawLayout, rawPendingParcels, excludeIds)) {
           return { surface: "floor", gx, gz, rot };
         }
       }
@@ -348,12 +385,14 @@ export function computeRoomGridStats(ownedItems = {}, rawLayout = {}, rawPending
   let pendingFloorCells = 0;
   let pendingWallCells = 0;
   for (const parcelId of Object.keys(pending)) {
-    const meta = PLACEABLE_FURNITURE_META[parcelId];
-    if (!meta) continue;
-    if (meta.surface === "wall") {
-      pendingWallCells += meta.gridW;
-    } else {
-      pendingFloorCells += meta.gridW * meta.gridD;
+    for (const unitId of getCompanionPlaceableIds(parcelId)) {
+      const meta = PLACEABLE_FURNITURE_META[unitId];
+      if (!meta) continue;
+      if (meta.surface === "wall") {
+        pendingWallCells += meta.gridW;
+      } else {
+        pendingFloorCells += meta.gridW * meta.gridD;
+      }
     }
   }
 
@@ -376,7 +415,18 @@ export function computeRoomGridStats(ownedItems = {}, rawLayout = {}, rawPending
 }
 
 export function canPackPlaceableItems(itemIds = [], ownedItems = {}, rawLayout = {}, rawPendingParcels = {}) {
-  const queue = (itemIds || []).filter(id => Boolean(PLACEABLE_FURNITURE_META[id]));
+  const expanded = [];
+  for (const rawId of (itemIds || [])) {
+    const companions = getCompanionPlaceableIds(rawId);
+    if (companions.length > 0) {
+      companions.forEach(cid => {
+        if (!expanded.includes(cid)) expanded.push(cid);
+      });
+    } else if (PLACEABLE_FURNITURE_META[rawId] && !expanded.includes(rawId)) {
+      expanded.push(rawId);
+    }
+  }
+  const queue = expanded.filter(id => Boolean(PLACEABLE_FURNITURE_META[id]));
   if (queue.length === 0) return true;
   // Pack larger-footprint items first so big multi-cell parcels claim contiguous slots cleanly
   queue.sort((a, b) => {
@@ -392,8 +442,10 @@ export function canPackPlaceableItems(itemIds = [], ownedItems = {}, rawLayout =
   const simPending = { ...(rawPendingParcels || {}) };
 
   for (const id of queue) {
-    simOwned[id] = true;
-    delete simPending[id];
+    const ownerKey = PLACEABLE_FURNITURE_META[id]?.ownerKey || id;
+    const parcelKey = PLACEABLE_FURNITURE_META[id]?.companionParcelKey || id;
+    simOwned[ownerKey] = true;
+    delete simPending[parcelKey];
     const slot = findFirstValidPlacement(id, simOwned, simLayout, simPending);
     if (!slot) return false;
     simLayout[id] = slot;
@@ -413,8 +465,14 @@ export function checkShopItemGridAvailability(itemId, ownedItems = {}, rawLayout
       reason: ""
     };
   }
+  const companionIds = getCompanionPlaceableIds(itemId);
+  const unitIds = companionIds.length > 0 ? companionIds : [itemId];
   const stats = computeRoomGridStats(ownedItems, rawLayout, rawPendingParcels, gridOverrides);
-  const neededCells = meta.surface === "wall" ? meta.gridW : (meta.gridW * meta.gridD);
+  const neededCells = unitIds.reduce((sum, uid) => {
+    const m = PLACEABLE_FURNITURE_META[uid];
+    if (!m) return sum;
+    return sum + (m.surface === "wall" ? m.gridW : m.gridW * m.gridD);
+  }, 0);
   const remainingCells = meta.surface === "wall" ? stats.wallRemaining : stats.floorRemaining;
   const surfaceLabel = meta.surface === "wall" ? "牆面" : "地面";
 

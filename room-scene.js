@@ -9,19 +9,20 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261121q";
+} from "./shop-catalog.js?v=20261121r";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261121q";
+} from "./app-helpers.js?v=20261121r";
 import {
   GRID_STEP,
   GRID_CELLS,
   WALL_NAMES,
   PLACEABLE_FURNITURE_META,
   DEFAULT_FURNITURE_LAYOUT,
+  getCompanionPlaceableIds,
   isFloorCellReserved,
   isWallCellReserved,
   canPlaceFloorItem,
@@ -33,7 +34,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261121q";
+} from "./room-grid.js?v=20261121r";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -1444,6 +1445,10 @@ export class FreelancerRoomScene {
     this.editItemDirty = false;
     this._editSuppressNextClick = false;
     this._editPointerDownHandled = false;
+    this.editActiveParcelRoot = null;
+    this.editParcelQueue = [];
+    this.editHiddenCompanions = new Set();
+    this.editParcelRollbackLayout = null;
     this.layoutDirty = false;
     this.movableGroups = {};
     this.tvHostWallName = "west";
@@ -2372,76 +2377,96 @@ export class FreelancerRoomScene {
       if (m.isMesh) this.addInteractive(m, "cat", "orange_cat");
     });
 
-    // 6. Unlocked Combo Cinema Upgrade: Dolby Atmos Surround Sound System (follows wallTvGroup & sofaGroup!)
-    const tvAtmosGroup = new THREE.Group();
-    const sofaAtmosGroup = new THREE.Group();
+    // 6. Unlocked Combo Cinema Upgrade: Two independently movable floor groups (dolby_atmos front console + dolby_atmos_rear towers)
+    const frontAtmosGroup = new THREE.Group();
+    const rearAtmosGroup = new THREE.Group();
     const chassisMat = makeMat("#313b4d", 0.36, 0.45);
     const grilleMat = makeMat("#161d29", 0.88, 0.08);
     const titaniumMat = makeMat("#94a3b8", 0.28, 0.72);
+    const oakConsoleMat = makeMat("#6e4f3a", 0.56, 0.08);
     const copperConeMat = makeMat("#d49a6a", 0.35, 0.62);
     this.atmosLedMat = new THREE.MeshBasicMaterial({ color: "#38bdf8" });
 
-    // 6a. Upward-firing Soundbar centered on floating TV shelf beneath wall TV (local coords of wallTvGroup)
+    // 6a. Sleek Titanium & Walnut Acoustic Stand (3x1 floor footprint, facing +Z)
+    const shelfDeck = new THREE.Mesh(new RoundedBoxGeometry(1.38, 0.042, 0.36, 3, 0.014), oakConsoleMat);
+    shelfDeck.position.set(0, 0.405, 0);
+    shelfDeck.castShadow = true;
+    shelfDeck.receiveShadow = true;
+    frontAtmosGroup.add(shelfDeck);
+    [-0.60, 0.16, 0.62].forEach(lx => {
+      [-0.13, 0.13].forEach(lz => {
+        const leg = new THREE.Mesh(new RoundedBoxGeometry(0.038, 0.384, 0.038, 2, 0.01), titaniumMat);
+        leg.position.set(lx, 0.192, lz);
+        leg.castShadow = true;
+        frontAtmosGroup.add(leg);
+      });
+    });
+
+    // Upward-firing Soundbar centered on top acoustic deck
     const soundbar = new THREE.Group();
-    soundbar.position.set(0, -0.485, 0.12);
-    const sbBody = new THREE.Mesh(new RoundedBoxGeometry(1.12, 0.09, 0.14, 3, 0.025), chassisMat);
+    soundbar.position.set(0, 0.47, 0.05);
+    const sbBody = new THREE.Mesh(new RoundedBoxGeometry(0.96, 0.088, 0.13, 3, 0.025), chassisMat);
     sbBody.castShadow = true;
     soundbar.add(sbBody);
-    const sbFrontGrille = new THREE.Mesh(new RoundedBoxGeometry(1.06, 0.068, 0.02, 2, 0.01), grilleMat);
-    sbFrontGrille.position.set(0, 0, 0.064);
+    const sbFrontGrille = new THREE.Mesh(new RoundedBoxGeometry(0.91, 0.066, 0.02, 2, 0.01), grilleMat);
+    sbFrontGrille.position.set(0, 0, 0.058);
     soundbar.add(sbFrontGrille);
-    [-0.4, 0.4].forEach(upX => {
+    [-0.34, 0.34].forEach(upX => {
       const ring = new THREE.Mesh(new THREE.RingGeometry(0.022, 0.036, 16), copperConeMat);
       ring.rotation.x = -Math.PI / 2;
-      ring.position.set(upX, 0.047, -0.01);
+      ring.position.set(upX, 0.046, -0.01);
       const cone = new THREE.Mesh(new THREE.CircleGeometry(0.022, 16), grilleMat);
       cone.rotation.x = -Math.PI / 2;
-      cone.position.set(upX, 0.0465, -0.01);
+      cone.position.set(upX, 0.0455, -0.01);
       soundbar.add(ring, cone);
     });
     const sbLed = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.01, 0.01), this.atmosLedMat);
-    sbLed.position.set(0, 0.046, 0.066);
+    sbLed.position.set(0, 0.045, 0.06);
     soundbar.add(sbLed);
-    tvAtmosGroup.add(soundbar);
+    frontAtmosGroup.add(soundbar);
 
-    // 6b. Wireless Floor Subwoofer tucked neatly under/beside TV shelf (within 3-cell TV span)
+    // 6b. Wireless Floor Subwoofer tucked neatly under right bay (on floor y = 0)
     const subGroup = new THREE.Group();
-    subGroup.position.set(0.54, -1.56, 0.24);
-    const subBox = new THREE.Mesh(new RoundedBoxGeometry(0.36, 0.40, 0.34, 4, 0.05), chassisMat);
-    subBox.position.y = 0.22;
+    subGroup.position.set(0.39, 0, 0.01);
+    const subBox = new THREE.Mesh(new RoundedBoxGeometry(0.34, 0.35, 0.32, 4, 0.045), chassisMat);
+    subBox.position.y = 0.185;
     subBox.castShadow = true;
     subBox.receiveShadow = true;
     subGroup.add(subBox);
-    const subRing = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.018, 12, 24), copperConeMat);
-    subRing.position.set(0, 0.22, 0.17);
-    const subCone = new THREE.Mesh(new THREE.CircleGeometry(0.10, 22), grilleMat);
-    subCone.position.set(0, 0.22, 0.172);
-    const subLed = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), this.atmosLedMat);
-    subLed.position.set(0.11, 0.37, 0.172);
+    const subRing = new THREE.Mesh(new THREE.TorusGeometry(0.098, 0.016, 12, 24), copperConeMat);
+    subRing.position.set(0, 0.185, 0.162);
+    const subCone = new THREE.Mesh(new THREE.CircleGeometry(0.088, 22), grilleMat);
+    subCone.position.set(0, 0.185, 0.164);
+    const subLed = new THREE.Mesh(new THREE.SphereGeometry(0.011, 8, 8), this.atmosLedMat);
+    subLed.position.set(0.10, 0.32, 0.164);
     subGroup.add(subRing, subCone, subLed);
-    tvAtmosGroup.add(subGroup);
+    frontAtmosGroup.add(subGroup);
 
-    // 6c. Twin Front Height / Atmos Modules flanking above wall TV (within 3-cell span)
-    [-0.62, 0.62].forEach(mx => {
+    // 6c. Twin Angled Front Atmos Height Speakers seated cleanly atop acoustic deck
+    [-0.57, 0.57].forEach(mx => {
       const heightMod = new THREE.Group();
-      heightMod.position.set(mx, 0.54, 0.08);
-      heightMod.rotation.x = 0.26;
-      const modBox = new THREE.Mesh(new RoundedBoxGeometry(0.19, 0.23, 0.14, 3, 0.025), chassisMat);
+      heightMod.position.set(mx, 0.53, -0.05);
+      heightMod.rotation.x = -0.32;
+      const modBox = new THREE.Mesh(new RoundedBoxGeometry(0.17, 0.21, 0.13, 3, 0.024), chassisMat);
       modBox.castShadow = true;
-      const modGrille = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.18, 0.018, 2, 0.01), grilleMat);
-      modGrille.position.z = 0.066;
-      const modTrim = new THREE.Mesh(new THREE.RingGeometry(0.044, 0.056, 18), copperConeMat);
-      modTrim.position.set(0, 0.01, 0.077);
-      const modLed = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.01, 0.01), this.atmosLedMat);
-      modLed.position.set(0, -0.088, 0.073);
+      const modGrille = new THREE.Mesh(new RoundedBoxGeometry(0.135, 0.165, 0.018, 2, 0.01), grilleMat);
+      modGrille.position.z = 0.061;
+      const modTrim = new THREE.Mesh(new THREE.RingGeometry(0.04, 0.052, 18), copperConeMat);
+      modTrim.position.set(0, 0.01, 0.072);
+      const modLed = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.01, 0.01), this.atmosLedMat);
+      modLed.position.set(0, -0.078, 0.068);
       heightMod.add(modBox, modGrille, modTrim, modLed);
-      tvAtmosGroup.add(heightMod);
+      frontAtmosGroup.add(heightMod);
     });
 
-    // 6d. Twin Rear Surround Satellite Towers neatly behind sofa corners (inside 4x2 sofa footprint)
+    // 6d. Twin Rear Surround Satellite Towers (independently movable 3x1 floor pair, facing +Z)
+    const rearCableBridge = new THREE.Mesh(new THREE.BoxGeometry(1.08, 0.012, 0.04), titaniumMat);
+    rearCableBridge.position.set(0, 0.006, 0);
+    rearCableBridge.receiveShadow = true;
+    rearAtmosGroup.add(rearCableBridge);
     [
-      [-0.56, -0.41, -0.35],
-      [0.56, -0.41, 0.35]
+      [-0.54, 0, 0.28],
+      [0.54, 0, -0.28]
     ].forEach(([tx, tz, ry]) => {
       const tower = new THREE.Group();
       tower.position.set(tx, 0, tz);
@@ -2460,23 +2485,23 @@ export class FreelancerRoomScene {
       const headTrim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.008, 0.01), copperConeMat);
       headTrim.position.set(0, 1.05, 0.058);
       tower.add(base, pole, head, headGrille, headTrim);
-      sofaAtmosGroup.add(tower);
+      rearAtmosGroup.add(tower);
     });
 
-    tvAtmosGroup.visible = Boolean(this.ownedItems.dolby_atmos);
-    sofaAtmosGroup.visible = Boolean(this.ownedItems.dolby_atmos);
-    this.atmosWallGroup = tvAtmosGroup;
-    this.dolbyAtmosGroup = sofaAtmosGroup;
-    if (this.wallTvGroup) this.wallTvGroup.add(tvAtmosGroup);
-    if (this.sofaGroup) this.sofaGroup.add(sofaAtmosGroup);
-    tvAtmosGroup.traverse(obj => {
+    frontAtmosGroup.visible = Boolean(this.ownedItems.dolby_atmos && !this.pendingParcels?.dolby_atmos);
+    rearAtmosGroup.visible = Boolean(this.ownedItems.dolby_atmos && !this.pendingParcels?.dolby_atmos);
+    this.atmosFrontGroup = frontAtmosGroup;
+    this.atmosWallGroup = frontAtmosGroup;
+    this.dolbyAtmosGroup = rearAtmosGroup;
+    this.furnitureGroup.add(frontAtmosGroup, rearAtmosGroup);
+    frontAtmosGroup.traverse(obj => {
       if (obj.isMesh && obj.material !== this.atmosLedMat) {
-        this.addInteractive(obj, "atmos", "wall_tv");
+        this.addInteractive(obj, "atmos", "dolby_atmos");
       }
     });
-    sofaAtmosGroup.traverse(obj => {
+    rearAtmosGroup.traverse(obj => {
       if (obj.isMesh && obj.material !== this.atmosLedMat) {
-        this.addInteractive(obj, "atmos", "cozy_sofa");
+        this.addInteractive(obj, "atmos", "dolby_atmos_rear");
       }
     });
 
@@ -3833,14 +3858,14 @@ export class FreelancerRoomScene {
     if (this.wallPosterGroup) this.wallPosterGroup.visible = activePlaced("wall_poster") || editingThis("wall_poster");
     if (this.wallTvGroup) this.wallTvGroup.visible = activePlaced("wall_tv") || editingThis("wall_tv");
     if (this.sofaGroup) this.sofaGroup.visible = activePlaced("cozy_sofa") || editingThis("cozy_sofa");
-    if (this.dolbyAtmosGroup) this.dolbyAtmosGroup.visible = Boolean(this.ownedItems.dolby_atmos && (activePlaced("cozy_sofa") || editingThis("cozy_sofa")));
-    if (this.atmosWallGroup) {
-      const tvHostUpper = this.wallsMap?.[this.tvHostWallName || "west"]?.upperGroup;
-      this.atmosWallGroup.visible = Boolean(
-        this.ownedItems.dolby_atmos
-        && (activePlaced("wall_tv") || editingThis("wall_tv"))
-        && (tvHostUpper ? tvHostUpper.visible : true)
-      );
+    const atmosPlaced = Boolean(this.ownedItems.dolby_atmos) && !this.pendingParcels.dolby_atmos;
+    if (this.atmosFrontGroup) {
+      this.atmosFrontGroup.visible = (atmosPlaced && !this.editHiddenCompanions?.has("dolby_atmos"))
+        || editingThis("dolby_atmos");
+    }
+    if (this.dolbyAtmosGroup) {
+      this.dolbyAtmosGroup.visible = (atmosPlaced && !this.editHiddenCompanions?.has("dolby_atmos_rear"))
+        || editingThis("dolby_atmos_rear");
     }
     if (this.bedLampGroup) this.bedLampGroup.visible = activePlaced("bed_lamp") || editingThis("bed_lamp");
     if (this.deskPlantGroup) this.deskPlantGroup.visible = Boolean(this.ownedItems.desk_plant);
@@ -3874,7 +3899,9 @@ export class FreelancerRoomScene {
       bed_lamp: this.bedLampGroup,
       floor_plant: this.floorPlantGroup,
       wall_poster: this.wallPosterGroup,
-      wall_tv: this.wallTvGroup
+      wall_tv: this.wallTvGroup,
+      dolby_atmos: this.atmosFrontGroup,
+      dolby_atmos_rear: this.dolbyAtmosGroup
     };
   }
 
@@ -4241,6 +4268,13 @@ export class FreelancerRoomScene {
     this._editPointerDownHandled = false;
   }
 
+  resetEditParcelSession() {
+    this.editActiveParcelRoot = null;
+    this.editParcelQueue = [];
+    this.editHiddenCompanions = new Set();
+    this.editParcelRollbackLayout = null;
+  }
+
   enterFurnitureEditMode({ itemId = null, fromParcel = false } = {}) {
     if (this.spectating) return;
     this.editMode = true;
@@ -4251,11 +4285,21 @@ export class FreelancerRoomScene {
     this.editCanPlace = false;
     this.editItemDirty = false;
     this.resetEditDragState();
+    this.resetEditParcelSession();
     if (this.renderer?.domElement) {
       this.renderer.domElement.style.touchAction = "none";
     }
     this.updateParcelVisuals();
-    if (itemId && PLACEABLE_FURNITURE_META[itemId]) {
+    if (itemId && fromParcel) {
+      const units = getCompanionPlaceableIds(itemId);
+      const queue = units.length > 0 ? [...units] : [itemId];
+      const firstUnit = queue.shift();
+      this.editActiveParcelRoot = itemId;
+      this.editParcelQueue = queue;
+      this.editHiddenCompanions = new Set(queue);
+      this.editParcelRollbackLayout = { ...this.furnitureLayout };
+      this.selectFurnitureForPlacement(firstUnit, { fromParcel: true, parcelRootId: itemId });
+    } else if (itemId && PLACEABLE_FURNITURE_META[itemId]) {
       this.selectFurnitureForPlacement(itemId, { fromParcel });
     } else {
       this.updateGridOverlayVisibility();
@@ -4265,16 +4309,28 @@ export class FreelancerRoomScene {
   }
 
   exitFurnitureEditMode({ commit = true } = {}) {
-    if (commit && this.editSelectedId && this.editPreviewEntry && this.editCanPlace && (this.editItemDirty || this.editHoldingFromParcel)) {
+    const incompleteParcel = Boolean(this.editActiveParcelRoot && this.editParcelQueue?.length > 0);
+    if (commit && !incompleteParcel && this.editSelectedId && this.editPreviewEntry && this.editCanPlace && (this.editItemDirty || this.editHoldingFromParcel)) {
+      const parcelRoot = this.editActiveParcelRoot
+        || PLACEABLE_FURNITURE_META[this.editSelectedId]?.companionParcelKey
+        || this.editSelectedId;
       this.furnitureLayout = {
         ...this.furnitureLayout,
         [this.editSelectedId]: { ...this.editPreviewEntry }
       };
-      delete this.pendingParcels[this.editSelectedId];
+      delete this.pendingParcels[parcelRoot];
       this.layoutDirty = true;
-    } else if (this.editSelectedId && this.editHoldingFromParcel) {
-      // Unplaced parcel returned gently back into entrance cardboard box so user never loses an item
-      this.pendingParcels[this.editSelectedId] = true;
+    } else if (this.editHoldingFromParcel || this.editActiveParcelRoot) {
+      // Unfinished parcel (or queued multi-unit parcel) returned gently back into entrance box
+      if (this.editParcelRollbackLayout) {
+        this.furnitureLayout = { ...this.editParcelRollbackLayout };
+      }
+      const parcelRoot = this.editActiveParcelRoot
+        || PLACEABLE_FURNITURE_META[this.editSelectedId]?.companionParcelKey
+        || this.editSelectedId;
+      if (parcelRoot) {
+        this.pendingParcels[parcelRoot] = true;
+      }
     }
     this.editMode = false;
     this.editSelectedId = null;
@@ -4283,6 +4339,7 @@ export class FreelancerRoomScene {
     this.editCanPlace = false;
     this.editItemDirty = false;
     this.resetEditDragState();
+    this.resetEditParcelSession();
     if (this.renderer?.domElement) {
       this.renderer.domElement.style.touchAction = "manipulation";
       this.renderer.domElement.style.cursor = "default";
@@ -4314,10 +4371,11 @@ export class FreelancerRoomScene {
     this.renderIfPaused();
   }
 
-  selectFurnitureForPlacement(itemId, { fromParcel = false } = {}) {
+  selectFurnitureForPlacement(itemId, { fromParcel = false, parcelRootId = null } = {}) {
     const meta = PLACEABLE_FURNITURE_META[itemId];
     if (!meta || !this.editMode) return false;
-    if (!meta.starter && this.ownedItems?.[itemId] !== true) return false;
+    const ownerKey = meta.ownerKey || itemId;
+    if (!meta.starter && this.ownedItems?.[ownerKey] !== true) return false;
 
     this.editDragging = false;
     this.editDragMoved = false;
@@ -4326,16 +4384,25 @@ export class FreelancerRoomScene {
     this.editItemDirty = false;
     this.editSelectedId = itemId;
     this.editHoldingFromParcel = Boolean(fromParcel);
+    if (this.editHiddenCompanions) {
+      this.editHiddenCompanions.delete(itemId);
+    }
+    if (this.editHoldingFromParcel && !this.editActiveParcelRoot) {
+      this.editActiveParcelRoot = parcelRootId || meta.companionParcelKey || itemId;
+    }
 
+    const excludes = this.editHiddenCompanions?.size ? [...this.editHiddenCompanions] : null;
     const eff = resolveEffectiveLayout(this.ownedItems, this.furnitureLayout, this.pendingParcels);
-    let startEntry = eff[itemId] || findFirstValidPlacement(itemId, this.ownedItems, this.furnitureLayout, this.pendingParcels);
+    let startEntry = (!this.editHoldingFromParcel && eff[itemId])
+      || findFirstValidPlacement(itemId, this.ownedItems, this.furnitureLayout, this.pendingParcels, excludes);
     if (!startEntry) {
       startEntry = { ...DEFAULT_FURNITURE_LAYOUT[itemId] };
     }
     this.editPreviewRot = startEntry.rot ?? 0;
     this.editPreviewEntry = { ...startEntry };
     if (this.editHoldingFromParcel) {
-      delete this.pendingParcels[itemId];
+      const parcelRoot = this.editActiveParcelRoot || meta.companionParcelKey || itemId;
+      delete this.pendingParcels[parcelRoot];
     }
     this.applyOwnedItems(this.ownedItems);
     if (meta.surface === "wall" && startEntry.wall) {
@@ -4359,9 +4426,9 @@ export class FreelancerRoomScene {
       const nextWall = WALL_NAMES[(idx + (delta >= 0 ? 1 : 3)) % WALL_NAMES.length];
       let nextPos = this.editPreviewEntry?.pos ?? 2;
       if (nextPos + meta.gridW > GRID_CELLS) nextPos = GRID_CELLS - meta.gridW;
-      if (!canPlaceWallItem(this.editSelectedId, nextWall, nextPos, this.ownedItems, this.furnitureLayout, this.pendingParcels)) {
+      if (!canPlaceWallItem(this.editSelectedId, nextWall, nextPos, this.ownedItems, this.furnitureLayout, this.pendingParcels, this.editHiddenCompanions?.size ? [...this.editHiddenCompanions] : null)) {
         for (let p = 0; p <= GRID_CELLS - meta.gridW; p++) {
-          if (canPlaceWallItem(this.editSelectedId, nextWall, p, this.ownedItems, this.furnitureLayout, this.pendingParcels)) {
+          if (canPlaceWallItem(this.editSelectedId, nextWall, p, this.ownedItems, this.furnitureLayout, this.pendingParcels, this.editHiddenCompanions?.size ? [...this.editHiddenCompanions] : null)) {
             nextPos = p;
             break;
           }
@@ -4390,13 +4457,20 @@ export class FreelancerRoomScene {
   putEditingParcelBack() {
     if (!this.editMode || !this.editSelectedId) return;
     if (this.editHoldingFromParcel) {
-      this.pendingParcels[this.editSelectedId] = true;
+      const parcelRoot = this.editActiveParcelRoot
+        || PLACEABLE_FURNITURE_META[this.editSelectedId]?.companionParcelKey
+        || this.editSelectedId;
+      if (this.editParcelRollbackLayout) {
+        this.furnitureLayout = { ...this.editParcelRollbackLayout };
+      }
+      this.pendingParcels[parcelRoot] = true;
     }
     this.editSelectedId = null;
     this.editHoldingFromParcel = false;
     this.editPreviewEntry = null;
     this.editCanPlace = false;
     this.editItemDirty = false;
+    this.resetEditParcelSession();
     this.exitFurnitureEditMode({ commit: true });
   }
 
@@ -4476,6 +4550,7 @@ export class FreelancerRoomScene {
     const entry = this.editPreviewEntry;
     const group = this.movableGroups?.[id];
 
+    const excludes = this.editHiddenCompanions?.size ? [...this.editHiddenCompanions] : null;
     if (meta.surface === "wall") {
       this.editCanPlace = canPlaceWallItem(
         id,
@@ -4483,7 +4558,8 @@ export class FreelancerRoomScene {
         entry.pos,
         this.ownedItems,
         this.furnitureLayout,
-        this.pendingParcels
+        this.pendingParcels,
+        excludes
       );
       const wallY = id === "wall_poster" ? 1.92 : 1.56;
       const wPos = wallPlacementToLocal(id, entry.wall, entry.pos, wallY);
@@ -4517,7 +4593,8 @@ export class FreelancerRoomScene {
         entry.rot,
         this.ownedItems,
         this.furnitureLayout,
-        this.pendingParcels
+        this.pendingParcels,
+        excludes
       );
       const w = floorPlacementToWorld(id, entry.gx, entry.gz, entry.rot);
       if (group) {
@@ -4552,11 +4629,13 @@ export class FreelancerRoomScene {
     }
     const id = this.editSelectedId;
     const wasParcel = this.editHoldingFromParcel;
+    const parcelRoot = this.editActiveParcelRoot
+      || PLACEABLE_FURNITURE_META[id]?.companionParcelKey
+      || id;
     this.furnitureLayout = {
       ...this.furnitureLayout,
       [id]: { ...this.editPreviewEntry }
     };
-    delete this.pendingParcels[id];
     this.layoutDirty = false;
     this.editSelectedId = null;
     this.editHoldingFromParcel = false;
@@ -4569,6 +4648,18 @@ export class FreelancerRoomScene {
     this.editDragOffset = { wall: null, x: 0, z: 0, coord: 0 };
     if (this.editPreviewGroup) this.editPreviewGroup.visible = false;
 
+    if (wasParcel && this.editParcelQueue?.length > 0) {
+      const nextUnitId = this.editParcelQueue.shift();
+      this.applyOwnedItems(this.ownedItems);
+      this.applyFurnitureLayout(this.furnitureLayout);
+      this.selectFurnitureForPlacement(nextUnitId, { fromParcel: true, parcelRootId: parcelRoot });
+      return true;
+    }
+
+    if (wasParcel) {
+      delete this.pendingParcels[parcelRoot];
+    }
+    this.resetEditParcelSession();
     this.applyOwnedItems(this.ownedItems);
     this.applyFurnitureLayout(this.furnitureLayout);
     this.updateGridOverlayVisibility();
@@ -5360,17 +5451,6 @@ export class FreelancerRoomScene {
         this.wallGridPanels[w.name].visible = Boolean(wallEditActive && w.upperGroup.visible);
       }
     });
-    if (this.atmosWallGroup) {
-      const tvActivePlaced = Boolean(this.ownedItems?.wall_tv && !this.pendingParcels?.wall_tv);
-      const tvEditing = Boolean(this.editMode && this.editSelectedId === "wall_tv");
-      const hostWallName = (tvEditing ? this.editPreviewEntry?.wall : null) || this.tvHostWallName || "west";
-      const hostUpper = this.wallsMap?.[hostWallName]?.upperGroup;
-      this.atmosWallGroup.visible = Boolean(
-        this.ownedItems?.dolby_atmos
-        && (tvActivePlaced || tvEditing)
-        && (hostUpper ? hostUpper.visible : true)
-      );
-    }
   }
 
   resetLimbs() {
@@ -6114,7 +6194,8 @@ export class FreelancerRoomScene {
         }
       } else if (this.hoveredTarget === "atmos") {
         this.playAtmosChime();
-        this.commandActivity(this.actionSpots.sofa_tv, 180);
+        const spot = this.getPlacedOwnedItems().cozy_sofa ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
+        this.commandActivity(spot, 180);
         this.showBubble(this.pickRandomThought("dolby_atmos"), 4600);
         this.thoughtCooldown = 10;
       } else if (this.hoveredTarget === "vinyl") {

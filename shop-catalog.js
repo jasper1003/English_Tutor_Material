@@ -779,7 +779,7 @@ export const DEFAULT_SHOP_CATALOG = [
     icon: "🔊",
     requiresOwned: ["wall_tv", "cozy_sofa"],
     previewImage: "./assets/shop/dolby_atmos.jpg",
-    desc: "購齊小電視與雙人沙發解鎖！含電視下 Soundbar、重低音與沙發後環繞音箱，打造全景聲劇院。"
+    desc: "購齊小電視與雙人沙發解鎖！含獨立可擺放的前置聲霸重低音與後環繞雙立柱音箱，不綁死電視與沙發、皆可自由移動旋轉。"
   }
 ];
 

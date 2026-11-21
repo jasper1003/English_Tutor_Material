@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121q";
+} from "./room-scene.js?v=20261121r";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -56,14 +56,15 @@ import {
   getShopItem,
   getMissingShopPrerequisites,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261121q";
+} from "./shop-catalog.js?v=20261121r";
 import {
   PLACEABLE_FURNITURE_META,
+  getCompanionPlaceableIds,
   isShopParcelItem,
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261121q";
+} from "./room-grid.js?v=20261121r";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -84,9 +85,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121q";
+} from "./app-helpers.js?v=20261121r";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121q";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121r";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -3086,11 +3087,19 @@ function renderShopDialog() {
 
     let gridBadgeEl = null;
     if (gridMeta) {
+      const companions = getCompanionPlaceableIds(item.id);
+      const totalGridCells = companions.reduce((sum, cid) => {
+        const cm = PLACEABLE_FURNITURE_META[cid];
+        if (!cm) return sum;
+        return sum + (cm.surface === "wall" ? cm.gridW : cm.gridW * cm.gridD);
+      }, 0) || (gridMeta.surface === "wall" ? gridMeta.gridW : gridMeta.gridW * gridMeta.gridD);
       gridBadgeEl = document.createElement("div");
       gridBadgeEl.className = `shop-grid-badge${(!isPermanentOwned && !gridAvail.ok) ? " is-full" : ""}`;
       gridBadgeEl.textContent = gridMeta.surface === "wall"
         ? `🧱 佔用 ${gridMeta.gridW} 格牆面網格`
-        : `📐 佔用 ${gridMeta.gridW}×${gridMeta.gridD}（${gridMeta.gridW * gridMeta.gridD} 格地面）`;
+        : (companions.length > 1
+          ? `📐 佔用 ${companions.length} 組共 ${totalGridCells} 格地面（各可獨立拖曳旋轉）`
+          : `📐 佔用 ${gridMeta.gridW}×${gridMeta.gridD}（${gridMeta.gridW * gridMeta.gridD} 格地面）`);
     }
 
     const actionBtn = document.createElement("button");
