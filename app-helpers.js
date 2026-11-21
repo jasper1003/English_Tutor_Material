@@ -101,6 +101,11 @@ export function calculateShopPurchaseXp(price) {
   return Math.round(safePrice * 0.2);
 }
 
+export function calculateShopResalePrice(price) {
+  const safePrice = Math.max(0, Math.trunc(Number(price) || 0));
+  return Math.max(0, Math.floor(safePrice / 2));
+}
+
 /**
  * Determine whether a lesson date is completed strictly from explicit Firestore maps
  * (no automatic historical date cutoff).

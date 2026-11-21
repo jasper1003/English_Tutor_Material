@@ -3726,6 +3726,35 @@ dialog.settings-dialog::backdrop {
   color: light-dark(#b91c1c, #fca5a5);
 }
 
+.shop-sell-row {
+  display: flex;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.shop-sell-btn {
+  width: 100%;
+  border-color: light-dark(#cbd5e1, rgba(148, 163, 184, 0.35));
+  background: light-dark(#f8fafc, rgba(30, 41, 59, 0.72));
+  color: light-dark(#b45309, #fbbf24);
+}
+
+.shop-sell-btn:hover:not(:disabled) {
+  background: light-dark(#fef3c7, rgba(180, 83, 9, 0.25));
+  border-color: light-dark(#f59e0b, rgba(251, 191, 36, 0.55));
+}
+
+.shop-sell-confirm-btn {
+  flex: 1 1 auto;
+  background: #d97706;
+  border-color: #f59e0b;
+  color: #ffffff;
+}
+
+.shop-sell-confirm-btn:hover:not(:disabled) {
+  background: #b45309;
+}
+
 .hidden {
   display: none !important;
 }

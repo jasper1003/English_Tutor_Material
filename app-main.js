@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121r";
+} from "./room-scene.js?v=20261121s";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -55,8 +55,10 @@ import {
   applyRemoteShopConfig,
   getShopItem,
   getMissingShopPrerequisites,
+  isSellableShopItem,
+  getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261121r";
+} from "./shop-catalog.js?v=20261121s";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -64,12 +66,13 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261121r";
+} from "./room-grid.js?v=20261121s";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
   buildCharacterPersona,
   calculateShopPurchaseXp,
+  calculateShopResalePrice,
   evaluateProfileRentMood,
   isLessonCompletedFromMaps,
   parseYouTubeVideoId,
@@ -85,9 +88,9 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121r";
+} from "./app-helpers.js?v=20261121s";
 import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121r";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121s";
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -2651,6 +2654,7 @@ document.getElementById("room-rot-right-btn").addEventListener("click", () => {
 const shopDialog = document.getElementById("shop-dialog");
 let activeShopCategory = "all";
 let shopPurchaseBusy = false;
+let pendingSellItemId = null;
 
 function buildTextilePreviewSvg(item) {
   if (item.sheetStyle) {
@@ -2912,6 +2916,7 @@ function renderShopDialog() {
     btn.textContent = cat.label;
     btn.onclick = () => {
       activeShopCategory = cat.id;
+      pendingSellItemId = null;
       renderShopDialog();
       if (dialogBodyEl) dialogBodyEl.scrollTop = 0;
     };
@@ -3070,13 +3075,16 @@ function renderShopDialog() {
     const priceEl = document.createElement("div");
     priceEl.className = "shop-item-price";
     const xpReward = calculateShopPurchaseXp(item.price);
+    const resalePrice = isSellableShopItem(item) ? calculateShopResalePrice(item.price) : 0;
     const xpSuffix = xpReward > 0 ? ` · +${xpReward} XP` : "";
     priceEl.textContent = isPaint
       ? `${item.price} 英蚌${isActivePaint ? "" : xpSuffix}（每次重刷計費）`
       : (isTextile && isPermanentOwned)
         ? `${item.price} 英蚌（已購，免費更換）`
         : isPermanentOwned
-          ? `${item.price} 英蚌`
+          ? (isSellableShopItem(item)
+            ? `原價 ${item.price} 英蚌 · 二手價 ${resalePrice} 英蚌`
+            : `${item.price} 英蚌`)
           : `${item.price} 英蚌${xpSuffix}`;
     meta.append(title, priceEl);
     head.append(iconBox, meta);
@@ -3106,6 +3114,7 @@ function renderShopDialog() {
     actionBtn.type = "button";
     actionBtn.className = "btn";
     actionBtn.style.width = "100%";
+    let actionNode = actionBtn;
 
     if (isActivePaint) {
       actionBtn.textContent = "目前牆色 ✓";
@@ -3117,6 +3126,41 @@ function renderShopDialog() {
       actionBtn.classList.add("btn-primary");
       actionBtn.textContent = isApparel ? "換穿這件（免費）" : "套用更換（免費）";
       actionBtn.onclick = () => equipShopTextile(item.textileKind, item.id, actionBtn);
+    } else if (isPermanentOwned && isSellableShopItem(item)) {
+      const blockingDeps = getBlockingDependentOwnedItems(item.id, owned);
+      if (blockingDeps.length > 0) {
+        actionBtn.textContent = `已擺進房間（需先賣出「${blockingDeps.map(d => d.name).join("」「")}」）`;
+        actionBtn.disabled = true;
+      } else if (pendingSellItemId === item.id) {
+        const confirmRow = document.createElement("div");
+        confirmRow.className = "shop-sell-row";
+        const confirmSellBtn = document.createElement("button");
+        confirmSellBtn.type = "button";
+        confirmSellBtn.className = "btn shop-sell-confirm-btn";
+        confirmSellBtn.textContent = `確認賣出（+${resalePrice} 英蚌）`;
+        confirmSellBtn.onclick = () => sellShopItem(item.id, confirmSellBtn);
+        const keepBtn = document.createElement("button");
+        keepBtn.type = "button";
+        keepBtn.className = "btn";
+        keepBtn.textContent = "保留";
+        keepBtn.onclick = () => {
+          pendingSellItemId = null;
+          renderShopDialog();
+        };
+        confirmRow.append(confirmSellBtn, keepBtn);
+        actionNode = confirmRow;
+      } else {
+        actionBtn.className = "btn shop-sell-btn";
+        actionBtn.textContent = isInParcel
+          ? `📦 待拆包裹 · 二手賣出（+${resalePrice} 英蚌）`
+          : `♻️ 二手賣出（+${resalePrice} 英蚌）`;
+        actionBtn.title = `按定價的一半（${resalePrice} 英蚌）回收此家具並釋放空間`;
+        actionBtn.onclick = () => {
+          clearFeedback("shop-feedback");
+          pendingSellItemId = item.id;
+          renderShopDialog();
+        };
+      }
     } else if (isInParcel) {
       actionBtn.textContent = "📦 包裹已送達門口（待拆箱擺放）";
       actionBtn.disabled = true;
@@ -3129,7 +3173,11 @@ function renderShopDialog() {
     } else if (gridAvail.placeable && !gridAvail.ok) {
       actionBtn.textContent = `空間不夠（需 ${gridAvail.neededCells} 格）`;
       actionBtn.onclick = () => {
-        showFeedback("shop-feedback", "error", gridAvail.reason);
+        showFeedback(
+          "shop-feedback",
+          "error",
+          `${gridAvail.reason}（可於下方點選「二手賣出」家具以回收原價一半英蚌並釋放空間）`
+        );
       };
     } else if (!isSuperAdmin && clams < item.price) {
       actionBtn.textContent = `還差 ${item.price - clams} 英蚌`;
@@ -3149,9 +3197,9 @@ function renderShopDialog() {
     }
 
     if (gridBadgeEl) {
-      card.append(previewBox, head, gridBadgeEl, desc, actionBtn);
+      card.append(previewBox, head, gridBadgeEl, desc, actionNode);
     } else {
-      card.append(previewBox, head, desc, actionBtn);
+      card.append(previewBox, head, desc, actionNode);
     }
     gridEl.appendChild(card);
   });
@@ -3335,6 +3383,153 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
     }
     renderShopDialog();
   } catch (err) {
+    if (triggerBtn) {
+      triggerBtn.disabled = false;
+      triggerBtn.textContent = prevBtnText;
+    }
+    showFeedback("shop-feedback", "error", err?.message || translateAuthError(err));
+  } finally {
+    shopPurchaseBusy = false;
+  }
+}
+
+async function sellShopItem(itemId, triggerBtn = null) {
+  if (!currentUser || shopPurchaseBusy) return;
+  const item = getShopItem(itemId);
+  if (!item || !isSellableShopItem(item)) return;
+
+  clearFeedback("shop-feedback");
+  shopPurchaseBusy = true;
+  const prevBtnText = triggerBtn ? triggerBtn.textContent : "";
+  if (triggerBtn) {
+    triggerBtn.disabled = true;
+    triggerBtn.textContent = "賣出中...";
+  }
+  try {
+    const userRef = doc(firestoreDb, "users", currentUser.uid);
+    const result = await runTransaction(firestoreDb, async (tx) => {
+      const snap = await tx.get(userRef);
+      if (!snap.exists()) {
+        throw new Error("找不到帳號資料，請重新整理後再試。");
+      }
+      const data = snap.data();
+      const prevOwned = (data.ownedItems && typeof data.ownedItems === "object")
+        ? { ...data.ownedItems }
+        : {};
+      if (prevOwned[item.id] !== true) {
+        return { unchanged: true };
+      }
+      const blockingDeps = getBlockingDependentOwnedItems(item.id, prevOwned);
+      if (blockingDeps.length > 0) {
+        throw new Error(`需先賣出相依家具「${blockingDeps.map(d => d.name).join("」「")}」，才能賣出此商品！`);
+      }
+
+      const resalePrice = calculateShopResalePrice(item.price);
+      const currentClams = Math.max(0, Math.trunc(Number(data.clams ?? STARTER_CLAMS)));
+      const nextClams = Math.min(10000000, currentClams + resalePrice);
+      const nextOwned = { ...prevOwned };
+      delete nextOwned[item.id];
+
+      const prevRoomState = (data.roomState && typeof data.roomState === "object")
+        ? { ...data.roomState }
+        : { cameraQuarter: 0, deskLampOn: true, bedLampOn: false, wallColor: DEFAULT_WALL_COLOR };
+      const nextRoomState = { ...prevRoomState };
+      let shouldUpdateRoomState = false;
+
+      if (prevRoomState.pendingParcels && typeof prevRoomState.pendingParcels === "object") {
+        const nextParcels = normalizePendingParcels(prevRoomState.pendingParcels, prevOwned);
+        if (nextParcels[item.id]) {
+          delete nextParcels[item.id];
+          nextRoomState.pendingParcels = nextParcels;
+          shouldUpdateRoomState = true;
+        }
+      }
+      if (prevRoomState.furnitureLayout && typeof prevRoomState.furnitureLayout === "object") {
+        const nextLayout = { ...prevRoomState.furnitureLayout };
+        const companionIds = getCompanionPlaceableIds(item.id);
+        const idsToRemove = companionIds.length > 0 ? companionIds : [item.id];
+        let layoutChanged = false;
+        idsToRemove.forEach(uid => {
+          if (uid in nextLayout) {
+            delete nextLayout[uid];
+            layoutChanged = true;
+          }
+        });
+        if (layoutChanged) {
+          nextRoomState.furnitureLayout = nextLayout;
+          shouldUpdateRoomState = true;
+        }
+      }
+      if (item.id === "bed_lamp" && prevRoomState.bedLampOn) {
+        nextRoomState.bedLampOn = false;
+        shouldUpdateRoomState = true;
+      } else if (item.id === "vinyl_player" && prevRoomState.vinylOn) {
+        nextRoomState.vinylOn = false;
+        shouldUpdateRoomState = true;
+      }
+
+      const patch = {
+        clams: nextClams,
+        ownedItems: nextOwned,
+        updatedAt: serverTimestamp()
+      };
+      if (shouldUpdateRoomState) {
+        patch.roomState = nextRoomState;
+      }
+      tx.update(userRef, patch);
+      if (resalePrice > 0) {
+        queueLedgerTransaction(tx, currentUser.uid, {
+          type: "resale",
+          category: item.category,
+          title: `二手賣出：${item.name}`,
+          amount: resalePrice
+        });
+      }
+      return { unchanged: false, resalePrice, nextClams, nextOwned, nextRoomState };
+    });
+
+    pendingSellItemId = null;
+    if (result.unchanged) {
+      renderShopDialog();
+      return;
+    }
+
+    if (currentUserProfile) {
+      currentUserProfile.clams = result.nextClams;
+      currentUserProfile.ownedItems = result.nextOwned;
+      currentUserProfile.roomState = result.nextRoomState;
+    }
+    updateHeaderAccountUI(
+      currentUser,
+      currentRole,
+      currentUserProfile?.displayName || resolveFallbackName(currentUser),
+      result.nextClams
+    );
+    const normalizedOwned = normalizeOwnedItems(result.nextOwned);
+    roomScene?.applyFurnitureLayout(result.nextRoomState?.furnitureLayout || {});
+    roomScene?.setOwnedAndParcels(normalizedOwned, result.nextRoomState?.pendingParcels || {});
+    if (item.id === "wall_tv" && typeof stopRoomTvPlayback === "function") {
+      stopRoomTvPlayback();
+    }
+    roomScene?.handleSoldItemCleanup(item.id);
+
+    const freedUnits = getCompanionPlaceableIds(item.id);
+    const freedCells = freedUnits.reduce((sum, uid) => {
+      const m = PLACEABLE_FURNITURE_META[uid];
+      if (!m) return sum;
+      return sum + (m.surface === "wall" ? m.gridW : m.gridW * m.gridD);
+    }, 0);
+    const freedNote = freedCells > 0
+      ? `並釋放 ${freedCells} 格${PLACEABLE_FURNITURE_META[freedUnits[0]]?.surface === "wall" ? "牆面" : "地面"}空間`
+      : "";
+    showFeedback(
+      "shop-feedback",
+      "success",
+      `已二手賣出「${item.name}」，回收原價一半 +${result.resalePrice} 英蚌${freedNote ? `（${freedNote}）` : ""}！`
+    );
+    renderShopDialog();
+  } catch (err) {
+    pendingSellItemId = null;
     if (triggerBtn) {
       triggerBtn.disabled = false;
       triggerBtn.textContent = prevBtnText;
@@ -3881,6 +4076,7 @@ document.getElementById("room-shop-btn").addEventListener("click", () => {
   if (roomScene?.editMode) {
     roomScene.exitFurnitureEditMode({ commit: true });
   }
+  pendingSellItemId = null;
   clearFeedback("shop-feedback");
   renderShopDialog();
   shopDialog.showModal();
@@ -4144,15 +4340,17 @@ function renderFinanceDialog() {
         ? "🏠"
         : tx.type === "income"
           ? "📋"
-          : tx.type === "bonus"
-            ? "🌟"
-            : tx.category === "paint"
-              ? "🎨"
-              : tx.category === "textile"
-                ? "🛏️"
-                : tx.category === "gear"
-                  ? "⌨️"
-                  : "🛋️";
+          : tx.type === "resale"
+            ? "♻️"
+            : tx.type === "bonus"
+              ? "🌟"
+              : tx.category === "paint"
+                ? "🎨"
+                : tx.category === "textile"
+                  ? "🛏️"
+                  : tx.category === "gear"
+                    ? "⌨️"
+                    : "🛋️";
       const dateText = tx.createdAt?.toDate
         ? tx.createdAt.toDate().toLocaleString("zh-TW", { hour12: false })
         : (tx.monthKey || "");

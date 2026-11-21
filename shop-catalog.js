@@ -873,6 +873,23 @@ export function getMissingShopPrerequisites(item, owned = {}) {
     }));
 }
 
+export function isSellableShopItem(item) {
+  return Boolean(
+    item
+    && !item.consumable
+    && !item.textileKind
+    && (item.category === "decor" || item.category === "gear")
+  );
+}
+
+export function getBlockingDependentOwnedItems(itemId, owned = {}) {
+  return SHOP_CATALOG.filter(
+    other => owned?.[other.id] === true
+      && Array.isArray(other.requiresOwned)
+      && other.requiresOwned.includes(itemId)
+  );
+}
+
 export function normalizeOwnedItems(raw) {
   const result = {};
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {

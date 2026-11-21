@@ -9,13 +9,13 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261121r";
+} from "./shop-catalog.js?v=20261121s";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261121r";
+} from "./app-helpers.js?v=20261121s";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -34,7 +34,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261121r";
+} from "./room-grid.js?v=20261121s";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -3790,6 +3790,29 @@ export class FreelancerRoomScene {
     this.vinylOn = Boolean(isOn);
     if (this.vinylLedMat) {
       this.vinylLedMat.color.set(this.vinylOn ? "#fbbf24" : "#475569");
+    }
+    this.renderIfPaused();
+  }
+
+  handleSoldItemCleanup(itemId) {
+    if (!itemId) return;
+    if (itemId === "bed_lamp") this.setBedLamp(false);
+    if (itemId === "vinyl_player") this.setVinylOn(false);
+    const affectedActivities = {
+      hamster_cage: ["watch_hamster"],
+      cozy_sofa: ["sofa_read", "sofa_tv"],
+      wall_tv: ["watch_tv", "sofa_tv", "dolby_atmos"],
+      dolby_atmos: ["dolby_atmos"],
+      coffee_bar: ["coffee_break"],
+      vinyl_player: ["listen_vinyl"],
+      orange_cat: ["pet_cat"],
+      coat_rack: ["check_coat"],
+      floor_plant: ["water_floor_plant"],
+      wall_poster: ["admire_poster"],
+      desk_plant: ["water_plant"]
+    }[itemId] || [];
+    if (affectedActivities.includes(this.currentActivity) || affectedActivities.includes(this.targetActivityId)) {
+      this.placeCharacterAtIdleStart();
     }
     this.renderIfPaused();
   }
