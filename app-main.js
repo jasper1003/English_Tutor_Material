@@ -3247,9 +3247,50 @@ function buildTextilePreviewSvg(item) {
   return "";
 }
 
+const LEGACY_ROOM_STYLE_KINDS = new Set([
+  "bedSheet",
+  "rugStyle",
+  "floorStyle",
+  "shirtStyle",
+  "pantsStyle"
+]);
+
+function getActiveRoomStyle(roomState, kind, fallback = "default") {
+  if (!kind) return fallback;
+  return roomState?.[kind] || roomState?.customStyles?.[kind] || fallback;
+}
+
+function withRoomStyleUpdate(prevRoomState, kind, nextId) {
+  const baseState = (prevRoomState && typeof prevRoomState === "object")
+    ? { ...prevRoomState }
+    : {
+        cameraQuarter: 0,
+        deskLampOn: true,
+        bedLampOn: false,
+        wallColor: DEFAULT_WALL_COLOR
+      };
+  if (!kind) return baseState;
+  if (LEGACY_ROOM_STYLE_KINDS.has(kind)) {
+    baseState[kind] = nextId;
+    return baseState;
+  }
+  // Future customizer categories store into extensible roomState.customStyles
+  // (only keeping non-default owned IDs so Firestore rules stay future-proof without schema edits).
+  const prevCustom = (baseState.customStyles && typeof baseState.customStyles === "object" && !Array.isArray(baseState.customStyles))
+    ? { ...baseState.customStyles }
+    : {};
+  if (!nextId || nextId === "default") {
+    delete prevCustom[kind];
+  } else {
+    prevCustom[kind] = nextId;
+  }
+  baseState.customStyles = prevCustom;
+  return baseState;
+}
+
 async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
   if (!currentUser || !currentUserProfile || shopPurchaseBusy) return;
-  if (!["bedSheet", "rugStyle", "floorStyle", "shirtStyle", "pantsStyle"].includes(textileKind)) return;
+  if (typeof textileKind !== "string" || !textileKind.trim()) return;
   clearFeedback("shop-feedback");
   shopPurchaseBusy = true;
   const prevBtnText = triggerBtn ? triggerBtn.textContent : "";
@@ -3258,15 +3299,7 @@ async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
     triggerBtn.textContent = bi("切換中...", "Switching...");
   }
   try {
-    const nextRoomState = {
-      ...(currentUserProfile.roomState || {
-        cameraQuarter: 0,
-        deskLampOn: true,
-        bedLampOn: false,
-        wallColor: DEFAULT_WALL_COLOR
-      }),
-      [textileKind]: nextId
-    };
+    const nextRoomState = withRoomStyleUpdate(currentUserProfile.roomState, textileKind, nextId);
     await updateDoc(doc(firestoreDb, "users", currentUser.uid), {
       roomState: nextRoomState,
       updatedAt: serverTimestamp()
@@ -3427,11 +3460,7 @@ function renderShopDialog() {
     const isActivePaint = isPaint && item.wallColor.toLowerCase() === activeWallColor;
     const isPermanentOwned = !isPaint && Boolean(owned[item.id]);
     const isActiveTextile = isTextile && (
-      (item.textileKind === "floorStyle" && activeFloorStyle === item.id) ||
-      (item.textileKind === "bedSheet" && activeBedSheet === item.id) ||
-      (item.textileKind === "rugStyle" && activeRugStyle === item.id) ||
-      (item.textileKind === "shirtStyle" && activeShirtStyle === item.id) ||
-      (item.textileKind === "pantsStyle" && activePantsStyle === item.id)
+      getActiveRoomStyle(currentUserProfile?.roomState, item.textileKind) === item.id
     );
     const missingPrereqs = isPermanentOwned ? [] : getMissingShopPrerequisites(item, owned);
     const isLocked = missingPrereqs.length > 0;
@@ -3780,8 +3809,8 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       if (item.id === "bed_lamp") {
         nextRoomState.bedLampOn = true;
         shouldUpdateRoomState = true;
-      } else if (["bedSheet", "rugStyle", "floorStyle", "shirtStyle", "pantsStyle"].includes(item.textileKind)) {
-        nextRoomState[item.textileKind] = item.id;
+      } else if (typeof item.textileKind === "string" && item.textileKind.trim()) {
+        nextRoomState = withRoomStyleUpdate(nextRoomState, item.textileKind.trim(), item.id);
         shouldUpdateRoomState = true;
       }
 
