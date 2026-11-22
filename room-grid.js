@@ -1,25 +1,27 @@
+import { bi, isEn } from "./i18n.js?v=20261122b";
+
 export const GRID_STEP = 0.5;
 export const GRID_CELLS = 16; // 16 x 16 cells across [-4.0, +4.0] room floor & walls
 
 // Non-movable reserved floor zones: bathroom corner + doorway landing + entrance doormat swing zone
 export const RESERVED_FLOOR_RECTS = [
-  { minX: 11, maxX: 15, minZ: 0, maxZ: 4, reason: "浴室空間" },
-  { minX: 11, maxX: 12, minZ: 5, maxZ: 5, reason: "浴室出入口" },
-  { minX: 0, maxX: 1, minZ: 11, maxZ: 13, reason: "大門與門口地毯（收貨區）" }
+  { minX: 11, maxX: 15, minZ: 0, maxZ: 4, reason: "浴室空間", reasonEn: "Bathroom area" },
+  { minX: 11, maxX: 12, minZ: 5, maxZ: 5, reason: "浴室出入口", reasonEn: "Bathroom entrance" },
+  { minX: 0, maxX: 1, minZ: 11, maxZ: 13, reason: "大門與門口地毯（收貨區）", reasonEn: "Doorway & parcel mat" }
 ];
 
 // Non-movable reserved wall segments (`pos` 0..15 along [-4.0..+4.0])
 export const RESERVED_WALL_SPANS = {
   north: [
-    { minPos: 5, maxPos: 9, reason: "北側大窗戶" },
-    { minPos: 11, maxPos: 15, reason: "浴室牆面" }
+    { minPos: 5, maxPos: 9, reason: "北側大窗戶", reasonEn: "North window" },
+    { minPos: 11, maxPos: 15, reason: "浴室牆面", reasonEn: "Bathroom wall" }
   ],
   east: [
-    { minPos: 0, maxPos: 4, reason: "浴室牆面" }
+    { minPos: 0, maxPos: 4, reason: "浴室牆面", reasonEn: "Bathroom wall" }
   ],
   south: [],
   west: [
-    { minPos: 10, maxPos: 13, reason: "租屋大門" }
+    { minPos: 10, maxPos: 13, reason: "租屋大門", reasonEn: "Entrance door" }
   ]
 };
 
@@ -29,6 +31,7 @@ export const PLACEABLE_FURNITURE_META = {
   work_desk: {
     id: "work_desk",
     name: "接案書桌與電腦組",
+    nameEn: "Studio Desk & iMac",
     icon: "🖥️",
     starter: true,
     surface: "floor",
@@ -38,6 +41,7 @@ export const PLACEABLE_FURNITURE_META = {
   single_bed: {
     id: "single_bed",
     name: "單人溫馨床鋪",
+    nameEn: "Cozy Single Bed",
     icon: "🛏️",
     starter: true,
     surface: "floor",
@@ -47,6 +51,7 @@ export const PLACEABLE_FURNITURE_META = {
   hamster_cage: {
     id: "hamster_cage",
     name: "布丁倉鼠「麻糬」與小抽屜桌",
+    nameEn: "Mochi the Hamster & Side Table",
     icon: "🐹",
     starter: false,
     surface: "floor",
@@ -56,6 +61,7 @@ export const PLACEABLE_FURNITURE_META = {
   coffee_bar: {
     id: "coffee_bar",
     name: "文青手沖咖啡吧台",
+    nameEn: "Pour-Over Coffee Bar",
     icon: "☕",
     starter: false,
     surface: "floor",
@@ -65,6 +71,7 @@ export const PLACEABLE_FURNITURE_META = {
   cozy_sofa: {
     id: "cozy_sofa",
     name: "雙人布藝沙發",
+    nameEn: "Cozy Fabric Sofa",
     icon: "🛋️",
     starter: false,
     surface: "floor",
@@ -74,6 +81,7 @@ export const PLACEABLE_FURNITURE_META = {
   coat_rack: {
     id: "coat_rack",
     name: "門旁直立式掛衣架",
+    nameEn: "Standing Coat Rack",
     icon: "🧥",
     starter: false,
     surface: "floor",
@@ -83,6 +91,7 @@ export const PLACEABLE_FURNITURE_META = {
   vinyl_player: {
     id: "vinyl_player",
     name: "復古黑膠唱片音響櫃",
+    nameEn: "Retro Vinyl Console",
     icon: "🎵",
     starter: false,
     surface: "floor",
@@ -92,6 +101,7 @@ export const PLACEABLE_FURNITURE_META = {
   orange_cat: {
     id: "orange_cat",
     name: "橘貓室友「阿橘」與貓窩",
+    nameEn: "Ginger Cat & Pet Bed",
     icon: "🐈",
     starter: false,
     surface: "floor",
@@ -101,6 +111,7 @@ export const PLACEABLE_FURNITURE_META = {
   bed_lamp: {
     id: "bed_lamp",
     name: "床邊暖光小夜燈",
+    nameEn: "Warm Bedside Lamp",
     icon: "💡",
     starter: false,
     surface: "floor",
@@ -110,6 +121,7 @@ export const PLACEABLE_FURNITURE_META = {
   floor_plant: {
     id: "floor_plant",
     name: "琴葉榕編織落地盆栽",
+    nameEn: "Fiddle-Leaf Fig Planter",
     icon: "🌿",
     starter: false,
     surface: "floor",
@@ -119,6 +131,7 @@ export const PLACEABLE_FURNITURE_META = {
   wall_poster: {
     id: "wall_poster",
     name: "插畫海報掛畫",
+    nameEn: "Framed Wall Poster",
     icon: "🖼️",
     starter: false,
     surface: "wall",
@@ -128,6 +141,7 @@ export const PLACEABLE_FURNITURE_META = {
   wall_tv: {
     id: "wall_tv",
     name: "壁掛平面小電視",
+    nameEn: "Wall-Mounted Smart TV",
     icon: "📺",
     starter: false,
     surface: "wall",
@@ -137,6 +151,7 @@ export const PLACEABLE_FURNITURE_META = {
   dolby_atmos: {
     id: "dolby_atmos",
     name: "Dolby Atmos 前置聲霸與重低音",
+    nameEn: "Dolby Atmos Front Soundbar & Sub",
     icon: "🔊",
     starter: false,
     surface: "floor",
@@ -146,6 +161,7 @@ export const PLACEABLE_FURNITURE_META = {
   dolby_atmos_rear: {
     id: "dolby_atmos_rear",
     name: "Dolby Atmos 後環繞雙立柱音箱",
+    nameEn: "Dolby Atmos Rear Surround Towers",
     icon: "🔊",
     starter: false,
     ownerKey: "dolby_atmos",
@@ -155,6 +171,12 @@ export const PLACEABLE_FURNITURE_META = {
     gridD: 1
   }
 };
+
+export function getPlaceableFurnitureName(itemId) {
+  const meta = PLACEABLE_FURNITURE_META[itemId];
+  if (!meta) return bi("家具", "Furniture");
+  return isEn() ? (meta.nameEn || meta.name) : meta.name;
+}
 
 export const DEFAULT_FURNITURE_LAYOUT = {
   work_desk: { surface: "floor", gx: 5, gz: 1, rot: 0 },
@@ -474,7 +496,8 @@ export function checkShopItemGridAvailability(itemId, ownedItems = {}, rawLayout
     return sum + (m.surface === "wall" ? m.gridW : m.gridW * m.gridD);
   }, 0);
   const remainingCells = meta.surface === "wall" ? stats.wallRemaining : stats.floorRemaining;
-  const surfaceLabel = meta.surface === "wall" ? "牆面" : "地面";
+  const surfaceLabel = meta.surface === "wall" ? bi("牆面", "wall") : bi("地面", "floor");
+  const itemName = getPlaceableFurnitureName(itemId);
 
   if (remainingCells < neededCells) {
     return {
@@ -483,7 +506,10 @@ export function checkShopItemGridAvailability(itemId, ownedItems = {}, rawLayout
       surface: meta.surface,
       neededCells,
       remainingCells,
-      reason: `空間不夠！目前僅剩 ${remainingCells} 格${surfaceLabel}網格，但「${meta.name}」需佔用 ${neededCells} 格${surfaceLabel}網格，無法購買。`
+      reason: bi(
+        `空間不夠！目前僅剩 ${remainingCells} 格${surfaceLabel}網格，但「${itemName}」需佔用 ${neededCells} 格${surfaceLabel}網格，無法購買。`,
+        `Not enough space! Only ${remainingCells} ${surfaceLabel} grid cell(s) left, while "${itemName}" requires ${neededCells}.`
+      )
     };
   }
 
@@ -503,7 +529,10 @@ export function checkShopItemGridAvailability(itemId, ownedItems = {}, rawLayout
       surface: meta.surface,
       neededCells,
       remainingCells,
-      reason: `目前剩餘的 ${remainingCells} 格${surfaceLabel}網格過於零碎，無法與門口待拆包裹一同放入「${meta.name}」，請先拆箱並調整現有家具擺設！`
+      reason: bi(
+        `目前剩餘的 ${remainingCells} 格${surfaceLabel}網格過於零碎，無法與門口待拆包裹一同放入「${itemName}」，請先拆箱並調整現有家具擺設！`,
+        `Remaining ${remainingCells} ${surfaceLabel} cell(s) are too fragmented to fit "${itemName}" alongside your unopened parcel(s). Unbox and rearrange furniture first!`
+      )
     };
   }
 

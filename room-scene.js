@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bi, isEn } from "./i18n.js?v=20261122b";
 import {
   DEFAULT_BED_SHEET,
   DEFAULT_RUG_STYLE,
@@ -9,19 +10,20 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261121t";
+} from "./shop-catalog.js?v=20261122b";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261121t";
+} from "./app-helpers.js?v=20261122b";
 import {
   GRID_STEP,
   GRID_CELLS,
   WALL_NAMES,
   PLACEABLE_FURNITURE_META,
   DEFAULT_FURNITURE_LAYOUT,
+  getPlaceableFurnitureName,
   getCompanionPlaceableIds,
   isFloorCellReserved,
   isWallCellReserved,
@@ -34,7 +36,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261121t";
+} from "./room-grid.js?v=20261122b";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -261,47 +263,47 @@ export const THOUGHT_BANK = {
 };
 
 export const SKIN_TONES = [
-  { id: "porcelain", label: "白皙暖調", hex: "#f9dcc4" },
-  { id: "peach", label: "自然杏桃", hex: "#f1c29b" },
-  { id: "honey", label: "小麥暖棕", hex: "#d99b66" },
-  { id: "caramel", label: "焦糖健康", hex: "#a96e44" },
-  { id: "espresso", label: "深栗棕", hex: "#6f442a" }
+  { id: "porcelain", label: "白皙暖調", labelEn: "Warm Fair", hex: "#f9dcc4" },
+  { id: "peach", label: "自然杏桃", labelEn: "Natural Peach", hex: "#f1c29b" },
+  { id: "honey", label: "小麥暖棕", labelEn: "Warm Honey", hex: "#d99b66" },
+  { id: "caramel", label: "焦糖健康", labelEn: "Caramel Tan", hex: "#a96e44" },
+  { id: "espresso", label: "深栗棕", labelEn: "Deep Espresso", hex: "#6f442a" }
 ];
 
 export const BODY_BUILDS = [
-  { id: "slim", label: "修長輕盈", hint: "肩線較窄、身形修長" },
-  { id: "balanced", label: "勻稱標準", hint: "肩腰比例自然均衡" },
-  { id: "athletic", label: "結實寬肩", hint: "肩背較厚實、線條立體" }
+  { id: "slim", label: "修長輕盈", labelEn: "Slim", hint: "肩線較窄、身形修長", hintEn: "Narrower shoulders, slender frame" },
+  { id: "balanced", label: "勻稱標準", labelEn: "Balanced", hint: "肩腰比例自然均衡", hintEn: "Natural balanced proportions" },
+  { id: "athletic", label: "結實寬肩", labelEn: "Athletic", hint: "肩背較厚實、線條立體", hintEn: "Broader shoulders, defined build" }
 ];
 
 export const HAIR_STYLES = [
-  { id: "short", label: "俐落短髮" },
-  { id: "parted", label: "微卷旁分" },
-  { id: "bob", label: "圓潤齊短髮" },
-  { id: "bun", label: "丸子紮髮" },
-  { id: "long", label: "及肩長髮" },
-  { id: "ponytail", label: "元氣高馬尾" },
-  { id: "wolf", label: "層次狼尾剪" },
-  { id: "curly", label: "蓬鬆捲髮" },
-  { id: "undercut", label: "率性背梳" }
+  { id: "short", label: "俐落短髮", labelEn: "Neat Short" },
+  { id: "parted", label: "微卷旁分", labelEn: "Soft Side Part" },
+  { id: "bob", label: "圓潤齊短髮", labelEn: "Classic Bob" },
+  { id: "bun", label: "丸子紮髮", labelEn: "Top Bun" },
+  { id: "long", label: "及肩長髮", labelEn: "Shoulder-Length" },
+  { id: "ponytail", label: "元氣高馬尾", labelEn: "High Ponytail" },
+  { id: "wolf", label: "層次狼尾剪", labelEn: "Layered Wolf Cut" },
+  { id: "curly", label: "蓬鬆捲髮", labelEn: "Fluffy Curls" },
+  { id: "undercut", label: "率性背梳", labelEn: "Slick Undercut" }
 ];
 
 export const HAIR_COLORS = [
-  { id: "ink", label: "墨黑", hex: "#1f2430" },
-  { id: "espresso", label: "深棕", hex: "#4a3225" },
-  { id: "caramel", label: "奶茶棕", hex: "#8c5b3b" },
-  { id: "honey", label: "亞麻金", hex: "#c69850" },
-  { id: "ash", label: "霧灰", hex: "#6c768a" },
-  { id: "plum", label: "酒紅棕", hex: "#6b2f3f" },
-  { id: "indigo", label: "午夜藍黑", hex: "#26334d" }
+  { id: "ink", label: "墨黑", labelEn: "Jet Black", hex: "#1f2430" },
+  { id: "espresso", label: "深棕", labelEn: "Dark Brown", hex: "#4a3225" },
+  { id: "caramel", label: "奶茶棕", labelEn: "Milk Tea", hex: "#8c5b3b" },
+  { id: "honey", label: "亞麻金", labelEn: "Honey Blonde", hex: "#c69850" },
+  { id: "ash", label: "霧灰", labelEn: "Ash Gray", hex: "#6c768a" },
+  { id: "plum", label: "酒紅棕", labelEn: "Plum Brown", hex: "#6b2f3f" },
+  { id: "indigo", label: "午夜藍黑", labelEn: "Midnight Indigo", hex: "#26334d" }
 ];
 
 export const OUTFIT_COLORS = [
-  { id: "terracotta", label: "暖陶橘", hex: "#d96b43" },
-  { id: "sage", label: "鼠尾草綠", hex: "#5a8f7b" },
-  { id: "cobalt", label: "靛藍", hex: "#3b6fd8" },
-  { id: "mustard", label: "芥末黃", hex: "#d9a036" },
-  { id: "charcoal", label: "炭墨灰", hex: "#384152" }
+  { id: "terracotta", label: "暖陶橘", labelEn: "Terracotta", hex: "#d96b43" },
+  { id: "sage", label: "鼠尾草綠", labelEn: "Sage Green", hex: "#5a8f7b" },
+  { id: "cobalt", label: "靛藍", labelEn: "Cobalt Blue", hex: "#3b6fd8" },
+  { id: "mustard", label: "芥末黃", labelEn: "Mustard", hex: "#d9a036" },
+  { id: "charcoal", label: "炭墨灰", labelEn: "Charcoal", hex: "#384152" }
 ];
 
 export const DEFAULT_AVATAR = {
@@ -1478,29 +1480,29 @@ export class FreelancerRoomScene {
     this.centerAnchor = new THREE.Vector3(0.55, 0, -0.35);
 
     this.chillSpots = [
-      { id: "phone", label: "在床邊滑手機放鬆中", pos: new THREE.Vector3(1.94, 0, 1.95), rotY: -Math.PI / 2 },
-      { id: "exercise", label: "做伏地挺身保持體力", pos: new THREE.Vector3(-0.55, 0, 0.72), rotY: -0.6 },
-      { id: "read", label: "在書桌翻閱靈感畫冊", pos: new THREE.Vector3(-0.2, 0, -2.02), rotY: Math.PI },
-      { id: "eat", label: "享用熱食補充靈感", pos: new THREE.Vector3(0.85, 0, 2.45), rotY: -2.2 },
-      { id: "gaming", label: "偷玩方塊沙盒遊戲", pos: new THREE.Vector3(-0.2, 0, -2.02), rotY: Math.PI },
+      { id: "phone", label: "在床邊滑手機放鬆中", labelEn: "Scrolling phone by the bed", pos: new THREE.Vector3(1.94, 0, 1.95), rotY: -Math.PI / 2 },
+      { id: "exercise", label: "做伏地挺身保持體力", labelEn: "Doing push-ups to stay fit", pos: new THREE.Vector3(-0.55, 0, 0.72), rotY: -0.6 },
+      { id: "read", label: "在書桌翻閱靈感畫冊", labelEn: "Flipping through artbooks at the desk", pos: new THREE.Vector3(-0.2, 0, -2.02), rotY: Math.PI },
+      { id: "eat", label: "享用熱食補充靈感", labelEn: "Enjoying a warm snack", pos: new THREE.Vector3(0.85, 0, 2.45), rotY: -2.2 },
+      { id: "gaming", label: "偷玩方塊沙盒遊戲", labelEn: "Sneaking a quick voxel game", pos: new THREE.Vector3(-0.2, 0, -2.02), rotY: Math.PI },
       // Parallel along the bed (+Z is headboard/pillow at 2.83; charBody rotation.x=-PI/2 + root rotY=PI puts head at +Z)
-      { id: "sleep", label: "在床上休息睡眠中", pos: new THREE.Vector3(2.65, 0, 1.48), rotY: Math.PI }
+      { id: "sleep", label: "在床上休息睡眠中", labelEn: "Sleeping peacefully in bed", pos: new THREE.Vector3(2.65, 0, 1.48), rotY: Math.PI }
     ];
 
     this.actionSpots = {
-      wash: { id: "wash", label: "洗手台洗手中", pos: new THREE.Vector3(2.22, 0, -2.92), rotY: Math.PI },
-      toilet: { id: "toilet", label: "使用洗手間中", pos: new THREE.Vector3(3.32, 0, -3.16), rotY: 0 },
-      sofa_read: { id: "sofa_read", label: "躺在沙發看書放鬆中", pos: new THREE.Vector3(-1.78, 0, -0.35), rotY: -Math.PI / 2 },
-      sofa_tv: { id: "sofa_tv", label: "躺在沙發看電視中", pos: new THREE.Vector3(-1.78, 0, -0.35), rotY: -Math.PI / 2 },
-      watch_tv: { id: "watch_tv", label: "站在電視前看節目中", pos: new THREE.Vector3(-2.78, 0, -0.35), rotY: -Math.PI / 2 },
-      water_plant: { id: "water_plant", label: "照顧桌上小盆栽中", pos: new THREE.Vector3(0.95, 0, -2.12), rotY: Math.PI },
-      admire_poster: { id: "admire_poster", label: "欣賞北牆插畫掛畫找靈感", pos: new THREE.Vector3(-2.72, 0, -2.95), rotY: Math.PI },
-      check_coat: { id: "check_coat", label: "在門旁整理外套與隨身帆布袋", pos: new THREE.Vector3(-2.78, 0, 3.12), rotY: -Math.PI * 0.65 },
-      coffee_break: { id: "coffee_break", label: "在手沖吧台泡一杯熱美式咖啡", pos: new THREE.Vector3(-2.62, 0, -2.28), rotY: -Math.PI / 2 },
-      listen_vinyl: { id: "listen_vinyl", label: "播放黑膠唱片跟著音樂搖擺中", pos: new THREE.Vector3(-0.75, 0, 2.75), rotY: 0 },
-      pet_cat: { id: "pet_cat", label: "蹲下來摸摸橘貓室友「阿橘」", pos: new THREE.Vector3(0.95, 0, 2.82), rotY: 0 },
-      watch_hamster: { id: "watch_hamster", label: "在書桌左邊看倉鼠「麻糬」跑滾輪", pos: new THREE.Vector3(-1.82, 0, -2.28), rotY: Math.PI },
-      water_floor_plant: { id: "water_floor_plant", label: "替琴葉榕落地盆栽擦葉澆水中", pos: new THREE.Vector3(2.75, 0, -0.55), rotY: Math.PI / 2 }
+      wash: { id: "wash", label: "洗手台洗手中", labelEn: "Washing hands at the sink", pos: new THREE.Vector3(2.22, 0, -2.92), rotY: Math.PI },
+      toilet: { id: "toilet", label: "使用洗手間中", labelEn: "Using the restroom", pos: new THREE.Vector3(3.32, 0, -3.16), rotY: 0 },
+      sofa_read: { id: "sofa_read", label: "躺在沙發看書放鬆中", labelEn: "Reading a book on the sofa", pos: new THREE.Vector3(-1.78, 0, -0.35), rotY: -Math.PI / 2 },
+      sofa_tv: { id: "sofa_tv", label: "躺在沙發看電視中", labelEn: "Watching TV on the sofa", pos: new THREE.Vector3(-1.78, 0, -0.35), rotY: -Math.PI / 2 },
+      watch_tv: { id: "watch_tv", label: "站在電視前看節目中", labelEn: "Watching a show on TV", pos: new THREE.Vector3(-2.78, 0, -0.35), rotY: -Math.PI / 2 },
+      water_plant: { id: "water_plant", label: "照顧桌上小盆栽中", labelEn: "Tending the desk Monstera", pos: new THREE.Vector3(0.95, 0, -2.12), rotY: Math.PI },
+      admire_poster: { id: "admire_poster", label: "欣賞北牆插畫掛畫找靈感", labelEn: "Admiring wall art for inspiration", pos: new THREE.Vector3(-2.72, 0, -2.95), rotY: Math.PI },
+      check_coat: { id: "check_coat", label: "在門旁整理外套與隨身帆布袋", labelEn: "Checking coat & tote by the door", pos: new THREE.Vector3(-2.78, 0, 3.12), rotY: -Math.PI * 0.65 },
+      coffee_break: { id: "coffee_break", label: "在手沖吧台泡一杯熱美式咖啡", labelEn: "Brewing pour-over coffee", pos: new THREE.Vector3(-2.62, 0, -2.28), rotY: -Math.PI / 2 },
+      listen_vinyl: { id: "listen_vinyl", label: "播放黑膠唱片跟著音樂搖擺中", labelEn: "Vibing to vinyl records", pos: new THREE.Vector3(-0.75, 0, 2.75), rotY: 0 },
+      pet_cat: { id: "pet_cat", label: "蹲下來摸摸橘貓室友「阿橘」", labelEn: "Petting Ginger the tabby cat", pos: new THREE.Vector3(0.95, 0, 2.82), rotY: 0 },
+      watch_hamster: { id: "watch_hamster", label: "在書桌左邊看倉鼠「麻糬」跑滾輪", labelEn: "Watching Mochi run on his wheel", pos: new THREE.Vector3(-1.82, 0, -2.28), rotY: Math.PI },
+      water_floor_plant: { id: "water_floor_plant", label: "替琴葉榕落地盆栽擦葉澆水中", labelEn: "Watering the fiddle-leaf fig", pos: new THREE.Vector3(2.75, 0, -0.55), rotY: Math.PI / 2 }
     };
 
     // Character AI state machine:
@@ -1602,7 +1604,7 @@ export class FreelancerRoomScene {
     if (!this.usesSharedTvIframe) {
       this.tvOverlayIframe = document.createElement("iframe");
       this.tvOverlayIframe.className = "room-tv-overlay-iframe";
-      this.tvOverlayIframe.title = "房間牆上電視 YouTube 即時播放";
+      this.tvOverlayIframe.title = bi("房間牆上電視 YouTube 即時播放", "Studio Wall TV YouTube Player");
       this.tvOverlayIframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
       this.tvOverlayIframe.referrerPolicy = "strict-origin-when-cross-origin";
       this.tvOverlayIframe.allowFullscreen = true;
@@ -3444,10 +3446,34 @@ export class FreelancerRoomScene {
 
     this.roomGroup.add(this.charRoot);
 
-    this.nameTagEl.textContent = (this.avatarConfig.name || "接案繪師").trim();
+    this.nameTagEl.textContent = (this.avatarConfig.name || bi("接案繪師", "Artist")).trim();
     if (this.charState === "WORKING") {
       this.charRoot.position.copy(this.deskWorkAnchor);
       this.charRoot.rotation.y = (this.deskRootGroup?.rotation.y || 0) + Math.PI;
+    }
+  }
+
+  getSpotLabel(spot) {
+    if (!spot) return "";
+    return isEn() ? (spot.labelEn || spot.label) : spot.label;
+  }
+
+  refreshLanguage() {
+    if (this.tvOverlayIframe) {
+      this.tvOverlayIframe.title = bi("房間牆上電視 YouTube 即時播放", "Studio Wall TV YouTube Player");
+    }
+    if (this.nameTagEl) {
+      this.nameTagEl.textContent = (this.avatarConfig.name || bi("接案繪師", "Artist")).trim();
+    }
+    this.updateParcelVisuals();
+    if (this.editMode) {
+      this.notifyEditModeState();
+    }
+    if (this.charState === "WORKING") {
+      this.onActivityChange(bi("專心創作接案中", "Working on a commission"));
+    } else {
+      const spot = this.getActivitySpotById(this.currentActivity);
+      if (spot) this.onActivityChange(this.getSpotLabel(spot));
     }
   }
 
@@ -3501,7 +3527,7 @@ export class FreelancerRoomScene {
     this.activityTimer = Math.max(12, Math.round(fullDur * (0.25 + rng() * 0.72)));
     this.thoughtCooldown = 0.8 + rng() * 3.8;
     this.updateToiletLid(1);
-    this.onActivityChange(startSpot.label);
+    this.onActivityChange(this.getSpotLabel(startSpot));
   }
 
   exportCharacterRuntimeState() {
@@ -3633,7 +3659,7 @@ export class FreelancerRoomScene {
         this.thoughtCooldown = 1.0 + Math.random() * 2.4;
         this.charRoot.position.copy(targetSpot.pos);
         this.charRoot.rotation.y = targetSpot.rotY;
-        this.onActivityChange(targetSpot.label);
+        this.onActivityChange(this.getSpotLabel(targetSpot));
       };
     } else if (this.charState === "WALK_TO_WORK") {
       this.walkCallback = () => {
@@ -3645,7 +3671,7 @@ export class FreelancerRoomScene {
     this.thoughtCooldown = Math.max(0.8, Math.min(this.thoughtCooldown, 4.5));
     this.updateToiletLid(1);
     const activeSpot = this.getActivitySpotById(this.currentActivity);
-    this.onActivityChange(this.charState === "WORKING" ? "專心創作接案中" : activeSpot.label);
+    this.onActivityChange(this.charState === "WORKING" ? bi("專心創作接案中", "Working on a commission") : this.getSpotLabel(activeSpot));
   }
 
   setCharacterProfileContext({
@@ -4065,11 +4091,11 @@ export class FreelancerRoomScene {
     if (this.parcelBadgeEl) {
       if (count > 0 && !this.spectating && !this.editMode) {
         this.parcelBadgeEl.textContent = count > 1
-          ? `📦 貨到了！點擊拆箱擺放 (${count})`
-          : "📦 貨到了！點擊開箱擺放";
+          ? bi(`📦 貨到了！點擊拆箱擺放 (${count})`, `📦 Delivered! Click to Unbox (${count})`)
+          : bi("📦 貨到了！點擊開箱擺放", "📦 Delivered! Click to Unbox");
         this.parcelBadgeEl.classList.remove("hidden");
       } else if (count > 0 && this.spectating) {
-        this.parcelBadgeEl.textContent = `📦 ${count} 件待拆包裹`;
+        this.parcelBadgeEl.textContent = bi(`📦 ${count} 件待拆包裹`, `📦 ${count} Unopened Parcel(s)`);
         this.parcelBadgeEl.classList.remove("hidden");
       } else {
         this.parcelBadgeEl.classList.add("hidden");
@@ -4718,10 +4744,12 @@ export class FreelancerRoomScene {
     this.onEditModeChange({
       active: this.editMode,
       selectedId: this.editSelectedId,
-      selectedName: meta?.name || "",
+      selectedName: this.editSelectedId ? getPlaceableFurnitureName(this.editSelectedId) : "",
       surface: meta?.surface || "floor",
       gridDims: meta
-        ? (meta.surface === "wall" ? `${meta.gridW} 格牆面` : `${meta.gridW}×${meta.gridD} 格地面`)
+        ? (meta.surface === "wall"
+            ? bi(`${meta.gridW} 格牆面`, `${meta.gridW} wall cells`)
+            : bi(`${meta.gridW}×${meta.gridD} 格地面`, `${meta.gridW}×${meta.gridD} floor cells`))
         : "",
       canPlace: this.editCanPlace,
       fromParcel: this.editHoldingFromParcel,
@@ -4931,7 +4959,7 @@ export class FreelancerRoomScene {
     }
 
     if (isNightSleeping) {
-      this.showBubble("💡 靈感來了！", 1600);
+      this.showBubble(bi("💡 靈感來了！", "💡 Inspiration struck!"), 1600);
     }
 
     // Immediate snappy walk straight to desk chair
@@ -4939,7 +4967,7 @@ export class FreelancerRoomScene {
     this.currentActivity = "walking";
     this.targetActivityId = null;
     this.hideBubble();
-    this.onActivityChange("快步前往書桌準備接案...");
+    this.onActivityChange(bi("快步前往書桌準備接案...", "Heading to desk to start working..."));
     this.postCelebrateSpot = null;
     const dist = this.charRoot.position.distanceTo(this.deskWorkAnchor);
     if (dist < 0.35 && this.isNearDesk(this.charRoot.position)) {
@@ -5020,8 +5048,8 @@ export class FreelancerRoomScene {
       this.charRoot.position.copy(this.deskExitAnchor);
       this.charRoot.rotation.y = -0.25;
       const activityMsg = celebrationType === "approved"
-        ? "🎉 甲方驗收發薪！歡呼一下準備開啟下班耍廢時間！"
-        : "🎉 完成交稿啦！舉手歡呼準備下班放鬆一下！";
+        ? bi("🎉 甲方驗收發薪！歡呼一下準備開啟下班耍廢時間！", "🎉 Client approved payout! Cheering & off-work break!")
+        : bi("🎉 完成交稿啦！舉手歡呼準備下班放鬆一下！", "🎉 Submitted! Cheering & unwinding after work!");
       const bubbleMsg = celebrationType === "approved"
         ? "Case approved!! Clams & XP earned! 🎉✨"
         : "Case submitted! Off-work time!! 🎉";
@@ -5036,7 +5064,7 @@ export class FreelancerRoomScene {
     this.thoughtCooldown = 1.4 + Math.random() * 1.6;
     this.charRoot.position.copy(this.deskWorkAnchor);
     this.charRoot.rotation.y = (this.deskRootGroup?.rotation.y || 0) + Math.PI;
-    this.onActivityChange("正在電繪板前收尾創作（稍後休息）");
+    this.onActivityChange(bi("正在電繪板前收尾創作（稍後休息）", "Finishing artwork on tablet (break soon)"));
   }
 
   enterWorkingPose() {
@@ -5045,7 +5073,7 @@ export class FreelancerRoomScene {
     this.thoughtCooldown = 1.4 + Math.random() * 1.6;
     this.charRoot.position.copy(this.deskWorkAnchor);
     this.charRoot.rotation.y = (this.deskRootGroup?.rotation.y || 0) + Math.PI;
-    this.onActivityChange("專心創作接案中");
+    this.onActivityChange(bi("專心創作接案中", "Working on a commission"));
   }
 
   rebuildThoughtBank() {
@@ -5256,6 +5284,7 @@ export class FreelancerRoomScene {
     this.commandActivity({
       id: "floor_stand",
       label: "走到指定地板位置中",
+      labelEn: "Walking to selected floor spot",
       pos: dest,
       rotY
     }, 52);
@@ -5405,7 +5434,7 @@ export class FreelancerRoomScene {
       this.thoughtCooldown = 1.2 + Math.random() * 2.2;
       this.charRoot.position.copy(spot.pos);
       this.charRoot.rotation.y = spot.rotY;
-      this.onActivityChange(spot.label);
+      this.onActivityChange(this.getSpotLabel(spot));
     };
   }
 
@@ -6014,11 +6043,17 @@ export class FreelancerRoomScene {
             if (this.editDragging) {
               this.raycastEditGridTarget(true);
               dom.style.cursor = this.editCanPlace ? "grabbing" : "not-allowed";
-              const dragName = PLACEABLE_FURNITURE_META[this.editSelectedId]?.name || "家具";
+              const dragName = getPlaceableFurnitureName(this.editSelectedId);
               this.onHoverChange(
                 this.editCanPlace
-                  ? `拖曳移動「${dragName}」中，放開後可按 ← / → 鍵旋轉或確認放置`
-                  : "目前格位重疊或受限，請拖往綠色網格或放開後按 ← / → 轉向"
+                  ? bi(
+                      `拖曳移動「${dragName}」中，放開後可按 ← / → 鍵旋轉或確認放置`,
+                      `Dragging "${dragName}" — release to rotate (← / →) or place`
+                    )
+                  : bi(
+                      "目前格位重疊或受限，請拖往綠色網格或放開後按 ← / → 轉向",
+                      "Blocked slot — drag to green cells or release to rotate (← / →)"
+                    )
               );
               return;
             }
@@ -6027,32 +6062,48 @@ export class FreelancerRoomScene {
 
         const { movableId, interactType, hitActivePreview } = this.getEditRaycastHit();
         if (this.editSelectedId) {
-          const selName = PLACEABLE_FURNITURE_META[this.editSelectedId]?.name || "家具";
+          const selName = getPlaceableFurnitureName(this.editSelectedId);
           if (hitActivePreview || movableId === this.editSelectedId) {
             this.hoveredTarget = interactType || this.hoveredTarget;
             dom.style.cursor = "grab";
-            this.onHoverChange(`按住並拖曳「${selName}」移動位置，或按 ← / → 鍵／按鈕旋轉`);
+            this.onHoverChange(bi(
+              `按住並拖曳「${selName}」移動位置，或按 ← / → 鍵／按鈕旋轉`,
+              `Hold and drag "${selName}" to move, or press ← / → to rotate`
+            ));
           } else if (movableId && !this.editHoldingFromParcel) {
             this.hoveredTarget = interactType;
             dom.style.cursor = "grab";
-            this.onHoverChange(`點擊切換選取「${PLACEABLE_FURNITURE_META[movableId]?.name || "家具"}」`);
+            const mSwitchName = getPlaceableFurnitureName(movableId);
+            this.onHoverChange(bi(
+              `點擊切換選取「${mSwitchName}」`,
+              `Click to switch selection to "${mSwitchName}"`
+            ));
           } else {
             this.hoveredTarget = null;
             dom.style.cursor = "default";
-            this.onHoverChange(`已選取「${selName}」：拖曳家具改位置，按 ← / → 鍵旋轉`);
+            this.onHoverChange(bi(
+              `已選取「${selName}」：拖曳家具改位置，按 ← / → 鍵旋轉`,
+              `Selected "${selName}": drag to move, ← / → to rotate`
+            ));
           }
           return;
         }
         if (movableId) {
           this.hoveredTarget = interactType;
           dom.style.cursor = "grab";
-          const mName = PLACEABLE_FURNITURE_META[movableId]?.name || "家具";
-          this.onHoverChange(`點擊選取「${mName}」，拖曳移動或按 ← / → 旋轉`);
+          const mName = getPlaceableFurnitureName(movableId);
+          this.onHoverChange(bi(
+            `點擊選取「${mName}」，拖曳移動或按 ← / → 旋轉`,
+            `Click to select "${mName}", drag to move or ← / → to rotate`
+          ));
           return;
         }
         this.hoveredTarget = null;
         dom.style.cursor = "default";
-        this.onHoverChange("點擊房間內的任何家具即可依網格選取、拖曳與旋轉");
+        this.onHoverChange(bi(
+          "點擊房間內的任何家具即可依網格選取、拖曳與旋轉",
+          "Click any furniture piece in the room to select, drag, and rotate"
+        ));
         return;
       }
 
@@ -6072,31 +6123,33 @@ export class FreelancerRoomScene {
         if (this.walkHoverRingMat) this.walkHoverRingMat.opacity = 0;
         dom.style.cursor = "pointer";
         if (type === "parcel") {
-          this.onHoverChange(this.spectating ? "貨到了（唯讀參觀中）" : "📦 貨到了！點擊打開紙箱並在網格中擺放新家具");
+          this.onHoverChange(this.spectating
+            ? bi("貨到了（唯讀參觀中）", "Parcel delivered (read-only spectating)")
+            : bi("📦 貨到了！點擊打開紙箱並在網格中擺放新家具", "📦 Delivered! Click box to unbox & place furniture"));
         } else if (type === "lamp") {
-          this.onHoverChange("點擊開關檯燈");
+          this.onHoverChange(bi("點擊開關檯燈", "Click to toggle desk lamp"));
         } else if (type === "bedLamp") {
-          this.onHoverChange("點擊開關床邊小夜燈");
+          this.onHoverChange(bi("點擊開關床邊小夜燈", "Click to toggle bedside lamp"));
         } else if (type === "tv") {
           this.onHoverChange(
             this.tvActiveVideoId
-              ? "點擊打開電視頁面（更換 YouTube 影片或關掉電視）"
-              : "點擊打開電視，選擇要觀看的 YouTube 影片"
+              ? bi("點擊打開電視頁面（更換 YouTube 影片或關掉電視）", "Click to open TV (switch channel or power off)")
+              : bi("點擊打開電視，選擇要觀看的 YouTube 影片", "Click to turn on TV & pick a YouTube video")
           );
         } else if (type === "atmos") {
-          this.onHoverChange("點擊啟動 Dolby Atmos 沉浸式劇院音效");
+          this.onHoverChange(bi("點擊啟動 Dolby Atmos 沉浸式劇院音效", "Click to test Dolby Atmos surround sound"));
         } else if (type === "vinyl") {
-          this.onHoverChange("點擊開關黑膠唱片機與聽音樂");
+          this.onHoverChange(bi("點擊開關黑膠唱片機與聽音樂", "Click to toggle vinyl turntable & music"));
         } else if (type === "coffeeBar") {
-          this.onHoverChange("點擊沖一杯手沖熱美式咖啡");
+          this.onHoverChange(bi("點擊沖一杯手沖熱美式咖啡", "Click to brew pour-over coffee"));
         } else if (type === "cat") {
-          this.onHoverChange("點擊摸摸橘貓室友「阿橘」");
+          this.onHoverChange(bi("點擊摸摸橘貓室友「阿橘」", "Click to pet Ginger the cat"));
         } else if (type === "hamster") {
-          this.onHoverChange("點擊看看書桌旁的布丁倉鼠「麻糬」");
+          this.onHoverChange(bi("點擊看看書桌旁的布丁倉鼠「麻糬」", "Click to watch Mochi the hamster"));
         } else if (type === "poster") {
-          this.onHoverChange("點擊更換掛畫圖案／裁切自訂照片");
+          this.onHoverChange(bi("點擊更換掛畫圖案／裁切自訂照片", "Click to customize framed wall poster"));
         } else if (type === "computer") {
-          this.onHoverChange("點擊電腦／電繪板開始接案學習");
+          this.onHoverChange(bi("點擊電腦／電繪板開始接案學習", "Click computer/tablet to open freelance quests"));
         } else {
           // Silent discovery for bed / sink / toilet / sofa / plant / coatRack / floorPlant
           this.onHoverChange("");

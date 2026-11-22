@@ -11,6 +11,10 @@
       if (savedScheme === "light" || savedScheme === "dark") {
         document.querySelector('meta[name="color-scheme"]').content = savedScheme;
       }
+      const savedLang = localStorage.getItem("ui_language_v1");
+      if (savedLang && savedLang.toLowerCase().startsWith("en")) {
+        document.documentElement.lang = "en";
+      }
     } catch {
       // Ignore storage access errors
     }
@@ -24,7 +28,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261122a" />
+  <link rel="stylesheet" href="./styles.css?v=20261122b" />
 </head>
 <body>
 
@@ -61,7 +65,7 @@
               <path d="M12 3C7.2 3 3 6.5 2.2 11.4c-.2 1.2.4 2.4 1.4 3l4.2 2.4c.5.3.9.8 1.1 1.3.2.5.7.9 1.3.9h3.6c.6 0 1.1-.4 1.3-.9.2-.5.6-1 1.1-1.3l4.2-2.4c1-.6 1.6-1.8 1.4-3C21 6.5 16.8 3 12 3zm-4.5 9.8L5.4 8.2c.8-.9 1.8-1.6 2.9-2.1l1.2 6.7H7.5zm3.4 0L10.3 5.5c.6-.1 1.1-.2 1.7-.2s1.1.1 1.7.2l-.6 7.3h-2.2zm5.6 0h-2l1.2-6.7c1.1.5 2.1 1.2 2.9 2.1l-2.1 4.6z"/>
             </svg>
             <span id="header-clams-count">100</span>
-            <span>英蚌</span>
+            <span class="clams-unit-label">英蚌</span>
             <span class="pending-count-pill hidden" id="admin-pending-badge">0</span>
           </button>
           <div class="account-chip" id="header-user-chip">
@@ -94,8 +98,11 @@
     <!-- Account Login / Register Gate -->
     <section id="auth-view" class="auth-shell hidden" aria-labelledby="auth-heading">
       <div class="auth-card">
-        <h1 class="auth-title" id="auth-heading">登入學習帳號</h1>
-        <p class="auth-subtitle">每個帳號會獨立保存課程完成進度，避免老師與同學互相覆蓋。</p>
+        <div class="auth-card-top">
+          <h1 class="auth-title" id="auth-heading">登入學習帳號</h1>
+          <button type="button" class="btn btn-sm auth-lang-btn" id="auth-lang-toggle-btn" aria-label="切換為英文介面">🌐 English</button>
+        </div>
+        <p class="auth-subtitle" id="auth-subtitle-text">每個帳號會獨立保存課程完成進度，避免老師與同學互相覆蓋。</p>
 
         <div id="auth-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
 
@@ -109,16 +116,16 @@
           <span>使用 Google 帳號快速登入</span>
         </button>
 
-        <div class="auth-divider">或使用電子郵件</div>
+        <div class="auth-divider" id="auth-divider-text">或使用電子郵件</div>
 
-        <div class="auth-tabs" role="group" aria-label="登入或註冊模式切換">
+        <div class="auth-tabs" id="auth-tabs-group" role="group" aria-label="登入或註冊模式切換">
           <button type="button" class="auth-tab" id="tab-signin" aria-pressed="true">登入帳號</button>
           <button type="button" class="auth-tab" id="tab-signup" aria-pressed="false">註冊新帳號</button>
         </div>
 
         <form id="signin-form" aria-label="電子郵件登入表單">
           <div class="form-group">
-            <label for="signin-email">電子郵件 <span aria-hidden="true">*</span></label>
+            <label for="signin-email"><span id="signin-email-label-text">電子郵件</span> <span aria-hidden="true">*</span></label>
             <input
               type="email"
               id="signin-email"
@@ -137,7 +144,7 @@
 
           <div class="form-group">
             <div class="form-label-row">
-              <label for="signin-password">密碼 <span aria-hidden="true">*</span></label>
+              <label for="signin-password"><span id="signin-pw-label-text">密碼</span> <span aria-hidden="true">*</span></label>
               <button type="button" class="btn-link" id="forgot-pw-btn">忘記密碼？</button>
             </div>
             <div class="password-wrap">
@@ -161,7 +168,7 @@
 
         <form id="signup-form" class="hidden" aria-label="建立新帳號表單">
           <div class="form-group">
-            <label for="signup-name">顯示名稱 <span aria-hidden="true">*</span></label>
+            <label for="signup-name"><span id="signup-name-label-text">顯示名稱</span> <span aria-hidden="true">*</span></label>
             <span id="signup-name-hint" class="form-hint">例如：Vic 或自己的英文／中文名字</span>
             <input
               type="text"
@@ -179,7 +186,7 @@
           </div>
 
           <div class="form-group">
-            <label for="signup-email">電子郵件 <span aria-hidden="true">*</span></label>
+            <label for="signup-email"><span id="signup-email-label-text">電子郵件</span> <span aria-hidden="true">*</span></label>
             <input
               type="email"
               id="signup-email"
@@ -197,7 +204,7 @@
           </div>
 
           <div class="form-group">
-            <label for="signup-password">設定密碼 <span aria-hidden="true">*</span></label>
+            <label for="signup-password"><span id="signup-pw-label-text">設定密碼</span> <span aria-hidden="true">*</span></label>
             <span id="signup-pw-hint" class="form-hint">至少 6 個字元，可使用英文字母、數字或符號</span>
             <div class="password-wrap">
               <input
@@ -243,27 +250,42 @@
           <section class="settings-section" aria-labelledby="settings-overview-heading">
             <h3 class="settings-section-title" id="settings-overview-heading">帳號資訊</h3>
             <div class="info-grid">
-              <span class="info-key">電子郵件</span>
+              <span class="info-key" id="settings-key-email">電子郵件</span>
               <span class="info-val" id="settings-email"></span>
 
-              <span class="info-key">帳號身分</span>
+              <span class="info-key" id="settings-key-role">帳號身分</span>
               <span class="info-val">
                 <span class="role-badge is-student" id="settings-role-badge">學生</span>
               </span>
 
-              <span class="info-key">登入方式</span>
+              <span class="info-key" id="settings-key-providers">登入方式</span>
               <span class="info-val" id="settings-providers"></span>
 
-              <span class="info-key">信箱驗證</span>
+              <span class="info-key" id="settings-key-verified">信箱驗證</span>
               <span class="info-val" id="settings-verified-row"></span>
             </div>
+          </section>
+
+          <section class="settings-section" aria-labelledby="settings-lang-heading">
+            <h3 class="settings-section-title" id="settings-lang-heading">介面語言 / Language</h3>
+            <div class="settings-lang-grid" id="settings-lang-choices" role="radiogroup" aria-labelledby="settings-lang-heading">
+              <label class="choice-chip settings-lang-chip">
+                <input type="radio" name="uiLanguage" value="zh-Hant" checked />
+                <span lang="zh-Hant">繁體中文</span>
+              </label>
+              <label class="choice-chip settings-lang-chip">
+                <input type="radio" name="uiLanguage" value="en" />
+                <span lang="en">English</span>
+              </label>
+            </div>
+            <p class="form-hint" id="settings-lang-hint" style="margin-top: 0.45rem;">可隨時切換繁體中文或英文介面（英語閱讀與測驗題目維持英文原文）。</p>
           </section>
 
           <section class="settings-section" aria-labelledby="settings-profile-heading">
             <h3 class="settings-section-title" id="settings-profile-heading">顯示名稱</h3>
             <form id="profile-form">
               <div class="form-group" style="margin-block-end: 0;">
-                <label for="settings-display-name">名稱 <span aria-hidden="true">*</span></label>
+                <label for="settings-display-name"><span id="settings-display-name-label-text">名稱</span> <span aria-hidden="true">*</span></label>
                 <div class="inline-form-row">
                   <input
                     type="text"
@@ -290,7 +312,7 @@
             <p class="form-hint" id="settings-password-desc" style="margin-bottom: 0.9rem;">請輸入目前的密碼與新密碼以完成更新。</p>
             <form id="change-password-form">
               <div class="form-group" id="current-pw-group">
-                <label for="settings-current-pw">目前密碼 <span aria-hidden="true">*</span></label>
+                <label for="settings-current-pw"><span id="settings-current-pw-label-text">目前密碼</span> <span aria-hidden="true">*</span></label>
                 <div class="password-wrap">
                   <input
                     type="password"
@@ -306,7 +328,7 @@
               </div>
 
               <div class="form-group">
-                <label for="settings-new-pw">新密碼 <span aria-hidden="true">*</span></label>
+                <label for="settings-new-pw"><span id="settings-new-pw-label-text">新密碼</span> <span aria-hidden="true">*</span></label>
                 <span id="settings-new-pw-hint" class="form-hint">至少 6 個字元，更新後可用此信箱與新密碼直接登入</span>
                 <div class="password-wrap">
                   <input
@@ -339,10 +361,10 @@
 
           <section class="settings-section hidden" id="super-admin-section" aria-labelledby="super-admin-heading">
             <h3 class="settings-section-title" id="super-admin-heading">管理員權限管理（超級管理員專屬）</h3>
-            <p class="form-hint" style="margin-bottom: 0.85rem;">新增其他管理員信箱。對方以已驗證的該信箱登入後，將自動具備管理員身分。</p>
+            <p class="form-hint" id="super-admin-desc" style="margin-bottom: 0.85rem;">新增其他管理員信箱。對方以已驗證的該信箱登入後，將自動具備管理員身分。</p>
             <form id="add-admin-form">
               <div class="form-group" style="margin-block-end: 0;">
-                <label for="admin-email-input">新增管理員電子郵件 <span aria-hidden="true">*</span></label>
+                <label for="admin-email-input"><span id="admin-email-label-text">新增管理員電子郵件</span> <span aria-hidden="true">*</span></label>
                 <div class="inline-form-row">
                   <input
                     type="email"
@@ -394,11 +416,11 @@
         </div>
         <div class="dialog-body">
           <div id="admin-review-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
-          <div class="admin-section-title">🔔 待驗收發款佇列（學生點擊「完成任務」會即時出現在這裡）</div>
+          <div class="admin-section-title" id="admin-pending-heading">🔔 待驗收發款佇列（學生點擊「完成任務」會即時出現在這裡）</div>
           <div id="review-pending-queue" style="display: flex; flex-direction: column; gap: 0.55rem;"></div>
           <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.35rem 0;" />
           <div class="form-group" style="margin-block-end: 0;">
-            <label for="review-student-select">選擇指定繪師（直接發錢／調整餘額、悄悄參觀房間或檢視課程）</label>
+            <label for="review-student-select" id="admin-select-student-label">選擇指定繪師（直接發錢／調整餘額、悄悄參觀房間或檢視課程）</label>
             <div class="inline-form-row">
               <select id="review-student-select" class="form-control" style="flex: 1;"></select>
               <button
@@ -435,9 +457,9 @@
         <div class="dialog-header">
           <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
             <h2 class="dialog-title" id="shop-dialog-title">🛒 租屋生活商店</h2>
-            <div class="wallet-chip" aria-label="目前英蚌餘額">
+            <div class="wallet-chip" id="shop-wallet-pill" aria-label="目前英蚌餘額">
               <span id="shop-clams-balance">100</span>
-              <span>英蚌</span>
+              <span class="clams-unit-label">英蚌</span>
             </div>
           </div>
           <button
@@ -505,7 +527,7 @@
 
           <div class="tv-channel-section">
             <div class="tv-channel-header">
-              <span class="tv-channel-heading">📺 選擇頻道</span>
+              <span class="tv-channel-heading" id="tv-channel-heading-label">📺 選擇頻道</span>
               <span class="tv-channel-count" id="tv-channel-count"></span>
             </div>
             <div id="tv-channel-list" class="tv-channel-grid" role="listbox" aria-label="選擇 YouTube 觀看內容"></div>
@@ -530,7 +552,7 @@
         <div class="dialog-header">
           <div>
             <h2 class="dialog-title" id="poster-dialog-title">🖼️ 更換房間掛畫圖案</h2>
-            <div class="form-hint" style="margin-top: 0.15rem;">可匯入自己的照片並自由裁切構圖，或隨時取消恢復預設山水畫</div>
+            <div class="form-hint" id="poster-dialog-subtitle" style="margin-top: 0.15rem;">可匯入自己的照片並自由裁切構圖，或隨時取消恢復預設山水畫</div>
           </div>
           <button
             type="button"
@@ -554,12 +576,12 @@
             <div class="poster-upload-row">
               <input type="file" id="poster-file-input" accept="image/*" class="hidden">
               <button type="button" class="btn" id="poster-pick-btn">📂 匯入照片</button>
-              <span class="form-hint">支援拖曳照片到畫框，拖曳畫面與滑桿裁切（11:15 直幅）</span>
+              <span class="form-hint" id="poster-upload-hint">支援拖曳照片到畫框，拖曳畫面與滑桿裁切（11:15 直幅）</span>
             </div>
 
             <div class="poster-controls-bar" id="poster-controls-bar">
               <label class="poster-zoom-wrap" for="poster-zoom-range">
-                <span>縮放</span>
+                <span id="poster-zoom-label-text">縮放</span>
                 <input type="range" id="poster-zoom-range" min="100" max="350" step="2" value="100" disabled>
                 <span class="poster-zoom-value" id="poster-zoom-value">1.0×</span>
               </label>
@@ -597,7 +619,7 @@
               </svg>
               <span>記帳</span>
             </h2>
-            <div class="form-hint" style="margin-top: 0.15rem;">看懂每月賺了多少、花了多少，記得先留住每月 100 英蚌的房租喔！</div>
+            <div class="form-hint" id="finance-dialog-subtitle" style="margin-top: 0.15rem;">看懂每月賺了多少、花了多少，記得先留住每月 100 英蚌的房租喔！</div>
           </div>
           <button
             type="button"
@@ -611,10 +633,10 @@
         <div class="dialog-body">
           <div id="finance-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
 
-          <section class="finance-hero-card" aria-label="每月房租固定預算與倒數">
+          <section class="finance-hero-card" id="finance-hero-card" aria-label="每月房租固定預算與倒數">
             <div class="finance-hero-top">
               <div>
-                <strong style="font-size: 0.98rem;">🏠 每月房租預算：100 英蚌／月</strong>
+                <strong id="finance-rent-hero-title" style="font-size: 0.98rem;">🏠 每月房租預算：100 英蚌／月</strong>
                 <div class="form-hint" id="finance-rent-budget-msg" style="margin-top: 0.2rem;">計算本月預算狀況中...</div>
               </div>
               <div class="finance-countdown-badge" id="finance-countdown-badge">⏳ 距下次繳租：--</div>
@@ -630,11 +652,11 @@
 
           <section class="finance-landlord-note" id="finance-landlord-note" aria-label="房東來信小紙條"></section>
 
-          <div class="finance-kpi-grid" aria-label="財務重點摘要">
+          <div class="finance-kpi-grid" id="finance-kpi-grid" aria-label="財務重點摘要">
             <div class="finance-kpi-card">
               <span class="finance-kpi-label" id="finance-income-label">💵 本月總收入</span>
               <span class="finance-kpi-value" id="finance-income-val" style="color: #10b981;">+0 英蚌</span>
-              <span class="finance-kpi-sub">接案驗收與獎金收入</span>
+              <span class="finance-kpi-sub" id="finance-income-sub">接案驗收與獎金收入</span>
             </div>
             <div class="finance-kpi-card">
               <span class="finance-kpi-label" id="finance-expense-label">💸 本月花費＋房租預算</span>
@@ -642,7 +664,7 @@
               <span class="finance-kpi-sub" id="finance-expense-sub">含每月固定房租 100 英蚌</span>
             </div>
             <div class="finance-kpi-card">
-              <span class="finance-kpi-label">💰 目前手上餘額</span>
+              <span class="finance-kpi-label" id="finance-balance-label">💰 目前手上餘額</span>
               <span class="finance-kpi-value" id="finance-balance-val">100 英蚌</span>
               <span class="finance-kpi-sub" id="finance-free-cash-sub">扣掉 100 房租後可自由花費：0 英蚌</span>
             </div>
@@ -656,7 +678,7 @@
           <div class="finance-tx-list" id="finance-tx-list"></div>
         </div>
         <div class="dialog-footer">
-          <span class="form-hint" style="margin-inline-end: auto;">只租不買提醒：每月 1 號結算一次房租（100 英蚌）</span>
+          <span class="form-hint" id="finance-footer-note" style="margin-inline-end: auto;">只租不買提醒：每月 1 號結算一次房租（100 英蚌）</span>
           <button
             type="button"
             class="btn btn-primary"
@@ -672,22 +694,22 @@
     <section id="onboarding-view" class="onboarding-shell hidden" aria-labelledby="onboarding-title">
       <div class="onboarding-card">
         <h1 class="auth-title" id="onboarding-title">建立你的接案繪師角色</h1>
-        <p class="auth-subtitle">在入住單人租屋處之前，幫這位靠畫畫接案維持生活的主角取個名字並設定外觀吧！</p>
+        <p class="auth-subtitle" id="onboarding-subtitle">在入住單人租屋處之前，幫這位靠畫畫接案維持生活的主角取個名字並設定外觀吧！</p>
         <div id="onboarding-feedback" class="feedback-banner hidden" role="status" aria-live="polite"></div>
 
         <div class="onboarding-layout">
-          <aside class="onboarding-preview-card" aria-label="角色即時 3D 預覽">
+          <aside class="onboarding-preview-card" id="onboarding-preview-aside" aria-label="角色即時 3D 預覽">
             <div class="preview-name-pill" id="avatar-preview-name">接案繪師</div>
             <div class="avatar-preview-stage" id="avatar-preview-stage"></div>
             <div class="preview-controls">
-              <span class="form-hint preview-drag-hint">↔ 左右拖曳檢視</span>
+              <span class="form-hint preview-drag-hint" id="onboarding-drag-hint">↔ 左右拖曳檢視</span>
             </div>
           </aside>
 
           <form id="avatar-form">
           <div class="onboarding-section">
             <div class="onboarding-label">
-              <label for="avatar-name-input">角色名稱（中／英文皆可，最多 8 字元）</label>
+              <label for="avatar-name-input" id="avatar-name-label">角色名稱（中／英文皆可，最多 8 字元）</label>
               <span id="avatar-name-count" class="form-hint">0 / 8 字</span>
             </div>
             <input
@@ -703,27 +725,27 @@
           </div>
 
           <div class="onboarding-section">
-            <div class="onboarding-label"><span>身形輪廓特徵</span></div>
+            <div class="onboarding-label"><span id="avatar-build-label">身形輪廓特徵</span></div>
             <div class="choice-grid" id="avatar-build-choices"></div>
           </div>
 
           <div class="onboarding-section">
-            <div class="onboarding-label"><span>膚色</span></div>
+            <div class="onboarding-label"><span id="avatar-skin-label">膚色</span></div>
             <div class="swatch-row" id="avatar-skin-choices"></div>
           </div>
 
           <div class="onboarding-section">
-            <div class="onboarding-label"><span>髮型</span></div>
+            <div class="onboarding-label"><span id="avatar-hairstyle-label">髮型</span></div>
             <div class="choice-grid" id="avatar-hairstyle-choices"></div>
           </div>
 
           <div class="onboarding-section">
-            <div class="onboarding-label"><span>髮色</span></div>
+            <div class="onboarding-label"><span id="avatar-haircolor-label">髮色</span></div>
             <div class="swatch-row" id="avatar-haircolor-choices"></div>
           </div>
 
           <div class="onboarding-section">
-            <div class="onboarding-label"><span>居家上衣配色</span></div>
+            <div class="onboarding-label"><span id="avatar-outfit-label">居家上衣配色</span></div>
             <div class="swatch-row" id="avatar-outfit-choices"></div>
           </div>
 
@@ -744,7 +766,7 @@
             <div class="room-hud-pill" id="room-clock-pill" style="font-variant-numeric: tabular-nums;">🕒 12:00</div>
           </div>
           <div class="room-spectate-bar hidden" id="room-spectate-bar" role="region" aria-label="管理員參觀其他玩家房間（唯讀）">
-            <span class="room-spectate-badge" title="唯讀參觀模式，對方不會收到任何通知">👁️ 參觀中</span>
+            <span class="room-spectate-badge" id="room-spectate-badge" title="唯讀參觀模式，對方不會收到任何通知">👁️ 參觀中</span>
             <button type="button" class="room-tv-remote-btn" id="spectate-prev-btn" aria-label="上一位玩家房間" title="上一位玩家">◀</button>
             <select id="spectate-student-select" class="room-spectate-select" aria-label="切換要參觀的玩家房間"></select>
             <button type="button" class="room-tv-remote-btn" id="spectate-next-btn" aria-label="下一位玩家房間" title="下一位玩家">▶</button>
@@ -777,7 +799,7 @@
                 <line x1="9.5" y1="7" x2="15.5" y2="7"></line>
                 <line x1="9.5" y1="11" x2="14" y2="11"></line>
               </svg>
-              <span>記帳</span>
+              <span id="room-finance-label">記帳</span>
               <span class="rent-msg-badge hidden" id="room-rent-msg-badge">1</span>
             </button>
             <div class="room-xp-pill" id="room-xp-pill" title="完成英語接案任務即可獲得繪師 XP 升級稱號">
@@ -935,7 +957,7 @@
     <section id="home-view" class="hidden">
       <div class="map-header">
         <div>
-          <h1 class="page-title">接案工作台（英語任務）</h1>
+          <h1 class="page-title" id="home-page-title">接案工作台（英語任務）</h1>
           <p class="form-hint" id="home-reward-hint">完成練習並送交甲方老師驗收通過後，每單元可獲得 +200 英蚌報酬</p>
         </div>
         <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
@@ -981,7 +1003,7 @@
 
           <div class="quiz-pane">
             <div class="quiz-header-bar" id="quiz-header-bar">
-              <div class="quiz-progress-track" aria-label="測驗進度" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="quiz-progress-track" id="quiz-progress-track" aria-label="測驗進度" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                 <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
               </div>
               <button type="button" class="btn-ghost-sm" id="reset-quiz-btn">重新作答</button>
@@ -999,11 +1021,12 @@
     </section>
   </main>
 
-  <div role="region" aria-label="通知中心" class="toast-region">
+  <div role="region" id="toast-region" aria-label="通知中心" class="toast-region">
     <div id="rankup-toast" class="rankup-toast" popover="manual" role="status">
       <div class="rankup-toast-inner" id="rankup-toast-body"></div>
       <button
         type="button"
+        id="rankup-toast-close-btn"
         class="rankup-toast-close"
         popovertarget="rankup-toast"
         popovertargetaction="hide"
@@ -1014,6 +1037,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261122a"></script>
+  <script type="module" src="./app-main.js?v=20261122b"></script>
 </body>
 </html>

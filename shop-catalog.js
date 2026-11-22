@@ -1,12 +1,87 @@
+import { bi, isEn } from "./i18n.js?v=20261122b";
+
 export const SHOP_CATEGORIES = [
-  { id: "all", label: "全部商品" },
-  { id: "paint", label: "牆面粉刷" },
-  { id: "textile", label: "床單地毯" },
-  { id: "shirt", label: "上衣穿搭" },
-  { id: "pants", label: "褲款下著" },
-  { id: "decor", label: "生活家具" },
-  { id: "gear", label: "接案設備" }
+  { id: "all", label: "全部商品", labelEn: "All Items" },
+  { id: "paint", label: "牆面粉刷", labelEn: "Wall Paint" },
+  { id: "textile", label: "床單地毯", labelEn: "Bedding & Rugs" },
+  { id: "shirt", label: "上衣穿搭", labelEn: "Tops" },
+  { id: "pants", label: "褲款下著", labelEn: "Bottoms" },
+  { id: "decor", label: "生活家具", labelEn: "Furniture & Decor" },
+  { id: "gear", label: "接案設備", labelEn: "Studio Gear" }
 ];
+
+export const SHOP_CATALOG_EN = {
+  wall_oat: { name: "Oat Cream Wall Paint", desc: "Warm cream paint & repaint labor (charged per repaint)." },
+  wall_sage: { name: "Sage Green Wall Paint", desc: "Soft Morandi sage paint & labor (charged per repaint)." },
+  wall_mist: { name: "Morning Mist Blue Paint", desc: "Matte blue-gray wall paint & labor (charged per repaint)." },
+  wall_blush: { name: "Terracotta Blush Paint", desc: "Creamy blush terracotta paint & labor (charged per repaint)." },
+  wall_lavender: { name: "Dusk Lavender Paint", desc: "Calming dusty lavender wall paint & labor (charged per repaint)." },
+  sheet_terracotta: { name: "Warm Terracotta Bedding", desc: "Washed terracotta duvet with cream sheets. Free to swap anytime." },
+  sheet_sage: { name: "Forest Sage Bedding", desc: "Fresh sage cotton quilt with soft green pillowcases for restful sleep." },
+  sheet_sakura: { name: "Blush Sakura Bedding", desc: "Gentle sakura pink cotton bedding with airy cloud pillows." },
+  sheet_midnight: { name: "Midnight Starlight Bedding", desc: "Deep indigo-navy bedding with subtle crescent embroidery." },
+  rug_nordic: { name: "Nordic Diamond Woven Rug", desc: "Scandinavian oatmeal-gray geometric area rug with cozy texture." },
+  rug_terracotta: { name: "Boho Tassel Loom Rug", desc: "Warm terracotta flatweave rug with braided fringe edges." },
+  rug_moss: { name: "Moss Green Plush Round Rug", desc: "Fluffy moss-green circular rug that softens studio acoustics." },
+  rug_checkered: { name: "Retro Mocha Checker Rug", desc: "Espresso & cream woven checkerboard rug for a vintage vibe." },
+  shirt_linen_oat: { name: "Oatmeal Linen Shirt", desc: "Breathable natural oat linen button-down with a crisp white collar." },
+  shirt_sage_tee: { name: "Sage Relaxed Cotton Tee", desc: "Oversized washed sage tee over a crisp cream base layer." },
+  shirt_chambray_blue: { name: "Washed Chambray Shirt", desc: "Relaxed indigo-washed denim shirt with an easy studio feel." },
+  shirt_sand_cardigan: { name: "Warm Sand Knit Cardigan", desc: "Cozy oat cardigan layered over a cream tee for long drawing sessions." },
+  shirt_moss_raglan: { name: "Forest Raglan 3/4 Sleeve", desc: "Off-white body with deep forest green raglan sleeves & trim." },
+  shirt_terracotta_knit: { name: "Terracotta Striped Knit", desc: "Warm terracotta knit sweater accented with a cream chest stripe." },
+  shirt_mist_hoodie: { name: "Misty Blue Pullover Hoodie", desc: "Soft blue-gray cotton hoodie made for late-night sketching." },
+  shirt_olive_chore: { name: "Olive Twill Chore Jacket", desc: "Structured olive canvas jacket paired with a clean beige tee." },
+  shirt_espresso_waffle: { name: "Cocoa Waffle Long-Sleeve", desc: "Rich espresso waffle-knit top with a warm almond crew neck." },
+  shirt_blush_linen: { name: "Dusty Rose Linen Top", desc: "Muted rose pure-cotton linen shirt that drapes softly." },
+  pants_raw_denim: { name: "Raw Selvedge Denim", desc: "Classic dark-indigo jeans with clean cuffed hems." },
+  pants_washed_denim: { name: "Sky Washed Jeans", desc: "Light indigo straight-fit denim that matches any earth-tone top." },
+  pants_khaki_chino: { name: "Khaki Twill Chinos", desc: "Tailored cotton chinos paired with a slim dark-brown belt." },
+  pants_olive_cargo: { name: "Olive Relaxed Cargo Pants", desc: "Easygoing olive utility trousers built for studio comfort." },
+  pants_oat_linen: { name: "Oatmeal Linen Wide Trousers", desc: "Breezy drawstring linen pants with relaxed magazine flair." },
+  pants_mocha_corduroy: { name: "Mocha Corduroy Trousers", desc: "Fine-wale mocha corduroy pants that feel cozy all afternoon." },
+  pants_slate_sweatpants: { name: "Heathered Slate Joggers", desc: "Soft athletic cotton joggers made for stretching or sofa lounging." },
+  pants_charcoal_pleated: { name: "Charcoal Pleated Slacks", desc: "Draped charcoal tailored trousers with effortless urban polish." },
+  pants_sand_shorts: { name: "Sand Linen Knee Shorts", desc: "Breezy knee-length linen shorts for coffee breaks and errands." },
+  pants_forest_shorts: { name: "Pine Outdoor Utility Shorts", desc: "Breathable pine-green shorts with cream drawstring ties." },
+  desk_plant: { name: "Monstera Desk Plant", desc: "Cute terracotta Monstera pot for the corner of your work desk." },
+  wall_poster: { name: "Framed Wall Poster", desc: "Wooden-framed landscape artwork (supports custom cropped photos!)." },
+  coat_rack: { name: "Standing Coat Rack", desc: "Solid oak coat tree by the door for tote bags, scarves & caps." },
+  bed_lamp: { name: "Warm Bedside Lamp", desc: "Glowing bedside lamp & mini nightstand; click to toggle." },
+  floor_plant: { name: "Fiddle-Leaf Fig Planter", desc: "Woven-basket indoor fig tree bringing fresh greenery to your room." },
+  cool_keyboard: { name: "RGB Mechanical Keyboard", desc: "Upgrade your desk setup with a glowing mechanical keyboard." },
+  coffee_bar: { name: "Pour-Over Coffee Bar", desc: "Compact wooden brew station with gooseneck kettle for fresh fuel." },
+  ergo_chair: { name: "Ergonomic Studio Chair", desc: "High-back breathable lumbar chair built for marathon commissions." },
+  vinyl_player: { name: "Retro Vinyl Console", desc: "Walnut turntable cabinet along the wall; click to spin records." },
+  cozy_sofa: { name: "Cozy Fabric Sofa", desc: "Plush two-seater fabric couch perfect for relaxing or watching TV." },
+  smart_toilet: { name: "Smart Heated Bidet Toilet", desc: "Upgrades the bathroom fixture with warm seat & subtle nightlight." },
+  dual_monitor: { name: "Color-Calibrated Dual Display", desc: "Adds a vertical color-reference display next to your iMac." },
+  wall_tv: { name: "Wall-Mounted Smart TV", desc: "Slim smart TV on your wall—click anytime to watch YouTube." },
+  hamster_cage: { name: "Mochi the Hamster & Side Table", desc: "Adds a two-drawer side table beside your desk with Mochi running happily in his wheel!" },
+  orange_cat: { name: "Ginger Cat & Pet Bed", desc: "Adopt an adorable orange tabby roommate who lounges in his own bed." },
+  dolby_atmos: { name: "Dolby Atmos Surround System", desc: "Unlocked with TV + Sofa! Includes a movable front soundbar/sub and rear towers." }
+};
+
+export function getShopCategoryLabel(cat) {
+  if (!cat) return "";
+  return isEn() ? (cat.labelEn || cat.label) : cat.label;
+}
+
+export function getShopItemName(item) {
+  if (!item) return "";
+  if (isEn()) {
+    return item.nameEn || SHOP_CATALOG_EN[item.id]?.name || item.name || item.id;
+  }
+  return item.name || item.id;
+}
+
+export function getShopItemDesc(item) {
+  if (!item) return "";
+  if (isEn()) {
+    return item.descEn || SHOP_CATALOG_EN[item.id]?.desc || item.desc || "";
+  }
+  return item.desc || "";
+}
 
 export const DEFAULT_WALL_COLOR = "#f3eadc";
 export const DEFAULT_BED_SHEET = "default";
@@ -867,10 +942,13 @@ export function getMissingShopPrerequisites(item, owned = {}) {
   }
   return item.requiresOwned
     .filter(reqId => owned?.[reqId] !== true)
-    .map(reqId => ({
-      id: reqId,
-      name: getShopItem(reqId)?.name || reqId
-    }));
+    .map(reqId => {
+      const reqItem = getShopItem(reqId);
+      return {
+        id: reqId,
+        name: reqItem ? getShopItemName(reqItem) : bi(reqId, reqId)
+      };
+    });
 }
 
 export function isSellableShopItem(item) {

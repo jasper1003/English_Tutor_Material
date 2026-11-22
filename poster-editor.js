@@ -1,3 +1,5 @@
+import { bi } from "./i18n.js?v=20261122b";
+
 /**
  * Wall Art Poster Customizer & Interactive 11:15 Portrait Cropper Controller
  */
@@ -171,11 +173,11 @@ export function createPosterCustomizer({
     posterCropCanvas.classList.toggle("is-dragging", cropState.dragging);
 
     if (cropState.isNewDraft) {
-      posterModePill.textContent = "✂️ 裁切自訂照片中（確認後將掛上牆面）";
+      posterModePill.textContent = bi("✂️ 裁切自訂照片中（確認後將掛上牆面）", "✂️ Cropping custom photo (confirm to hang)");
     } else if (hasImg && cropState.isSavedCustom) {
-      posterModePill.textContent = "🖼️ 目前使用：你的自訂掛畫照片";
+      posterModePill.textContent = bi("🖼️ 目前使用：你的自訂掛畫照片", "🖼️ Active: Your custom wall poster");
     } else {
-      posterModePill.textContent = "🎨 目前顯示：預設山水畫";
+      posterModePill.textContent = bi("🎨 目前顯示：預設山水畫", "🎨 Active: Default landscape painting");
     }
 
     const ctx = posterCropCanvas.getContext("2d");
@@ -213,7 +215,10 @@ export function createPosterCustomizer({
     };
     img.onerror = () => {
       cleanupPosterObjectUrl();
-      showFeedback("poster-feedback", "error", "無法讀取這張圖片檔案，請改選 JPG、PNG 或 WebP 格式的照片。");
+      showFeedback("poster-feedback", "error", bi(
+        "無法讀取這張圖片檔案，請改選 JPG、PNG 或 WebP 格式的照片。",
+        "Could not read this image. Please choose a JPG, PNG, or WebP file."
+      ));
     };
     img.src = src;
   }
@@ -222,7 +227,10 @@ export function createPosterCustomizer({
     if (!file) return;
     clearFeedback("poster-feedback");
     if (file.type && !file.type.startsWith("image/")) {
-      showFeedback("poster-feedback", "error", "請選擇圖片檔案（JPG、PNG、WebP 等）。");
+      showFeedback("poster-feedback", "error", bi(
+        "請選擇圖片檔案（JPG、PNG、WebP 等）。",
+        "Please select an image file (JPG, PNG, WebP, etc.)."
+      ));
       return;
     }
     const nextUrl = URL.createObjectURL(file);
@@ -246,7 +254,10 @@ export function createPosterCustomizer({
       if (out.length <= POSTER_MAX_DATA_URL_LEN) return out;
     }
     if (out.length <= 145000) return out;
-    throw new Error("裁切後照片體積過大，請換一張照片或稍微縮小再試。");
+    throw new Error(bi(
+      "裁切後照片體積過大，請換一張照片或稍微縮小再試。",
+      "Cropped image is too large. Please pick another image or zoom slightly."
+    ));
   }
 
   async function savePosterUrl(nextPosterUrl) {
@@ -377,7 +388,7 @@ export function createPosterCustomizer({
       const dataUrl = exportCroppedDataUrl();
       await savePosterUrl(dataUrl);
     } catch (err) {
-      showFeedback("poster-feedback", "error", err?.message || "照片匯出失敗，請重試。");
+      showFeedback("poster-feedback", "error", err?.message || bi("照片匯出失敗，請重試。", "Failed to export image. Please try again."));
     }
   });
 
@@ -387,12 +398,13 @@ export function createPosterCustomizer({
       await savePosterUrl("");
     } else {
       loadPreviewSrc("", { isNewDraft: false, isSavedCustom: false });
-      showFeedback("poster-feedback", "success", "已恢復為預設山水畫預覽。");
+      showFeedback("poster-feedback", "success", bi("已恢復為預設山水畫預覽。", "Restored default landscape preview."));
     }
   });
 
   return {
     openPosterCustomizer,
-    cleanupPosterObjectUrl
+    cleanupPosterObjectUrl,
+    refreshLanguage: syncControlsUI
   };
 }

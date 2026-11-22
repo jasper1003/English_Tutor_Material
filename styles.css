@@ -3998,6 +3998,35 @@ dialog.settings-dialog::backdrop {
   }
 }
 
+.auth-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.auth-card-top .auth-title {
+  margin-bottom: 0.35rem;
+}
+
+.auth-lang-btn {
+  flex: 0 0 auto;
+  min-block-size: 32px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.settings-lang-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.settings-lang-chip {
+  min-inline-size: 112px;
+  justify-content: center;
+}
+
 .hidden {
   display: none !important;
 }

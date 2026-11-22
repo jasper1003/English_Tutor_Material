@@ -1,4 +1,5 @@
-import { escapeHtml, speakWord } from "./app-helpers.js?v=20261121t";
+import { escapeHtml, speakWord } from "./app-helpers.js?v=20261122b";
+import { bi } from "./i18n.js?v=20261122b";
 
 const HINTS_PREF_KEY = "reading_vocab_hints_on";
 const VALID_MARK_VALUES = ["yellow", "mint", "blue"];
@@ -428,7 +429,7 @@ export function renderInteractiveReadingPassage({
           <strong class="reading-popover-word">${escapeHtml(vocabItem.Word || "")}</strong>
           ${vocabItem.POS ? `<span class="pos-badge">${escapeHtml(vocabItem.POS)}</span>` : ""}
         </div>
-        <button type="button" class="reading-popover-speak" aria-label="朗讀 ${escapeHtml(vocabItem.Word || "單字")}">🔊</button>
+        <button type="button" class="reading-popover-speak" aria-label="${bi(`朗讀 ${escapeHtml(vocabItem.Word || "單字")}`, `Pronounce ${escapeHtml(vocabItem.Word || "word")}`)}">🔊</button>
       </div>
       <div class="reading-popover-meaning">${escapeHtml(vocabItem.Meaning || "")}</div>
     `;
@@ -460,15 +461,15 @@ export function renderInteractiveReadingPassage({
 
   if (toolsEl) {
     toolsEl.innerHTML = `
-      <div class="reading-tools-bar" role="toolbar" focusgroup="toolbar wrap" aria-label="閱讀劃記與單字提示工具" aria-controls="reading-body">
-        <button type="button" class="reading-icon-btn" data-action="toggle-pen" aria-pressed="true" aria-label="黃色螢光筆畫線" title="黃色螢光筆（點擊句子畫線／取消）">
+      <div class="reading-tools-bar" role="toolbar" focusgroup="toolbar wrap" aria-label="${bi("閱讀劃記與單字提示工具", "Reading highlighter and vocabulary hint tools")}" aria-controls="reading-body">
+        <button type="button" class="reading-icon-btn" data-action="toggle-pen" aria-pressed="true" aria-label="${bi("黃色螢光筆畫線", "Yellow highlighter")}" title="${bi("黃色螢光筆（點擊句子畫線／取消）", "Yellow highlighter (click sentence to highlight/unhighlight)")}">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="m9 11-6 6v3h9l3-3"></path>
             <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path>
             <path d="M3 21h9" stroke="#eab308" stroke-width="2.6"></path>
           </svg>
         </button>
-        <button type="button" class="reading-icon-btn" data-action="toggle-vocab" aria-pressed="${hintsEnabled ? "true" : "false"}" aria-label="切換核心單字提示" title="核心單字提示（開／關）">
+        <button type="button" class="reading-icon-btn" data-action="toggle-vocab" aria-pressed="${hintsEnabled ? "true" : "false"}" aria-label="${bi("切換核心單字提示", "Toggle core vocabulary hints")}" title="${bi("核心單字提示（開／關）", "Core vocabulary hints (On/Off)")}">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
             <path d="M9 18h6"></path>
@@ -476,7 +477,7 @@ export function renderInteractiveReadingPassage({
           </svg>
         </button>
         <span class="reading-tool-sep" role="separator" aria-orientation="vertical"></span>
-        <button type="button" class="reading-icon-btn" data-action="clear-marks" aria-label="清除全部畫線" title="清除全部畫線">
+        <button type="button" class="reading-icon-btn" data-action="clear-marks" aria-label="${bi("清除全部畫線", "Clear all highlights")}" title="${bi("清除全部畫線", "Clear all highlights")}">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
             <path d="M22 21H7"></path>
@@ -496,7 +497,9 @@ export function renderInteractiveReadingPassage({
       penEnabled = !penEnabled;
       bodyEl.dataset.penMode = penEnabled ? "yellow" : "off";
       togglePenBtn.setAttribute("aria-pressed", String(penEnabled));
-      announceStatus(penEnabled ? "已開啟黃色螢光筆" : "已暫停螢光筆畫線");
+      announceStatus(penEnabled
+        ? bi("已開啟黃色螢光筆", "Yellow highlighter enabled")
+        : bi("已暫停螢光筆畫線", "Highlighter paused"));
     });
 
     const toggleVocabBtn = toolsEl.querySelector('[data-action="toggle-vocab"]');
@@ -506,7 +509,9 @@ export function renderInteractiveReadingPassage({
       bodyEl.dataset.vocabHints = hintsEnabled ? "on" : "off";
       toggleVocabBtn.setAttribute("aria-pressed", String(hintsEnabled));
       if (!hintsEnabled) hidePopover();
-      announceStatus(hintsEnabled ? "已開啟核心單字提示" : "已關閉核心單字提示");
+      announceStatus(hintsEnabled
+        ? bi("已開啟核心單字提示", "Vocabulary hints enabled")
+        : bi("已關閉核心單字提示", "Vocabulary hints hidden"));
     });
 
     const clearBtn = toolsEl.querySelector('[data-action="clear-marks"]');
@@ -516,7 +521,7 @@ export function renderInteractiveReadingPassage({
       bodyEl.querySelectorAll(".reading-sentence[data-mark]").forEach(el => {
         el.removeAttribute("data-mark");
       });
-      announceStatus("已清除本篇所有證據畫線");
+      announceStatus(bi("已清除本篇所有證據畫線", "Cleared all highlights in this passage"));
     });
   }
 

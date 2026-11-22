@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261121t";
+} from "./room-scene.js?v=20261122b";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -53,12 +53,15 @@ import {
   DEFAULT_SHIRT_STYLE,
   DEFAULT_PANTS_STYLE,
   applyRemoteShopConfig,
+  getShopCategoryLabel,
   getShopItem,
+  getShopItemName,
+  getShopItemDesc,
   getMissingShopPrerequisites,
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261121t";
+} from "./shop-catalog.js?v=20261122b";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -66,7 +69,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261121t";
+} from "./room-grid.js?v=20261122b";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -88,9 +91,18 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261121t";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261119y";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261121t";
+} from "./app-helpers.js?v=20261122b";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261122b";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261122b";
+import {
+  isEn,
+  bi,
+  getUiLanguage,
+  setUiLanguage,
+  applyStaticDomTranslations
+} from "./i18n.js?v=20261122b";
+
+applyStaticDomTranslations();
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
@@ -337,9 +349,12 @@ function showRankUpToast(prevProgress, nextProgress) {
   if (!toastEl || !bodyEl) return;
 
   toastPriorFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  const prevLabel = prevProgress ? `${prevProgress.title} → ` : "";
+  const prevTitle = prevProgress
+    ? (isEn() ? (prevProgress.titleEn || prevProgress.title) : prevProgress.title)
+    : "";
+  const prevLabel = prevTitle ? `${prevTitle} → ` : "";
   bodyEl.innerHTML = `
-    <div><strong>${escapeHtml(nextProgress.emblem)} 聲望晉升！${escapeHtml(prevLabel)}Lv.${nextProgress.level}【${escapeHtml(nextProgress.title)}】</strong></div>
+    <div><strong>${escapeHtml(nextProgress.emblem)} ${bi("聲望晉升！", "Rank Up!")} ${escapeHtml(prevLabel)}Lv.${nextProgress.level}【${escapeHtml(nextProgress.title)}】</strong></div>
     <div>${escapeHtml(nextProgress.subtitle)}</div>
   `;
 
@@ -353,7 +368,9 @@ function showRankUpToast(prevProgress, nextProgress) {
     toastEl.classList.add("is-open");
   }
 
-  const spokenText = `繪師聲望升級，${nextProgress.level}級稱號，${nextProgress.title}。${nextProgress.subtitle}`;
+  const spokenText = isEn()
+    ? `Artist rank up! Level ${nextProgress.level}, ${nextProgress.title}. ${nextProgress.subtitle}`
+    : `繪師聲望升級，${nextProgress.level}級稱號，${nextProgress.title}。${nextProgress.subtitle}`;
   if (typeof navigator.ariaNotify === "function") {
     navigator.ariaNotify(spokenText);
   } else if (liveEl) {
@@ -399,14 +416,17 @@ function syncXpProgressUI({ allowCelebrate = false, overrideXp = null } = {}) {
   if (roomSubEl) roomSubEl.textContent = progress.subtitle;
   if (roomFillEl) roomFillEl.style.width = `${progress.progressPct}%`;
   if (roomPillEl) {
-    roomPillEl.title = `累積 ${progress.totalXp} XP · ${progress.subtitle}（再 +${progress.xpToNextLevel} XP → Lv.${progress.level + 1} ${progress.nextTitle}）`;
+    roomPillEl.title = bi(
+      `累積 ${progress.totalXp} XP · ${progress.subtitle}（再 +${progress.xpToNextLevel} XP → Lv.${progress.level + 1} ${progress.nextTitle}）`,
+      `Total ${progress.totalXp} XP · ${progress.subtitle} (+${progress.xpToNextLevel} XP → Lv.${progress.level + 1} ${progress.nextTitle})`
+    );
   }
 
   const bannerEl = document.getElementById("home-xp-banner");
   if (bannerEl && !isSpectatingPreview) {
     const nextHint = progress.isMaxNamedRank && progress.level >= XP_RANK_LADDER.length
-      ? `總計 ${progress.totalXp} XP · 最高段位`
-      : `→ Lv.${progress.level + 1} ${escapeHtml(progress.nextTitle)}（+${progress.xpToNextLevel} XP）`;
+      ? bi(`總計 ${progress.totalXp} XP · 最高段位`, `Total ${progress.totalXp} XP · Max Rank`)
+      : `→ Lv.${progress.level + 1} ${escapeHtml(progress.nextTitle)} (+${progress.xpToNextLevel} XP)`;
     bannerEl.innerHTML = `
       <div class="home-xp-rank-col">
         <div class="home-xp-emblem" aria-hidden="true">${escapeHtml(progress.emblem)}</div>
@@ -420,10 +440,10 @@ function syncXpProgressUI({ allowCelebrate = false, overrideXp = null } = {}) {
       </div>
       <div class="home-xp-meter-col">
         <div class="home-xp-meter-meta">
-          <span>總計 ${progress.totalXp} XP</span>
+          <span>${bi(`總計 ${progress.totalXp} XP`, `Total ${progress.totalXp} XP`)}</span>
           <span>${progress.xpIntoLevel}/${progress.xpPerLevel}</span>
         </div>
-        <div class="home-xp-bar-track" role="progressbar" aria-label="繪師聲望升級進度" aria-valuemin="0" aria-valuemax="${progress.xpPerLevel}" aria-valuenow="${progress.xpIntoLevel}">
+        <div class="home-xp-bar-track" role="progressbar" aria-label="${bi("繪師聲望升級進度", "Artist XP progress")}" aria-valuemin="0" aria-valuemax="${progress.xpPerLevel}" aria-valuenow="${progress.xpIntoLevel}">
           <div class="home-xp-bar-fill" style="width: ${progress.progressPct}%;"></div>
         </div>
         <div class="form-hint" style="margin: 0; font-size: 0.76rem;">${nextHint}</div>
@@ -501,9 +521,9 @@ async function setLessonSubmitted(dateStr, nextSubmitted) {
 }
 
 function getRoleLabel(role) {
-  if (role === "super_admin") return "超級管理員";
-  if (role === "admin") return "管理員";
-  return "學生";
+  if (role === "super_admin") return bi("超級管理員", "Super Admin");
+  if (role === "admin") return bi("管理員", "Admin");
+  return bi("學生", "Student");
 }
 
 function getRoleBadgeClass(role) {
@@ -518,7 +538,7 @@ function formatDisplayName(user, profileData) {
   const fromAuth = (user?.displayName || "").trim();
   if (fromAuth) return fromAuth;
   const email = (user?.email || "").trim();
-  return email ? email.split("@")[0] : "使用者";
+  return email ? email.split("@")[0] : bi("使用者", "User");
 }
 
 async function resolveUserRole(user) {
@@ -539,10 +559,14 @@ async function resolveUserRole(user) {
 
 function formatRentCountdown(msRemaining, compact = false) {
   if (msRemaining <= 0) {
-    return compact ? "已到期" : `已到期（應繳 ${MONTHLY_RENT_CLAMS} 英蚌）`;
+    return compact
+      ? bi("已到期", "Due")
+      : bi(`已到期（應繳 ${MONTHLY_RENT_CLAMS} 英蚌）`, `Overdue (${MONTHLY_RENT_CLAMS} Clams due)`);
   }
   const days = Math.max(1, Math.ceil(msRemaining / 86400000));
-  return compact ? `剩 ${days} 天` : `${days} 天`;
+  return compact
+    ? bi(`剩 ${days} 天`, `${days}d left`)
+    : bi(`${days} 天`, `${days} day(s)`);
 }
 
 function buildTransactionPayload(txData) {
@@ -657,7 +681,7 @@ function updateHeaderAccountUI(user, role, displayName, clams = currentUserProfi
 
   badgeEl.textContent = getRoleLabel(role);
   badgeEl.className = getRoleBadgeClass(role);
-  nameEl.textContent = displayName || user.email || "帳號";
+  nameEl.textContent = displayName || user.email || bi("帳號", "Account");
   clamsEl.textContent = role === "super_admin"
     ? "∞"
     : String(Math.max(0, Math.trunc(Number(clams ?? STARTER_CLAMS))));
@@ -665,8 +689,12 @@ function updateHeaderAccountUI(user, role, displayName, clams = currentUserProfi
   const isTeacher = role === "super_admin" || role === "admin";
   if (walletChip) {
     walletChip.classList.toggle("is-admin-action", isTeacher);
-    walletChip.title = isTeacher ? "點擊開啟案主驗收與發款台" : "目前持有的英蚌餘額";
-    walletChip.setAttribute("aria-label", isTeacher ? "開啟案主驗收與發款台" : "目前持有的英蚌餘額");
+    walletChip.title = isTeacher
+      ? bi("點擊開啟案主驗收與發款台", "Click to open Client Review & Payout Desk")
+      : bi("目前持有的英蚌餘額", "Current Clam Balance");
+    walletChip.setAttribute("aria-label", isTeacher
+      ? bi("開啟案主驗收與發款台", "Open Client Review & Payout Desk")
+      : bi("目前持有的英蚌餘額", "Current Clam Balance"));
   }
   accountEl.classList.remove("hidden");
 }
@@ -729,7 +757,9 @@ function syncEditModeToolbarUI(state = null) {
   toolbar?.classList.toggle("hidden", !active);
   layoutBtn?.classList.toggle("is-active", active);
   if (layoutBtn) {
-    layoutBtn.title = active ? "結束編輯家具擺設" : "編輯家具擺設（網格移動與旋轉）";
+    layoutBtn.title = active
+      ? bi("結束編輯家具擺設", "Finish Editing Layout")
+      : bi("編輯家具擺設（網格移動與旋轉）", "Edit Furniture Layout (Grid Move & Rotate)");
   }
   if (active) {
     closeIntroStoryBanner({ markSeen: false });
@@ -740,23 +770,23 @@ function syncEditModeToolbarUI(state = null) {
   actionsEl?.classList.toggle("hidden", !hasSelected);
   if (confirmBtn) {
     confirmBtn.disabled = !state?.canPlace;
-    confirmBtn.title = "確認將目前家具放置在此網格位置 (快捷鍵 Enter)";
+    confirmBtn.title = bi("確認將目前家具放置在此網格位置 (快捷鍵 Enter)", "Place furniture here (Enter)");
   }
   if (cancelBtn) {
     cancelBtn.title = state?.fromParcel
-      ? "取消放置並放回門口紙箱 (快捷鍵 Esc)"
-      : "取消修改，回到原本狀態 (快捷鍵 Esc)";
+      ? bi("取消放置並放回門口紙箱 (快捷鍵 Esc)", "Cancel and return parcel to doorway (Esc)")
+      : bi("取消修改，回到原本狀態 (快捷鍵 Esc)", "Cancel edit and revert (Esc)");
   }
 
   if (statusEl) {
     if (hasSelected) {
       const dimsNote = state.gridDims ? ` · ${state.gridDims}` : "";
       const validNote = state.canPlace
-        ? "✅ 綠格可放置（拖曳改位置・按 ←/→ 旋轉）"
-        : "⚠️ 空間衝突，拖曳至綠格或按 ←/→ 轉向";
-      statusEl.textContent = `${state.fromParcel ? "📦 拆箱擺放" : "已選取"}：${state.selectedName}${dimsNote}（${validNote}）`;
+        ? bi("✅ 綠格可放置（拖曳改位置・按 ←/→ 旋轉）", "✅ Valid green cells (Drag to move · ←/→ to rotate)")
+        : bi("⚠️ 空間衝突，拖曳至綠格或按 ←/→ 轉向", "⚠️ Blocked — drag to green cells or ←/→ to rotate");
+      statusEl.textContent = `${state.fromParcel ? bi("📦 拆箱擺放", "📦 Unboxing") : bi("已選取", "Selected")}: ${state.selectedName}${dimsNote}（${validNote}）`;
     } else {
-      statusEl.textContent = "點擊傢俱以編輯傢俱位置";
+      statusEl.textContent = bi("點擊傢俱以編輯傢俱位置", "Click any furniture piece to move or rotate");
     }
   }
 }
@@ -788,24 +818,36 @@ function setLocalIntroStorySeen(uid, seen) {
 }
 
 function buildIntroStorySteps(profile = currentUserProfile) {
-  const artistName = String(profile?.avatar?.name || profile?.displayName || "你").trim() || "你";
+  const artistName = String(profile?.avatar?.name || profile?.displayName || bi("你", "you")).trim() || bi("你", "you");
   const rentAmount = Math.max(1, Math.trunc(Number(MONTHLY_RENT_CLAMS || 300)));
   return [
     {
-      speaker: "🏠 搬入第一天",
-      text: "總算搬進這間屬於自己的單人租屋處了！雖然家具還很陽春，但從今天開始，這裡就是你的接案小天地。"
+      speaker: bi("🏠 搬入第一天", "🏠 Moving-In Day"),
+      text: bi(
+        "總算搬進這間屬於自己的單人租屋處了！雖然家具還很陽春，但從今天開始，這裡就是你的接案小天地。",
+        "You finally moved into your own studio apartment! The room is still simple, but starting today, this is your freelance art headquarters."
+      )
     },
     {
-      speaker: `🎨 ${artistName}的獨白`,
-      text: `作為剛起步的外包接案繪師，一個人在外租屋處處都要花錢——每個月還得準時繳 ${rentAmount} 英蚌房租。`
+      speaker: bi(`🎨 ${artistName}的獨白`, `🎨 ${artistName}'s Note`),
+      text: bi(
+        `作為剛起步的外包接案繪師，一個人在外租屋處處都要花錢——每個月還得準時繳 ${rentAmount} 英蚌房租。`,
+        `Living on your own as a rookie freelance illustrator isn't cheap—every month, ${rentAmount} Clams of rent comes due like clockwork.`
+      )
     },
     {
-      speaker: `🎨 ${artistName}的獨白`,
-      text: "還好有甲方案主持續發來跨國繪圖與英語配合委託！只要完成任務並通過驗收，就能賺進報酬「英蚌」與繪師聲望經驗。"
+      speaker: bi(`🎨 ${artistName}的獨白`, `🎨 ${artistName}'s Note`),
+      text: bi(
+        "還好有甲方案主持續發來跨國繪圖與英語配合委託！只要完成任務並通過驗收，就能賺進報酬「英蚌」與繪師聲望經驗。",
+        "Thankfully, overseas clients are sending English commissions your way! Finish quests and pass client review to earn Clams and XP."
+      )
     },
     {
-      speaker: "💻 準備開工",
-      text: "房租、生活開銷和想添購的房間家具，全都要靠接案賺錢來支撐——現在就點擊房內的電腦桌，打開工作台開始接第一筆案子吧！"
+      speaker: bi("💻 準備開工", "💻 Time to Work"),
+      text: bi(
+        "房租、生活開銷和想添購的房間家具，全都要靠接案賺錢來支撐——現在就點擊房內的電腦桌，打開工作台開始接第一筆案子吧！",
+        "Rent, daily bills, and dream studio upgrades all depend on your craft—click the desk computer anytime to open your quest board and take your first gig!"
+      )
     }
   ];
 }
@@ -832,7 +874,9 @@ function renderIntroStoryStep() {
   }
   if (nextBtn) {
     const isLast = introStoryIndex >= introStorySteps.length - 1;
-    nextBtn.textContent = isLast ? "✓ 開始接案生活" : "下一步 ▸";
+    nextBtn.textContent = isLast
+      ? bi("✓ 開始接案生活", "✓ Start Freelancing")
+      : bi("下一步 ▸", "Next ▸");
   }
 }
 
@@ -987,7 +1031,7 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
   const owned = normalizeOwnedItems(profile?.ownedItems);
   const avatarCfg = profile?.avatar || {
     ...DEFAULT_AVATAR,
-    name: profile?.displayName || (profile?.email ? profile.email.split("@")[0] : "繪師")
+    name: profile?.displayName || (profile?.email ? profile.email.split("@")[0] : bi("繪師", "Artist"))
   };
   const isSpectatingTarget = Boolean(spectatingStudentUid);
   const targetCharacterId = String(profile?.uid || currentUser?.uid || avatarCfg.name || "self").trim() || "self";
@@ -1104,19 +1148,22 @@ function populateSpectateStudentSelect(selectedUid) {
   if (candidates.length === 0) {
     const opt = document.createElement("option");
     opt.value = "";
-    opt.textContent = "尚無其他玩家帳號";
+    opt.textContent = bi("尚無其他玩家帳號", "No other accounts yet");
     selEl.appendChild(opt);
     return;
   }
   candidates.forEach(stu => {
     const opt = document.createElement("option");
     opt.value = stu.uid;
-    const labelName = stu.avatar?.name || stu.displayName || stu.email || "繪師";
+    const labelName = stu.avatar?.name || stu.displayName || stu.email || bi("繪師", "Artist");
     const lv = resolveXpProgress(stu.xp ?? 0, XP_PER_LEVEL).level;
     const owned = normalizeOwnedItems(stu.ownedItems);
     const itemCount = Object.values(owned).filter(Boolean).length;
     const persona = buildCharacterPersona(stu.uid, stu.avatar || { name: labelName }, owned);
-    opt.textContent = `${labelName}（${persona.label}）· Lv.${lv} · ${itemCount}件`;
+    opt.textContent = bi(
+      `${labelName}（${persona.label}）· Lv.${lv} · ${itemCount}件`,
+      `${labelName} (${persona.label}) · Lv.${lv} · ${itemCount} items`
+    );
     selEl.appendChild(opt);
   });
   if (selectedUid && candidates.some(s => s.uid === selectedUid)) {
@@ -1190,7 +1237,7 @@ async function openLesson(dateStr) {
     try {
       await sheetsStage2Promise;
     } catch (err) {
-      alert(`無法載入單元單字與測驗資料：${err?.message || err}`);
+      alert(bi(`無法載入單元單字與測驗資料：${err?.message || err}`, `Failed to load lesson vocabulary & quiz: ${err?.message || err}`));
       return;
     }
   }
@@ -1231,7 +1278,10 @@ function renderAppState() {
 
   if (sheetsError) {
     hideAllPrimaryScreens();
-    errorEl.textContent = `載入失敗：${sheetsError.message}。請確認 Google 試算表已設為「知道連結的使用者皆可檢視」，且分頁名稱為 Lessons、Vocab、Quiz。`;
+    errorEl.textContent = bi(
+      `載入失敗：${sheetsError.message}。請確認 Google 試算表已設為「知道連結的使用者皆可檢視」，且分頁名稱為 Lessons、Vocab、Quiz。`,
+      `Load error: ${sheetsError.message}. Verify the Google Sheet is shared as "Anyone with the link can view" with tabs Lessons, Vocab, and Quiz.`
+    );
     errorEl.classList.remove("hidden");
     return;
   }
@@ -1272,7 +1322,10 @@ function applyRemoteSettings(rows = []) {
   }
   const homeRewardHint = document.getElementById("home-reward-hint");
   if (homeRewardHint) {
-    homeRewardHint.textContent = `完成任務即可自動獲得對應 XP；送交甲方老師驗收通過後，每單元再領 +${UNIT_REWARD_CLAMS} 英蚌報酬`;
+    homeRewardHint.textContent = bi(
+      `完成任務即可自動獲得對應 XP；送交甲方老師驗收通過後，每單元再領 +${UNIT_REWARD_CLAMS} 英蚌報酬`,
+      `Earn XP automatically as you finish quests, plus +${UNIT_REWARD_CLAMS} Clams after client review!`
+    );
   }
   syncXpProgressUI({ allowCelebrate: false });
 }
@@ -1487,11 +1540,18 @@ function renderHome() {
 
   const completedSet = getCompletedLessons();
   const completedRealCount = db.lessons.filter(l => completedSet.has(l.Date)).length;
-  document.getElementById("map-completed-count").textContent = `已驗收 ${completedRealCount} 關`;
+  document.getElementById("map-completed-count").textContent = bi(`已驗收 ${completedRealCount} 關`, `Approved: ${completedRealCount}`);
+  const homeHintEl = document.getElementById("home-reward-hint");
+  if (homeHintEl) {
+    homeHintEl.textContent = bi(
+      `完成任務即可自動獲得對應 XP；送交甲方老師驗收通過後，每單元再領 +${UNIT_REWARD_CLAMS} 英蚌報酬`,
+      `Earn XP automatically as you finish quests, plus +${UNIT_REWARD_CLAMS} Clams after client review!`
+    );
+  }
   syncXpProgressUI({ allowCelebrate: false });
 
   if (db.lessons.length === 0) {
-    mapEl.innerHTML = `<p style="color: var(--muted); text-align: center;">目前試算表中尚無課程資料。</p>`;
+    mapEl.innerHTML = `<p style="color: var(--muted); text-align: center;">${bi("目前試算表中尚無課程資料。", "No lessons available yet.")}</p>`;
     homeView.classList.remove("hidden");
     return;
   }
@@ -1534,9 +1594,9 @@ function renderHome() {
     circleBtn.addEventListener("click", () => openLesson(lesson.Date));
 
     const statusSuffix = isCompleted
-      ? " · 已驗收撥款"
+      ? bi(" · 已驗收撥款", " · Approved & Paid")
       : isSubmitted
-      ? " · 待案主驗收"
+      ? bi(" · 待案主驗收", " · Pending Review")
       : "";
 
     const cardBtn = document.createElement("button");
@@ -1548,7 +1608,7 @@ function renderHome() {
     const xpBadgeHtml = isCompleted
       ? ""
       : xpAlreadyClaimed
-      ? ` · <span class="quest-xp-pill">XP 已領 ✓</span>`
+      ? ` · <span class="quest-xp-pill">${bi("XP 已領 ✓", "XP Claimed ✓")}</span>`
       : ` · <span class="quest-xp-pill">+${lessonXp} XP</span>`;
     cardBtn.innerHTML = `
       <div class="quest-node-top">
@@ -1558,7 +1618,7 @@ function renderHome() {
       <div class="quest-node-title">${escapeHtml(lesson.Title || "Untitled Lesson")}</div>
       ${lesson.Grammar_Focus ? `<div class="quest-node-grammar">${escapeHtml(lesson.Grammar_Focus)}</div>` : ""}
       <div class="quest-node-meta">
-        單字：${vocabCount} 個${xpBadgeHtml}${isCompleted ? "" : ` · <span class="quest-reward-pill">報酬 +${UNIT_REWARD_CLAMS} 英蚌</span>`}
+        ${bi(`單字：${vocabCount} 個`, `Vocab: ${vocabCount}`)}${xpBadgeHtml}${isCompleted ? "" : ` · <span class="quest-reward-pill">${bi(`報酬 +${UNIT_REWARD_CLAMS} 英蚌`, `Reward +${UNIT_REWARD_CLAMS} Clams`)}</span>`}
       </div>
     `;
     cardBtn.addEventListener("click", () => openLesson(lesson.Date));
@@ -1589,7 +1649,7 @@ function renderHome() {
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
       </div>
       <div class="quest-node-card">
-        <div class="quest-locked-label">${unitLabel} · 尚未發案解鎖</div>
+        <div class="quest-locked-label">${unitLabel} · ${bi("尚未發案解鎖", "Commission Locked")}</div>
       </div>
     `;
     mapEl.appendChild(step);
@@ -1733,9 +1793,9 @@ function renderLesson(dateStr) {
   const syncLessonXpBadge = () => {
     if (!xpBadgeEl) return;
     if (isLessonCompleted(dateStr)) {
-      xpBadgeEl.textContent = "✓ 已驗收";
+      xpBadgeEl.textContent = bi("✓ 已驗收", "✓ Approved");
     } else if (hasEarnedLessonXp(dateStr)) {
-      xpBadgeEl.textContent = "⚡ XP 已領";
+      xpBadgeEl.textContent = bi("⚡ XP 已領", "⚡ XP Claimed");
     } else {
       xpBadgeEl.textContent = `⚡ +${lessonXp} XP`;
     }
@@ -1805,9 +1865,9 @@ function renderLesson(dateStr) {
       <div class="options-list">${optionsHtml}</div>
       <div id="feedback_pill_${idx}" style="margin-top: 10px;"></div>
       <details class="explanation-details" id="exp_${idx}">
-        <summary class="explanation-summary">▸ 展開解析提示與證據（點擊查看）</summary>
+        <summary class="explanation-summary">${bi("▸ 展開解析提示與證據（點擊查看）", "▸ Explanation & Evidence (click to expand)")}</summary>
         <div class="explanation-content">
-          <div><strong>正確答案：</strong>${escapeHtml(q.Answer)}</div>
+          <div><strong>${bi("正確答案：", "Answer: ")}</strong>${escapeHtml(q.Answer)}</div>
           <div style="margin-top: 4px;">${escapeHtml(q.Explanation || "")}</div>
         </div>
       </details>
@@ -1854,21 +1914,27 @@ function renderLesson(dateStr) {
 
     submitBtn.classList.remove("is-completed", "is-submitted");
     if (approved) {
-      statusEl.textContent = "✓ 甲方案主已驗收通過（已完成本單元任務）";
+      statusEl.textContent = bi("✓ 甲方案主已驗收通過（已完成本單元任務）", "✓ Client approved (Commission complete)");
       statusEl.classList.add("is-completed");
-      submitBtn.textContent = "已驗收完成 ✓";
+      submitBtn.textContent = bi("已驗收完成 ✓", "Approved ✓");
       submitBtn.classList.add("is-completed");
       submitBtn.disabled = true;
     } else if (submitted) {
-      statusEl.textContent = `⏳ 已交稿！${xpClaimedHere ? "經驗值 XP 已自動入帳，" : ""}請等待甲方老師驗收後發放 +${UNIT_REWARD_CLAMS} 英蚌`;
+      statusEl.textContent = bi(
+        `⏳ 已交稿！${xpClaimedHere ? "經驗值 XP 已自動入帳，" : ""}請等待甲方老師驗收後發放 +${UNIT_REWARD_CLAMS} 英蚌`,
+        `⏳ Submitted! ${xpClaimedHere ? "XP credited—a" : "A"}waiting client review for +${UNIT_REWARD_CLAMS} Clams`
+      );
       statusEl.classList.remove("is-completed");
-      submitBtn.textContent = "待案主驗收中（點此可收回修改）";
+      submitBtn.textContent = bi("待案主驗收中（點此可收回修改）", "Pending Review (Click to Withdraw)");
       submitBtn.classList.add("is-submitted");
       submitBtn.disabled = false;
     } else {
-      statusEl.textContent = `完成單字與閱讀練習後按下完成任務，系統將自動發放 ${xpClaimedHere ? "（XP 已領）" : `+${unitXp} XP 並`}申請 +${UNIT_REWARD_CLAMS} 英蚌`;
+      statusEl.textContent = bi(
+        `完成單字與閱讀練習後按下完成任務，系統將自動發放 ${xpClaimedHere ? "（XP 已領）" : `+${unitXp} XP 並`}申請 +${UNIT_REWARD_CLAMS} 英蚌`,
+        `Finish vocab & reading, then submit to ${xpClaimedHere ? "request" : `claim +${unitXp} XP & request`} +${UNIT_REWARD_CLAMS} Clams`
+      );
       statusEl.classList.remove("is-completed");
-      submitBtn.textContent = "完成任務";
+      submitBtn.textContent = bi("完成任務", "Submit Commission");
       submitBtn.disabled = false;
     }
   };
@@ -1921,7 +1987,7 @@ function handleInstantQuizFeedback(idx, q, selectedVal, qCard, allQuestions, { s
   const pillBox = document.getElementById(`feedback_pill_${idx}`);
   if (pillBox) {
     pillBox.innerHTML = isCorrect
-      ? `<span class="feedback-pill correct">✓ 答對了！</span>`
+      ? `<span class="feedback-pill correct">${bi("✓ 答對了！", "✓ Correct!")}</span>`
       : ""; // 答錯時不顯示任何文字，由老師口頭引導
   }
 
@@ -1972,28 +2038,37 @@ function updateQuizProgress(questions, { silent = false } = {}) {
 const settingsDialog = document.getElementById("settings-dialog");
 const openSettingsBtn = document.getElementById("open-settings-btn");
 
-function switchAuthMode(mode) {
+function switchAuthMode(mode, { clearMsg = true } = {}) {
   const isSignin = mode === "signin";
   document.getElementById("tab-signin").setAttribute("aria-pressed", String(isSignin));
   document.getElementById("tab-signup").setAttribute("aria-pressed", String(!isSignin));
   document.getElementById("signin-form").classList.toggle("hidden", !isSignin);
   document.getElementById("signup-form").classList.toggle("hidden", isSignin);
-  document.getElementById("auth-heading").textContent = isSignin ? "登入學習帳號" : "建立學習帳號";
-  clearFeedback("auth-feedback");
+  document.getElementById("auth-heading").textContent = isSignin
+    ? bi("登入學習帳號", "Sign in to your account")
+    : bi("建立學習帳號", "Create an account");
+  if (clearMsg) clearFeedback("auth-feedback");
 }
 
 document.getElementById("tab-signin").addEventListener("click", () => switchAuthMode("signin"));
 document.getElementById("tab-signup").addEventListener("click", () => switchAuthMode("signup"));
 
+function syncPasswordToggleButtons() {
+  document.querySelectorAll(".btn-toggle-pw").forEach(btn => {
+    const target = document.getElementById(btn.dataset.target);
+    const showing = target?.type === "text";
+    btn.setAttribute("aria-pressed", String(showing));
+    btn.textContent = showing ? bi("隱藏", "Hide") : bi("顯示", "Show");
+    btn.setAttribute("aria-label", showing ? bi("隱藏密碼", "Hide password") : bi("顯示密碼", "Show password"));
+  });
+}
+
 document.querySelectorAll(".btn-toggle-pw").forEach(btn => {
   btn.addEventListener("click", () => {
     const target = document.getElementById(btn.dataset.target);
     if (!target) return;
-    const showing = target.type === "text";
-    target.type = showing ? "password" : "text";
-    btn.setAttribute("aria-pressed", String(!showing));
-    btn.textContent = showing ? "顯示" : "隱藏";
-    btn.setAttribute("aria-label", showing ? "顯示密碼" : "隱藏密碼");
+    target.type = target.type === "text" ? "password" : "text";
+    syncPasswordToggleButtons();
   });
 });
 
@@ -2015,13 +2090,27 @@ document.getElementById("forgot-pw-btn").addEventListener("click", async () => {
   const email = emailInput.value.trim();
   clearFeedback("auth-feedback");
   if (!email || !emailInput.checkValidity()) {
-    showFeedback("auth-feedback", "info", "請先在上方「電子郵件」欄位輸入您的信箱，再點擊忘記密碼。");
+    showFeedback(
+      "auth-feedback",
+      "info",
+      bi(
+        "請先在上方「電子郵件」欄位輸入您的信箱，再點擊忘記密碼。",
+        "Enter your email address above first, then click Forgot password."
+      )
+    );
     emailInput.focus();
     return;
   }
   try {
     await sendPasswordResetEmail(auth, email);
-    showFeedback("auth-feedback", "success", `已寄出重設密碼信至 ${email}，請查收信件（若未看到可檢查垃圾信件匣）。`);
+    showFeedback(
+      "auth-feedback",
+      "success",
+      bi(
+        `已寄出重設密碼信至 ${email}，請查收信件（若未看到可檢查垃圾信件匣）。`,
+        `Password reset email sent to ${email}. Check your inbox (and spam folder).`
+      )
+    );
   } catch (err) {
     showFeedback("auth-feedback", "error", translateAuthError(err));
   }
@@ -2100,25 +2189,35 @@ function renderVerificationRow(user) {
   if (user.emailVerified) {
     const badge = document.createElement("span");
     badge.className = "role-badge verified-badge";
-    badge.textContent = "已完成驗證";
+    badge.textContent = bi("已完成驗證", "Verified");
     container.appendChild(badge);
     return;
   }
 
   const warnText = document.createElement("span");
-  warnText.textContent = "尚未驗證（驗證後才可啟用管理員授權）";
+  warnText.textContent = bi(
+    "尚未驗證（驗證後才可啟用管理員授權）",
+    "Not verified yet (required for admin permissions)"
+  );
   warnText.className = "verify-warn-text";
   container.appendChild(warnText);
 
   const sendBtn = document.createElement("button");
   sendBtn.type = "button";
   sendBtn.className = "btn btn-sm";
-  sendBtn.textContent = "寄送驗證信";
+  sendBtn.textContent = bi("寄送驗證信", "Send Verification");
   sendBtn.addEventListener("click", async () => {
     sendBtn.disabled = true;
     try {
       await sendEmailVerification(currentUser);
-      showFeedback("settings-feedback", "success", `已寄出驗證信至 ${currentUser.email}，點擊信中連結後請按「重新檢查」。`);
+      showFeedback(
+        "settings-feedback",
+        "success",
+        bi(
+          `已寄出驗證信至 ${currentUser.email}，點擊信中連結後請按「重新檢查」。`,
+          `Verification email sent to ${currentUser.email}. Click the link inside, then click Check Again.`
+        )
+      );
     } catch (err) {
       showFeedback("settings-feedback", "error", translateAuthError(err));
     } finally {
@@ -2129,7 +2228,7 @@ function renderVerificationRow(user) {
   const refreshBtn = document.createElement("button");
   refreshBtn.type = "button";
   refreshBtn.className = "btn btn-sm";
-  refreshBtn.textContent = "重新檢查";
+  refreshBtn.textContent = bi("重新檢查", "Check Again");
   refreshBtn.addEventListener("click", async () => {
     refreshBtn.disabled = true;
     try {
@@ -2138,7 +2237,13 @@ function renderVerificationRow(user) {
       await currentUser.getIdToken(true);
       updateHeaderAccountUI(currentUser, currentRole, document.getElementById("settings-display-name").value.trim());
       await populateSettingsDialog();
-      showFeedback("settings-feedback", "info", currentUser.emailVerified ? "信箱已完成驗證！" : "尚未偵測到驗證完成，請確認已點擊信中驗證連結。");
+      showFeedback(
+        "settings-feedback",
+        "info",
+        currentUser.emailVerified
+          ? bi("信箱已完成驗證！", "Email verified!")
+          : bi("尚未偵測到驗證完成，請確認已點擊信中驗證連結。", "Not verified yet. Please confirm you clicked the email link.")
+      );
     } catch (err) {
       showFeedback("settings-feedback", "error", translateAuthError(err));
     } finally {
@@ -2152,12 +2257,12 @@ function renderVerificationRow(user) {
 
 async function loadAdminsList() {
   const listEl = document.getElementById("admin-list");
-  listEl.innerHTML = `<li class="form-hint">正在載入管理員清單...</li>`;
+  listEl.innerHTML = `<li class="form-hint">${bi("正在載入管理員清單...", "Loading admins list...")}</li>`;
   try {
     const snap = await getDocs(query(collection(firestoreDb, "admins"), orderBy("email")));
     listEl.innerHTML = "";
     if (snap.empty) {
-      listEl.innerHTML = `<li class="form-hint">目前尚未新增其他管理員。</li>`;
+      listEl.innerHTML = `<li class="form-hint">${bi("目前尚未新增其他管理員。", "No additional admins added yet.")}</li>`;
       return;
     }
     snap.forEach(docSnap => {
@@ -2172,12 +2277,12 @@ async function loadAdminsList() {
       const removeBtn = document.createElement("button");
       removeBtn.type = "button";
       removeBtn.className = "btn btn-danger-outline btn-sm";
-      removeBtn.textContent = "移除";
+      removeBtn.textContent = bi("移除", "Remove");
       removeBtn.addEventListener("click", async () => {
         removeBtn.disabled = true;
         try {
           await deleteDoc(doc(firestoreDb, "admins", emailLower));
-          showFeedback("settings-feedback", "success", `已移除管理員：${emailLower}`);
+          showFeedback("settings-feedback", "success", bi(`已移除管理員：${emailLower}`, `Removed admin: ${emailLower}`));
           await loadAdminsList();
         } catch (err) {
           showFeedback("settings-feedback", "error", translateAuthError(err));
@@ -2195,19 +2300,23 @@ async function loadAdminsList() {
   }
 }
 
-async function populateSettingsDialog() {
+async function populateSettingsDialog({ preserveFeedback = false } = {}) {
   if (!currentUser) return;
-  clearFeedback("settings-feedback");
+  if (!preserveFeedback) clearFeedback("settings-feedback");
 
   document.getElementById("settings-email").textContent = currentUser.email || "";
   const roleBadge = document.getElementById("settings-role-badge");
   roleBadge.textContent = getRoleLabel(currentRole);
   roleBadge.className = getRoleBadgeClass(currentRole);
 
+  const curLang = getUiLanguage();
+  const langRadio = document.querySelector(`input[name="uiLanguage"][value="${curLang}"]`);
+  if (langRadio) langRadio.checked = true;
+
   const providerLabels = [];
-  if (currentUser.providerData.some(p => p.providerId === "google.com")) providerLabels.push("Google 登入");
-  if (hasPasswordProvider(currentUser)) providerLabels.push("電子郵件密碼");
-  document.getElementById("settings-providers").textContent = providerLabels.join("、") || "電子郵件";
+  if (currentUser.providerData.some(p => p.providerId === "google.com")) providerLabels.push(bi("Google 登入", "Google"));
+  if (hasPasswordProvider(currentUser)) providerLabels.push(bi("電子郵件密碼", "Email & Password"));
+  document.getElementById("settings-providers").textContent = providerLabels.join(bi("、", ", ")) || bi("電子郵件", "Email");
 
   renderVerificationRow(currentUser);
 
@@ -2224,11 +2333,14 @@ async function populateSettingsDialog() {
   document.getElementById("settings-new-pw").value = "";
 
   if (hasPw) {
-    pwDesc.textContent = "請輸入目前的密碼與新密碼以完成變更。";
-    savePwBtn.textContent = "更新密碼";
+    pwDesc.textContent = bi("請輸入目前的密碼與新密碼以完成變更。", "Enter your current and new password to update.");
+    savePwBtn.textContent = bi("更新密碼", "Update Password");
   } else {
-    pwDesc.textContent = "此帳號目前僅透過 Google 登入，可直接設定一組本機登入密碼。";
-    savePwBtn.textContent = "設定帳號密碼";
+    pwDesc.textContent = bi(
+      "此帳號目前僅透過 Google 登入，可直接設定一組本機登入密碼。",
+      "Currently signed in via Google only. You can set a password for email sign-in too."
+    );
+    savePwBtn.textContent = bi("設定帳號密碼", "Set Password");
   }
 
   const adminSection = document.getElementById("super-admin-section");
@@ -2243,9 +2355,14 @@ async function populateSettingsDialog() {
   if (av?.name) {
     const buildObj = BODY_BUILDS.find(b => b.id === av.build);
     const hairObj = HAIR_STYLES.find(h => h.id === av.hairStyle);
-    avatarSummaryEl.textContent = `目前角色：「${av.name}」 · ${buildObj?.label || av.build} · ${hairObj?.label || av.hairStyle}`;
+    const buildLabel = buildObj ? (isEn() ? (buildObj.labelEn || buildObj.label) : buildObj.label) : av.build;
+    const hairLabel = hairObj ? (isEn() ? (hairObj.labelEn || hairObj.label) : hairObj.label) : av.hairStyle;
+    avatarSummaryEl.textContent = bi(
+      `目前角色：「${av.name}」 · ${buildLabel} · ${hairLabel}`,
+      `Current Artist: "${av.name}" · ${buildLabel} · ${hairLabel}`
+    );
   } else {
-    avatarSummaryEl.textContent = "尚未建立接案角色造型";
+    avatarSummaryEl.textContent = bi("尚未建立接案角色造型", "Character not created yet");
   }
 }
 
@@ -2375,7 +2492,7 @@ document.getElementById("profile-form").addEventListener("submit", async (e) => 
     });
     if (currentUserProfile) currentUserProfile.displayName = nextName;
     updateHeaderAccountUI(currentUser, currentRole, nextName, currentUserProfile?.clams ?? STARTER_CLAMS);
-    showFeedback("settings-feedback", "success", "已更新顯示名稱！");
+    showFeedback("settings-feedback", "success", bi("已更新顯示名稱！", "Display name updated!"));
   } catch (err) {
     showFeedback("settings-feedback", "error", translateAuthError(err));
   } finally {
@@ -2404,7 +2521,7 @@ document.getElementById("change-password-form").addEventListener("submit", async
       const cred = EmailAuthProvider.credential(currentUser.email, currentPw);
       await reauthenticateWithCredential(currentUser, cred);
       await updatePassword(currentUser, newPw);
-      showFeedback("settings-feedback", "success", "密碼已更新！下次可使用新密碼登入。");
+      showFeedback("settings-feedback", "success", bi("密碼已更新！下次可使用新密碼登入。", "Password updated! Use your new password next time you sign in."));
     } else {
       const cred = EmailAuthProvider.credential(currentUser.email, newPw);
       try {
@@ -2418,7 +2535,10 @@ document.getElementById("change-password-form").addEventListener("submit", async
         }
       }
       await populateSettingsDialog();
-      showFeedback("settings-feedback", "success", "已為帳號設定密碼！現在同時支援 Google 與電子郵件密碼登入。");
+      showFeedback("settings-feedback", "success", bi(
+        "已為帳號設定密碼！現在同時支援 Google 與電子郵件密碼登入。",
+        "Password set! You can now sign in with either Google or email/password."
+      ));
     }
     document.getElementById("settings-current-pw").value = "";
     document.getElementById("settings-new-pw").value = "";
@@ -2434,7 +2554,7 @@ document.getElementById("settings-reset-pw-btn").addEventListener("click", async
   clearFeedback("settings-feedback");
   try {
     await sendPasswordResetEmail(auth, currentUser.email);
-    showFeedback("settings-feedback", "success", `已寄送密碼重設信至 ${currentUser.email}。`);
+    showFeedback("settings-feedback", "success", bi(`已寄送密碼重設信至 ${currentUser.email}。`, `Password reset email sent to ${currentUser.email}.`));
   } catch (err) {
     showFeedback("settings-feedback", "error", translateAuthError(err));
   }
@@ -2453,7 +2573,7 @@ document.getElementById("add-admin-form").addEventListener("submit", async (e) =
   const input = document.getElementById("admin-email-input");
   const emailLower = input.value.trim().toLowerCase();
   if (emailLower === SUPER_ADMIN_EMAIL) {
-    showFeedback("settings-feedback", "info", "此信箱已為系統超級管理員，無需另外新增。");
+    showFeedback("settings-feedback", "info", bi("此信箱已為系統超級管理員，無需另外新增。", "This email is already the Super Admin."));
     return;
   }
 
@@ -2466,7 +2586,7 @@ document.getElementById("add-admin-form").addEventListener("submit", async (e) =
       addedAt: serverTimestamp()
     });
     input.value = "";
-    showFeedback("settings-feedback", "success", `已將 ${emailLower} 加入管理員名單。`);
+    showFeedback("settings-feedback", "success", bi(`已將 ${emailLower} 加入管理員名單。`, `Added ${emailLower} as an admin.`));
     await loadAdminsList();
   } catch (err) {
     showFeedback("settings-feedback", "error", translateAuthError(err));
@@ -2616,9 +2736,12 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
     themeToggleInput.checked = isDark;
     themeToggleInput.setAttribute(
       "aria-label",
-      isDark ? "深色背景已開啟，點擊切換為淺色背景" : "淺色背景已開啟，點擊切換為深色背景"
+      isDark
+        ? bi("深色背景已開啟，點擊切換為淺色背景", "Dark mode active; click to switch to light")
+        : bi("淺色背景已開啟，點擊切換為深色背景", "Light mode active; click to switch to dark")
     );
   }
+  window.addEventListener("ui-language-change", syncThemeToggleUI);
 
   themeToggleInput?.addEventListener("change", () => {
     const currentlyRendered = getEffectiveScheme();
@@ -2676,17 +2799,19 @@ function renderOptionChoices(containerId, items, radioName, selectedId, isSwatch
       label.appendChild(dot);
 
       const textSpan = document.createElement("span");
-      textSpan.textContent = item.label;
+      textSpan.textContent = isEn() ? (item.labelEn || item.label) : item.label;
       label.appendChild(textSpan);
     } else {
       const titleRow = document.createElement("span");
       titleRow.className = "choice-card-title";
-      titleRow.innerHTML = `<span>${escapeHtml(item.label)}</span><span class="choice-check" aria-hidden="true">✓</span>`;
+      const displayLabel = isEn() ? (item.labelEn || item.label) : item.label;
+      titleRow.innerHTML = `<span>${escapeHtml(displayLabel)}</span><span class="choice-check" aria-hidden="true">✓</span>`;
       label.appendChild(titleRow);
-      if (item.hint) {
+      const displayHint = isEn() ? (item.hintEn || item.hint) : item.hint;
+      if (displayHint) {
         const sub = document.createElement("span");
         sub.className = "choice-card-sub";
-        sub.textContent = item.hint;
+        sub.textContent = displayHint;
         label.appendChild(sub);
       }
     }
@@ -2717,7 +2842,7 @@ function syncLiveAvatarPreview() {
   const activePantsStyle = isEditingAvatarFromRoom
     ? (currentUserProfile?.roomState?.pantsStyle || DEFAULT_PANTS_STYLE)
     : DEFAULT_PANTS_STYLE;
-  document.getElementById("avatar-preview-name").textContent = cfg.name || "接案繪師";
+  document.getElementById("avatar-preview-name").textContent = cfg.name || bi("接案繪師", "Freelance Artist");
   if (avatarPreviewScene) {
     avatarPreviewScene.updateAvatar({
       ...cfg,
@@ -2737,11 +2862,18 @@ function populateOnboardingForm(existingAvatar, isEditing = false) {
 
   clearFeedback("onboarding-feedback");
   nameInput.value = cfg.name || "";
-  countEl.textContent = `${[...nameInput.value.trim()].length} / 8 字`;
-  document.getElementById("avatar-preview-name").textContent = cfg.name || "接案繪師";
+  countEl.textContent = bi(
+    `${[...nameInput.value.trim()].length} / 8 字`,
+    `${[...nameInput.value.trim()].length} / 8 chars`
+  );
+  document.getElementById("avatar-preview-name").textContent = cfg.name || bi("接案繪師", "Freelance Artist");
   cancelBtn.classList.toggle("hidden", !isEditing);
-  titleEl.textContent = isEditing ? "調整角色造型與名字" : "建立你的接案繪師角色";
-  saveBtn.textContent = isEditing ? "儲存變更並回到房間" : "入住單人租屋處";
+  titleEl.textContent = isEditing
+    ? bi("調整角色造型與名字", "Customize Character Look & Name")
+    : bi("建立你的接案繪師角色", "Create Your Freelance Illustrator");
+  saveBtn.textContent = isEditing
+    ? bi("儲存變更並回到房間", "Save Changes & Return to Studio")
+    : bi("入住單人租屋處", "Move Into Studio Apartment");
 
   renderOptionChoices("avatar-build-choices", BODY_BUILDS, "avatarBuild", cfg.build, false);
   renderOptionChoices("avatar-skin-choices", SKIN_TONES, "avatarSkin", cfg.skinTone, true);
@@ -2754,12 +2886,12 @@ document.getElementById("avatar-name-input").addEventListener("input", (e) => {
   const input = e.currentTarget;
   const trimmed = input.value.trim();
   const charCount = [...trimmed].length;
-  document.getElementById("avatar-name-count").textContent = `${charCount} / 8 字`;
-  document.getElementById("avatar-preview-name").textContent = trimmed || "接案繪師";
+  document.getElementById("avatar-name-count").textContent = bi(`${charCount} / 8 字`, `${charCount} / 8 chars`);
+  document.getElementById("avatar-preview-name").textContent = trimmed || bi("接案繪師", "Freelance Artist");
   if (charCount > 8) {
-    input.setCustomValidity("角色名稱最多只能輸入 8 個字元。");
+    input.setCustomValidity(bi("角色名稱最多只能輸入 8 個字元。", "Character name can be at most 8 characters."));
   } else if (charCount === 0) {
-    input.setCustomValidity("請輸入角色名稱。");
+    input.setCustomValidity(bi("請輸入角色名稱。", "Please enter a character name."));
   } else {
     input.setCustomValidity("");
   }
@@ -2784,7 +2916,10 @@ document.getElementById("avatar-form").addEventListener("submit", async (e) => {
   const rawName = nameInput.value.trim();
   const chars = [...rawName];
   if (chars.length < 1 || chars.length > 8) {
-    nameInput.setCustomValidity("角色名稱需為 1 到 8 個字元（中文／英文皆以字數計算）。");
+    nameInput.setCustomValidity(bi(
+      "角色名稱需為 1 到 8 個字元（中文／英文皆以字數計算）。",
+      "Character name must be 1 to 8 characters."
+    ));
     nameInput.reportValidity();
     return;
   }
@@ -3017,7 +3152,7 @@ async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
   const prevBtnText = triggerBtn ? triggerBtn.textContent : "";
   if (triggerBtn) {
     triggerBtn.disabled = true;
-    triggerBtn.textContent = "切換中...";
+    triggerBtn.textContent = bi("切換中...", "Switching...");
   }
   try {
     const nextRoomState = {
@@ -3044,15 +3179,16 @@ async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
       roomScene?.setPantsStyle(nextId);
     }
     const defaultLabels = {
-      bedSheet: "經典海鹽藍床組",
-      rugStyle: "奶油燕麥原味地毯",
-      shirtStyle: "基本素色上衣",
-      pantsStyle: "經典深灰長褲"
+      bedSheet: bi("經典海鹽藍床組", "Sea-Salt Blue Bedding"),
+      rugStyle: bi("奶油燕麥原味地毯", "Oatmeal Cream Rug"),
+      shirtStyle: bi("基本素色上衣", "Basic Studio Top"),
+      pantsStyle: bi("經典深灰長褲", "Classic Charcoal Trousers")
     };
+    const nextItem = getShopItem(nextId);
     const label = nextId === "default"
       ? (defaultLabels[textileKind] || nextId)
-      : (getShopItem(nextId)?.name || nextId);
-    showFeedback("shop-feedback", "success", `已免費切換為「${label}」！`);
+      : (nextItem ? getShopItemName(nextItem) : nextId);
+    showFeedback("shop-feedback", "success", bi(`已免費切換為「${label}」！`, `Switched to "${label}" for free!`));
     renderShopDialog();
   } catch (err) {
     if (triggerBtn) {
@@ -3087,11 +3223,11 @@ function renderShopDialog() {
   const capacityEl = document.getElementById("shop-grid-capacity-bar");
   if (capacityEl) {
     const parcelNote = Object.keys(activeParcels).length > 0
-      ? `<span>📦 門口待領包裹：<strong>${Object.keys(activeParcels).length}</strong> 箱（含預扣格數）</span>`
+      ? `<span>${bi(`📦 門口待領包裹：<strong>${Object.keys(activeParcels).length}</strong> 箱（含預扣格數）`, `📦 Unopened door parcels: <strong>${Object.keys(activeParcels).length}</strong> (cells reserved)`)}</span>`
       : "";
     capacityEl.innerHTML = `
-      <span>📐 剩餘地面網格：<strong class="${gridStats.floorRemaining < 8 ? "is-low" : ""}">${gridStats.floorRemaining}</strong> / ${gridStats.floorTotal} 格</span>
-      <span>🧱 剩餘牆面網格：<strong class="${gridStats.wallRemaining < 3 ? "is-low" : ""}">${gridStats.wallRemaining}</strong> / ${gridStats.wallTotal} 格</span>
+      <span>${bi(`📐 剩餘地面網格：<strong class="${gridStats.floorRemaining < 8 ? "is-low" : ""}">${gridStats.floorRemaining}</strong> / ${gridStats.floorTotal} 格`, `📐 Floor grid left: <strong class="${gridStats.floorRemaining < 8 ? "is-low" : ""}">${gridStats.floorRemaining}</strong> / ${gridStats.floorTotal}`)}</span>
+      <span>${bi(`🧱 剩餘牆面網格：<strong class="${gridStats.wallRemaining < 3 ? "is-low" : ""}">${gridStats.wallRemaining}</strong> / ${gridStats.wallTotal} 格`, `🧱 Wall grid left: <strong class="${gridStats.wallRemaining < 3 ? "is-low" : ""}">${gridStats.wallRemaining}</strong> / ${gridStats.wallTotal}`)}</span>
       ${parcelNote}
     `;
   }
@@ -3102,7 +3238,7 @@ function renderShopDialog() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = `shop-tab-btn${cat.id === activeShopCategory ? " is-active" : ""}`;
-    btn.textContent = cat.label;
+    btn.textContent = getShopCategoryLabel(cat);
     btn.onclick = () => {
       activeShopCategory = cat.id;
       pendingSellItemId = null;
@@ -3124,13 +3260,13 @@ function renderShopDialog() {
   if (showResetBar) {
     const note = document.createElement("span");
     note.style.marginInlineEnd = "auto";
-    note.textContent = "目前套用造型／織品中，可隨時換回預設：";
+    note.textContent = bi("目前套用造型／織品中，可隨時換回預設：", "Active custom style — restore defaults anytime:");
     textileBarEl.appendChild(note);
     if ((activeShopCategory === "textile" || activeShopCategory === "all") && activeBedSheet !== DEFAULT_BED_SHEET) {
       const resetSheetBtn = document.createElement("button");
       resetSheetBtn.type = "button";
       resetSheetBtn.className = "btn";
-      resetSheetBtn.textContent = "換回經典海鹽藍床組";
+      resetSheetBtn.textContent = bi("換回經典海鹽藍床組", "Restore Sea-Salt Bedding");
       resetSheetBtn.onclick = () => equipShopTextile("bedSheet", DEFAULT_BED_SHEET, resetSheetBtn);
       textileBarEl.appendChild(resetSheetBtn);
     }
@@ -3138,7 +3274,7 @@ function renderShopDialog() {
       const resetRugBtn = document.createElement("button");
       resetRugBtn.type = "button";
       resetRugBtn.className = "btn";
-      resetRugBtn.textContent = "換回奶油燕麥地毯";
+      resetRugBtn.textContent = bi("換回奶油燕麥地毯", "Restore Oat Rug");
       resetRugBtn.onclick = () => equipShopTextile("rugStyle", DEFAULT_RUG_STYLE, resetRugBtn);
       textileBarEl.appendChild(resetRugBtn);
     }
@@ -3146,7 +3282,7 @@ function renderShopDialog() {
       const resetShirtBtn = document.createElement("button");
       resetShirtBtn.type = "button";
       resetShirtBtn.className = "btn";
-      resetShirtBtn.textContent = "換回基本素色上衣";
+      resetShirtBtn.textContent = bi("換回基本素色上衣", "Restore Basic Top");
       resetShirtBtn.onclick = () => equipShopTextile("shirtStyle", DEFAULT_SHIRT_STYLE, resetShirtBtn);
       textileBarEl.appendChild(resetShirtBtn);
     }
@@ -3154,7 +3290,7 @@ function renderShopDialog() {
       const resetPantsBtn = document.createElement("button");
       resetPantsBtn.type = "button";
       resetPantsBtn.className = "btn";
-      resetPantsBtn.textContent = "換回經典深灰長褲";
+      resetPantsBtn.textContent = bi("換回經典深灰長褲", "Restore Charcoal Pants");
       resetPantsBtn.onclick = () => equipShopTextile("pantsStyle", DEFAULT_PANTS_STYLE, resetPantsBtn);
       textileBarEl.appendChild(resetPantsBtn);
     }
@@ -3234,7 +3370,7 @@ function renderShopDialog() {
     if (isLocked) {
       const lockBadge = document.createElement("span");
       lockBadge.className = "shop-lock-badge";
-      lockBadge.textContent = "🔒 組合解鎖";
+      lockBadge.textContent = bi("🔒 組合解鎖", "🔒 Bundle Unlock");
       previewBox.appendChild(lockBadge);
     }
 
@@ -3257,30 +3393,35 @@ function renderShopDialog() {
       iconBox.textContent = item.icon || "🎁";
     }
 
+    const itemTitleText = getShopItemName(item);
     const meta = document.createElement("div");
     const title = document.createElement("div");
     title.className = "shop-item-name";
-    title.textContent = item.name;
+    title.textContent = itemTitleText;
     const priceEl = document.createElement("div");
     priceEl.className = "shop-item-price";
     const xpReward = calculateShopPurchaseXp(item.price);
     const resalePrice = isSellableShopItem(item) ? calculateShopResalePrice(item.price) : 0;
     const xpSuffix = xpReward > 0 ? ` · +${xpReward} XP` : "";
+    const unitClams = bi("英蚌", "Clams");
     priceEl.textContent = isPaint
-      ? `${item.price} 英蚌${isActivePaint ? "" : xpSuffix}（每次重刷計費）`
+      ? bi(
+          `${item.price} 英蚌${isActivePaint ? "" : xpSuffix}（每次重刷計費）`,
+          `${item.price} Clams${isActivePaint ? "" : xpSuffix} (per repaint)`
+        )
       : (isTextile && isPermanentOwned)
-        ? `${item.price} 英蚌（已購，免費更換）`
+        ? bi(`${item.price} 英蚌（已購，免費更換）`, `${item.price} Clams (owned · free swap)`)
         : isPermanentOwned
           ? (isSellableShopItem(item)
-            ? `原價 ${item.price} 英蚌 · 二手價 ${resalePrice} 英蚌`
-            : `${item.price} 英蚌`)
-          : `${item.price} 英蚌${xpSuffix}`;
+            ? bi(`原價 ${item.price} 英蚌 · 二手價 ${resalePrice} 英蚌`, `Orig ${item.price} ${unitClams} · Resale ${resalePrice} ${unitClams}`)
+            : `${item.price} ${unitClams}`)
+          : `${item.price} ${unitClams}${xpSuffix}`;
     meta.append(title, priceEl);
     head.append(iconBox, meta);
 
     const desc = document.createElement("div");
     desc.className = "shop-item-desc";
-    desc.textContent = item.desc;
+    desc.textContent = getShopItemDesc(item);
 
     let gridBadgeEl = null;
     if (gridMeta) {
@@ -3293,10 +3434,16 @@ function renderShopDialog() {
       gridBadgeEl = document.createElement("div");
       gridBadgeEl.className = `shop-grid-badge${(!isPermanentOwned && !gridAvail.ok) ? " is-full" : ""}`;
       gridBadgeEl.textContent = gridMeta.surface === "wall"
-        ? `🧱 佔用 ${gridMeta.gridW} 格牆面網格`
+        ? bi(`🧱 佔用 ${gridMeta.gridW} 格牆面網格`, `🧱 Uses ${gridMeta.gridW} wall grid cell(s)`)
         : (companions.length > 1
-          ? `📐 佔用 ${companions.length} 組共 ${totalGridCells} 格地面（各可獨立拖曳旋轉）`
-          : `📐 佔用 ${gridMeta.gridW}×${gridMeta.gridD}（${gridMeta.gridW * gridMeta.gridD} 格地面）`);
+          ? bi(
+              `📐 佔用 ${companions.length} 組共 ${totalGridCells} 格地面（各可獨立拖曳旋轉）`,
+              `📐 ${companions.length} pieces (${totalGridCells} floor cells, moved independently)`
+            )
+          : bi(
+              `📐 佔用 ${gridMeta.gridW}×${gridMeta.gridD}（${gridMeta.gridW * gridMeta.gridD} 格地面）`,
+              `📐 ${gridMeta.gridW}×${gridMeta.gridD} (${gridMeta.gridW * gridMeta.gridD} floor cells)`
+            ));
     }
 
     const actionBtn = document.createElement("button");
@@ -3306,19 +3453,27 @@ function renderShopDialog() {
     let actionNode = actionBtn;
 
     if (isActivePaint) {
-      actionBtn.textContent = "目前牆色 ✓";
+      actionBtn.textContent = bi("目前牆色 ✓", "Current Wall ✓");
       actionBtn.disabled = true;
     } else if (isActiveTextile) {
-      actionBtn.textContent = isApparel ? "目前穿著中 ✓" : "目前使用中 ✓";
+      actionBtn.textContent = isApparel
+        ? bi("目前穿著中 ✓", "Wearing ✓")
+        : bi("目前使用中 ✓", "Equipped ✓");
       actionBtn.disabled = true;
     } else if (isTextile && isPermanentOwned) {
       actionBtn.classList.add("btn-primary");
-      actionBtn.textContent = isApparel ? "換穿這件（免費）" : "套用更換（免費）";
+      actionBtn.textContent = isApparel
+        ? bi("換穿這件（免費）", "Wear This (Free)")
+        : bi("套用更換（免費）", "Equip (Free)");
       actionBtn.onclick = () => equipShopTextile(item.textileKind, item.id, actionBtn);
     } else if (isPermanentOwned && isSellableShopItem(item)) {
       const blockingDeps = getBlockingDependentOwnedItems(item.id, owned);
       if (blockingDeps.length > 0) {
-        actionBtn.textContent = `已擺進房間（需先賣出「${blockingDeps.map(d => d.name).join("」「")}」）`;
+        const depNames = blockingDeps.map(d => getShopItemName(d)).join(bi("」「", ", "));
+        actionBtn.textContent = bi(
+          `已擺進房間（需先賣出「${depNames}」）`,
+          `In Room (Sell "${depNames}" first)`
+        );
         actionBtn.disabled = true;
       } else if (pendingSellItemId === item.id) {
         const confirmRow = document.createElement("div");
@@ -3326,12 +3481,12 @@ function renderShopDialog() {
         const confirmSellBtn = document.createElement("button");
         confirmSellBtn.type = "button";
         confirmSellBtn.className = "btn shop-sell-confirm-btn";
-        confirmSellBtn.textContent = `確認賣出（+${resalePrice} 英蚌）`;
+        confirmSellBtn.textContent = bi(`確認賣出（+${resalePrice} 英蚌）`, `Confirm Sell (+${resalePrice})`);
         confirmSellBtn.onclick = () => sellShopItem(item.id, confirmSellBtn);
         const keepBtn = document.createElement("button");
         keepBtn.type = "button";
         keepBtn.className = "btn";
-        keepBtn.textContent = "保留";
+        keepBtn.textContent = bi("保留", "Keep");
         keepBtn.onclick = () => {
           pendingSellItemId = null;
           renderShopDialog();
@@ -3341,9 +3496,12 @@ function renderShopDialog() {
       } else {
         actionBtn.className = "btn shop-sell-btn";
         actionBtn.textContent = isInParcel
-          ? `📦 待拆包裹 · 二手賣出（+${resalePrice} 英蚌）`
-          : `♻️ 二手賣出（+${resalePrice} 英蚌）`;
-        actionBtn.title = `按定價的一半（${resalePrice} 英蚌）回收此家具並釋放空間`;
+          ? bi(`📦 待拆包裹 · 二手賣出（+${resalePrice} 英蚌）`, `📦 Unopened · Sell Half-Price (+${resalePrice})`)
+          : bi(`♻️ 二手賣出（+${resalePrice} 英蚌）`, `♻️ Sell Used (+${resalePrice} Clams)`);
+        actionBtn.title = bi(
+          `按定價的一半（${resalePrice} 英蚌）回收此家具並釋放空間`,
+          `Sell for half price (${resalePrice} Clams) & free up grid space`
+        );
         actionBtn.onclick = () => {
           clearFeedback("shop-feedback");
           pendingSellItemId = item.id;
@@ -3351,37 +3509,43 @@ function renderShopDialog() {
         };
       }
     } else if (isInParcel) {
-      actionBtn.textContent = "📦 包裹已送達門口（待拆箱擺放）";
+      actionBtn.textContent = bi("📦 包裹已送達門口（待拆箱擺放）", "📦 Parcel Waiting at Doorway");
       actionBtn.disabled = true;
     } else if (isPermanentOwned) {
-      actionBtn.textContent = "已擺進房間 ✓";
+      actionBtn.textContent = bi("已擺進房間 ✓", "Placed in Studio ✓");
       actionBtn.disabled = true;
     } else if (isLocked) {
-      actionBtn.textContent = `🔒 需先購買：${missingPrereqs.map(p => p.name).join(" ＋ ")}`;
+      actionBtn.textContent = bi(
+        `🔒 需先購買：${missingPrereqs.map(p => p.name).join(" ＋ ")}`,
+        `🔒 Requires: ${missingPrereqs.map(p => p.name).join(" + ")}`
+      );
       actionBtn.disabled = true;
     } else if (gridAvail.placeable && !gridAvail.ok) {
-      actionBtn.textContent = `空間不夠（需 ${gridAvail.neededCells} 格）`;
+      actionBtn.textContent = bi(`空間不夠（需 ${gridAvail.neededCells} 格）`, `No Space (Needs ${gridAvail.neededCells})`);
       actionBtn.onclick = () => {
         showFeedback(
           "shop-feedback",
           "error",
-          `${gridAvail.reason}（可於下方點選「二手賣出」家具以回收原價一半英蚌並釋放空間）`
+          bi(
+            `${gridAvail.reason}（可於下方點選「二手賣出」家具以回收原價一半英蚌並釋放空間）`,
+            `${gridAvail.reason} (You can sell existing furniture below for 50% Clams to free space.)`
+          )
         );
       };
     } else if (!isSuperAdmin && clams < item.price) {
-      actionBtn.textContent = `還差 ${item.price - clams} 英蚌`;
+      actionBtn.textContent = bi(`還差 ${item.price - clams} 英蚌`, `Need ${item.price - clams} more Clams`);
       actionBtn.disabled = true;
     } else {
       actionBtn.classList.add("btn-primary");
       actionBtn.textContent = isPaint
-        ? "購買並重新粉刷"
+        ? bi("購買並重新粉刷", "Buy & Repaint")
         : isApparel
-          ? "購買並立刻換穿"
+          ? bi("購買並立刻換穿", "Buy & Wear")
           : isTextile
-            ? "購買並立刻換上"
+            ? bi("購買並立刻換上", "Buy & Equip")
             : isShopParcelItem(item.id)
-              ? "購買並宅配到門口"
-              : "購買並放進房間";
+              ? bi("購買並宅配到門口", "Buy & Deliver Parcel")
+              : bi("購買並放進房間", "Buy & Place in Studio");
       actionBtn.onclick = () => purchaseShopItem(item.id, actionBtn);
     }
 
@@ -3407,13 +3571,14 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
   const prevBtnText = triggerBtn ? triggerBtn.textContent : "";
   if (triggerBtn) {
     triggerBtn.disabled = true;
-    triggerBtn.textContent = "購買中...";
+    triggerBtn.textContent = bi("購買中...", "Buying...");
   }
+  const localizedItemName = getShopItemName(item);
   try {
     const userRef = doc(firestoreDb, "users", currentUser.uid);
     const result = await runTransaction(firestoreDb, async (tx) => {
       const snap = await tx.get(userRef);
-      if (!snap.exists()) throw new Error("找不到使用者檔案。");
+      if (!snap.exists()) throw new Error(bi("找不到使用者檔案。", "User profile not found."));
       const data = snap.data() || {};
       const isSuperAdmin = currentRole === "super_admin";
       const currentClams = Math.trunc(Number(data.clams ?? STARTER_CLAMS));
@@ -3429,7 +3594,7 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
           return { unchanged: true, nextClams: currentClams, nextOwned: prevOwned, nextRoomState: prevRoomState };
         }
         if (!isSuperAdmin && currentClams < item.price) {
-          throw new Error("英蚌餘額不足，先去電腦完成接案學習賺錢吧！");
+          throw new Error(bi("英蚌餘額不足，先去電腦完成接案學習賺錢吧！", "Not enough Clams! Complete quests at your desk to earn more."));
         }
         const nextClams = isSuperAdmin ? currentClams : (currentClams - item.price);
         const currentXp = Math.max(0, Math.trunc(Number(data.xp ?? 0)));
@@ -3446,7 +3611,7 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
           queueLedgerTransaction(tx, currentUser.uid, {
             type: "purchase",
             category: item.category,
-            title: `重刷牆面：${item.name}`,
+            title: `${bi("重刷牆面", "Wall Repaint")}: ${localizedItemName}`,
             amount: -item.price
           });
         }
@@ -3458,7 +3623,10 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       }
       const missingPrereqs = getMissingShopPrerequisites(item, prevOwned);
       if (missingPrereqs.length > 0) {
-        throw new Error(`需先購買「${missingPrereqs.map(p => p.name).join("」與「")}」才能解鎖此商品！`);
+        throw new Error(bi(
+          `需先購買「${missingPrereqs.map(p => p.name).join("」與「")}」才能解鎖此商品！`,
+          `Purchase "${missingPrereqs.map(p => p.name).join('" & "')}" first to unlock this!`
+        ));
       }
       const prevParcels = normalizePendingParcels(prevRoomState.pendingParcels, prevOwned);
       const gridCheck = checkShopItemGridAvailability(
@@ -3471,7 +3639,7 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
         throw new Error(gridCheck.reason);
       }
       if (!isSuperAdmin && currentClams < item.price) {
-        throw new Error("英蚌餘額不足，先去電腦完成接案學習賺錢吧！");
+        throw new Error(bi("英蚌餘額不足，先去電腦完成接案學習賺錢吧！", "Not enough Clams! Complete quests at your desk to earn more."));
       }
 
       const nextClams = isSuperAdmin ? currentClams : (currentClams - item.price);
@@ -3505,16 +3673,16 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       tx.update(userRef, patch);
       if (item.price > 0) {
         const ledgerPrefix = item.textileKind === "shirtStyle"
-          ? "購入上衣"
+          ? bi("購入上衣", "Bought Top")
           : item.textileKind === "pantsStyle"
-            ? "購入褲子"
+            ? bi("購入褲子", "Bought Bottoms")
             : item.textileKind
-              ? "購入織品"
-              : "購買家具";
+              ? bi("購入織品", "Bought Textile")
+              : bi("購買家具", "Bought Furniture");
         queueLedgerTransaction(tx, currentUser.uid, {
           type: "purchase",
           category: item.category,
-          title: `${ledgerPrefix}：${item.name}`,
+          title: `${ledgerPrefix}: ${localizedItemName}`,
           amount: -item.price
         });
       }
@@ -3545,30 +3713,53 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
     } else {
       roomScene?.applyOwnedItems(normalizedOwned);
     }
-    const xpMsg = result.xpGranted > 0 ? `，獲得 +${result.xpGranted} XP` : "";
+    const xpMsg = result.xpGranted > 0 ? bi(`，獲得 +${result.xpGranted} XP`, `, +${result.xpGranted} XP`) : "";
     if (item.wallColor) {
       roomScene?.setWallColor(item.wallColor);
-      const feeNote = currentRole === "super_admin" ? "超級管理員測試免扣款" : `扣除粉刷費 ${item.price} 英蚌`;
-      showFeedback("shop-feedback", "success", `已重新粉刷為「${item.name}」（${feeNote}${xpMsg}）！`);
+      const feeNote = currentRole === "super_admin"
+        ? bi("超級管理員測試免扣款", "Super Admin test mode: no deduction")
+        : bi(`扣除粉刷費 ${item.price} 英蚌`, `-${item.price} Clams`);
+      showFeedback("shop-feedback", "success", bi(
+        `已重新粉刷為「${localizedItemName}」（${feeNote}${xpMsg}）！`,
+        `Repainted walls to "${localizedItemName}" (${feeNote}${xpMsg})!`
+      ));
     } else if (item.textileKind === "bedSheet") {
       roomScene?.setBedSheet(item.id);
-      showFeedback("shop-feedback", "success", `已購入「${item.name}」並立即換上${xpMsg}！`);
+      showFeedback("shop-feedback", "success", bi(
+        `已購入「${localizedItemName}」並立即換上${xpMsg}！`,
+        `Purchased & equipped "${localizedItemName}"${xpMsg}!`
+      ));
     } else if (item.textileKind === "rugStyle") {
       roomScene?.setRugStyle(item.id);
-      showFeedback("shop-feedback", "success", `已購入「${item.name}」並立即鋪好${xpMsg}！`);
+      showFeedback("shop-feedback", "success", bi(
+        `已購入「${localizedItemName}」並立即鋪好${xpMsg}！`,
+        `Purchased & laid down "${localizedItemName}"${xpMsg}!`
+      ));
     } else if (item.textileKind === "shirtStyle") {
       roomScene?.setShirtStyle(item.id);
-      showFeedback("shop-feedback", "success", `已購入「${item.name}」並立刻換穿${xpMsg}！`);
+      showFeedback("shop-feedback", "success", bi(
+        `已購入「${localizedItemName}」並立刻換穿${xpMsg}！`,
+        `Purchased & put on "${localizedItemName}"${xpMsg}!`
+      ));
     } else if (item.textileKind === "pantsStyle") {
       roomScene?.setPantsStyle(item.id);
-      showFeedback("shop-feedback", "success", `已購入「${item.name}」並立刻換穿${xpMsg}！`);
+      showFeedback("shop-feedback", "success", bi(
+        `已購入「${localizedItemName}」並立刻換穿${xpMsg}！`,
+        `Purchased & put on "${localizedItemName}"${xpMsg}!`
+      ));
     } else if (isShopParcelItem(item.id)) {
       if (item.id === "bed_lamp") {
         roomScene?.setBedLamp(true);
       }
-      showFeedback("shop-feedback", "success", `已購買「${item.name}」${xpMsg}！📦 包裹已送到門口地毯，關閉商店點擊箱子即可拆開並自由擺放！`);
+      showFeedback("shop-feedback", "success", bi(
+        `已購買「${localizedItemName}」${xpMsg}！📦 包裹已送到門口地毯，關閉商店點擊箱子即可拆開並自由擺放！`,
+        `Bought "${localizedItemName}"${xpMsg}! 📦 Delivered to your doorway mat—close shop and click the parcel to unbox & place!`
+      ));
     } else {
-      showFeedback("shop-feedback", "success", `已購買「${item.name}」並直接放進租屋處${xpMsg}！`);
+      showFeedback("shop-feedback", "success", bi(
+        `已購買「${localizedItemName}」並直接放進租屋處${xpMsg}！`,
+        `Bought "${localizedItemName}" and placed it in your studio${xpMsg}!`
+      ));
     }
     renderShopDialog();
   } catch (err) {
@@ -3592,14 +3783,15 @@ async function sellShopItem(itemId, triggerBtn = null) {
   const prevBtnText = triggerBtn ? triggerBtn.textContent : "";
   if (triggerBtn) {
     triggerBtn.disabled = true;
-    triggerBtn.textContent = "賣出中...";
+    triggerBtn.textContent = bi("賣出中...", "Selling...");
   }
+  const localizedSellName = getShopItemName(item);
   try {
     const userRef = doc(firestoreDb, "users", currentUser.uid);
     const result = await runTransaction(firestoreDb, async (tx) => {
       const snap = await tx.get(userRef);
       if (!snap.exists()) {
-        throw new Error("找不到帳號資料，請重新整理後再試。");
+        throw new Error(bi("找不到帳號資料，請重新整理後再試。", "Account data not found. Refresh and try again."));
       }
       const data = snap.data();
       const prevOwned = (data.ownedItems && typeof data.ownedItems === "object")
@@ -3610,7 +3802,11 @@ async function sellShopItem(itemId, triggerBtn = null) {
       }
       const blockingDeps = getBlockingDependentOwnedItems(item.id, prevOwned);
       if (blockingDeps.length > 0) {
-        throw new Error(`需先賣出相依家具「${blockingDeps.map(d => d.name).join("」「")}」，才能賣出此商品！`);
+        const depNames = blockingDeps.map(d => getShopItemName(d)).join(bi("」「", ", "));
+        throw new Error(bi(
+          `需先賣出相依家具「${depNames}」，才能賣出此商品！`,
+          `Sell dependent item(s) "${depNames}" first before selling this!`
+        ));
       }
 
       const resalePrice = calculateShopResalePrice(item.price);
@@ -3670,7 +3866,7 @@ async function sellShopItem(itemId, triggerBtn = null) {
         queueLedgerTransaction(tx, currentUser.uid, {
           type: "resale",
           category: item.category,
-          title: `二手賣出：${item.name}`,
+          title: `${bi("二手賣出", "Resale")}: ${localizedSellName}`,
           amount: resalePrice
         });
       }
@@ -3709,12 +3905,18 @@ async function sellShopItem(itemId, triggerBtn = null) {
       return sum + (m.surface === "wall" ? m.gridW : m.gridW * m.gridD);
     }, 0);
     const freedNote = freedCells > 0
-      ? `並釋放 ${freedCells} 格${PLACEABLE_FURNITURE_META[freedUnits[0]]?.surface === "wall" ? "牆面" : "地面"}空間`
+      ? bi(
+          `並釋放 ${freedCells} 格${PLACEABLE_FURNITURE_META[freedUnits[0]]?.surface === "wall" ? "牆面" : "地面"}空間`,
+          `freed ${freedCells} ${PLACEABLE_FURNITURE_META[freedUnits[0]]?.surface === "wall" ? "wall" : "floor"} cell(s)`
+        )
       : "";
     showFeedback(
       "shop-feedback",
       "success",
-      `已二手賣出「${item.name}」，回收原價一半 +${result.resalePrice} 英蚌${freedNote ? `（${freedNote}）` : ""}！`
+      bi(
+        `已二手賣出「${localizedSellName}」，回收原價一半 +${result.resalePrice} 英蚌${freedNote ? `（${freedNote}）` : ""}！`,
+        `Sold "${localizedSellName}" for +${result.resalePrice} Clams (50% value)${freedNote ? ` (${freedNote})` : ""}!`
+      )
     );
     renderShopDialog();
   } catch (err) {
@@ -3860,8 +4062,8 @@ function readCustomTvVideos() {
         if (!id) return null;
         return {
           id,
-          title: String(item?.title || "").trim() || `YouTube 影片 (${id})`,
-          author: String(item?.author || "").trim() || "自訂 YouTube",
+          title: String(item?.title || "").trim() || bi(`YouTube 影片 (${id})`, `YouTube Video (${id})`),
+          author: String(item?.author || "").trim() || bi("自訂 YouTube", "Custom YouTube"),
           isCustom: true
         };
       })
@@ -3937,7 +4139,7 @@ function showTvCustomFeedback(message, searchQuery = "") {
     link.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = `在 YouTube 搜尋「${searchQuery}」↗`;
+    link.textContent = bi(`在 YouTube 搜尋「${searchQuery}」↗`, `Search "${searchQuery}" on YouTube ↗`);
     box.appendChild(link);
   }
   box.classList.remove("hidden");
@@ -3956,7 +4158,7 @@ function renderTvChannelList() {
   const countEl = document.getElementById("tv-channel-count");
   if (!listEl) return;
   const channels = getAllTvChannels();
-  if (countEl) countEl.textContent = `${channels.length} 部`;
+  if (countEl) countEl.textContent = bi(`${channels.length} 部`, `${channels.length} videos`);
   listEl.replaceChildren();
 
   channels.forEach(video => {
@@ -3979,7 +4181,7 @@ function renderTvChannelList() {
     if (isActive) {
       const liveBadge = document.createElement("span");
       liveBadge.className = "tv-channel-live-badge";
-      liveBadge.textContent = "▶ 播放中";
+      liveBadge.textContent = bi("▶ 播放中", "▶ Playing");
       thumbWrap.appendChild(liveBadge);
     }
 
@@ -3988,8 +4190,8 @@ function renderTvChannelList() {
       removeBtn.className = "tv-channel-remove-btn";
       removeBtn.setAttribute("role", "button");
       removeBtn.setAttribute("tabindex", "0");
-      removeBtn.setAttribute("aria-label", `移除自訂影片 ${video.title}`);
-      removeBtn.title = "從清單移除";
+      removeBtn.setAttribute("aria-label", bi(`移除自訂影片 ${video.title}`, `Remove custom video ${video.title}`));
+      removeBtn.title = bi("從清單移除", "Remove from list");
       removeBtn.textContent = "✕";
       const removeHandler = (e) => {
         e.stopPropagation();
@@ -4150,7 +4352,10 @@ document.getElementById("tv-custom-form")?.addEventListener("submit", (e) => {
   }
   const videoId = parseYouTubeVideoId(raw);
   if (!videoId) {
-    showTvCustomFeedback("請貼上有效的 YouTube 網址或 11 碼影片 ID，或點右側直接搜尋：", raw);
+    showTvCustomFeedback(
+      bi("請貼上有效的 YouTube 網址或 11 碼影片 ID，或點右側直接搜尋：", "Paste a valid YouTube URL or 11-char video ID, or search directly:"),
+      raw
+    );
     return;
   }
 
@@ -4160,7 +4365,7 @@ document.getElementById("tv-custom-form")?.addEventListener("submit", (e) => {
   const existing = getAllTvChannels().find(v => v.id === videoId);
   if (existing) {
     selectTvVideo(existing);
-    if (existing.isCustom && existing.author === "自訂 YouTube") {
+    if (existing.isCustom && (existing.author === "自訂 YouTube" || existing.author === "Custom YouTube")) {
       enrichCustomVideoMetadata(videoId);
     }
     return;
@@ -4168,8 +4373,8 @@ document.getElementById("tv-custom-form")?.addEventListener("submit", (e) => {
 
   const customEntry = {
     id: videoId,
-    title: `自訂影片 (${videoId})`,
-    author: "自訂 YouTube",
+    title: bi(`自訂影片 (${videoId})`, `Custom Video (${videoId})`),
+    author: bi("自訂 YouTube", "Custom YouTube"),
     isCustom: true
   };
   customTvVideos = [customEntry, ...customTvVideos.filter(v => v.id !== videoId)].slice(0, 12);
@@ -4313,8 +4518,8 @@ function updateRentCountdownUI() {
     btn.setAttribute(
       "aria-label",
       hasRentAlert
-        ? `記帳（1 則待繳房租通知，應繳 ${MONTHLY_RENT_CLAMS} 英蚌）`
-        : "記帳"
+        ? bi(`記帳（1 則待繳房租通知，應繳 ${MONTHLY_RENT_CLAMS} 英蚌）`, `Ledger (1 rent notice: ${MONTHLY_RENT_CLAMS} Clams due)`)
+        : bi("記帳", "Ledger")
     );
   }
   if (msgBadgeEl) {
@@ -4324,15 +4529,17 @@ function updateRentCountdownUI() {
   if (financeDialog.open) {
     if (badge) {
       badge.textContent = isDue
-        ? `⚠️ 本期房租 ${MONTHLY_RENT_CLAMS} 英蚌已到期`
-        : `⏳ 距下次繳租：${formatRentCountdown(msLeft, false)}`;
+        ? bi(`⚠️ 本期房租 ${MONTHLY_RENT_CLAMS} 英蚌已到期`, `⚠️ Rent Due: ${MONTHLY_RENT_CLAMS} Clams`)
+        : bi(`⏳ 距下次繳租：${formatRentCountdown(msLeft, false)}`, `⏳ Next rent in: ${formatRentCountdown(msLeft, false)}`);
     }
     if (payBtn) {
       payBtn.classList.toggle("hidden", !isDue || isSuperAdmin);
+      payBtn.textContent = bi(`🏠 立即繳納本期房租（${MONTHLY_RENT_CLAMS} 英蚌）`, `🏠 Pay Monthly Rent (${MONTHLY_RENT_CLAMS} Clams)`);
       payBtn.disabled = rentActionBusy || (!isSuperAdmin && clams < MONTHLY_RENT_CLAMS);
     }
     if (testBtn) {
       testBtn.classList.toggle("hidden", !isSuperAdmin);
+      testBtn.textContent = bi(`🧪 測試模擬繳一期房租（-${MONTHLY_RENT_CLAMS}）`, `🧪 Simulate Monthly Rent (-${MONTHLY_RENT_CLAMS})`);
       testBtn.disabled = rentActionBusy;
     }
   }
@@ -4344,6 +4551,28 @@ function renderFinanceDialog() {
   const clams = Math.max(0, Math.trunc(Number(profile.clams ?? STARTER_CLAMS)));
   const currentMonth = getMonthKey();
 
+  const financeSubtitleEl = document.getElementById("finance-dialog-subtitle");
+  if (financeSubtitleEl) {
+    financeSubtitleEl.textContent = bi(
+      `看懂每月賺了多少、花了多少，記得先留住每月 ${MONTHLY_RENT_CLAMS} 英蚌的房租喔！`,
+      `Track monthly earnings and spending—remember to reserve ${MONTHLY_RENT_CLAMS} Clams for rent!`
+    );
+  }
+  const rentHeroTitleEl = document.getElementById("finance-rent-hero-title");
+  if (rentHeroTitleEl) {
+    rentHeroTitleEl.textContent = bi(
+      `🏠 每月房租預算：${MONTHLY_RENT_CLAMS} 英蚌／月`,
+      `🏠 Monthly Rent Budget: ${MONTHLY_RENT_CLAMS} Clams / mo`
+    );
+  }
+  const financeFooterNoteEl = document.getElementById("finance-footer-note");
+  if (financeFooterNoteEl) {
+    financeFooterNoteEl.textContent = bi(
+      `只租不買提醒：每月 1 號結算一次房租（${MONTHLY_RENT_CLAMS} 英蚌）`,
+      `Tenant note: Monthly rent (${MONTHLY_RENT_CLAMS} Clams) is billed on the 1st of each month.`
+    );
+  }
+
   // Budget progress bar & friendly status message
   const budgetMsgEl = document.getElementById("finance-rent-budget-msg");
   const fillEl = document.getElementById("finance-budget-fill");
@@ -4354,11 +4583,20 @@ function renderFinanceDialog() {
   }
   if (budgetMsgEl) {
     if (isSuperAdmin) {
-      budgetMsgEl.textContent = "超級管理員測試模式（∞ 無限英蚌，仍完整紀錄支出與模擬繳租）。";
+      budgetMsgEl.textContent = bi(
+        "超級管理員測試模式（∞ 無限英蚌，仍完整紀錄支出與模擬繳租）。",
+        "Super Admin test mode (∞ Clams; spending and simulated rent are still logged)."
+      );
     } else if (clams >= MONTHLY_RENT_CLAMS) {
-      budgetMsgEl.textContent = `✓ 本月房租預算已達標！預留 ${MONTHLY_RENT_CLAMS} 英蚌房租後，還可放心花費 ${clams - MONTHLY_RENT_CLAMS} 英蚌。`;
+      budgetMsgEl.textContent = bi(
+        `✓ 本月房租預算已達標！預留 ${MONTHLY_RENT_CLAMS} 英蚌房租後，還可放心花費 ${clams - MONTHLY_RENT_CLAMS} 英蚌。`,
+        `✓ Rent covered! After reserving ${MONTHLY_RENT_CLAMS} Clams, you have ${clams - MONTHLY_RENT_CLAMS} Clams left to spend.`
+      );
     } else {
-      budgetMsgEl.textContent = `⚠️ 目前還差 ${MONTHLY_RENT_CLAMS - clams} 英蚌才夠繳下月房租，建議先去電腦接案賺錢喔！`;
+      budgetMsgEl.textContent = bi(
+        `⚠️ 目前還差 ${MONTHLY_RENT_CLAMS - clams} 英蚌才夠繳下月房租，建議先去電腦接案賺錢喔！`,
+        `⚠️ Short by ${MONTHLY_RENT_CLAMS - clams} Clams for next rent—complete quests at your desk!`
+      );
     }
   }
 
@@ -4373,42 +4611,63 @@ function renderFinanceDialog() {
 
     landlordNoteEl.className = "finance-landlord-note";
     let noteIcon = "✉️";
-    let noteTitle = "房東陳伯伯的小紙條";
+    let noteTitle = bi("房東陳伯伯的小紙條", "Note from Landlord Uncle Chen");
     let noteBody = "";
 
     if (isSuperAdmin) {
       noteIcon = "🕶️";
-      noteTitle = "房東陳伯伯（對大股東敬禮）";
-      noteBody = "「管理員大大好！這棟樓的財務報表您隨時檢閱，房租只是順手測一下流程而已～」";
+      noteTitle = bi("房東陳伯伯（對大股東敬禮）", "Landlord Uncle Chen (Saluting the Owner)");
+      noteBody = bi(
+        "「管理員大大好！這棟樓的財務報表您隨時檢閱，房租只是順手測一下流程而已～」",
+        "\"Welcome, Admin! Feel free to review the ledger and test the rent flow anytime.\""
+      );
     } else if (isDue && deficit > 0) {
       landlordNoteEl.classList.add("is-urgent");
       noteIcon = "🧧";
-      noteTitle = "🚨 房東急件催租字條（已到期且餘額不足）";
-      noteBody = `「門縫收到通知了嗎？本月房租 ${MONTHLY_RENT_CLAMS} 英蚌已到期，還差 ${deficit} 英蚌！快回電腦接一個英語單元交稿賺錢，不然橘貓也要看著你嘆氣啦！」`;
+      noteTitle = bi("🚨 房東急件催租字條（已到期且餘額不足）", "🚨 Urgent Rent Notice (Overdue & Short)");
+      noteBody = bi(
+        `「門縫收到通知了嗎？本月房租 ${MONTHLY_RENT_CLAMS} 英蚌已到期，還差 ${deficit} 英蚌！快回電腦接一個英語單元交稿賺錢，不然橘貓也要看著你嘆氣啦！」`,
+        `"Rent (${MONTHLY_RENT_CLAMS} Clams) is due and you're short by ${deficit}! Finish a quest on your Mac right away!"`
+      );
     } else if (isDue) {
       landlordNoteEl.classList.add("is-urgent");
       noteIcon = "🚪";
-      noteTitle = "🏠 房東通知：本月房租可以結算囉！";
-      noteBody = `「早安呀小畫師～本月 ${MONTHLY_RENT_CLAMS} 英蚌房租已到期，我看你存摺裡現金夠了，按上方按鈕就能輕鬆入帳！」`;
+      noteTitle = bi("🏠 房東通知：本月房租可以結算囉！", "🏠 Landlord Notice: Rent Ready to Pay!");
+      noteBody = bi(
+        `「早安呀小畫師～本月 ${MONTHLY_RENT_CLAMS} 英蚌房租已到期，我看你存摺裡現金夠了，按上方按鈕就能輕鬆入帳！」`,
+        `"Morning, artist! This month's ${MONTHLY_RENT_CLAMS} Clams rent is due, and your balance covers it—click above to settle up!"`
+      );
     } else if (deficit > 0 && daysLeft <= 7) {
       landlordNoteEl.classList.add("is-tight");
       noteIcon = "⏳";
-      noteTitle = `⚠️ 房東溫馨倒數通知（剩 ${daysLeft} 天）`;
-      noteBody = `「再過 ${daysLeft} 天就要繳下期 ${MONTHLY_RENT_CLAMS} 英蚌房租囉！你現在還缺 ${deficit} 英蚌，趕緊打開 MacBook 完成一單英語委託最安心！」`;
+      noteTitle = bi(`⚠️ 房東溫馨倒數通知（剩 ${daysLeft} 天）`, `⚠️ Friendly Rent Reminder (${daysLeft}d left)`);
+      noteBody = bi(
+        `「再過 ${daysLeft} 天就要繳下期 ${MONTHLY_RENT_CLAMS} 英蚌房租囉！你現在還缺 ${deficit} 英蚌，趕緊打開 MacBook 完成一單英語委託最安心！」`,
+        `"${daysLeft} day(s) until ${MONTHLY_RENT_CLAMS} Clams rent is due! You still need ${deficit} more Clams—knock out one quick commission!"`
+      );
     } else if (paidThisMonth) {
       landlordNoteEl.classList.add("is-paid");
       noteIcon = "🥳";
-      noteTitle = "✨ 房東點讚回執：本月房租準時收訖";
-      noteBody = `「這麼準時的接案租客真是少見！距離下次繳租還有 ${daysLeft} 天，多餘的 ${clams} 英蚌可以去生活商店挑家具犒賞自己～」`;
+      noteTitle = bi("✨ 房東點讚回執：本月房租準時收訖", "✨ Landlord Receipt: Paid on Time!");
+      noteBody = bi(
+        `「這麼準時的接案租客真是少見！距離下次繳租還有 ${daysLeft} 天，多餘的 ${clams} 英蚌可以去生活商店挑家具犒賞自己～」`,
+        `"Promptest illustrator tenant ever! ${daysLeft} day(s) until next rent—treat yourself at the Studio Shop!"`
+      );
     } else if (deficit > 0) {
       landlordNoteEl.classList.add("is-tight");
       noteIcon = "📒";
-      noteTitle = `💡 房東鄰居關心（距繳租 ${daysLeft} 天）`;
-      noteBody = `「先存好下期房租（還差 ${deficit} 英蚌）再逛家具店，是最穩健的接案生存法則喔！」`;
+      noteTitle = bi(`💡 房東鄰居關心（距繳租 ${daysLeft} 天）`, `💡 Friendly Reminder (${daysLeft}d until rent)`);
+      noteBody = bi(
+        `「先存好下期房租（還差 ${deficit} 英蚌）再逛家具店，是最穩健的接案生存法則喔！」`,
+        `"Save up the ${deficit} Clams needed for next rent before furniture shopping—smartest freelance habit!"`
+      );
     } else {
       noteIcon = "☕";
-      noteTitle = `🌞 房東的祝福（預算已就緒，距繳租剩 ${daysLeft} 天）`;
-      noteBody = `「房租 ${MONTHLY_RENT_CLAMS} 英蚌都預留妥當啦，剩下的 ${clams - MONTHLY_RENT_CLAMS} 英蚌祝你在工作室創作愉快！」`;
+      noteTitle = bi(`🌞 房東的祝福（預算已就緒，距繳租剩 ${daysLeft} 天）`, `🌞 Landlord's Note (Budget Ready · ${daysLeft}d left)`);
+      noteBody = bi(
+        `「房租 ${MONTHLY_RENT_CLAMS} 英蚌都預留妥當啦，剩下的 ${clams - MONTHLY_RENT_CLAMS} 英蚌祝你在工作室創作愉快！」`,
+        `"Rent (${MONTHLY_RENT_CLAMS} Clams) is safely reserved! Enjoy spending your extra ${clams - MONTHLY_RENT_CLAMS} Clams on your studio!"`
+      );
     }
 
     landlordNoteEl.innerHTML = `
@@ -4434,12 +4693,12 @@ function renderFinanceDialog() {
   sortedMonths.forEach(m => {
     const opt = document.createElement("option");
     opt.value = m;
-    opt.textContent = m === currentMonth ? `${m}（本月）` : m;
+    opt.textContent = m === currentMonth ? bi(`${m}（本月）`, `${m} (This Month)`) : m;
     monthSelect.appendChild(opt);
   });
   const allOpt = document.createElement("option");
   allOpt.value = "all";
-  allOpt.textContent = "全部歷史月份";
+  allOpt.textContent = bi("全部歷史月份", "All Months");
   monthSelect.appendChild(allOpt);
   monthSelect.value = activeFinanceMonth;
 
@@ -4447,9 +4706,9 @@ function renderFinanceDialog() {
   const tabsEl = document.getElementById("finance-type-tabs");
   tabsEl.innerHTML = "";
   [
-    { id: "all", label: "全部明細" },
-    { id: "expense", label: "只看支出" },
-    { id: "income", label: "只看收入" }
+    { id: "all", label: bi("全部明細", "All") },
+    { id: "expense", label: bi("只看支出", "Expenses") },
+    { id: "income", label: bi("只看收入", "Income") }
   ].forEach(tab => {
     const b = document.createElement("button");
     b.type = "button";
@@ -4479,19 +4738,31 @@ function renderFinanceDialog() {
   const showUnpaidRentBudget = activeFinanceMonth === currentMonth && !hasPaidRentInSelectedMonth;
   const totalExpenseWithBudget = recordedExpenseSum + (showUnpaidRentBudget ? MONTHLY_RENT_CLAMS : 0);
 
-  const scopeLabel = activeFinanceMonth === "all" ? "累積總" : (activeFinanceMonth === currentMonth ? "本月" : `${activeFinanceMonth} `);
-  document.getElementById("finance-income-label").textContent = `💵 ${scopeLabel}收入`;
-  document.getElementById("finance-income-val").textContent = `+${incomeSum} 英蚌`;
-  document.getElementById("finance-expense-label").textContent = `💸 ${scopeLabel}${showUnpaidRentBudget ? "花費＋房租預算" : "總支出"}`;
-  document.getElementById("finance-expense-val").textContent = `-${totalExpenseWithBudget} 英蚌`;
+  const unitClamWord = bi("英蚌", "Clams");
+  const scopeLabel = activeFinanceMonth === "all"
+    ? bi("累積總", "Total ")
+    : (activeFinanceMonth === currentMonth ? bi("本月", "Monthly ") : `${activeFinanceMonth} `);
+  document.getElementById("finance-income-label").textContent = bi(`💵 ${scopeLabel}收入`, `💵 ${scopeLabel}Income`);
+  document.getElementById("finance-income-val").textContent = `+${incomeSum} ${unitClamWord}`;
+  document.getElementById("finance-expense-label").textContent = bi(
+    `💸 ${scopeLabel}${showUnpaidRentBudget ? "花費＋房租預算" : "總支出"}`,
+    `💸 ${scopeLabel}${showUnpaidRentBudget ? "Spending + Rent Budget" : "Expenses"}`
+  );
+  document.getElementById("finance-expense-val").textContent = `-${totalExpenseWithBudget} ${unitClamWord}`;
   document.getElementById("finance-expense-sub").textContent = showUnpaidRentBudget
-    ? `已實際支出 ${recordedExpenseSum} ＋ 本月房租預算 ${MONTHLY_RENT_CLAMS}`
-    : `紀錄支出合計（含已繳房租與購買家具）`;
+    ? bi(
+        `已實際支出 ${recordedExpenseSum} ＋ 本月房租預算 ${MONTHLY_RENT_CLAMS}`,
+        `Spent ${recordedExpenseSum} + Rent budget ${MONTHLY_RENT_CLAMS}`
+      )
+    : bi("紀錄支出合計（含已繳房租與購買家具）", "Recorded total spending (rent + purchases)");
 
-  document.getElementById("finance-balance-val").textContent = isSuperAdmin ? "∞ 英蚌" : `${clams} 英蚌`;
+  document.getElementById("finance-balance-val").textContent = isSuperAdmin ? `∞ ${unitClamWord}` : `${clams} ${unitClamWord}`;
   document.getElementById("finance-free-cash-sub").textContent = isSuperAdmin
-    ? "超級管理員測試無限額度"
-    : `扣掉 ${MONTHLY_RENT_CLAMS} 房租後可自由花費：${Math.max(0, clams - MONTHLY_RENT_CLAMS)} 英蚌`;
+    ? bi("超級管理員測試無限額度", "Super Admin unlimited balance")
+    : bi(
+        `扣掉 ${MONTHLY_RENT_CLAMS} 房租後可自由花費：${Math.max(0, clams - MONTHLY_RENT_CLAMS)} 英蚌`,
+        `Spendable after ${MONTHLY_RENT_CLAMS} rent: ${Math.max(0, clams - MONTHLY_RENT_CLAMS)} Clams`
+      );
 
   const listEl = document.getElementById("finance-tx-list");
   listEl.innerHTML = "";
@@ -4501,10 +4772,16 @@ function renderFinanceDialog() {
     budgetRow.className = "finance-tx-row is-budget-row";
     budgetRow.innerHTML = `
       <div class="finance-tx-meta">
-        <span class="finance-tx-title">🏠 ${escapeHtml(currentMonth)} 每月房租預算（每月 1 號繳納）</span>
-        <span class="finance-tx-sub">固定生活必要支出 · 尚未扣款（預先計入本月預算）</span>
+        <span class="finance-tx-title">${bi(
+          `🏠 ${escapeHtml(currentMonth)} 每月房租預算（每月 1 號繳納）`,
+          `🏠 ${escapeHtml(currentMonth)} Monthly Rent Budget (Due 1st)`
+        )}</span>
+        <span class="finance-tx-sub">${bi(
+          "固定生活必要支出 · 尚未扣款（預先計入本月預算）",
+          "Fixed living expense · Upcoming (reserved in budget)"
+        )}</span>
       </div>
-      <span class="finance-tx-amount is-budget">-${MONTHLY_RENT_CLAMS} 英蚌（預算）</span>
+      <span class="finance-tx-amount is-budget">-${MONTHLY_RENT_CLAMS} ${bi("英蚌（預算）", "Clams (Budget)")}</span>
     `;
     listEl.appendChild(budgetRow);
   }
@@ -4518,7 +4795,10 @@ function renderFinanceDialog() {
   if (filteredList.length === 0 && !(showUnpaidRentBudget && activeFinanceFilter !== "income")) {
     const emptyEl = document.createElement("p");
     emptyEl.className = "form-hint";
-    emptyEl.textContent = "這個分類與月份目前還沒有收支紀錄；去商店買東西、完成接案或繳交房租後就會記錄在這裡！";
+    emptyEl.textContent = bi(
+      "這個分類與月份目前還沒有收支紀錄；去商店買東西、完成接案或繳交房租後就會記錄在這裡！",
+      "No transactions in this filter yet—shop, finish gigs, or pay rent to see logs here!"
+    );
     listEl.appendChild(emptyEl);
   } else {
     filteredList.forEach(tx => {
@@ -4541,14 +4821,14 @@ function renderFinanceDialog() {
                     ? "⌨️"
                     : "🛋️";
       const dateText = tx.createdAt?.toDate
-        ? tx.createdAt.toDate().toLocaleString("zh-TW", { hour12: false })
+        ? tx.createdAt.toDate().toLocaleString(isEn() ? "en-US" : "zh-TW", { hour12: false })
         : (tx.monthKey || "");
       row.innerHTML = `
         <div class="finance-tx-meta">
-          <span class="finance-tx-title">${icon} ${escapeHtml(tx.title || "收支項目")}</span>
+          <span class="finance-tx-title">${icon} ${escapeHtml(tx.title || bi("收支項目", "Transaction"))}</span>
           <span class="finance-tx-sub">${escapeHtml(dateText)}</span>
         </div>
-        <span class="finance-tx-amount ${isIn ? "is-in" : "is-out"}">${isIn ? "+" : ""}${tx.amount} 英蚌</span>
+        <span class="finance-tx-amount ${isIn ? "is-in" : "is-out"}">${isIn ? "+" : ""}${tx.amount} ${unitClamWord}</span>
       `;
       listEl.appendChild(row);
     });
@@ -4570,12 +4850,15 @@ async function payMonthlyRent({ isTestDemo = false } = {}) {
     const monthStr = getMonthKey();
     const result = await runTransaction(firestoreDb, async (tx) => {
       const snap = await tx.get(userRef);
-      if (!snap.exists()) throw new Error("找不到使用者檔案。");
+      if (!snap.exists()) throw new Error(bi("找不到使用者檔案。", "User profile not found."));
       const data = snap.data() || {};
       const curClams = Math.trunc(Number(data.clams ?? STARTER_CLAMS));
       const curDue = Number(data.nextRentDueAt || Date.now());
       if (!isTestDemo && !isSuperAdmin && curClams < MONTHLY_RENT_CLAMS) {
-        throw new Error(`餘額不足 ${MONTHLY_RENT_CLAMS} 英蚌，先接案賺錢再來繳租吧！`);
+        throw new Error(bi(
+          `餘額不足 ${MONTHLY_RENT_CLAMS} 英蚌，先接案賺錢再來繳租吧！`,
+          `Not enough Clams (${MONTHLY_RENT_CLAMS} needed). Complete quests to pay rent!`
+        ));
       }
       const nextClams = (isTestDemo || isSuperAdmin) ? curClams : (curClams - MONTHLY_RENT_CLAMS);
       const nextDue = getNextMonthFirstEpoch(Math.max(Date.now(), curDue) + 60000);
@@ -4588,7 +4871,9 @@ async function payMonthlyRent({ isTestDemo = false } = {}) {
       queueLedgerTransaction(tx, currentUser.uid, {
         type: "rent",
         category: "rent",
-        title: isTestDemo ? "測試模擬繳交每月房租" : `繳交每月租屋處房租（${monthStr}）`,
+        title: isTestDemo
+          ? bi("測試模擬繳交每月房租", "Simulated monthly rent test")
+          : bi(`繳交每月租屋處房租（${monthStr}）`, `Monthly Studio Rent (${monthStr})`),
         amount: -MONTHLY_RENT_CLAMS,
         monthKey: monthStr
       });
@@ -4608,8 +4893,8 @@ async function payMonthlyRent({ isTestDemo = false } = {}) {
       result.nextClams
     );
     const note = isTestDemo
-      ? "已模擬記帳一期 -100 英蚌房租並推進下期倒數！"
-      : `已成功繳納 ${result.monthStr} 房租 ${MONTHLY_RENT_CLAMS} 英蚌！`;
+      ? bi(`已模擬記帳一期 -${MONTHLY_RENT_CLAMS} 英蚌房租並推進下期倒數！`, `Simulated -${MONTHLY_RENT_CLAMS} Clams rent log and advanced next due date!`)
+      : bi(`已成功繳納 ${result.monthStr} 房租 ${MONTHLY_RENT_CLAMS} 英蚌！`, `Paid ${result.monthStr} rent (${MONTHLY_RENT_CLAMS} Clams)!`);
     showFeedback("finance-feedback", "success", note);
     roomScene?.showBubble("Paid my monthly rent! 🏠", 3600);
     renderFinanceDialog();
@@ -4895,8 +5180,8 @@ function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
 
   selectEl.innerHTML = "";
   if (cachedStudents.length === 0) {
-    selectEl.innerHTML = `<option value="">尚無註冊帳號</option>`;
-    summaryEl.textContent = "目前還沒有學生帳號註冊。";
+    selectEl.innerHTML = `<option value="">${bi("尚無註冊帳號", "No registered accounts")}</option>`;
+    summaryEl.textContent = bi("目前還沒有學生帳號註冊。", "No student accounts registered yet.");
     listEl.innerHTML = "";
     return;
   }
@@ -4909,9 +5194,9 @@ function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
     const overrides = stu.completionOverrides || {};
     const submitted = stu.submittedLessons || {};
     const pendingCount = Object.keys(submitted).filter(d => submitted[d] && !approved[d] && !overrides[d]).length;
-    const pendingTag = pendingCount > 0 ? ` · 🔔${pendingCount}待驗收` : "";
-    const selfTag = (stu.email || "").toLowerCase() === SUPER_ADMIN_EMAIL ? " ★測試帳號" : "";
-    opt.textContent = `${stu.displayName || stu.email}${charName}${selfTag} (${stu.email}) — ${stu.clams ?? STARTER_CLAMS} 英蚌${pendingTag}`;
+    const pendingTag = pendingCount > 0 ? bi(` · 🔔${pendingCount}待驗收`, ` · 🔔${pendingCount} pending`) : "";
+    const selfTag = (stu.email || "").toLowerCase() === SUPER_ADMIN_EMAIL ? bi(" ★測試帳號", " ★Test Admin") : "";
+    opt.textContent = `${stu.displayName || stu.email}${charName}${selfTag} (${stu.email}) — ${stu.clams ?? STARTER_CLAMS} ${bi("英蚌", "Clams")}${pendingTag}`;
     selectEl.appendChild(opt);
   });
 
@@ -4944,7 +5229,7 @@ function renderPendingReviewQueue() {
         pendingEntries.push({
           stu,
           dateStr: dateKey,
-          title: lessonMeta?.Title || "英語單元任務"
+          title: lessonMeta?.Title || bi("英語單元任務", "English Quest")
         });
       }
     });
@@ -4955,7 +5240,7 @@ function renderPendingReviewQueue() {
   if (pendingEntries.length === 0) {
     const emptyEl = document.createElement("p");
     emptyEl.className = "form-hint";
-    emptyEl.textContent = "目前沒有尚未驗收的待處理交稿。";
+    emptyEl.textContent = bi("目前沒有尚未驗收的待處理交稿。", "No pending submissions awaiting review.");
     queueEl.appendChild(emptyEl);
     return;
   }
@@ -4969,7 +5254,7 @@ function renderPendingReviewQueue() {
     row.innerHTML = `
       <div class="admin-review-meta">
         <strong>🔔 ${escapeHtml(stuLabel)} — ${escapeHtml(dateStr)} · ${escapeHtml(title)}</strong>
-        <span class="form-hint">${escapeHtml(stu.email || "")} ｜ 目前餘額 ${Math.trunc(Number(stu.clams ?? STARTER_CLAMS))} 英蚌</span>
+        <span class="form-hint">${escapeHtml(stu.email || "")} ｜ ${bi("目前餘額", "Balance:")} ${Math.trunc(Number(stu.clams ?? STARTER_CLAMS))} ${bi("英蚌", "Clams")}</span>
       </div>
       <div class="admin-review-actions"></div>
     `;
@@ -4981,24 +5266,27 @@ function renderPendingReviewQueue() {
     rewardInput.value = String(UNIT_REWARD_CLAMS);
     rewardInput.min = "0";
     rewardInput.max = "100000";
-    rewardInput.setAttribute("aria-label", `${stuLabel} ${dateStr} 驗收報酬英蚌`);
+    rewardInput.setAttribute("aria-label", bi(`${stuLabel} ${dateStr} 驗收報酬英蚌`, `Payout Clams for ${stuLabel} (${dateStr})`));
 
     const approveBtn = document.createElement("button");
     approveBtn.type = "button";
     approveBtn.className = "btn btn-primary btn-sm";
-    approveBtn.textContent = "✓ 驗收並發錢";
+    approveBtn.textContent = bi("✓ 驗收並發錢", "✓ Approve & Pay");
     approveBtn.addEventListener("click", async () => {
       approveBtn.disabled = true;
       clearFeedback("admin-review-feedback");
       try {
         const res = await approveStudentLesson(stu.uid, dateStr, rewardInput.value);
-        const xpNote = res.xpGranted > 0 ? `與 +${res.xpGranted} XP` : "";
+        const xpNote = res.xpGranted > 0 ? bi(`與 +${res.xpGranted} XP`, ` & +${res.xpGranted} XP`) : "";
         showFeedback(
           "admin-review-feedback",
           "success",
           res.alreadyApproved
-            ? `${stuLabel} 的 ${dateStr} 已是驗收狀態。`
-            : `已驗收 ${stuLabel}（${dateStr}）並即時發放 ${rewardInput.value} 英蚌${xpNote}！`
+            ? bi(`${stuLabel} 的 ${dateStr} 已是驗收狀態。`, `${stuLabel}'s ${dateStr} is already approved.`)
+            : bi(
+                `已驗收 ${stuLabel}（${dateStr}）並即時發放 ${rewardInput.value} 英蚌${xpNote}！`,
+                `Approved ${stuLabel} (${dateStr}) and awarded ${rewardInput.value} Clams${xpNote}!`
+              )
         );
         await loadStudentsForReview(stu.uid);
       } catch (err) {
@@ -5010,13 +5298,13 @@ function renderPendingReviewQueue() {
     const rejectBtn = document.createElement("button");
     rejectBtn.type = "button";
     rejectBtn.className = "btn btn-sm";
-    rejectBtn.textContent = "退回修改";
+    rejectBtn.textContent = bi("退回修改", "Request Revision");
     rejectBtn.addEventListener("click", async () => {
       rejectBtn.disabled = true;
       clearFeedback("admin-review-feedback");
       try {
         await rejectStudentSubmission(stu.uid, dateStr);
-        showFeedback("admin-review-feedback", "info", `已退回 ${stuLabel} 的 ${dateStr} 交稿。`);
+        showFeedback("admin-review-feedback", "info", bi(`已退回 ${stuLabel} 的 ${dateStr} 交稿。`, `Returned ${stuLabel}'s ${dateStr} submission.`));
         await loadStudentsForReview(stu.uid);
       } catch (err) {
         showFeedback("admin-review-feedback", "error", translateAuthError(err));
@@ -5114,7 +5402,7 @@ async function loadStudentsForReview(preserveUid = null) {
   const listEl = document.getElementById("review-lessons-list");
   const summaryEl = document.getElementById("review-student-summary");
   if (cachedStudents.length === 0) {
-    selectEl.innerHTML = `<option value="">正在讀取學生名單...</option>`;
+    selectEl.innerHTML = `<option value="">${bi("正在讀取學生名單...", "Loading illustrators...")}</option>`;
     listEl.innerHTML = "";
   }
 
@@ -5126,8 +5414,8 @@ async function loadStudentsForReview(preserveUid = null) {
     });
     syncCachedStudentsSnapshot(list, preserveUid);
   } catch (err) {
-    selectEl.innerHTML = `<option value="">讀取失敗</option>`;
-    summaryEl.textContent = "無法讀取名單，請確認網路或管理員權限。";
+    selectEl.innerHTML = `<option value="">${bi("讀取失敗", "Load failed")}</option>`;
+    summaryEl.textContent = bi("無法讀取名單，請確認網路或管理員權限。", "Unable to load list. Check your network or admin permissions.");
     showFeedback("admin-review-feedback", "error", translateAuthError(err));
   }
 }
@@ -5141,7 +5429,7 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount)
 
   const result = await runTransaction(firestoreDb, async (tx) => {
     const snap = await tx.get(stuRef);
-    if (!snap.exists()) throw new Error("找不到該學生帳號資料。");
+    if (!snap.exists()) throw new Error(bi("找不到該學生帳號資料。", "Student account not found."));
     const data = snap.data() || {};
     const approvedMap = sanitizeBoolMap(data.approvedLessons);
     const submittedMap = sanitizeBoolMap(data.submittedLessons);
@@ -5183,7 +5471,7 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount)
       queueLedgerTransaction(tx, studentUid, {
         type: "income",
         category: "lesson",
-        title: `單元驗收撥款（${dateStr}）`,
+        title: bi(`單元驗收撥款（${dateStr}）`, `Quest Payout (${dateStr})`),
         amount: safeReward
       });
     }
@@ -5247,11 +5535,11 @@ async function rejectStudentSubmission(studentUid, dateStr) {
 async function grantManualBonus(studentUid, bonusAmount) {
   const parsed = Math.trunc(Number(bonusAmount) || 0);
   const clampedDelta = Math.max(-50000, Math.min(100000, parsed));
-  if (clampedDelta === 0) throw new Error("請輸入非零的英蚌數量。");
+  if (clampedDelta === 0) throw new Error(bi("請輸入非零的英蚌數量。", "Please enter a non-zero Clam amount."));
   const stuRef = doc(firestoreDb, "users", studentUid);
   const nextClams = await runTransaction(firestoreDb, async (tx) => {
     const snap = await tx.get(stuRef);
-    if (!snap.exists()) throw new Error("找不到該學生帳號資料。");
+    if (!snap.exists()) throw new Error(bi("找不到該學生帳號資料。", "Student account not found."));
     const data = snap.data() || {};
     const prevC = Math.trunc(Number(data.clams ?? STARTER_CLAMS));
     const prevT = Math.trunc(Number(data.totalEarnedClams ?? 0));
@@ -5267,7 +5555,9 @@ async function grantManualBonus(studentUid, bonusAmount) {
       queueLedgerTransaction(tx, studentUid, {
         type: deltaApplied > 0 ? "bonus" : "adjustment",
         category: deltaApplied > 0 ? "bonus" : "adjustment",
-        title: deltaApplied > 0 ? "課堂獎勵／老師加碼發放" : "管理員餘額更正調整",
+        title: deltaApplied > 0
+          ? bi("課堂獎勵／老師加碼發放", "Class Bonus / Client Bonus")
+          : bi("管理員餘額更正調整", "Admin Balance Adjustment"),
         amount: deltaApplied
       });
     }
@@ -5300,15 +5590,18 @@ function renderSelectedStudentReview() {
   const stuXp = Math.max(0, Math.trunc(Number(stu.xp ?? 0)));
   const stuProgress = resolveXpProgress(stuXp, XP_PER_LEVEL);
   const ownedCount = Object.values(stu.ownedItems || {}).filter(Boolean).length;
-  summaryEl.textContent = `Lv.${stuProgress.level} ${stuProgress.title}（${stuXp} XP）｜ 餘額：${clams} 英蚌 ｜ 累積收入：${totalEarned} 英蚌 ｜ 角色：${stu.avatar?.name || "尚未建立"} ｜ 已購物件：${ownedCount} 件`;
+  summaryEl.textContent = bi(
+    `Lv.${stuProgress.level} ${stuProgress.title}（${stuXp} XP）｜ 餘額：${clams} 英蚌 ｜ 累積收入：${totalEarned} 英蚌 ｜ 角色：${stu.avatar?.name || "尚未建立"} ｜ 已購物件：${ownedCount} 件`,
+    `Lv.${stuProgress.level} ${stuProgress.title} (${stuXp} XP) | Balance: ${clams} Clams | Earned: ${totalEarned} Clams | Artist: ${stu.avatar?.name || "Not set"} | Owned: ${ownedCount}`
+  );
 
   // Direct Clam Payout / Adjustment row
   const bonusRow = document.createElement("div");
   bonusRow.className = "admin-review-row";
   bonusRow.innerHTML = `
     <div class="admin-review-meta">
-      <strong>💰 直接發放／調整英蚌</strong>
-      <span class="form-hint">點下方快捷按鈕直接匯款，或輸入正負數字進行獎金加碼／更正</span>
+      <strong>${bi("💰 直接發放／調整英蚌", "💰 Direct Clam Payout / Adjust")}</strong>
+      <span class="form-hint">${bi("點下方快捷按鈕直接匯款，或輸入正負數字進行獎金加碼／更正", "Use quick buttons or enter a positive/negative adjustment")}</span>
       <div class="quick-clam-chips" style="margin-top: 0.25rem;">
         <button type="button" class="btn btn-sm quick-payout-btn" data-amt="50">+50</button>
         <button type="button" class="btn btn-sm quick-payout-btn" data-amt="100">+100</button>
@@ -5318,8 +5611,8 @@ function renderSelectedStudentReview() {
       </div>
     </div>
     <div class="admin-review-actions">
-      <input type="number" class="reward-input-sm" id="manual-bonus-input" value="200" min="-50000" max="100000" aria-label="發放或調整英蚌數量" />
-      <button type="button" class="btn btn-primary btn-sm" id="send-bonus-btn">立即發放</button>
+      <input type="number" class="reward-input-sm" id="manual-bonus-input" value="200" min="-50000" max="100000" aria-label="${bi("發放或調整英蚌數量", "Clam payout amount")}" />
+      <button type="button" class="btn btn-primary btn-sm" id="send-bonus-btn">${bi("立即發放", "Send")}</button>
     </div>
   `;
   const sendPayout = async (amount, triggerBtn) => {
@@ -5327,8 +5620,11 @@ function renderSelectedStudentReview() {
     clearFeedback("admin-review-feedback");
     try {
       const res = await grantManualBonus(stu.uid, amount);
-      const verb = res.deltaApplied >= 0 ? `已發放 +${res.deltaApplied}` : `已調整 ${res.deltaApplied}`;
-      showFeedback("admin-review-feedback", "success", `${verb} 英蚌給 ${stu.avatar?.name || stu.displayName || stu.email}！（目前餘額 ${res.nextC} 英蚌）`);
+      const targetName = stu.avatar?.name || stu.displayName || stu.email;
+      const msg = res.deltaApplied >= 0
+        ? bi(`已發放 +${res.deltaApplied} 英蚌給 ${targetName}！（目前餘額 ${res.nextC} 英蚌）`, `Sent +${res.deltaApplied} Clams to ${targetName} (Balance: ${res.nextC} Clams)!`)
+        : bi(`已調整 ${res.deltaApplied} 英蚌給 ${targetName}！（目前餘額 ${res.nextC} 英蚌）`, `Adjusted ${res.deltaApplied} Clams for ${targetName} (Balance: ${res.nextC} Clams)!`);
+      showFeedback("admin-review-feedback", "success", msg);
       await loadStudentsForReview(stu.uid);
     } catch (err) {
       showFeedback("admin-review-feedback", "error", err?.message || translateAuthError(err));
@@ -5362,7 +5658,7 @@ function renderSelectedStudentReview() {
   if (activeLessons.length === 0) {
     const emptyNote = document.createElement("p");
     emptyNote.className = "form-hint";
-    emptyNote.textContent = "尚無待驗收的近況課程。";
+    emptyNote.textContent = bi("尚無待驗收的近況課程。", "No lessons available for review.");
     listEl.appendChild(emptyNote);
     return;
   }
@@ -5376,7 +5672,7 @@ function renderSelectedStudentReview() {
     row.innerHTML = `
       <div class="admin-review-meta">
         <strong>${escapeHtml(lesson.Date)} · ${escapeHtml(lesson.Title || "Untitled")}</strong>
-        <span class="form-hint">${isApproved ? "✓ 已驗收並撥款" : isPending ? "🔔 學生已提交作品，等待您驗收！" : "尚未交稿（老師亦可直接現場結算）"}</span>
+        <span class="form-hint">${isApproved ? bi("✓ 已驗收並撥款", "✓ Approved & Paid") : isPending ? bi("🔔 學生已提交作品，等待您驗收！", "🔔 Submitted — awaiting your review!") : bi("尚未交稿（老師亦可直接現場結算）", "Not submitted yet (can still approve manually)")}</span>
       </div>
       <div class="admin-review-actions"></div>
     `;
@@ -5385,7 +5681,7 @@ function renderSelectedStudentReview() {
     if (isApproved) {
       const tag = document.createElement("span");
       tag.className = "role-badge verified-badge";
-      tag.textContent = "已驗收通過 ✓";
+      tag.textContent = bi("已驗收通過 ✓", "Approved ✓");
       actionsEl.appendChild(tag);
     } else {
       const rewardInput = document.createElement("input");
@@ -5394,24 +5690,27 @@ function renderSelectedStudentReview() {
       rewardInput.value = String(UNIT_REWARD_CLAMS);
       rewardInput.min = "0";
       rewardInput.max = "100000";
-      rewardInput.setAttribute("aria-label", `${lesson.Date} 驗收報酬英蚌`);
+      rewardInput.setAttribute("aria-label", bi(`${lesson.Date} 驗收報酬英蚌`, `Payout Clams for ${lesson.Date}`));
 
       const approveBtn = document.createElement("button");
       approveBtn.type = "button";
       approveBtn.className = "btn btn-primary btn-sm";
-      approveBtn.textContent = "驗收並撥款";
+      approveBtn.textContent = bi("驗收並撥款", "Approve & Pay");
       approveBtn.addEventListener("click", async () => {
         approveBtn.disabled = true;
         clearFeedback("admin-review-feedback");
         try {
           const res = await approveStudentLesson(stu.uid, lesson.Date, rewardInput.value);
-          const xpNote = res.xpGranted > 0 ? `與 +${res.xpGranted} XP` : "";
+          const xpNote = res.xpGranted > 0 ? bi(`與 +${res.xpGranted} XP`, ` & +${res.xpGranted} XP`) : "";
           showFeedback(
             "admin-review-feedback",
             "success",
             res.alreadyApproved
-              ? `${lesson.Date} 已是驗收狀態。`
-              : `已驗收 ${lesson.Date} 並撥款 ${rewardInput.value} 英蚌${xpNote}！`
+              ? bi(`${lesson.Date} 已是驗收狀態。`, `${lesson.Date} is already approved.`)
+              : bi(
+                  `已驗收 ${lesson.Date} 並撥款 ${rewardInput.value} 英蚌${xpNote}！`,
+                  `Approved ${lesson.Date} and awarded ${rewardInput.value} Clams${xpNote}!`
+                )
           );
           await loadStudentsForReview(stu.uid);
         } catch (err) {
@@ -5427,12 +5726,12 @@ function renderSelectedStudentReview() {
         const rejectBtn = document.createElement("button");
         rejectBtn.type = "button";
         rejectBtn.className = "btn btn-sm";
-        rejectBtn.textContent = "退回修改";
+        rejectBtn.textContent = bi("退回修改", "Request Revision");
         rejectBtn.addEventListener("click", async () => {
           rejectBtn.disabled = true;
           try {
             await rejectStudentSubmission(stu.uid, lesson.Date);
-            showFeedback("admin-review-feedback", "info", `已退回 ${lesson.Date} 請繪師修改再交。`);
+            showFeedback("admin-review-feedback", "info", bi(`已退回 ${lesson.Date} 請繪師修改再交。`, `Returned ${lesson.Date} for revision.`));
             await loadStudentsForReview(stu.uid);
           } catch (err) {
             showFeedback("admin-review-feedback", "error", translateAuthError(err));
@@ -5464,7 +5763,11 @@ document.getElementById("admin-preview-story-btn")?.addEventListener("click", ()
   if (currentRole !== "super_admin" && currentRole !== "admin") return;
   clearFeedback("admin-review-feedback");
   if (!currentUserProfile?.avatar) {
-    showFeedback("admin-review-feedback", "error", "請先建立並保存自己的角色外觀，才能在房間內預覽開場故事橫幅。");
+    showFeedback(
+      "admin-review-feedback",
+      "error",
+      bi("請先建立並保存自己的角色外觀，才能在房間內預覽開場故事橫幅。", "Create your character look first to preview the intro banner.")
+    );
     return;
   }
   if (adminReviewDialog.open) adminReviewDialog.close();
@@ -5476,18 +5779,21 @@ document.getElementById("admin-reset-my-story-btn")?.addEventListener("click", a
   const btn = e.currentTarget;
   const prevText = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "重置中…";
+  btn.textContent = bi("重置中…", "Resetting…");
   clearFeedback("admin-review-feedback");
   try {
     setLocalIntroStorySeen(currentUser.uid, false);
     const saved = await persistRoomState({ introStorySeen: false });
     if (!saved) {
-      throw new Error("寫入 Firestore 失敗，請確認安全規則已部署。");
+      throw new Error(bi("寫入 Firestore 失敗，請確認安全規則已部署。", "Firestore write failed; confirm rules are deployed."));
     }
     showFeedback(
       "admin-review-feedback",
       "success",
-      "已將目前帳號的開場劇情狀態重置為「尚未觀看」！關閉驗收台回到房間（或重新整理頁面）即可實測首次進房自動出現；看完或按「跳過」後便不會再出現。"
+      bi(
+        "已將目前帳號的開場劇情狀態重置為「尚未觀看」！關閉驗收台回到房間（或重新整理頁面）即可實測首次進房自動出現；看完或按「跳過」後便不會再出現。",
+        "Intro story state reset to unseen! Close this dialog (or refresh) in your studio to test the first-entry trigger; once completed or skipped, it won't reappear."
+      )
     );
   } catch (err) {
     showFeedback("admin-review-feedback", "error", err?.message || translateAuthError(err));
@@ -5499,12 +5805,16 @@ document.getElementById("admin-reset-my-story-btn")?.addEventListener("click", a
 document.getElementById("admin-reset-all-lessons-btn")?.addEventListener("click", async (e) => {
   if (currentRole !== "super_admin" && currentRole !== "admin") return;
   const btn = e.currentTarget;
-  if (!window.confirm("確定要將所有玩家帳號的所有關卡完成狀態、交稿紀錄與單關 XP 領取標記全部歸零嗎？\n（會保留大家現有的英蚌餘額、家具與等級，重新完成每單元可再度獲得英蚌與經驗值）")) {
+  const confirmMsg = bi(
+    "確定要將所有玩家帳號的所有關卡完成狀態、交稿紀錄與單關 XP 領取標記全部歸零嗎？\n（會保留大家現有的英蚌餘額、家具與等級，重新完成每單元可再度獲得英蚌與經驗值）",
+    "Reset all completed quests, submissions, and per-quest XP flags for EVERY account?\n(Existing Clams, furniture, and XP levels are kept; quests can be replayed for new rewards.)"
+  );
+  if (!window.confirm(confirmMsg)) {
     return;
   }
   const prevText = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "歸零處理中…";
+  btn.textContent = bi("歸零處理中…", "Resetting…");
   clearFeedback("admin-review-feedback");
   try {
     const snap = await getDocs(collection(firestoreDb, "users"));
@@ -5547,8 +5857,11 @@ document.getElementById("admin-reset-all-lessons-btn")?.addEventListener("click"
       "admin-review-feedback",
       "success",
       targets.length > 0
-        ? `已將 ${targets.length} 位玩家的所有關卡完成狀態歸零！重新完成單元一樣可領取英蚌與 XP。`
-        : "所有玩家的關卡完成狀態原本就都已歸零囉！"
+        ? bi(
+            `已將 ${targets.length} 位玩家的所有關卡完成狀態歸零！重新完成單元一樣可領取英蚌與 XP。`,
+            `Reset quest progress for ${targets.length} player(s)! Quests can now be replayed.`
+          )
+        : bi("所有玩家的關卡完成狀態原本就都已歸零囉！", "All players' quest progress is already at zero!")
     );
   } catch (err) {
     showFeedback("admin-review-feedback", "error", err?.message || translateAuthError(err));
@@ -5556,6 +5869,75 @@ document.getElementById("admin-reset-all-lessons-btn")?.addEventListener("click"
     btn.disabled = false;
     btn.textContent = prevText;
   }
+});
+
+function refreshAllLocalizedViews() {
+  applyStaticDomTranslations();
+  syncPasswordToggleButtons();
+  const authIsSignup = !document.getElementById("signup-form")?.classList.contains("hidden");
+  switchAuthMode(authIsSignup ? "signup" : "signin", { clearMsg: false });
+
+  if (currentUser && currentUserProfile) {
+    const displayName = formatDisplayName(currentUser, currentUserProfile);
+    updateHeaderAccountUI(currentUser, currentRole, displayName, currentUserProfile.clams ?? STARTER_CLAMS);
+    syncXpProgressUI({ allowCelebrate: false });
+    syncRoomHUD();
+    syncRoomZoomUI();
+    updateRentCountdownUI();
+    if (introStoryActive) {
+      introStorySteps = buildIntroStorySteps(currentUserProfile);
+      renderIntroStoryStep();
+    }
+    if (spectatingStudentUid) {
+      populateSpectateStudentSelect(spectatingStudentUid);
+    }
+    roomScene?.refreshLanguage?.();
+    posterCustomizer?.refreshLanguage?.();
+    if (roomScene?.editMode) {
+      roomScene.notifyEditModeState?.();
+    }
+    if (currentScreen === "desktop") {
+      renderHome();
+    } else if (currentScreen === "lesson" && activeLessonDate) {
+      renderLesson(activeLessonDate);
+    } else if (currentScreen === "onboarding") {
+      const currentDraft = readAvatarFormValues();
+      populateOnboardingForm(currentDraft, isEditingAvatarFromRoom);
+    }
+    if (settingsDialog?.open) {
+      populateSettingsDialog({ preserveFeedback: true });
+    }
+    if (shopDialog?.open) {
+      renderShopDialog();
+    }
+    if (financeDialog?.open) {
+      renderFinanceDialog();
+    }
+    if (tvDialog?.open) {
+      renderTvChannelList();
+    }
+    if (adminReviewDialog?.open) {
+      syncCachedStudentsSnapshot(cachedStudents, document.getElementById("review-student-select")?.value);
+    }
+  }
+}
+
+document.getElementById("settings-lang-choices")?.addEventListener("change", (e) => {
+  const input = e.target;
+  if (input?.name !== "uiLanguage") return;
+  setUiLanguage(input.value);
+  refreshAllLocalizedViews();
+  showFeedback(
+    "settings-feedback",
+    "success",
+    bi("介面語言已切換為繁體中文！", "Interface language switched to English!")
+  );
+});
+
+document.getElementById("auth-lang-toggle-btn")?.addEventListener("click", () => {
+  const next = isEn() ? "zh-Hant" : "en";
+  setUiLanguage(next);
+  refreshAllLocalizedViews();
 });
 document.getElementById("review-student-select").addEventListener("change", () => {
   clearFeedback("admin-review-feedback");

@@ -1,3 +1,5 @@
+import { bi, isEn } from "./i18n.js?v=20261122b";
+
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
   { id: "5qap5aO4i9A", title: "lofi hip hop radio — beats to relax / study to", author: "Lofi Girl" },
@@ -12,47 +14,47 @@ export const DEFAULT_TV_CHANNEL_VIDEOS = [
 ];
 
 export const XP_RANK_LADDER = [
-  { title: "默默無名", emblem: "🪨", subtitle: "剛踏進接案江湖，連阿橘都還不認識你" },
-  { title: "初出茅廬", emblem: "🌱", subtitle: "熬過首月房租，開始有人私訊問檔期" },
-  { title: "略懂皮毛", emblem: "✏️", subtitle: "筆刷手感回穩，草稿不再狂被退件" },
-  { title: "小試牛刀", emblem: "🔪", subtitle: "急件準時交稿，累積第一批回頭客" },
-  { title: "漸入佳境", emblem: "🎨", subtitle: "光影配色開竅，甲方修改少了一半" },
-  { title: "略有名氣", emblem: "🏮", subtitle: "設計圈傳開筆名，週末檔期悄悄排滿" },
-  { title: "小有名堂", emblem: "✨", subtitle: "新作常被轉傳，小套房藏著神秘畫手" },
-  { title: "名聲初顯", emblem: "📜", subtitle: "商業案主指名合作，不用再到處投履歷" },
-  { title: "嶄露頭角", emblem: "⚔️", subtitle: "大型企劃邀約不斷，報價更有底氣" },
-  { title: "聲名鵲起", emblem: "🦅", subtitle: "新作一出衝熱搜，信箱天天塞滿合作" },
-  { title: "獨當一面", emblem: "🛡️", subtitle: "再刁鑽的英語專題，都能單人收工" },
-  { title: "名動一城", emblem: "🏯", subtitle: "全城創意總監都收藏了你的作品集" },
-  { title: "爐火純青", emblem: "🔥", subtitle: "下筆如劍客出招，線條乾脆毫無多餘" },
-  { title: "登堂入室", emblem: "🏛️", subtitle: "心法修至上乘，草圖都能直接當海報" },
-  { title: "聲振林木", emblem: "🌩️", subtitle: "展覽人潮擠爆，連房東都主動打招呼" },
-  { title: "威震四方", emblem: "🐉", subtitle: "各地出版商樓下排隊，只求一張檔期" },
-  { title: "名滿江湖", emblem: "🌟", subtitle: "畫界人人傳頌的宗師，筆落驚風雨" },
-  { title: "一代宗師", emblem: "🥋", subtitle: "開創專屬畫風，無數新手臨摹你的筆法" },
-  { title: "天下無雙", emblem: "👑", subtitle: "速度、語意與質感，當世已難逢對手" },
-  { title: "武林盟主", emblem: "🏆", subtitle: "號令接案圈，甲方見你先雙手奉茶" },
-  { title: "登峰造極", emblem: "⛰️", subtitle: "境界超越凡人尺度，隨手一筆皆藏品" },
-  { title: "傲視群雄", emblem: "🦅", subtitle: "高處不勝寒，唯手沖、黑膠與阿橘相伴" },
-  { title: "破碎虛空", emblem: "⚡", subtitle: "電繪筆金光乍現，靈感跨次元具現" },
-  { title: "飛升成仙", emblem: "☁️", subtitle: "房租已成浮雲，你早靠畫筆悟道成仙" },
-  { title: "畫道聖尊", emblem: "🌀", subtitle: "美術館搶收你磨短的筆芯與草稿紙" },
-  { title: "超凡入聖", emblem: "🪽", subtitle: "單字文法皆化內力，心念一動成神作" },
-  { title: "萬古神話", emblem: "🌌", subtitle: "插畫史第一章，只寫著你的名號與房號" },
-  { title: "太古獨尊·無敵寂寞", emblem: "🪩", subtitle: "宇宙星雲都照你的色票調色" }
+  { title: "默默無名", titleEn: "Total Unknown", emblem: "🪨", subtitle: "剛踏進接案江湖，連阿橘都還不認識你", subtitleEn: "Fresh in the studio—even Mochi's cat doesn't know you yet" },
+  { title: "初出茅廬", titleEn: "Rookie Freelancer", emblem: "🌱", subtitle: "熬過首月房租，開始有人私訊問檔期", subtitleEn: "Survived first-month rent; DMs about commissions are trickling in" },
+  { title: "略懂皮毛", titleEn: "Sketch Apprentice", emblem: "✏️", subtitle: "筆刷手感回穩，草稿不再狂被退件", subtitleEn: "Steady brushwork; fewer rough drafts sent back for revisions" },
+  { title: "小試牛刀", titleEn: "Quick Responder", emblem: "🔪", subtitle: "急件準時交稿，累積第一批回頭客", subtitleEn: "Delivered rush gigs on time and earned your first repeat clients" },
+  { title: "漸入佳境", titleEn: "Rising Colorist", emblem: "🎨", subtitle: "光影配色開竅，甲方修改少了一半", subtitleEn: "Lighting & palette clicked—client revisions cut in half" },
+  { title: "略有名氣", titleEn: "Word-of-Mouth Pick", emblem: "🏮", subtitle: "設計圈傳開筆名，週末檔期悄悄排滿", subtitleEn: "Your pen name is spreading; weekend slots are quietly booked" },
+  { title: "小有名堂", titleEn: "Studio Hidden Gem", emblem: "✨", subtitle: "新作常被轉傳，小套房藏著神秘畫手", subtitleEn: "New pieces keep getting reposted from your cozy rented studio" },
+  { title: "名聲初顯", titleEn: "Client Favorite", emblem: "📜", subtitle: "商業案主指名合作，不用再到處投履歷", subtitleEn: "Commercial clients ask for you by name—no cold pitches needed" },
+  { title: "嶄露頭角", titleEn: "Breakout Illustrator", emblem: "⚔️", subtitle: "大型企劃邀約不斷，報價更有底氣", subtitleEn: "Big campaign invites keep arriving, with confident rates to match" },
+  { title: "聲名鵲起", titleEn: "Trending Creator", emblem: "🦅", subtitle: "新作一出衝熱搜，信箱天天塞滿合作", subtitleEn: "Every post trends; your inbox overflows with commission offers" },
+  { title: "獨當一面", titleEn: "Lead Solo Pro", emblem: "🛡️", subtitle: "再刁鑽的英語專題，都能單人收工", subtitleEn: "Even the toughest English brief wraps smoothly in your hands" },
+  { title: "名動一城", titleEn: "Citywide Icon", emblem: "🏯", subtitle: "全城創意總監都收藏了你的作品集", subtitleEn: "Creative directors across town have bookmarked your portfolio" },
+  { title: "爐火純青", titleEn: "Master Craftsman", emblem: "🔥", subtitle: "下筆如劍客出招，線條乾脆毫無多餘", subtitleEn: "Clean, decisive strokes with zero hesitation" },
+  { title: "登堂入室", titleEn: "Gallery Virtuoso", emblem: "🏛️", subtitle: "心法修至上乘，草圖都能直接當海報", subtitleEn: "Even your rough sketches look ready to frame on a gallery wall" },
+  { title: "聲振林木", titleEn: "Acclaimed Luminary", emblem: "🌩️", subtitle: "展覽人潮擠爆，連房東都主動打招呼", subtitleEn: "Packed exhibitions—even your landlord greets you warmly now" },
+  { title: "威震四方", titleEn: "Sought-After Auteur", emblem: "🐉", subtitle: "各地出版商樓下排隊，只求一張檔期", subtitleEn: "Publishers line up downstairs hoping to book a single slot" },
+  { title: "名滿江湖", titleEn: "Renowned Grandmaster", emblem: "🌟", subtitle: "畫界人人傳頌的宗師，筆落驚風雨", subtitleEn: "A household name across the illustration scene" },
+  { title: "一代宗師", titleEn: "Style Pioneer", emblem: "🥋", subtitle: "開創專屬畫風，無數新手臨摹你的筆法", subtitleEn: "Pioneered a signature look studied by newcomers everywhere" },
+  { title: "天下無雙", titleEn: "Peerless Visionary", emblem: "👑", subtitle: "速度、語意與質感，當世已難逢對手", subtitleEn: "Speed, nuance, and polish—unmatched in the craft" },
+  { title: "武林盟主", titleEn: "Guild Champion", emblem: "🏆", subtitle: "號令接案圈，甲方見你先雙手奉茶", subtitleEn: "Clients bring tea first before asking for your availability" },
+  { title: "登峰造極", titleEn: "Peak Paragon", emblem: "⛰️", subtitle: "境界超越凡人尺度，隨手一筆皆藏品", subtitleEn: "Every casual doodle turns into a collector's piece" },
+  { title: "傲視群雄", titleEn: "Sovereign Artist", emblem: "🦅", subtitle: "高處不勝寒，唯手沖、黑膠與阿橘相伴", subtitleEn: "At the summit with pour-over coffee, vinyl, and Ginger the cat" },
+  { title: "破碎虛空", titleEn: "Stylus Ascendant", emblem: "⚡", subtitle: "電繪筆金光乍現，靈感跨次元具現", subtitleEn: "Your stylus sparks ideas across dimensions" },
+  { title: "飛升成仙", titleEn: "Studio Immortal", emblem: "☁️", subtitle: "房租已成浮雲，你早靠畫筆悟道成仙", subtitleEn: "Monthly rent feels trivial—your art achieved enlightenment" },
+  { title: "畫道聖尊", titleEn: "Artisan Saint", emblem: "🌀", subtitle: "美術館搶收你磨短的筆芯與草稿紙", subtitleEn: "Museums bid even for your worn nibs and scrap sketches" },
+  { title: "超凡入聖", titleEn: "Transcendent Muse", emblem: "🪽", subtitle: "單字文法皆化內力，心念一動成神作", subtitleEn: "Vocabulary and craft fuse effortlessly into masterpieces" },
+  { title: "萬古神話", titleEn: "Eternal Legend", emblem: "🌌", subtitle: "插畫史第一章，只寫著你的名號與房號", subtitleEn: "Chapter one of art history opens with your studio door number" },
+  { title: "太古獨尊·無敵寂寞", titleEn: "Cosmic Zenith", emblem: "🪩", subtitle: "宇宙星雲都照你的色票調色", subtitleEn: "Even distant nebulae match your custom color swatches" }
 ];
 
 export const DAY_NIGHT_KEYFRAMES = [
-  { phase: 0.00, label: "日出清晨", sunColor: "#ffa56e", sunIntensity: 1.25, hemiSky: "#ffc29e", hemiGround: "#ba8b6c", hemiIntensity: 0.56, bg: "#dfc0ab", sky: "#f7a98f", darkness: 0.45 },
-  { phase: 0.09, label: "清晨暖陽", sunColor: "#ffe2b8", sunIntensity: 1.85, hemiSky: "#fff3df", hemiGround: "#c89974", hemiIntensity: 0.74, bg: "#eae0d2", sky: "#94d4fb", darkness: 0.14 },
-  { phase: 0.25, label: "晴朗正午", sunColor: "#fff6e3", sunIntensity: 2.15, hemiSky: "#fffaf2", hemiGround: "#cba07a", hemiIntensity: 0.84, bg: "#eee5d7", sky: "#7dd3fc", darkness: 0.00 },
-  { phase: 0.37, label: "午後陽光", sunColor: "#ffeed4", sunIntensity: 2.02, hemiSky: "#fff4e4", hemiGround: "#c79873", hemiIntensity: 0.78, bg: "#ebe1d3", sky: "#86cbf5", darkness: 0.06 },
-  { phase: 0.46, label: "金黃夕陽", sunColor: "#ffb875", sunIntensity: 1.58, hemiSky: "#f8c79d", hemiGround: "#ad7a66", hemiIntensity: 0.63, bg: "#cfa393", sky: "#f69954", darkness: 0.38 },
-  { phase: 0.52, label: "暮色微醺", sunColor: "#e67c73", sunIntensity: 1.08, hemiSky: "#946f91", hemiGround: "#614957", hemiIntensity: 0.48, bg: "#524161", sky: "#ad5d7a", darkness: 0.68 },
-  { phase: 0.60, label: "入夜藍調", sunColor: "#8ca4e6", sunIntensity: 0.72, hemiSky: "#334268", hemiGround: "#30282b", hemiIntensity: 0.39, bg: "#192030", sky: "#19243b", darkness: 0.92 },
-  { phase: 0.75, label: "靜謐深夜", sunColor: "#7e9de3", sunIntensity: 0.62, hemiSky: "#243252", hemiGround: "#261f1e", hemiIntensity: 0.36, bg: "#111622", sky: "#0f172a", darkness: 1.00 },
-  { phase: 0.90, label: "破曉前夕", sunColor: "#94a8e4", sunIntensity: 0.70, hemiSky: "#384168", hemiGround: "#352b2d", hemiIntensity: 0.40, bg: "#21273c", sky: "#273154", darkness: 0.88 },
-  { phase: 0.96, label: "黎明微光", sunColor: "#df937f", sunIntensity: 0.96, hemiSky: "#997282", hemiGround: "#74574e", hemiIntensity: 0.48, bg: "#785d6b", sky: "#c78b8e", darkness: 0.66 }
+  { phase: 0.00, label: "日出清晨", labelEn: "Early Sunrise", sunColor: "#ffa56e", sunIntensity: 1.25, hemiSky: "#ffc29e", hemiGround: "#ba8b6c", hemiIntensity: 0.56, bg: "#dfc0ab", sky: "#f7a98f", darkness: 0.45 },
+  { phase: 0.09, label: "清晨暖陽", labelEn: "Morning Sun", sunColor: "#ffe2b8", sunIntensity: 1.85, hemiSky: "#fff3df", hemiGround: "#c89974", hemiIntensity: 0.74, bg: "#eae0d2", sky: "#94d4fb", darkness: 0.14 },
+  { phase: 0.25, label: "晴朗正午", labelEn: "Bright Noon", sunColor: "#fff6e3", sunIntensity: 2.15, hemiSky: "#fffaf2", hemiGround: "#cba07a", hemiIntensity: 0.84, bg: "#eee5d7", sky: "#7dd3fc", darkness: 0.00 },
+  { phase: 0.37, label: "午後陽光", labelEn: "Afternoon Glow", sunColor: "#ffeed4", sunIntensity: 2.02, hemiSky: "#fff4e4", hemiGround: "#c79873", hemiIntensity: 0.78, bg: "#ebe1d3", sky: "#86cbf5", darkness: 0.06 },
+  { phase: 0.46, label: "金黃夕陽", labelEn: "Golden Sunset", sunColor: "#ffb875", sunIntensity: 1.58, hemiSky: "#f8c79d", hemiGround: "#ad7a66", hemiIntensity: 0.63, bg: "#cfa393", sky: "#f69954", darkness: 0.38 },
+  { phase: 0.52, label: "暮色微醺", labelEn: "Twilight Dusk", sunColor: "#e67c73", sunIntensity: 1.08, hemiSky: "#946f91", hemiGround: "#614957", hemiIntensity: 0.48, bg: "#524161", sky: "#ad5d7a", darkness: 0.68 },
+  { phase: 0.60, label: "入夜藍調", labelEn: "Blue Hour Night", sunColor: "#8ca4e6", sunIntensity: 0.72, hemiSky: "#334268", hemiGround: "#30282b", hemiIntensity: 0.39, bg: "#192030", sky: "#19243b", darkness: 0.92 },
+  { phase: 0.75, label: "靜謐深夜", labelEn: "Quiet Midnight", sunColor: "#7e9de3", sunIntensity: 0.62, hemiSky: "#243252", hemiGround: "#261f1e", hemiIntensity: 0.36, bg: "#111622", sky: "#0f172a", darkness: 1.00 },
+  { phase: 0.90, label: "破曉前夕", labelEn: "Before Dawn", sunColor: "#94a8e4", sunIntensity: 0.70, hemiSky: "#384168", hemiGround: "#352b2d", hemiIntensity: 0.40, bg: "#21273c", sky: "#273154", darkness: 0.88 },
+  { phase: 0.96, label: "黎明微光", labelEn: "First Light", sunColor: "#df937f", sunIntensity: 0.96, hemiSky: "#997282", hemiGround: "#74574e", hemiIntensity: 0.48, bg: "#785d6b", sky: "#c78b8e", darkness: 0.66 }
 ];
 
 /**
@@ -80,10 +82,11 @@ export function sampleDayNightCycle(rawPhase) {
   const lerpNum = (a, b) => a + (b - a) * alpha;
   const orbit = p * Math.PI * 2;
 
+  const activeFrame = rawK < 0.5 ? from : to;
   return {
     phase: p,
     isNight: p >= 0.5,
-    label: rawK < 0.5 ? from.label : to.label,
+    label: isEn() ? (activeFrame.labelEn || activeFrame.label) : activeFrame.label,
     from,
     to,
     alpha,
@@ -164,15 +167,16 @@ export function resolveXpProgress(totalXp, xpPerLevel = 100) {
   const xpIntoLevel = safeTotal % safeStep;
   const xpToNextLevel = safeStep - xpIntoLevel;
   const progressPct = Math.round((xpIntoLevel / safeStep) * 1000) / 10;
+  const en = isEn();
   return {
     totalXp: safeTotal,
     xpPerLevel: safeStep,
     level,
     rankIndex,
-    title: rank.title,
+    title: en ? (rank.titleEn || rank.title) : rank.title,
     emblem: rank.emblem,
-    subtitle: rank.subtitle,
-    nextTitle: nextRank.title,
+    subtitle: en ? (rank.subtitleEn || rank.subtitle) : rank.subtitle,
+    nextTitle: en ? (nextRank.titleEn || nextRank.title) : nextRank.title,
     xpIntoLevel,
     xpToNextLevel,
     progressPct,
@@ -332,34 +336,45 @@ export function translateAuthError(err) {
   const code = err?.code || "";
   switch (code) {
     case "auth/operation-not-allowed":
-      return "此登入方式尚未在 Firebase Console 啟用，請至 Authentication → Sign-in method 開啟。";
+      return bi(
+        "此登入方式尚未在 Firebase Console 啟用，請至 Authentication → Sign-in method 開啟。",
+        "This sign-in method isn't enabled in Firebase Console yet."
+      );
     case "auth/unauthorized-domain":
-      return `目前網域（${window.location.hostname || "localhost"}）尚未加入 Firebase 授權網域，請至 Authentication → Settings → Authorized domains 新增。`;
+      return bi(
+        `目前網域（${window.location.hostname || "localhost"}）尚未加入 Firebase 授權網域，請至 Authentication → Settings → Authorized domains 新增。`,
+        `Domain (${window.location.hostname || "localhost"}) is not listed in Firebase Authorized domains.`
+      );
     case "auth/invalid-email":
-      return "電子郵件格式不正確，請檢查後再試。";
+      return bi("電子郵件格式不正確，請檢查後再試。", "Please enter a valid email address.");
     case "auth/invalid-credential":
     case "auth/wrong-password":
     case "auth/user-not-found":
-      return "電子郵件或密碼不正確，請再確認一次。";
+      return bi("電子郵件或密碼不正確，請再確認一次。", "Incorrect email or password.");
     case "auth/email-already-in-use":
-      return "此電子郵件已註冊過，請切換至「登入帳號」或使用 Google 登入。";
+      return bi(
+        "此電子郵件已註冊過，請切換至「登入帳號」或使用 Google 登入。",
+        "This email is already registered. Switch to Sign In or use Google."
+      );
     case "auth/weak-password":
-      return "密碼強度不足，請設定至少 6 個字元。";
+      return bi("密碼強度不足，請設定至少 6 個字元。", "Password is too weak (at least 6 characters).");
     case "auth/too-many-requests":
-      return "嘗試次數過多，請稍候再試。";
+      return bi("嘗試次數過多，請稍候再試。", "Too many attempts. Please wait a moment and try again.");
     case "auth/popup-closed-by-user":
     case "auth/cancelled-popup-request":
-      return "已取消 Google 登入視窗，若要繼續請重新點擊。";
+      return bi("已取消 Google 登入視窗，若要繼續請重新點擊。", "Google sign-in popup was closed. Click again to continue.");
     case "auth/popup-blocked":
-      return "瀏覽器封鎖了登入彈跳視窗，請允許彈跳視窗後再試。";
+      return bi("瀏覽器封鎖了登入彈跳視窗，請允許彈跳視窗後再試。", "Sign-in popup was blocked by your browser. Please allow popups.");
     case "auth/requires-recent-login":
-      return "為了帳號安全，請先重新驗證或重新登入後再變更密碼。";
+      return bi("為了帳號安全，請先重新驗證或重新登入後再變更密碼。", "Please sign in again before changing your password.");
     case "auth/network-request-failed":
-      return "網路連線異常，請檢查網路狀態後重試。";
+      return bi("網路連線異常，請檢查網路狀態後重試。", "Network error. Please check your connection and try again.");
     case "permission-denied":
-      return "權限不足，無法存取該資料。";
+      return bi("權限不足，無法存取該資料。", "Permission denied.");
     default:
-      return err?.message ? `操作失敗：${err.message}` : "操作失敗，請稍後再試。";
+      return err?.message
+        ? bi(`操作失敗：${err.message}`, `Action failed: ${err.message}`)
+        : bi("操作失敗，請稍後再試。", "Action failed. Please try again later.");
   }
 }
 
@@ -388,6 +403,7 @@ export const CHARACTER_PERSONAS = [
   {
     id: "gamer_owl",
     label: "夜貓電玩宅",
+    labelEn: "Night-Owl Gamer",
     preferred: ["gaming", "phone", "sofa_tv", "watch_tv", "coffee_break", "eat"],
     nightSleepWeight: 1,
     idleMinSec: 72,
@@ -420,6 +436,7 @@ export const CHARACTER_PERSONAS = [
   {
     id: "cozy_homebody",
     label: "慵懶居家派",
+    labelEn: "Cozy Homebody",
     preferred: ["sofa_tv", "sofa_read", "pet_cat", "sleep", "eat", "listen_vinyl"],
     nightSleepWeight: 4,
     idleMinSec: 112,
@@ -452,6 +469,7 @@ export const CHARACTER_PERSONAS = [
   {
     id: "fitness_sprinter",
     label: "自律元氣派",
+    labelEn: "Disciplined Sprinter",
     preferred: ["exercise", "wash", "water_plant", "water_floor_plant", "eat", "check_coat"],
     nightSleepWeight: 2,
     idleMinSec: 64,
@@ -483,6 +501,7 @@ export const CHARACTER_PERSONAS = [
   {
     id: "art_dreamer",
     label: "浪漫靈感家",
+    labelEn: "Artistic Dreamer",
     preferred: ["admire_poster", "listen_vinyl", "read", "sofa_read", "water_floor_plant", "coffee_break"],
     nightSleepWeight: 2,
     idleMinSec: 92,
@@ -514,6 +533,7 @@ export const CHARACTER_PERSONAS = [
   {
     id: "caffeine_crafter",
     label: "咖啡因畫師",
+    labelEn: "Caffeine Crafter",
     preferred: ["coffee_break", "read", "water_plant", "phone", "gaming", "listen_vinyl"],
     nightSleepWeight: 1,
     idleMinSec: 78,
@@ -545,6 +565,7 @@ export const CHARACTER_PERSONAS = [
   {
     id: "curious_spark",
     label: "好奇觀察家",
+    labelEn: "Curious Observer",
     preferred: ["pet_cat", "watch_hamster", "check_coat", "admire_poster", "watch_tv", "eat", "toilet"],
     nightSleepWeight: 2,
     idleMinSec: 68,
@@ -604,7 +625,7 @@ export function buildCharacterPersona(characterId, avatarCfg = {}, ownedItems = 
   const archetype = CHARACTER_PERSONAS[seed % CHARACTER_PERSONAS.length];
   const allPool = listAvailableRoomActivities(ownedItems, false);
   const personalSpotId = allPool[Math.floor(rng() * allPool.length)] || archetype.preferred[0];
-  const displayName = String(avatarCfg?.name || "繪師").trim() || "繪師";
+  const displayName = String(avatarCfg?.name || bi("繪師", "Artist")).trim() || bi("繪師", "Artist");
 
   const speedJitter = 0.96 + rng() * 0.08;
   const energyJitter = 0.94 + rng() * 0.12;
@@ -619,7 +640,7 @@ export function buildCharacterPersona(characterId, avatarCfg = {}, ownedItems = 
 
   return {
     id: archetype.id,
-    label: archetype.label,
+    label: isEn() ? (archetype.labelEn || archetype.label) : archetype.label,
     characterId: rawId,
     seed,
     displayName,
