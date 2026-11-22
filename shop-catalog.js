@@ -17,15 +17,16 @@ export const SHOP_CATALOG_EN = {
   wall_mist: { name: "Morning Mist Blue Paint", desc: "Matte blue-gray wall paint & labor (charged per repaint)." },
   wall_blush: { name: "Terracotta Blush Paint", desc: "Creamy blush terracotta paint & labor (charged per repaint)." },
   wall_lavender: { name: "Dusk Lavender Paint", desc: "Calming dusty lavender wall paint & labor (charged per repaint)." },
-  floor_ash_nordic: { name: "Nordic Pale Ash Wood", desc: "Airy Scandinavian bleached ash planks with delicate grain. Free to swap anytime." },
-  floor_walnut_herringbone: { name: "Dark Walnut Herringbone", desc: "Rich walnut parquet laid in classic herringbone zigzag. Free to swap anytime." },
-  floor_bamboo_tatami: { name: "Woven Bamboo Tatami", desc: "Calm Japanese tatami & hinoki bordered weave for serene focus. Free to swap anytime." },
-  floor_carrara_marble: { name: "Carrara White Marble", desc: "Polished white marble slabs with natural soft gray veining. Free to swap anytime." },
-  floor_terrazzo_warm: { name: "Italian Warm Terrazzo", desc: "Cream stone studded with terracotta, sage, and ochre flecks. Free to swap anytime." },
-  floor_dark_slate: { name: "Charcoal Basalt Slate", desc: "Architectural matte dark stone tiles with rugged mineral texture. Free to swap anytime." },
-  floor_checker_retro: { name: "Retro Cream & Cocoa Checker", desc: "Mid-century checkered ceramic tiles with crisp espresso contrast. Free to swap anytime." },
-  floor_hex_terracotta: { name: "Mediterranean Hex Terracotta", desc: "Sun-baked clay hexagon tiles framed in creamy ivory mortar. Free to swap anytime." },
-  floor_moroccan_star: { name: "Moroccan Geometric Tile", desc: "Handcrafted cobalt blue and ivory star-motif artisan tiles. Free to swap anytime." },
+  floor_honey_oak: { name: "Classic Honey Oak Floor", desc: "Warm signature honey oak planks & re-laying labor (charged per re-lay)." },
+  floor_ash_nordic: { name: "Nordic Pale Ash Wood", desc: "Airy Scandinavian bleached ash planks with delicate grain (charged per re-lay)." },
+  floor_walnut_herringbone: { name: "Dark Walnut Herringbone", desc: "Rich walnut parquet laid in classic herringbone zigzag (charged per re-lay)." },
+  floor_bamboo_tatami: { name: "Woven Bamboo Tatami", desc: "Calm Japanese tatami & hinoki bordered weave for serene focus (charged per re-lay)." },
+  floor_carrara_marble: { name: "Carrara White Marble", desc: "Polished white marble slabs with natural soft gray veining (charged per re-lay)." },
+  floor_terrazzo_warm: { name: "Italian Warm Terrazzo", desc: "Cream stone studded with terracotta, sage, and ochre flecks (charged per re-lay)." },
+  floor_dark_slate: { name: "Charcoal Basalt Slate", desc: "Architectural matte dark stone tiles with rugged mineral texture (charged per re-lay)." },
+  floor_checker_retro: { name: "Retro Cream & Cocoa Checker", desc: "Mid-century checkered ceramic tiles with crisp espresso contrast (charged per re-lay)." },
+  floor_hex_terracotta: { name: "Mediterranean Hex Terracotta", desc: "Sun-baked clay hexagon tiles framed in creamy ivory mortar (charged per re-lay)." },
+  floor_moroccan_star: { name: "Moroccan Geometric Tile", desc: "Handcrafted cobalt blue and ivory star-motif artisan tiles (charged per re-lay)." },
   sheet_terracotta: { name: "Warm Terracotta Bedding", desc: "Washed terracotta duvet with cream sheets. Free to swap anytime." },
   sheet_sage: { name: "Forest Sage Bedding", desc: "Fresh sage cotton quilt with soft green pillowcases for restful sleep." },
   sheet_sakura: { name: "Blush Sakura Bedding", desc: "Gentle sakura pink cotton bedding with airy cloud pillows." },
@@ -546,94 +547,114 @@ export const DEFAULT_SHOP_CATALOG = [
     desc: "淡雅薰衣灰紫油漆與粉刷工錢，每次重新粉刷皆需再次購買。"
   },
   {
+    id: "floor_honey_oak",
+    name: "經典蜂蜜橡木地板",
+    category: "floor",
+    consumable: true,
+    floorStyleId: DEFAULT_FLOOR_STYLE,
+    price: 100,
+    icon: "🍯",
+    floorStyle: FLOOR_STYLE_PRESETS.default,
+    desc: "溫潤經典的原始蜂蜜橡木地板與鋪設工錢，每次換鋪或復原皆需重新購買。"
+  },
+  {
     id: "floor_ash_nordic",
     name: "北歐白蠟淺木紋地板",
     category: "floor",
-    textileKind: "floorStyle",
+    consumable: true,
+    floorStyleId: "floor_ash_nordic",
     price: 140,
     icon: "🪵",
     floorStyle: FLOOR_STYLE_PRESETS.floor_ash_nordic,
-    desc: "明亮清爽的淺色北歐白蠟實木拼接，讓採光更顯柔和寬敞，購買後可永久免費切換。"
+    desc: "明亮清爽的淺色北歐白蠟實木拼接，讓採光更顯柔和寬敞，每次重鋪皆需重新付費施作。"
   },
   {
     id: "floor_walnut_herringbone",
     name: "深胡桃木人字拼地板",
     category: "floor",
-    textileKind: "floorStyle",
+    consumable: true,
+    floorStyleId: "floor_walnut_herringbone",
     price: 160,
     icon: "🤎",
     floorStyle: FLOOR_STYLE_PRESETS.floor_walnut_herringbone,
-    desc: "溫潤典雅的深胡桃實木搭配經典人字拼紋理，工作室質感瞬間升級，購買後可永久免費切換。"
+    desc: "溫潤典雅的深胡桃實木搭配經典人字拼紋理，工作室質感瞬間升級，每次重鋪皆需重新付費施作。"
   },
   {
     id: "floor_bamboo_tatami",
     name: "和風編織竹木／榻榻米席紋",
     category: "floor",
-    textileKind: "floorStyle",
+    consumable: true,
+    floorStyleId: "floor_bamboo_tatami",
     price: 170,
     icon: "🎋",
     floorStyle: FLOOR_STYLE_PRESETS.floor_bamboo_tatami,
-    desc: "細緻草蓆編織感搭配深森綠緣邊框線，營造靜謐日式創作空間，購買後可永久免費切換。"
+    desc: "細緻草蓆編織感搭配深森綠緣邊框線，營造靜謐日式創作空間，每次重鋪皆需重新付費施作。"
   },
   {
     id: "floor_carrara_marble",
     name: "卡拉拉白雪花大理石",
     category: "floor",
-    textileKind: "floorStyle",
+    consumable: true,
+    floorStyleId: "floor_carrara_marble",
     price: 220,
     icon: "🏛️",
     floorStyle: FLOOR_STYLE_PRESETS.floor_carrara_marble,
-    desc: "潔白溫潤石材表面流動自然淡灰脈絡，映出微光倒影，購買後可永久免費切換。"
+    desc: "潔白溫潤石材表面流動自然淡灰脈絡，映出微光倒影，每次重鋪皆需重新付費施作。"
   },
   {
     id: "floor_terrazzo_warm",
     name: "義大利暖彩水磨石",
     category: "floor",
-    textileKind: "floorStyle",
+    consumable: true,
+    floorStyleId: "floor_terrazzo_warm",
     price: 190,
     icon: "🪨",
     floorStyle: FLOOR_STYLE_PRESETS.floor_terrazzo_warm,
-    desc: "奶油石底鑲嵌赤陶、鼠尾草與金黃天然碎石紋樣，活潑又耐看，購買後可永久免費切換。"
+    desc: "奶油石底鑲嵌赤陶、鼠尾草與金黃天然碎石紋樣，活潑又耐看，每次重鋪皆需重新付費施作。"
   },
   {
     id: "floor_dark_slate",
     name: "曜石深灰板岩磚",
     category: "floor",
-    textileKind: "floorStyle",
+    consumable: true,
+    floorStyleId: "floor_dark_slate",
     price: 180,
     icon: "🌑",
     floorStyle: FLOOR_STYLE_PRESETS.floor_dark_slate,
-    desc: "沉穩內斂的霧面深炭黑板岩石磚，極簡工業與深夜接案首選，購買後可永久免費切換。"
+    desc: "沉穩內斂的霧面深炭黑板岩石磚，極簡工業與深夜接案首選，每次重鋪皆需重新付費施作。"
   },
   {
     id: "floor_checker_retro",
     name: "復古奶油可可棋盤磚",
     category: "floor",
-    textileKind: "floorStyle",
+    consumable: true,
+    floorStyleId: "floor_checker_retro",
     price: 160,
     icon: "🏁",
     floorStyle: FLOOR_STYLE_PRESETS.floor_checker_retro,
-    desc: "懷舊歐風咖啡館經典奶油與深焙可可方格拼貼磚，復古感滿分，購買後可永久免費切換。"
+    desc: "懷舊歐風咖啡館經典奶油與深焙可可方格拼貼磚，復古感滿分，每次重鋪皆需重新付費施作。"
   },
   {
     id: "floor_hex_terracotta",
     name: "地中海六角赤陶磚",
     category: "floor",
-    textileKind: "floorStyle",
+    consumable: true,
+    floorStyleId: "floor_hex_terracotta",
     price: 180,
     icon: "🧱",
     floorStyle: FLOOR_STYLE_PRESETS.floor_hex_terracotta,
-    desc: "暖陽窯燒赤陶六角花磚配上米白填縫，充滿南歐手作暖意，購買後可永久免費切換。"
+    desc: "暖陽窯燒赤陶六角花磚配上米白填縫，充滿南歐手作暖意，每次重鋪皆需重新付費施作。"
   },
   {
     id: "floor_moroccan_star",
     name: "摩洛哥青花幾何花磚",
     category: "floor",
-    textileKind: "floorStyle",
+    consumable: true,
+    floorStyleId: "floor_moroccan_star",
     price: 200,
     icon: "💠",
     floorStyle: FLOOR_STYLE_PRESETS.floor_moroccan_star,
-    desc: "象牙白底勾勒靛青星芒菱紋藝術花磚，打造獨樹一格的視覺亮點，購買後可永久免費切換。"
+    desc: "象牙白底勾勒靛青星芒菱紋藝術花磚，打造獨樹一格的視覺亮點，每次重鋪皆需重新付費施作。"
   },
   {
     id: "sheet_terracotta",
@@ -1183,6 +1204,9 @@ export function normalizeOwnedItems(raw) {
 }
 
 export function resolveFloorStyle(floorStyleId) {
+  if (!floorStyleId || floorStyleId === "floor_honey_oak") {
+    return FLOOR_STYLE_PRESETS[DEFAULT_FLOOR_STYLE];
+  }
   return FLOOR_STYLE_PRESETS[floorStyleId] || FLOOR_STYLE_PRESETS[DEFAULT_FLOOR_STYLE];
 }
 

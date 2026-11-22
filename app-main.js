@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261123a";
+} from "./room-scene.js?v=20261123b";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -62,7 +62,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261123a";
+} from "./shop-catalog.js?v=20261123b";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -3250,7 +3250,6 @@ function buildTextilePreviewSvg(item) {
 const LEGACY_ROOM_STYLE_KINDS = new Set([
   "bedSheet",
   "rugStyle",
-  "floorStyle",
   "shirtStyle",
   "pantsStyle"
 ]);
@@ -3309,8 +3308,6 @@ async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
       roomScene?.setBedSheet(nextId);
     } else if (textileKind === "rugStyle") {
       roomScene?.setRugStyle(nextId);
-    } else if (textileKind === "floorStyle") {
-      roomScene?.setFloorStyle(nextId);
     } else if (textileKind === "shirtStyle") {
       roomScene?.setShirtStyle(nextId);
     } else if (textileKind === "pantsStyle") {
@@ -3319,7 +3316,6 @@ async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
     const defaultLabels = {
       bedSheet: bi("經典海鹽藍床組", "Sea-Salt Blue Bedding"),
       rugStyle: bi("奶油燕麥原味地毯", "Oatmeal Cream Rug"),
-      floorStyle: bi("經典蜂蜜橡木地板", "Classic Honey Oak"),
       shirtStyle: bi("基本素色上衣", "Basic Studio Top"),
       pantsStyle: bi("經典深灰長褲", "Classic Charcoal Trousers")
     };
@@ -3388,13 +3384,11 @@ function renderShopDialog() {
     tabsEl.appendChild(btn);
   });
 
-  const hasCustomFloor = activeFloorStyle !== DEFAULT_FLOOR_STYLE;
   const hasCustomTextile = activeBedSheet !== DEFAULT_BED_SHEET || activeRugStyle !== DEFAULT_RUG_STYLE;
   const hasCustomShirt = activeShirtStyle !== DEFAULT_SHIRT_STYLE;
   const hasCustomPants = activePantsStyle !== DEFAULT_PANTS_STYLE;
   const showResetBar =
-    ((activeShopCategory === "floor" || activeShopCategory === "all") && hasCustomFloor)
-    || ((activeShopCategory === "textile" || activeShopCategory === "all") && hasCustomTextile)
+    ((activeShopCategory === "textile" || activeShopCategory === "all") && hasCustomTextile)
     || ((activeShopCategory === "shirt" || activeShopCategory === "all") && hasCustomShirt)
     || ((activeShopCategory === "pants" || activeShopCategory === "all") && hasCustomPants);
   textileBarEl.innerHTML = "";
@@ -3402,16 +3396,8 @@ function renderShopDialog() {
   if (showResetBar) {
     const note = document.createElement("span");
     note.style.marginInlineEnd = "auto";
-    note.textContent = bi("目前套用造型／織品／地板中，可隨時換回預設：", "Active custom style — restore defaults anytime:");
+    note.textContent = bi("目前套用造型／織品中，可隨時換回預設：", "Active custom style — restore defaults anytime:");
     textileBarEl.appendChild(note);
-    if ((activeShopCategory === "floor" || activeShopCategory === "all") && hasCustomFloor) {
-      const resetFloorBtn = document.createElement("button");
-      resetFloorBtn.type = "button";
-      resetFloorBtn.className = "btn";
-      resetFloorBtn.textContent = bi("換回蜂蜜橡木地板", "Restore Honey Oak Floor");
-      resetFloorBtn.onclick = () => equipShopTextile("floorStyle", DEFAULT_FLOOR_STYLE, resetFloorBtn);
-      textileBarEl.appendChild(resetFloorBtn);
-    }
     if ((activeShopCategory === "textile" || activeShopCategory === "all") && activeBedSheet !== DEFAULT_BED_SHEET) {
       const resetSheetBtn = document.createElement("button");
       resetSheetBtn.type = "button";
@@ -3454,11 +3440,16 @@ function renderShopDialog() {
 
   visibleItems.forEach(item => {
     const isPaint = Boolean(item.consumable && item.wallColor);
-    const isTextile = Boolean(item.textileKind);
+    const isFloor = Boolean(item.consumable && item.floorStyle);
+    const isTextile = !isFloor && Boolean(item.textileKind);
     const isApparel = item.textileKind === "shirtStyle" || item.textileKind === "pantsStyle";
-    const isFloor = item.textileKind === "floorStyle";
     const isActivePaint = isPaint && item.wallColor.toLowerCase() === activeWallColor;
-    const isPermanentOwned = !isPaint && Boolean(owned[item.id]);
+    const itemFloorTarget = item.floorStyleId || item.id;
+    const isActiveFloor = isFloor && (
+      activeFloorStyle === itemFloorTarget
+      || (itemFloorTarget === DEFAULT_FLOOR_STYLE && activeFloorStyle === "floor_honey_oak")
+    );
+    const isPermanentOwned = !isPaint && !isFloor && Boolean(owned[item.id]);
     const isActiveTextile = isTextile && (
       getActiveRoomStyle(currentUserProfile?.roomState, item.textileKind) === item.id
     );
@@ -3466,12 +3457,12 @@ function renderShopDialog() {
     const isLocked = missingPrereqs.length > 0;
     const isInParcel = Boolean(isPermanentOwned && activeParcels[item.id]);
     const gridMeta = PLACEABLE_FURNITURE_META[item.id] || null;
-    const gridAvail = (!isPaint && !isTextile && !isPermanentOwned && gridMeta)
+    const gridAvail = (!isPaint && !isFloor && !isTextile && !isPermanentOwned && gridMeta)
       ? checkShopItemGridAvailability(item.id, owned, activeLayout, activeParcels)
       : { ok: true, placeable: false, neededCells: 0, reason: "" };
 
     const card = document.createElement("div");
-    card.className = `shop-item-card${(isActivePaint || (isTextile ? isActiveTextile : isPermanentOwned)) ? " is-owned" : ""}${isLocked ? " is-locked" : ""}`;
+    card.className = `shop-item-card${(isActivePaint || isActiveFloor || (isTextile ? isActiveTextile : isPermanentOwned)) ? " is-owned" : ""}${isLocked ? " is-locked" : ""}`;
 
     const previewBox = document.createElement("div");
     previewBox.className = "shop-item-preview";
@@ -3558,13 +3549,18 @@ function renderShopDialog() {
           `${item.price} 英蚌${isActivePaint ? "" : xpSuffix}（每次重刷計費）`,
           `${item.price} Clams${isActivePaint ? "" : xpSuffix} (per repaint)`
         )
-      : (isTextile && isPermanentOwned)
-        ? bi(`${item.price} 英蚌（已購，免費更換）`, `${item.price} Clams (owned · free swap)`)
-        : isPermanentOwned
-          ? (isSellableShopItem(item)
-            ? bi(`原價 ${item.price} 英蚌 · 二手價 ${resalePrice} 英蚌`, `Orig ${item.price} ${unitClams} · Resale ${resalePrice} ${unitClams}`)
-            : `${item.price} ${unitClams}`)
-          : `${item.price} ${unitClams}${xpSuffix}`;
+      : isFloor
+        ? bi(
+            `${item.price} 英蚌${isActiveFloor ? "" : xpSuffix}（每次重鋪計費）`,
+            `${item.price} Clams${isActiveFloor ? "" : xpSuffix} (per re-lay)`
+          )
+        : (isTextile && isPermanentOwned)
+          ? bi(`${item.price} 英蚌（已購，免費更換）`, `${item.price} Clams (owned · free swap)`)
+          : isPermanentOwned
+            ? (isSellableShopItem(item)
+              ? bi(`原價 ${item.price} 英蚌 · 二手價 ${resalePrice} 英蚌`, `Orig ${item.price} ${unitClams} · Resale ${resalePrice} ${unitClams}`)
+              : `${item.price} ${unitClams}`)
+            : `${item.price} ${unitClams}${xpSuffix}`;
     meta.append(title, priceEl);
     head.append(iconBox, meta);
 
@@ -3604,6 +3600,9 @@ function renderShopDialog() {
     if (isActivePaint) {
       actionBtn.textContent = bi("目前牆色 ✓", "Current Wall ✓");
       actionBtn.disabled = true;
+    } else if (isActiveFloor) {
+      actionBtn.textContent = bi("目前地板 ✓", "Current Floor ✓");
+      actionBtn.disabled = true;
     } else if (isActiveTextile) {
       actionBtn.textContent = isApparel
         ? bi("目前穿著中 ✓", "Wearing ✓")
@@ -3613,9 +3612,7 @@ function renderShopDialog() {
       actionBtn.classList.add("btn-primary");
       actionBtn.textContent = isApparel
         ? bi("換穿這件（免費）", "Wear This (Free)")
-        : isFloor
-          ? bi("換鋪這款地板（免費）", "Lay This Floor (Free)")
-          : bi("套用更換（免費）", "Equip (Free)");
+        : bi("套用更換（免費）", "Equip (Free)");
       actionBtn.onclick = () => equipShopTextile(item.textileKind, item.id, actionBtn);
     } else if (isPermanentOwned && isSellableShopItem(item)) {
       const blockingDeps = getBlockingDependentOwnedItems(item.id, owned);
@@ -3690,10 +3687,10 @@ function renderShopDialog() {
       actionBtn.classList.add("btn-primary");
       actionBtn.textContent = isPaint
         ? bi("購買並重新粉刷", "Buy & Repaint")
-        : isApparel
-          ? bi("購買並立刻換穿", "Buy & Wear")
-          : isFloor
-            ? bi("購買並立即鋪設", "Buy & Lay Floor")
+        : isFloor
+          ? bi("購買並重鋪地板", "Buy & Re-lay Floor")
+          : isApparel
+            ? bi("購買並立刻換穿", "Buy & Wear")
             : isTextile
               ? bi("購買並立刻換上", "Buy & Equip")
               : isShopParcelItem(item.id)
@@ -3771,6 +3768,37 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
         return { unchanged: false, nextClams, nextXp, xpGranted: xpGain, nextOwned: prevOwned, nextRoomState };
       }
 
+      if (item.consumable && item.floorStyle) {
+        const targetFloorId = item.floorStyleId || item.id;
+        const prevFloor = prevRoomState.floorStyle || DEFAULT_FLOOR_STYLE;
+        if (prevFloor === targetFloorId || (targetFloorId === DEFAULT_FLOOR_STYLE && prevFloor === "floor_honey_oak")) {
+          return { unchanged: true, nextClams: currentClams, nextOwned: prevOwned, nextRoomState: prevRoomState };
+        }
+        if (!isSuperAdmin && currentClams < item.price) {
+          throw new Error(bi("英蚌餘額不足，先去電腦完成接案學習賺錢吧！", "Not enough Clams! Complete quests at your desk to earn more."));
+        }
+        const nextClams = isSuperAdmin ? currentClams : (currentClams - item.price);
+        const currentXp = Math.max(0, Math.trunc(Number(data.xp ?? 0)));
+        const xpGain = calculateShopPurchaseXp(item.price);
+        const nextXp = Math.min(10000000, currentXp + xpGain);
+        const nextRoomState = { ...prevRoomState, floorStyle: targetFloorId };
+        tx.update(userRef, {
+          clams: nextClams,
+          xp: nextXp,
+          roomState: nextRoomState,
+          updatedAt: serverTimestamp()
+        });
+        if (item.price > 0) {
+          queueLedgerTransaction(tx, currentUser.uid, {
+            type: "purchase",
+            category: item.category,
+            title: `${bi("重鋪地板", "Floor Re-lay")}: ${localizedItemName}`,
+            amount: -item.price
+          });
+        }
+        return { unchanged: false, nextClams, nextXp, xpGranted: xpGain, nextOwned: prevOwned, nextRoomState };
+      }
+
       if (prevOwned[item.id] === true) {
         return { unchanged: true, nextClams: currentClams, nextXp: Math.max(0, Math.trunc(Number(data.xp ?? 0))), xpGranted: 0, nextOwned: prevOwned, nextRoomState: prevRoomState };
       }
@@ -3825,15 +3853,13 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       }
       tx.update(userRef, patch);
       if (item.price > 0) {
-        const ledgerPrefix = item.textileKind === "floorStyle"
-          ? bi("購入地板", "Bought Flooring")
-          : item.textileKind === "shirtStyle"
-            ? bi("購入上衣", "Bought Top")
-            : item.textileKind === "pantsStyle"
-              ? bi("購入褲子", "Bought Bottoms")
-              : item.textileKind
-                ? bi("購入織品", "Bought Textile")
-                : bi("購買家具", "Bought Furniture");
+        const ledgerPrefix = item.textileKind === "shirtStyle"
+          ? bi("購入上衣", "Bought Top")
+          : item.textileKind === "pantsStyle"
+            ? bi("購入褲子", "Bought Bottoms")
+            : item.textileKind
+              ? bi("購入織品", "Bought Textile")
+              : bi("購買家具", "Bought Furniture");
         queueLedgerTransaction(tx, currentUser.uid, {
           type: "purchase",
           category: item.category,
@@ -3878,17 +3904,20 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
         `已重新粉刷為「${localizedItemName}」（${feeNote}${xpMsg}）！`,
         `Repainted walls to "${localizedItemName}" (${feeNote}${xpMsg})!`
       ));
+    } else if (item.consumable && item.floorStyle) {
+      roomScene?.setFloorStyle(result.nextRoomState?.floorStyle || item.floorStyleId || item.id);
+      const feeNote = currentRole === "super_admin"
+        ? bi("超級管理員測試免扣款", "Super Admin test mode: no deduction")
+        : bi(`扣除材料與鋪設費 ${item.price} 英蚌`, `-${item.price} Clams`);
+      showFeedback("shop-feedback", "success", bi(
+        `已重鋪為「${localizedItemName}」（${feeNote}${xpMsg}）！`,
+        `Re-laid floor to "${localizedItemName}" (${feeNote}${xpMsg})!`
+      ));
     } else if (item.textileKind === "bedSheet") {
       roomScene?.setBedSheet(item.id);
       showFeedback("shop-feedback", "success", bi(
         `已購入「${localizedItemName}」並立即換上${xpMsg}！`,
         `Purchased & equipped "${localizedItemName}"${xpMsg}!`
-      ));
-    } else if (item.textileKind === "floorStyle") {
-      roomScene?.setFloorStyle(item.id);
-      showFeedback("shop-feedback", "success", bi(
-        `已購入「${localizedItemName}」並立即換鋪新地板${xpMsg}！`,
-        `Purchased & laid down "${localizedItemName}"${xpMsg}!`
       ));
     } else if (item.textileKind === "rugStyle") {
       roomScene?.setRugStyle(item.id);

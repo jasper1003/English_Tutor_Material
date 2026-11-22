@@ -12,7 +12,7 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261123a";
+} from "./shop-catalog.js?v=20261123b";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
