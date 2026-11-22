@@ -838,8 +838,8 @@ function buildIntroStorySteps(profile = currentUserProfile) {
     {
       speaker: bi(`🎨 ${artistName}的獨白`, `🎨 ${artistName}'s Note`),
       text: bi(
-        "還好有甲方案主持續發來跨國繪圖與英語配合委託！只要完成任務並通過驗收，就能賺進報酬「英蚌」與繪師聲望經驗。",
-        "Thankfully, overseas clients are sending English commissions your way! Finish quests and pass client review to earn Clams and XP."
+        "只要完成任務並通過驗收，就能賺進報酬「英蚌」與繪師聲望經驗。",
+        "Finish quests and pass client review to earn Clams and XP."
       )
     },
     {
