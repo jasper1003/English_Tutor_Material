@@ -64,7 +64,6 @@ const STATIC_DOM_TRANSLATIONS = [
   },
 
   // Auth view
-  { selector: "#auth-subtitle-text", zh: "每個帳號會獨立保存課程完成進度，避免老師與同學互相覆蓋。", en: "Each account saves its own lesson progress, clams, and studio layout separately." },
   { selector: "#google-signin-btn span", zh: "使用 Google 帳號快速登入", en: "Continue with Google" },
   { selector: "#auth-divider-text", zh: "或使用電子郵件", en: "or use email" },
   {
