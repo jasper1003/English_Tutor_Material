@@ -2,15 +2,17 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { bi, isEn } from "./i18n.js?v=20261122b";
 import {
+  DEFAULT_FLOOR_STYLE,
   DEFAULT_BED_SHEET,
   DEFAULT_RUG_STYLE,
   DEFAULT_SHIRT_STYLE,
   DEFAULT_PANTS_STYLE,
+  resolveFloorStyle,
   resolveBedSheetStyle,
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261122b";
+} from "./shop-catalog.js?v=20261123a";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
@@ -397,6 +399,7 @@ function makeDeskScreenTexture(mode = "art") {
   return tex;
 }
 
+
 function makePosterTexture() {
   const canvas = document.createElement("canvas");
   canvas.width = 192;
@@ -440,6 +443,7 @@ function makePosterTexture() {
   return tex;
 }
 
+
 function makeTvScreenTexture() {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
@@ -467,6 +471,7 @@ function makeTvScreenTexture() {
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
+
 
 function makeRefScreenTexture() {
   const canvas = document.createElement("canvas");
@@ -496,6 +501,302 @@ function makeRefScreenTexture() {
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function createFloorPatternTexture(preset) {
+  if (typeof document === "undefined") return null;
+  const style = preset || resolveFloorStyle(DEFAULT_FLOOR_STYLE);
+  const pattern = style.pattern || "wood_plank";
+  const base = style.baseColor || "#d8a774";
+  const accent = style.accentColor || "#c4905c";
+  const detail = style.detailColor || "#b87f4a";
+
+  const size = 512;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  const rng = createSeededRng(`floor:${style.id || pattern}`);
+
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, size, size);
+
+  if (pattern === "wood_plank") {
+    const rows = 4;
+    const rowH = size / rows;
+    for (let r = 0; r < rows; r++) {
+      const y = r * rowH;
+      const offset = (r % 2) * (size * 0.5);
+      for (let k = -1; k <= 1; k++) {
+        const px = offset + k * size;
+        ctx.fillStyle = base;
+        ctx.globalAlpha = 1;
+        ctx.fillRect(px, y, size, rowH);
+        // Subtle plank shade difference
+        ctx.fillStyle = rng() > 0.5 ? accent : detail;
+        ctx.globalAlpha = 0.08 + rng() * 0.12;
+        ctx.fillRect(px, y, size, rowH);
+        // Fine horizontal wood grain streaks
+        ctx.strokeStyle = detail;
+        ctx.lineWidth = 1.6;
+        for (let g = 0; g < 6; g++) {
+          ctx.globalAlpha = 0.14 + rng() * 0.14;
+          const gy = y + 10 + (g + rng() * 0.5) * ((rowH - 18) / 6);
+          ctx.beginPath();
+          ctx.moveTo(px + 8, gy);
+          ctx.bezierCurveTo(px + size * 0.35, gy + (rng() - 0.5) * 6, px + size * 0.65, gy + (rng() - 0.5) * 6, px + size - 8, gy);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 0.65;
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(px, y, size, rowH);
+      }
+    }
+  } else if (pattern === "herringbone") {
+    const w = 64;
+    const l = 192;
+    ctx.save();
+    for (let gx = -2; gx < 12; gx++) {
+      for (let gy = -2; gy < 12; gy++) {
+        const cx = gx * w + (gy % 2) * (w * 0.5);
+        const cy = gy * w;
+        const horizontal = (gx + gy) % 2 === 0;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(horizontal ? Math.PI / 4 : -Math.PI / 4);
+        ctx.fillStyle = base;
+        ctx.globalAlpha = 1;
+        ctx.fillRect(-l * 0.5, -w * 0.5, l, w);
+        ctx.fillStyle = (gx + gy) % 3 === 0 ? accent : detail;
+        ctx.globalAlpha = 0.18 + rng() * 0.16;
+        ctx.fillRect(-l * 0.5, -w * 0.5, l, w);
+        ctx.globalAlpha = 0.72;
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2.2;
+        ctx.strokeRect(-l * 0.5, -w * 0.5, l, w);
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+  } else if (pattern === "tatami") {
+    const mats = [
+      { x: 0, y: 0, w: size * 0.5, h: size, vertical: true },
+      { x: size * 0.5, y: 0, w: size * 0.5, h: size * 0.5, vertical: false },
+      { x: size * 0.5, y: size * 0.5, w: size * 0.5, h: size * 0.5, vertical: false }
+    ];
+    mats.forEach((m, idx) => {
+      ctx.fillStyle = base;
+      ctx.globalAlpha = 1;
+      ctx.fillRect(m.x, m.y, m.w, m.h);
+      ctx.fillStyle = detail;
+      ctx.globalAlpha = idx === 1 ? 0.14 : 0.06;
+      ctx.fillRect(m.x, m.y, m.w, m.h);
+      ctx.strokeStyle = detail;
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = 0.34;
+      const step = 6;
+      if (m.vertical) {
+        for (let yy = m.y + 4; yy < m.y + m.h - 4; yy += step) {
+          ctx.beginPath();
+          ctx.moveTo(m.x + 12, yy);
+          ctx.lineTo(m.x + m.w - 12, yy);
+          ctx.stroke();
+        }
+        ctx.fillStyle = accent;
+        ctx.globalAlpha = 0.92;
+        ctx.fillRect(m.x, m.y, 12, m.h);
+        ctx.fillRect(m.x + m.w - 12, m.y, 12, m.h);
+      } else {
+        for (let xx = m.x + 4; xx < m.x + m.w - 4; xx += step) {
+          ctx.beginPath();
+          ctx.moveTo(xx, m.y + 12);
+          ctx.lineTo(xx, m.y + m.h - 12);
+          ctx.stroke();
+        }
+        ctx.fillStyle = accent;
+        ctx.globalAlpha = 0.92;
+        ctx.fillRect(m.x, m.y, m.w, 12);
+        ctx.fillRect(m.x, m.y + m.h - 12, m.w, 12);
+      }
+      ctx.strokeStyle = "#334155";
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(m.x, m.y, m.w, m.h);
+    });
+  } else if (pattern === "marble") {
+    // Large square marble slabs with organic veining
+    const tile = size / 2;
+    for (let v = 0; v < 9; v++) {
+      const startX = rng() * size;
+      const startY = rng() * size;
+      ctx.strokeStyle = v % 2 === 0 ? accent : detail;
+      ctx.lineWidth = v % 3 === 0 ? 3.2 : 1.5;
+      ctx.globalAlpha = v % 3 === 0 ? 0.48 : 0.3;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      let cx = startX;
+      let cy = startY;
+      for (let s = 0; s < 5; s++) {
+        const nx = cx + 45 + rng() * 65;
+        const ny = cy + (rng() - 0.5) * 90;
+        ctx.quadraticCurveTo(cx + 25, cy + (rng() - 0.5) * 45, nx, ny);
+        cx = nx;
+        cy = ny;
+      }
+      ctx.stroke();
+    }
+    ctx.strokeStyle = detail;
+    ctx.globalAlpha = 0.65;
+    ctx.lineWidth = 2.5;
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 2; c++) {
+        ctx.strokeRect(c * tile, r * tile, tile, tile);
+      }
+    }
+  } else if (pattern === "terrazzo") {
+    const chipColors = [accent, detail, "#e6b86a", "#8d99ae", "#d8c7b2"];
+    for (let i = 0; i < 190; i++) {
+      const cx = rng() * size;
+      const cy = rng() * size;
+      const rad = 5 + rng() * 14;
+      const sides = 3 + Math.floor(rng() * 4);
+      ctx.fillStyle = chipColors[Math.floor(rng() * chipColors.length)];
+      ctx.globalAlpha = 0.65 + rng() * 0.28;
+      ctx.beginPath();
+      for (let k = 0; k < sides; k++) {
+        const ang = (k / sides) * Math.PI * 2 + rng() * 0.45;
+        const rr = rad * (0.55 + rng() * 0.55);
+        const px = cx + Math.cos(ang) * rr;
+        const py = cy + Math.sin(ang) * rr;
+        if (k === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.strokeStyle = detail;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, size, size);
+  } else if (pattern === "slate") {
+    const rows = 4;
+    const cols = 2;
+    const cellW = size / cols;
+    const cellH = size / rows;
+    for (let r = 0; r < rows; r++) {
+      const shift = (r % 2) * (cellW * 0.5);
+      for (let c = -1; c <= cols; c++) {
+        const x = c * cellW + shift;
+        const y = r * cellH;
+        ctx.fillStyle = base;
+        ctx.globalAlpha = 1;
+        ctx.fillRect(x, y, cellW, cellH);
+        ctx.fillStyle = rng() > 0.5 ? accent : detail;
+        ctx.globalAlpha = 0.14 + rng() * 0.2;
+        ctx.fillRect(x, y, cellW, cellH);
+        // Subtle mineral texture flecks
+        ctx.fillStyle = detail;
+        for (let m = 0; m < 10; m++) {
+          ctx.globalAlpha = 0.08 + rng() * 0.12;
+          ctx.fillRect(x + rng() * (cellW - 14), y + rng() * (cellH - 8), 8 + rng() * 24, 3 + rng() * 6);
+        }
+        ctx.strokeStyle = accent;
+        ctx.globalAlpha = 0.85;
+        ctx.lineWidth = 3.2;
+        ctx.strokeRect(x, y, cellW, cellH);
+      }
+    }
+  } else if (pattern === "checker") {
+    const cells = 4;
+    const cell = size / cells;
+    for (let r = 0; r < cells; r++) {
+      for (let c = 0; c < cells; c++) {
+        ctx.fillStyle = (r + c) % 2 === 0 ? base : accent;
+        ctx.globalAlpha = 1;
+        ctx.fillRect(c * cell, r * cell, cell, cell);
+        ctx.strokeStyle = detail;
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(c * cell, r * cell, cell, cell);
+      }
+    }
+  } else if (pattern === "hexagon") {
+    ctx.fillStyle = detail;
+    ctx.globalAlpha = 1;
+    ctx.fillRect(0, 0, size, size);
+    const radius = 44;
+    const dx = Math.sqrt(3) * radius;
+    const dy = 1.5 * radius;
+    for (let row = -1; row < 10; row++) {
+      for (let col = -1; col < 10; col++) {
+        const cx = col * dx + (row % 2 ? dx * 0.5 : 0);
+        const cy = row * dy;
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const ang = (Math.PI / 3) * i + Math.PI / 6;
+          const px = cx + Math.cos(ang) * (radius - 2.6);
+          const py = cy + Math.sin(ang) * (radius - 2.6);
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = ((row + col) % 3 === 0) ? accent : base;
+        ctx.globalAlpha = 0.92 + (rng() - 0.5) * 0.1;
+        ctx.fill();
+      }
+    }
+  } else if (pattern === "moroccan") {
+    const cells = 2;
+    const cell = size / cells;
+    for (let r = 0; r < cells; r++) {
+      for (let c = 0; c < cells; c++) {
+        const cx = c * cell + cell * 0.5;
+        const cy = r * cell + cell * 0.5;
+        ctx.fillStyle = base;
+        ctx.globalAlpha = 1;
+        ctx.fillRect(c * cell, r * cell, cell, cell);
+        // 8-point Moroccan geometric star medallion
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.fillStyle = detail;
+        ctx.globalAlpha = 0.85;
+        ctx.fillRect(-cell * 0.25, -cell * 0.25, cell * 0.5, cell * 0.5);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = accent;
+        ctx.globalAlpha = 0.9;
+        ctx.fillRect(-cell * 0.24, -cell * 0.24, cell * 0.48, cell * 0.48);
+        ctx.rotate(-Math.PI / 4);
+        ctx.fillStyle = base;
+        ctx.beginPath();
+        ctx.arc(0, 0, cell * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, cell * 0.16, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        // Corner diamonds connecting tiles
+        ctx.strokeStyle = detail;
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(c * cell, r * cell, cell, cell);
+      }
+    }
+  }
+
+  ctx.globalAlpha = 1;
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  const rep = pattern === "marble" ? 3 : pattern === "tatami" ? 3 : 4;
+  tex.repeat.set(rep, rep);
+  tex.needsUpdate = true;
   return tex;
 }
 
@@ -1422,6 +1723,9 @@ export class FreelancerRoomScene {
     this.bedLampOn = Boolean(options.bedLampOn ?? false);
     this.vinylOn = Boolean(options.vinylOn ?? false);
     this.wallColorHex = options.wallColor || "#f3eadc";
+    this.floorStyleId = options.floorStyle || DEFAULT_FLOOR_STYLE;
+    this.floorSurfaceMesh = null;
+    this.floorSurfaceTex = null;
     this.bedSheetId = options.bedSheet || DEFAULT_BED_SHEET;
     this.rugStyleId = options.rugStyle || DEFAULT_RUG_STYLE;
     this.posterImageDataUrl = typeof options.posterImage === "string" ? options.posterImage.trim() : "";
@@ -1719,14 +2023,19 @@ export class FreelancerRoomScene {
     this.walkTargetRing.position.set(0, 0.044, 0);
     this.roomGroup.add(this.walkTargetRing);
 
-    // Subtle wooden plank grooves
-    const plankLineMat = makeMat("#c4905c", 0.72);
-    for (let i = -3.2; i <= 3.2; i += 0.8) {
-      const strip = new THREE.Mesh(new THREE.BoxGeometry(8.05, 0.005, 0.025), plankLineMat);
-      strip.position.set(0, 0.002, i);
-      strip.receiveShadow = true;
-      this.roomGroup.add(strip);
-    }
+    // Floor surface overlay mesh with crisp procedural CanvasTexture (wood, stone, tile patterns)
+    const floorSurfaceMat = new THREE.MeshStandardMaterial({
+      color: "#ffffff",
+      roughness: 0.62,
+      metalness: 0.04
+    });
+    const floorSurface = new THREE.Mesh(new THREE.PlaneGeometry(8.12, 8.12), floorSurfaceMat);
+    floorSurface.rotation.x = -Math.PI / 2;
+    floorSurface.position.set(0, 0.0015, 0);
+    floorSurface.receiveShadow = true;
+    this.floorSurfaceMesh = floorSurface;
+    this.roomGroup.add(floorSurface);
+    this.applyFloorStyleVisuals();
 
     // Perimeter Wall System with auto-cutaway on the 2 front-most walls per camera angle!
     this.wallMat = makeMat(this.wallColorHex, 0.78);
@@ -3819,6 +4128,42 @@ export class FreelancerRoomScene {
     if (this.rugStyleId === nextId && this.rugGroup?.children?.length > 0) return;
     this.rugStyleId = nextId;
     this.rebuildRugMeshes();
+    this.renderIfPaused();
+  }
+
+  applyFloorStyleVisuals() {
+    const preset = resolveFloorStyle(this.floorStyleId);
+    if (this.floorMesh?.material) {
+      this.floorMesh.material.color.set(preset.baseColor || "#d8a774");
+      this.floorMesh.material.roughness = preset.roughness ?? 0.62;
+      this.floorMesh.material.metalness = preset.metalness ?? 0.04;
+      this.floorMesh.material.needsUpdate = true;
+    }
+    const surfaceMat = this.floorSurfaceMesh?.material;
+    if (!surfaceMat) return;
+    if (this.floorSurfaceTex) {
+      this.floorSurfaceTex.dispose();
+      this.floorSurfaceTex = null;
+    }
+    const tex = createFloorPatternTexture(preset);
+    if (tex) {
+      this.floorSurfaceTex = tex;
+      surfaceMat.map = tex;
+      surfaceMat.color.set("#ffffff");
+    } else {
+      surfaceMat.map = null;
+      surfaceMat.color.set(preset.baseColor || "#d8a774");
+    }
+    surfaceMat.roughness = preset.roughness ?? 0.62;
+    surfaceMat.metalness = preset.metalness ?? 0.04;
+    surfaceMat.needsUpdate = true;
+  }
+
+  setFloorStyle(floorStyleId) {
+    const nextId = floorStyleId || DEFAULT_FLOOR_STYLE;
+    if (this.floorStyleId === nextId && this.floorSurfaceTex) return;
+    this.floorStyleId = nextId;
+    this.applyFloorStyleVisuals();
     this.renderIfPaused();
   }
 
@@ -6660,6 +7005,10 @@ export class FreelancerRoomScene {
     if (this.defaultPosterTex) {
       this.defaultPosterTex.dispose();
       this.defaultPosterTex = null;
+    }
+    if (this.floorSurfaceTex) {
+      this.floorSurfaceTex.dispose();
+      this.floorSurfaceTex = null;
     }
     this.renderer?.dispose();
   }

@@ -3,6 +3,7 @@ import { bi, isEn } from "./i18n.js?v=20261122b";
 export const SHOP_CATEGORIES = [
   { id: "all", label: "全部商品", labelEn: "All Items" },
   { id: "paint", label: "牆面粉刷", labelEn: "Wall Paint" },
+  { id: "floor", label: "地板材質", labelEn: "Flooring" },
   { id: "textile", label: "床單地毯", labelEn: "Bedding & Rugs" },
   { id: "shirt", label: "上衣穿搭", labelEn: "Tops" },
   { id: "pants", label: "褲款下著", labelEn: "Bottoms" },
@@ -16,6 +17,15 @@ export const SHOP_CATALOG_EN = {
   wall_mist: { name: "Morning Mist Blue Paint", desc: "Matte blue-gray wall paint & labor (charged per repaint)." },
   wall_blush: { name: "Terracotta Blush Paint", desc: "Creamy blush terracotta paint & labor (charged per repaint)." },
   wall_lavender: { name: "Dusk Lavender Paint", desc: "Calming dusty lavender wall paint & labor (charged per repaint)." },
+  floor_ash_nordic: { name: "Nordic Pale Ash Wood", desc: "Airy Scandinavian bleached ash planks with delicate grain. Free to swap anytime." },
+  floor_walnut_herringbone: { name: "Dark Walnut Herringbone", desc: "Rich walnut parquet laid in classic herringbone zigzag. Free to swap anytime." },
+  floor_bamboo_tatami: { name: "Woven Bamboo Tatami", desc: "Calm Japanese tatami & hinoki bordered weave for serene focus. Free to swap anytime." },
+  floor_carrara_marble: { name: "Carrara White Marble", desc: "Polished white marble slabs with natural soft gray veining. Free to swap anytime." },
+  floor_terrazzo_warm: { name: "Italian Warm Terrazzo", desc: "Cream stone studded with terracotta, sage, and ochre flecks. Free to swap anytime." },
+  floor_dark_slate: { name: "Charcoal Basalt Slate", desc: "Architectural matte dark stone tiles with rugged mineral texture. Free to swap anytime." },
+  floor_checker_retro: { name: "Retro Cream & Cocoa Checker", desc: "Mid-century checkered ceramic tiles with crisp espresso contrast. Free to swap anytime." },
+  floor_hex_terracotta: { name: "Mediterranean Hex Terracotta", desc: "Sun-baked clay hexagon tiles framed in creamy ivory mortar. Free to swap anytime." },
+  floor_moroccan_star: { name: "Moroccan Geometric Tile", desc: "Handcrafted cobalt blue and ivory star-motif artisan tiles. Free to swap anytime." },
   sheet_terracotta: { name: "Warm Terracotta Bedding", desc: "Washed terracotta duvet with cream sheets. Free to swap anytime." },
   sheet_sage: { name: "Forest Sage Bedding", desc: "Fresh sage cotton quilt with soft green pillowcases for restful sleep." },
   sheet_sakura: { name: "Blush Sakura Bedding", desc: "Gentle sakura pink cotton bedding with airy cloud pillows." },
@@ -84,10 +94,114 @@ export function getShopItemDesc(item) {
 }
 
 export const DEFAULT_WALL_COLOR = "#f3eadc";
+export const DEFAULT_FLOOR_STYLE = "default";
 export const DEFAULT_BED_SHEET = "default";
 export const DEFAULT_RUG_STYLE = "default";
 export const DEFAULT_SHIRT_STYLE = "default";
 export const DEFAULT_PANTS_STYLE = "default";
+
+export const FLOOR_STYLE_PRESETS = {
+  default: {
+    id: "default",
+    name: "經典蜂蜜橡木地板",
+    pattern: "wood_plank",
+    baseColor: "#d8a774",
+    accentColor: "#c4905c",
+    detailColor: "#b87f4a",
+    roughness: 0.62,
+    metalness: 0.04
+  },
+  floor_ash_nordic: {
+    id: "floor_ash_nordic",
+    name: "北歐白蠟淺木紋地板",
+    pattern: "wood_plank",
+    baseColor: "#e6ddcf",
+    accentColor: "#d2c5b2",
+    detailColor: "#c5b6a0",
+    roughness: 0.68,
+    metalness: 0.03
+  },
+  floor_walnut_herringbone: {
+    id: "floor_walnut_herringbone",
+    name: "深胡桃木人字拼地板",
+    pattern: "herringbone",
+    baseColor: "#6d4c37",
+    accentColor: "#533827",
+    detailColor: "#85614a",
+    roughness: 0.52,
+    metalness: 0.06
+  },
+  floor_bamboo_tatami: {
+    id: "floor_bamboo_tatami",
+    name: "和風編織竹木／榻榻米席紋",
+    pattern: "tatami",
+    baseColor: "#c9be90",
+    accentColor: "#4f6d52",
+    detailColor: "#b1a575",
+    roughness: 0.78,
+    metalness: 0.02
+  },
+  floor_carrara_marble: {
+    id: "floor_carrara_marble",
+    name: "卡拉拉白雪花大理石",
+    pattern: "marble",
+    baseColor: "#f2f0ea",
+    accentColor: "#b7bec7",
+    detailColor: "#d8dde3",
+    roughness: 0.24,
+    metalness: 0.08
+  },
+  floor_terrazzo_warm: {
+    id: "floor_terrazzo_warm",
+    name: "義大利暖彩水磨石",
+    pattern: "terrazzo",
+    baseColor: "#ece5d9",
+    accentColor: "#c96f4a",
+    detailColor: "#5f7f6d",
+    roughness: 0.36,
+    metalness: 0.05
+  },
+  floor_dark_slate: {
+    id: "floor_dark_slate",
+    name: "曜石深灰板岩磚",
+    pattern: "slate",
+    baseColor: "#4b525c",
+    accentColor: "#343942",
+    detailColor: "#636b77",
+    roughness: 0.74,
+    metalness: 0.06
+  },
+  floor_checker_retro: {
+    id: "floor_checker_retro",
+    name: "復古奶油可可棋盤磚",
+    pattern: "checker",
+    baseColor: "#f0e8da",
+    accentColor: "#5a4236",
+    detailColor: "#cfc4b2",
+    roughness: 0.42,
+    metalness: 0.05
+  },
+  floor_hex_terracotta: {
+    id: "floor_hex_terracotta",
+    name: "地中海六角赤陶磚",
+    pattern: "hexagon",
+    baseColor: "#c77451",
+    accentColor: "#d98d6b",
+    detailColor: "#ebe2d3",
+    roughness: 0.72,
+    metalness: 0.03
+  },
+  floor_moroccan_star: {
+    id: "floor_moroccan_star",
+    name: "摩洛哥青花幾何花磚",
+    pattern: "moroccan",
+    baseColor: "#f3efe6",
+    accentColor: "#385b8a",
+    detailColor: "#7597bf",
+    roughness: 0.46,
+    metalness: 0.04
+  }
+};
 
 export const SHIRT_STYLE_PRESETS = {
   default: {
@@ -430,6 +544,96 @@ export const DEFAULT_SHOP_CATALOG = [
     wallColor: "#ddd6e8",
     icon: "🪻",
     desc: "淡雅薰衣灰紫油漆與粉刷工錢，每次重新粉刷皆需再次購買。"
+  },
+  {
+    id: "floor_ash_nordic",
+    name: "北歐白蠟淺木紋地板",
+    category: "floor",
+    textileKind: "floorStyle",
+    price: 140,
+    icon: "🪵",
+    floorStyle: FLOOR_STYLE_PRESETS.floor_ash_nordic,
+    desc: "明亮清爽的淺色北歐白蠟實木拼接，讓採光更顯柔和寬敞，購買後可永久免費切換。"
+  },
+  {
+    id: "floor_walnut_herringbone",
+    name: "深胡桃木人字拼地板",
+    category: "floor",
+    textileKind: "floorStyle",
+    price: 160,
+    icon: "🤎",
+    floorStyle: FLOOR_STYLE_PRESETS.floor_walnut_herringbone,
+    desc: "溫潤典雅的深胡桃實木搭配經典人字拼紋理，工作室質感瞬間升級，購買後可永久免費切換。"
+  },
+  {
+    id: "floor_bamboo_tatami",
+    name: "和風編織竹木／榻榻米席紋",
+    category: "floor",
+    textileKind: "floorStyle",
+    price: 170,
+    icon: "🎋",
+    floorStyle: FLOOR_STYLE_PRESETS.floor_bamboo_tatami,
+    desc: "細緻草蓆編織感搭配深森綠緣邊框線，營造靜謐日式創作空間，購買後可永久免費切換。"
+  },
+  {
+    id: "floor_carrara_marble",
+    name: "卡拉拉白雪花大理石",
+    category: "floor",
+    textileKind: "floorStyle",
+    price: 220,
+    icon: "🏛️",
+    floorStyle: FLOOR_STYLE_PRESETS.floor_carrara_marble,
+    desc: "潔白溫潤石材表面流動自然淡灰脈絡，映出微光倒影，購買後可永久免費切換。"
+  },
+  {
+    id: "floor_terrazzo_warm",
+    name: "義大利暖彩水磨石",
+    category: "floor",
+    textileKind: "floorStyle",
+    price: 190,
+    icon: "🪨",
+    floorStyle: FLOOR_STYLE_PRESETS.floor_terrazzo_warm,
+    desc: "奶油石底鑲嵌赤陶、鼠尾草與金黃天然碎石紋樣，活潑又耐看，購買後可永久免費切換。"
+  },
+  {
+    id: "floor_dark_slate",
+    name: "曜石深灰板岩磚",
+    category: "floor",
+    textileKind: "floorStyle",
+    price: 180,
+    icon: "🌑",
+    floorStyle: FLOOR_STYLE_PRESETS.floor_dark_slate,
+    desc: "沉穩內斂的霧面深炭黑板岩石磚，極簡工業與深夜接案首選，購買後可永久免費切換。"
+  },
+  {
+    id: "floor_checker_retro",
+    name: "復古奶油可可棋盤磚",
+    category: "floor",
+    textileKind: "floorStyle",
+    price: 160,
+    icon: "🏁",
+    floorStyle: FLOOR_STYLE_PRESETS.floor_checker_retro,
+    desc: "懷舊歐風咖啡館經典奶油與深焙可可方格拼貼磚，復古感滿分，購買後可永久免費切換。"
+  },
+  {
+    id: "floor_hex_terracotta",
+    name: "地中海六角赤陶磚",
+    category: "floor",
+    textileKind: "floorStyle",
+    price: 180,
+    icon: "🧱",
+    floorStyle: FLOOR_STYLE_PRESETS.floor_hex_terracotta,
+    desc: "暖陽窯燒赤陶六角花磚配上米白填縫，充滿南歐手作暖意，購買後可永久免費切換。"
+  },
+  {
+    id: "floor_moroccan_star",
+    name: "摩洛哥青花幾何花磚",
+    category: "floor",
+    textileKind: "floorStyle",
+    price: 200,
+    icon: "💠",
+    floorStyle: FLOOR_STYLE_PRESETS.floor_moroccan_star,
+    desc: "象牙白底勾勒靛青星芒菱紋藝術花磚，打造獨樹一格的視覺亮點，購買後可永久免費切換。"
   },
   {
     id: "sheet_terracotta",
@@ -876,7 +1080,7 @@ function parseSheetBool(raw, defaultValue = true) {
 export function applyRemoteShopConfig(rows = []) {
   if (!Array.isArray(rows) || rows.length === 0) return SHOP_CATALOG;
 
-  const validCats = new Set(["paint", "textile", "shirt", "pants", "decor", "gear"]);
+  const validCats = new Set(["paint", "floor", "textile", "shirt", "pants", "decor", "gear"]);
   const baseById = new Map(DEFAULT_SHOP_CATALOG.map(item => [item.id, item]));
   const overrides = new Map();
   const extraOrder = [];
@@ -976,6 +1180,10 @@ export function normalizeOwnedItems(raw) {
     }
   }
   return result;
+}
+
+export function resolveFloorStyle(floorStyleId) {
+  return FLOOR_STYLE_PRESETS[floorStyleId] || FLOOR_STYLE_PRESETS[DEFAULT_FLOOR_STYLE];
 }
 
 export function resolveBedSheetStyle(bedSheetId) {
