@@ -1,7 +1,8 @@
-import { bi, isEn } from "./i18n.js?v=20261123g";
+import { bi, isEn } from "./i18n.js?v=20261123h";
 
 export const SHOP_CATEGORIES = [
   { id: "all", label: "全部商品", labelEn: "All Items" },
+  { id: "owned", label: "已擁有", labelEn: "Owned" },
   { id: "paint", label: "牆面粉刷", labelEn: "Wall Paint" },
   { id: "floor", label: "地板材質", labelEn: "Flooring" },
   { id: "desk", label: "書桌材質", labelEn: "Desk Materials" },

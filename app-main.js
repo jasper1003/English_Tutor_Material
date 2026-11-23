@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261123g";
+} from "./room-scene.js?v=20261123h";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -54,6 +54,11 @@ import {
   DEFAULT_RUG_STYLE,
   DEFAULT_SHIRT_STYLE,
   DEFAULT_PANTS_STYLE,
+  DESK_STYLE_PRESETS,
+  BED_SHEET_PRESETS,
+  RUG_STYLE_PRESETS,
+  SHIRT_STYLE_PRESETS,
+  PANTS_STYLE_PRESETS,
   applyRemoteShopConfig,
   getShopCategoryLabel,
   getShopItem,
@@ -63,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261123g";
+} from "./shop-catalog.js?v=20261123h";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -71,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261123g";
+} from "./room-grid.js?v=20261123h";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -93,16 +98,16 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261123g";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261123g";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261123g";
+} from "./app-helpers.js?v=20261123h";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261123h";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261123h";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261123g";
+} from "./i18n.js?v=20261123h";
 
 applyStaticDomTranslations();
 
@@ -3463,10 +3468,426 @@ async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
   }
 }
 
+function buildOwnedShopSections(activeCatalog, owned) {
+  const defaultGroups = [
+    {
+      id: "owned_shirt",
+      titleZh: "👕 上衣穿搭",
+      titleEn: "👕 Tops",
+      category: "shirt",
+      defaultItem: {
+        id: "builtin_default_shirt",
+        styleId: DEFAULT_SHIRT_STYLE,
+        isBuiltinDefault: true,
+        textileKind: "shirtStyle",
+        name: "基本素色上衣",
+        nameEn: "Basic Studio Top",
+        desc: "主角的預設素色穿搭上衣，可隨時免費換穿。",
+        descEn: "Default studio top matching your avatar's base color. Always free to swap.",
+        shirtStyle: {
+          ...SHIRT_STYLE_PRESETS.default,
+          shirtColor: currentUserProfile?.avatar?.outfitColor || "#d96b43"
+        }
+      }
+    },
+    {
+      id: "owned_pants",
+      titleZh: "👖 褲款下著",
+      titleEn: "👖 Bottoms",
+      category: "pants",
+      defaultItem: {
+        id: "builtin_default_pants",
+        styleId: DEFAULT_PANTS_STYLE,
+        isBuiltinDefault: true,
+        textileKind: "pantsStyle",
+        name: "經典深灰長褲",
+        nameEn: "Classic Charcoal Trousers",
+        desc: "百搭耐看的預設深灰工作長褲，可隨時免費換穿。",
+        descEn: "Classic everyday charcoal trousers. Always free to swap.",
+        pantsStyle: PANTS_STYLE_PRESETS.default
+      }
+    },
+    {
+      id: "owned_bed",
+      titleZh: "🛏️ 床單顏色",
+      titleEn: "🛏️ Bedding",
+      category: "textile",
+      textileKind: "bedSheet",
+      defaultItem: {
+        id: "builtin_default_bed",
+        styleId: DEFAULT_BED_SHEET,
+        isBuiltinDefault: true,
+        textileKind: "bedSheet",
+        name: "經典海鹽藍床組",
+        nameEn: "Sea-Salt Blue Bedding",
+        desc: "溫暖清爽的預設海鹽藍被單與枕頭組合，可隨時免費換回。",
+        descEn: "Default sea-salt blue blanket & cream sheets. Always free to restore.",
+        sheetStyle: BED_SHEET_PRESETS.default
+      }
+    },
+    {
+      id: "owned_rug",
+      titleZh: "🧶 地毯樣式",
+      titleEn: "🧶 Rugs",
+      category: "textile",
+      textileKind: "rugStyle",
+      defaultItem: {
+        id: "builtin_default_rug",
+        styleId: DEFAULT_RUG_STYLE,
+        isBuiltinDefault: true,
+        textileKind: "rugStyle",
+        name: "奶油燕麥原味地毯",
+        nameEn: "Oatmeal Cream Rug",
+        desc: "房間預設的編織奶油燕麥地毯，可隨時免費換回。",
+        descEn: "Default woven oatmeal studio rug. Always free to restore.",
+        rugStyle: RUG_STYLE_PRESETS.default
+      }
+    },
+    {
+      id: "owned_desk",
+      titleZh: "🪑 書桌材質",
+      titleEn: "🪑 Desk Materials",
+      category: "desk",
+      defaultItem: {
+        id: "builtin_default_desk",
+        styleId: DEFAULT_DESK_STYLE,
+        isBuiltinDefault: true,
+        textileKind: "deskStyle",
+        name: "經典原木蜂蜜桌",
+        nameEn: "Classic Honey Wood Desk",
+        desc: "工作室預設的溫潤原木桌面搭配消光深灰桌腳，可隨時免費換回。",
+        descEn: "Default honey-oak tabletop with matte charcoal legs. Always free to restore.",
+        deskStyle: DESK_STYLE_PRESETS.default
+      }
+    },
+    {
+      id: "owned_decor",
+      titleZh: "🛋️ 生活家具與擺設",
+      titleEn: "🛋️ Furniture & Decor",
+      category: "decor"
+    },
+    {
+      id: "owned_gear",
+      titleZh: "⌨️ 接案設備",
+      titleEn: "⌨️ Studio Gear",
+      category: "gear"
+    }
+  ];
+
+  const sections = [];
+  defaultGroups.forEach(group => {
+    const ownedInGroup = activeCatalog.filter(item =>
+      !item.consumable
+      && Boolean(owned[item.id])
+      && item.category === group.category
+      && (!group.textileKind || item.textileKind === group.textileKind)
+    );
+    const sectionItems = group.defaultItem
+      ? [group.defaultItem, ...ownedInGroup]
+      : ownedInGroup;
+    if (sectionItems.length > 0) {
+      sections.push({
+        id: group.id,
+        title: bi(group.titleZh, group.titleEn),
+        items: sectionItems
+      });
+    }
+  });
+  return sections;
+}
+
+function createShopItemCard(item, ctx) {
+  const {
+    isSuperAdmin,
+    clams,
+    owned,
+    activeWallColor,
+    activeFloorStyle,
+    activeLayout,
+    activeParcels,
+    roomState
+  } = ctx;
+
+  const styleTargetId = item.styleId || item.id;
+  const isBuiltinDefault = Boolean(item.isBuiltinDefault);
+  const isPaint = Boolean(item.consumable && item.wallColor);
+  const isFloor = Boolean(item.consumable && item.floorStyle);
+  const isTextile = !isFloor && Boolean(item.textileKind);
+  const isDesk = item.textileKind === "deskStyle";
+  const isApparel = item.textileKind === "shirtStyle" || item.textileKind === "pantsStyle";
+  const isActivePaint = isPaint && item.wallColor.toLowerCase() === activeWallColor;
+  const itemFloorTarget = item.floorStyleId || item.id;
+  const isActiveFloor = isFloor && (
+    activeFloorStyle === itemFloorTarget
+    || (itemFloorTarget === DEFAULT_FLOOR_STYLE && activeFloorStyle === "floor_honey_oak")
+  );
+  const isPermanentOwned = isBuiltinDefault || (!isPaint && !isFloor && Boolean(owned[item.id]));
+  const isActiveTextile = isTextile && (
+    getActiveRoomStyle(roomState, item.textileKind) === styleTargetId
+  );
+  const missingPrereqs = isPermanentOwned ? [] : getMissingShopPrerequisites(item, owned);
+  const isLocked = missingPrereqs.length > 0;
+  const isInParcel = Boolean(!isBuiltinDefault && isPermanentOwned && activeParcels[item.id]);
+  const gridMeta = PLACEABLE_FURNITURE_META[item.id] || null;
+  const gridAvail = (!isPaint && !isFloor && !isTextile && !isPermanentOwned && gridMeta)
+    ? checkShopItemGridAvailability(item.id, owned, activeLayout, activeParcels)
+    : { ok: true, placeable: false, neededCells: 0, reason: "" };
+
+  const card = document.createElement("div");
+  card.className = `shop-item-card${(isActivePaint || isActiveFloor || (isTextile ? isActiveTextile : isPermanentOwned)) ? " is-owned" : ""}${isLocked ? " is-locked" : ""}`;
+
+  const previewBox = document.createElement("div");
+  previewBox.className = "shop-item-preview";
+  if (item.previewImage) {
+    const img = document.createElement("img");
+    img.src = `${item.previewImage}?v=20261123h`;
+    img.alt = getShopItemName(item);
+    img.loading = "lazy";
+    previewBox.appendChild(img);
+  } else if (item.wallColor) {
+    previewBox.innerHTML = `
+      <svg class="shop-paint-preview-svg" viewBox="0 0 240 180" aria-hidden="true">
+        <defs>
+          <linearGradient id="bg-${item.id}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f7f2ea" />
+            <stop offset="100%" stop-color="#e9e0d3" />
+          </linearGradient>
+        </defs>
+        <rect width="240" height="180" fill="url(#bg-${item.id})" />
+        <polygon points="120,118 205,154 120,175 35,154" fill="#d8a774" />
+        <polygon points="35,44 120,16 120,118 35,154" fill="${item.wallColor}" />
+        <polygon points="120,16 205,44 205,154 120,118" fill="${item.wallColor}" fill-opacity="0.88" />
+        <polygon points="120,16 205,44 205,154 120,118" fill="#0f172a" fill-opacity="0.09" />
+        <polygon points="35,142 120,108 120,118 35,154" fill="#e5d7c3" />
+        <polygon points="120,108 205,142 205,154 120,118" fill="#d7c5ac" />
+        <ellipse cx="146" cy="144" rx="19" ry="7" fill="#94a3b8" />
+        <path d="M127,122 L127,144 A19,7 0 0,0 165,144 L165,122 Z" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.2" />
+        <ellipse cx="146" cy="122" rx="19" ry="7" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" />
+        <ellipse cx="146" cy="122" rx="14.5" ry="4.8" fill="${item.wallColor}" />
+        <rect x="86" y="76" width="32" height="12" rx="5" transform="rotate(-18 102 82)" fill="${item.wallColor}" stroke="#64748b" stroke-width="1.4" />
+        <path d="M106,89 L114,104 L106,120" fill="none" stroke="#64748b" stroke-width="2.4" stroke-linecap="round" />
+      </svg>
+    `;
+  } else if (item.sheetStyle || item.rugStyle || item.shirtStyle || item.pantsStyle || item.floorStyle || item.deskStyle) {
+    previewBox.innerHTML = buildTextilePreviewSvg(item);
+  }
+  if (isLocked) {
+    const lockBadge = document.createElement("span");
+    lockBadge.className = "shop-lock-badge";
+    lockBadge.textContent = bi("🔒 組合解鎖", "🔒 Bundle Unlock");
+    previewBox.appendChild(lockBadge);
+  }
+
+  const head = document.createElement("div");
+  head.className = "shop-item-head";
+
+  const iconBox = document.createElement("div");
+  iconBox.className = "shop-item-icon";
+  const swatchHex = item.wallColor
+    || item.floorStyle?.baseColor
+    || item.deskStyle?.topColor
+    || item.sheetStyle?.blanketColor
+    || item.rugStyle?.baseColor
+    || item.shirtStyle?.shirtColor
+    || item.pantsStyle?.pantsColor;
+  if (swatchHex) {
+    const dot = document.createElement("span");
+    dot.className = "shop-item-swatch";
+    dot.style.background = swatchHex;
+    iconBox.appendChild(dot);
+  } else {
+    iconBox.textContent = item.icon || "🎁";
+  }
+
+  const itemTitleText = getShopItemName(item);
+  const meta = document.createElement("div");
+  const title = document.createElement("div");
+  title.className = "shop-item-name";
+  title.textContent = itemTitleText;
+  const priceEl = document.createElement("div");
+  priceEl.className = "shop-item-price";
+  const xpReward = isBuiltinDefault ? 0 : calculateShopPurchaseXp(item.price);
+  const resalePrice = (!isBuiltinDefault && isSellableShopItem(item)) ? calculateShopResalePrice(item.price) : 0;
+  const xpSuffix = xpReward > 0 ? ` · +${xpReward} XP` : "";
+  const unitClams = bi("英蚌", "Clams");
+  priceEl.textContent = isBuiltinDefault
+    ? bi("系統預設款式（可隨時免費換回）", "Built-in Default (Free to Swap)")
+    : isPaint
+      ? bi(
+          `${item.price} 英蚌${isActivePaint ? "" : xpSuffix}（每次重刷計費）`,
+          `${item.price} Clams${isActivePaint ? "" : xpSuffix} (per repaint)`
+        )
+      : isFloor
+        ? bi(
+            `${item.price} 英蚌${isActiveFloor ? "" : xpSuffix}（每次重鋪計費）`,
+            `${item.price} Clams${isActiveFloor ? "" : xpSuffix} (per re-lay)`
+          )
+        : (isTextile && isPermanentOwned)
+          ? bi(`${item.price} 英蚌（已購，免費更換）`, `${item.price} Clams (owned · free swap)`)
+          : isPermanentOwned
+            ? (isSellableShopItem(item)
+              ? bi(`原價 ${item.price} 英蚌 · 二手價 ${resalePrice} 英蚌`, `Orig ${item.price} ${unitClams} · Resale ${resalePrice} ${unitClams}`)
+              : `${item.price} ${unitClams}`)
+            : `${item.price} ${unitClams}${xpSuffix}`;
+  meta.append(title, priceEl);
+  head.append(iconBox, meta);
+
+  const desc = document.createElement("div");
+  desc.className = "shop-item-desc";
+  desc.textContent = getShopItemDesc(item);
+
+  let gridBadgeEl = null;
+  if (gridMeta) {
+    const companions = getCompanionPlaceableIds(item.id);
+    const totalGridCells = companions.reduce((sum, cid) => {
+      const cm = PLACEABLE_FURNITURE_META[cid];
+      if (!cm) return sum;
+      return sum + (cm.surface === "wall" ? cm.gridW : cm.gridW * cm.gridD);
+    }, 0) || (gridMeta.surface === "wall" ? gridMeta.gridW : gridMeta.gridW * gridMeta.gridD);
+    gridBadgeEl = document.createElement("div");
+    gridBadgeEl.className = `shop-grid-badge${(!isPermanentOwned && !gridAvail.ok) ? " is-full" : ""}`;
+    gridBadgeEl.textContent = gridMeta.surface === "wall"
+      ? bi(`🧱 佔用 ${gridMeta.gridW} 格牆面網格`, `🧱 Uses ${gridMeta.gridW} wall grid cell(s)`)
+      : (companions.length > 1
+        ? bi(
+            `📐 佔用 ${companions.length} 組共 ${totalGridCells} 格地面（各可獨立拖曳旋轉）`,
+            `📐 ${companions.length} pieces (${totalGridCells} floor cells, moved independently)`
+          )
+        : bi(
+            `📐 佔用 ${gridMeta.gridW}×${gridMeta.gridD}（${gridMeta.gridW * gridMeta.gridD} 格地面）`,
+            `📐 ${gridMeta.gridW}×${gridMeta.gridD} (${gridMeta.gridW * gridMeta.gridD} floor cells)`
+          ));
+  }
+
+  const actionBtn = document.createElement("button");
+  actionBtn.type = "button";
+  actionBtn.className = "btn";
+  actionBtn.style.width = "100%";
+  let actionNode = actionBtn;
+
+  if (isActivePaint) {
+    actionBtn.textContent = bi("目前牆色 ✓", "Current Wall ✓");
+    actionBtn.disabled = true;
+  } else if (isActiveFloor) {
+    actionBtn.textContent = bi("目前地板 ✓", "Current Floor ✓");
+    actionBtn.disabled = true;
+  } else if (isActiveTextile) {
+    actionBtn.textContent = isApparel
+      ? bi("目前穿著中 ✓", "Wearing ✓")
+      : bi("目前使用中 ✓", "Equipped ✓");
+    actionBtn.disabled = true;
+  } else if (isTextile && isPermanentOwned) {
+    actionBtn.classList.add("btn-primary");
+    actionBtn.textContent = isBuiltinDefault
+      ? (isApparel
+        ? bi("換回預設（免費）", "Wear Default (Free)")
+        : isDesk
+          ? bi("換回預設桌面（免費）", "Restore Default Desk (Free)")
+          : bi("換回預設（免費）", "Restore Default (Free)"))
+      : (isApparel
+        ? bi("換穿這件（免費）", "Wear This (Free)")
+        : isDesk
+          ? bi("換用這款桌面（免費）", "Use This Desk (Free)")
+          : bi("套用更換（免費）", "Equip (Free)"));
+    actionBtn.onclick = () => equipShopTextile(item.textileKind, styleTargetId, actionBtn);
+  } else if (isPermanentOwned && isSellableShopItem(item)) {
+    const blockingDeps = getBlockingDependentOwnedItems(item.id, owned);
+    if (blockingDeps.length > 0) {
+      const depNames = blockingDeps.map(d => getShopItemName(d)).join(bi("」「", ", "));
+      actionBtn.textContent = bi(
+        `已擺進房間（需先賣出「${depNames}」）`,
+        `In Room (Sell "${depNames}" first)`
+      );
+      actionBtn.disabled = true;
+    } else if (pendingSellItemId === item.id) {
+      const confirmRow = document.createElement("div");
+      confirmRow.className = "shop-sell-row";
+      const confirmSellBtn = document.createElement("button");
+      confirmSellBtn.type = "button";
+      confirmSellBtn.className = "btn shop-sell-confirm-btn";
+      confirmSellBtn.textContent = bi(`確認賣出（+${resalePrice} 英蚌）`, `Confirm Sell (+${resalePrice})`);
+      confirmSellBtn.onclick = () => sellShopItem(item.id, confirmSellBtn);
+      const keepBtn = document.createElement("button");
+      keepBtn.type = "button";
+      keepBtn.className = "btn";
+      keepBtn.textContent = bi("保留", "Keep");
+      keepBtn.onclick = () => {
+        pendingSellItemId = null;
+        renderShopDialog();
+      };
+      confirmRow.append(confirmSellBtn, keepBtn);
+      actionNode = confirmRow;
+    } else {
+      actionBtn.className = "btn shop-sell-btn";
+      actionBtn.textContent = isInParcel
+        ? bi(`📦 待拆包裹 · 二手賣出（+${resalePrice} 英蚌）`, `📦 Unopened · Sell Half-Price (+${resalePrice})`)
+        : bi(`♻️ 二手賣出（+${resalePrice} 英蚌）`, `♻️ Sell Used (+${resalePrice} Clams)`);
+      actionBtn.title = bi(
+        `按定價的一半（${resalePrice} 英蚌）回收此家具並釋放空間`,
+        `Sell for half price (${resalePrice} Clams) & free up grid space`
+      );
+      actionBtn.onclick = () => {
+        clearFeedback("shop-feedback");
+        pendingSellItemId = item.id;
+        renderShopDialog();
+      };
+    }
+  } else if (isInParcel) {
+    actionBtn.textContent = bi("📦 包裹已送達門口（待拆箱擺放）", "📦 Parcel Waiting at Doorway");
+    actionBtn.disabled = true;
+  } else if (isPermanentOwned) {
+    actionBtn.textContent = bi("已擺進房間 ✓", "Placed in Studio ✓");
+    actionBtn.disabled = true;
+  } else if (isLocked) {
+    actionBtn.textContent = bi(
+      `🔒 需先購買：${missingPrereqs.map(p => p.name).join(" ＋ ")}`,
+      `🔒 Requires: ${missingPrereqs.map(p => p.name).join(" + ")}`
+    );
+    actionBtn.disabled = true;
+  } else if (gridAvail.placeable && !gridAvail.ok) {
+    actionBtn.textContent = bi(`空間不夠（需 ${gridAvail.neededCells} 格）`, `No Space (Needs ${gridAvail.neededCells})`);
+    actionBtn.onclick = () => {
+      showFeedback(
+        "shop-feedback",
+        "error",
+        bi(
+          `${gridAvail.reason}（可於下方點選「二手賣出」家具以回收原價一半英蚌並釋放空間）`,
+          `${gridAvail.reason} (You can sell existing furniture below for 50% Clams to free space.)`
+        )
+      );
+    };
+  } else if (!isSuperAdmin && clams < item.price) {
+    actionBtn.textContent = bi(`還差 ${item.price - clams} 英蚌`, `Need ${item.price - clams} more Clams`);
+    actionBtn.disabled = true;
+  } else {
+    actionBtn.classList.add("btn-primary");
+    actionBtn.textContent = isPaint
+      ? bi("購買並重新粉刷", "Buy & Repaint")
+      : isFloor
+        ? bi("購買並重鋪地板", "Buy & Re-lay Floor")
+        : isDesk
+          ? bi("購買並立刻換桌", "Buy & Apply Desk")
+          : isApparel
+            ? bi("購買並立刻換穿", "Buy & Wear")
+            : isTextile
+              ? bi("購買並立刻換上", "Buy & Equip")
+              : isShopParcelItem(item.id)
+                ? bi("購買並宅配到門口", "Buy & Deliver Parcel")
+                : bi("購買並放進房間", "Buy & Place in Studio");
+    actionBtn.onclick = () => purchaseShopItem(item.id, actionBtn);
+  }
+
+  if (gridBadgeEl) {
+    card.append(previewBox, head, gridBadgeEl, desc, actionNode);
+  } else {
+    card.append(previewBox, head, desc, actionNode);
+  }
+  return card;
+}
+
 function renderShopDialog() {
   const balanceEl = document.getElementById("shop-clams-balance");
   const tabsEl = document.getElementById("shop-tabs");
-  const textileBarEl = document.getElementById("shop-textile-bar");
   const gridEl = document.getElementById("shop-grid");
   const dialogBodyEl = gridEl.closest(".dialog-body");
   const prevScrollTop = dialogBodyEl ? dialogBodyEl.scrollTop : 0;
@@ -3475,11 +3896,6 @@ function renderShopDialog() {
   const owned = normalizeOwnedItems(currentUserProfile?.ownedItems);
   const activeWallColor = (currentUserProfile?.roomState?.wallColor || DEFAULT_WALL_COLOR).toLowerCase();
   const activeFloorStyle = currentUserProfile?.roomState?.floorStyle || DEFAULT_FLOOR_STYLE;
-  const activeDeskStyle = getActiveRoomStyle(currentUserProfile?.roomState, "deskStyle", DEFAULT_DESK_STYLE);
-  const activeBedSheet = currentUserProfile?.roomState?.bedSheet || DEFAULT_BED_SHEET;
-  const activeRugStyle = currentUserProfile?.roomState?.rugStyle || DEFAULT_RUG_STYLE;
-  const activeShirtStyle = currentUserProfile?.roomState?.shirtStyle || DEFAULT_SHIRT_STYLE;
-  const activePantsStyle = currentUserProfile?.roomState?.pantsStyle || DEFAULT_PANTS_STYLE;
   const activeLayout = currentUserProfile?.roomState?.furnitureLayout || {};
   const activeParcels = normalizePendingParcels(currentUserProfile?.roomState?.pendingParcels, owned);
   const gridStats = computeRoomGridStats(owned, activeLayout, activeParcels);
@@ -3534,346 +3950,61 @@ function renderShopDialog() {
     tabsEl.appendChild(btn);
   });
 
-  const hasCustomDesk = activeDeskStyle !== DEFAULT_DESK_STYLE;
-  const hasCustomTextile = activeBedSheet !== DEFAULT_BED_SHEET || activeRugStyle !== DEFAULT_RUG_STYLE;
-  const hasCustomShirt = activeShirtStyle !== DEFAULT_SHIRT_STYLE;
-  const hasCustomPants = activePantsStyle !== DEFAULT_PANTS_STYLE;
-  const showResetBar = !shopResellFilterOnly && (
-    ((activeShopCategory === "desk" || activeShopCategory === "all") && hasCustomDesk)
-    || ((activeShopCategory === "textile" || activeShopCategory === "all") && hasCustomTextile)
-    || ((activeShopCategory === "shirt" || activeShopCategory === "all") && hasCustomShirt)
-    || ((activeShopCategory === "pants" || activeShopCategory === "all") && hasCustomPants)
-  );
-  textileBarEl.innerHTML = "";
-  textileBarEl.classList.toggle("hidden", !showResetBar);
-  if (showResetBar) {
-    const note = document.createElement("span");
-    note.style.marginInlineEnd = "auto";
-    note.textContent = bi("目前套用造型／織品中，可隨時換回預設：", "Active custom style — restore defaults anytime:");
-    textileBarEl.appendChild(note);
-    if ((activeShopCategory === "desk" || activeShopCategory === "all") && hasCustomDesk) {
-      const resetDeskBtn = document.createElement("button");
-      resetDeskBtn.type = "button";
-      resetDeskBtn.className = "btn";
-      resetDeskBtn.textContent = bi("換回原木蜂蜜桌", "Restore Honey Wood Desk");
-      resetDeskBtn.onclick = () => equipShopTextile("deskStyle", DEFAULT_DESK_STYLE, resetDeskBtn);
-      textileBarEl.appendChild(resetDeskBtn);
-    }
-    if ((activeShopCategory === "textile" || activeShopCategory === "all") && activeBedSheet !== DEFAULT_BED_SHEET) {
-      const resetSheetBtn = document.createElement("button");
-      resetSheetBtn.type = "button";
-      resetSheetBtn.className = "btn";
-      resetSheetBtn.textContent = bi("換回經典海鹽藍床組", "Restore Sea-Salt Bedding");
-      resetSheetBtn.onclick = () => equipShopTextile("bedSheet", DEFAULT_BED_SHEET, resetSheetBtn);
-      textileBarEl.appendChild(resetSheetBtn);
-    }
-    if ((activeShopCategory === "textile" || activeShopCategory === "all") && activeRugStyle !== DEFAULT_RUG_STYLE) {
-      const resetRugBtn = document.createElement("button");
-      resetRugBtn.type = "button";
-      resetRugBtn.className = "btn";
-      resetRugBtn.textContent = bi("換回奶油燕麥地毯", "Restore Oat Rug");
-      resetRugBtn.onclick = () => equipShopTextile("rugStyle", DEFAULT_RUG_STYLE, resetRugBtn);
-      textileBarEl.appendChild(resetRugBtn);
-    }
-    if ((activeShopCategory === "shirt" || activeShopCategory === "all") && hasCustomShirt) {
-      const resetShirtBtn = document.createElement("button");
-      resetShirtBtn.type = "button";
-      resetShirtBtn.className = "btn";
-      resetShirtBtn.textContent = bi("換回基本素色上衣", "Restore Basic Top");
-      resetShirtBtn.onclick = () => equipShopTextile("shirtStyle", DEFAULT_SHIRT_STYLE, resetShirtBtn);
-      textileBarEl.appendChild(resetShirtBtn);
-    }
-    if ((activeShopCategory === "pants" || activeShopCategory === "all") && hasCustomPants) {
-      const resetPantsBtn = document.createElement("button");
-      resetPantsBtn.type = "button";
-      resetPantsBtn.className = "btn";
-      resetPantsBtn.textContent = bi("換回經典深灰長褲", "Restore Charcoal Pants");
-      resetPantsBtn.onclick = () => equipShopTextile("pantsStyle", DEFAULT_PANTS_STYLE, resetPantsBtn);
-      textileBarEl.appendChild(resetPantsBtn);
-    }
-  }
+  const cardCtx = {
+    isSuperAdmin,
+    clams,
+    owned,
+    activeWallColor,
+    activeFloorStyle,
+    activeLayout,
+    activeParcels,
+    roomState: currentUserProfile?.roomState
+  };
 
   gridEl.innerHTML = "";
-  const visibleItems = shopResellFilterOnly
-    ? activeCatalog.filter(item => Boolean(owned[item.id]) && isSellableShopItem(item))
-    : (activeShopCategory === "all"
-      ? activeCatalog
-      : activeCatalog.filter(item => item.category === activeShopCategory));
+  const isOwnedGroupedView = !shopResellFilterOnly && activeShopCategory === "owned";
+  gridEl.classList.toggle("is-grouped", isOwnedGroupedView);
 
-  visibleItems.forEach(item => {
-    const isPaint = Boolean(item.consumable && item.wallColor);
-    const isFloor = Boolean(item.consumable && item.floorStyle);
-    const isTextile = !isFloor && Boolean(item.textileKind);
-    const isDesk = item.textileKind === "deskStyle";
-    const isApparel = item.textileKind === "shirtStyle" || item.textileKind === "pantsStyle";
-    const isActivePaint = isPaint && item.wallColor.toLowerCase() === activeWallColor;
-    const itemFloorTarget = item.floorStyleId || item.id;
-    const isActiveFloor = isFloor && (
-      activeFloorStyle === itemFloorTarget
-      || (itemFloorTarget === DEFAULT_FLOOR_STYLE && activeFloorStyle === "floor_honey_oak")
-    );
-    const isPermanentOwned = !isPaint && !isFloor && Boolean(owned[item.id]);
-    const isActiveTextile = isTextile && (
-      getActiveRoomStyle(currentUserProfile?.roomState, item.textileKind) === item.id
-    );
-    const missingPrereqs = isPermanentOwned ? [] : getMissingShopPrerequisites(item, owned);
-    const isLocked = missingPrereqs.length > 0;
-    const isInParcel = Boolean(isPermanentOwned && activeParcels[item.id]);
-    const gridMeta = PLACEABLE_FURNITURE_META[item.id] || null;
-    const gridAvail = (!isPaint && !isFloor && !isTextile && !isPermanentOwned && gridMeta)
-      ? checkShopItemGridAvailability(item.id, owned, activeLayout, activeParcels)
-      : { ok: true, placeable: false, neededCells: 0, reason: "" };
+  if (isOwnedGroupedView) {
+    const sections = buildOwnedShopSections(activeCatalog, owned);
+    sections.forEach(sec => {
+      const sectionEl = document.createElement("section");
+      sectionEl.className = "shop-owned-section";
+      sectionEl.dataset.sectionId = sec.id;
 
-    const card = document.createElement("div");
-    card.className = `shop-item-card${(isActivePaint || isActiveFloor || (isTextile ? isActiveTextile : isPermanentOwned)) ? " is-owned" : ""}${isLocked ? " is-locked" : ""}`;
+      const headerEl = document.createElement("div");
+      headerEl.className = "shop-owned-section-header";
 
-    const previewBox = document.createElement("div");
-    previewBox.className = "shop-item-preview";
-    if (item.previewImage) {
-      const img = document.createElement("img");
-      img.src = `${item.previewImage}?v=20261123g`;
-      img.alt = getShopItemName(item);
-      img.loading = "lazy";
-      previewBox.appendChild(img);
-    } else if (item.wallColor) {
-      // Isometric 3D wall corner + wooden floor + paint bucket preview in exact hex
-      previewBox.innerHTML = `
-        <svg class="shop-paint-preview-svg" viewBox="0 0 240 180" aria-hidden="true">
-          <defs>
-            <linearGradient id="bg-${item.id}" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#f7f2ea" />
-              <stop offset="100%" stop-color="#e9e0d3" />
-            </linearGradient>
-          </defs>
-          <rect width="240" height="180" fill="url(#bg-${item.id})" />
-          <!-- Floor diamond -->
-          <polygon points="120,118 205,154 120,175 35,154" fill="#d8a774" />
-          <!-- Left wall face -->
-          <polygon points="35,44 120,16 120,118 35,154" fill="${item.wallColor}" />
-          <!-- Right wall face (slightly shaded for 3D depth) -->
-          <polygon points="120,16 205,44 205,154 120,118" fill="${item.wallColor}" fill-opacity="0.88" />
-          <polygon points="120,16 205,44 205,154 120,118" fill="#0f172a" fill-opacity="0.09" />
-          <!-- Baseboards -->
-          <polygon points="35,142 120,108 120,118 35,154" fill="#e5d7c3" />
-          <polygon points="120,108 205,142 205,154 120,118" fill="#d7c5ac" />
-          <!-- Paint bucket with exact swatch inside -->
-          <ellipse cx="146" cy="144" rx="19" ry="7" fill="#94a3b8" />
-          <path d="M127,122 L127,144 A19,7 0 0,0 165,144 L165,122 Z" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.2" />
-          <ellipse cx="146" cy="122" rx="19" ry="7" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" />
-          <ellipse cx="146" cy="122" rx="14.5" ry="4.8" fill="${item.wallColor}" />
-          <!-- Cute roller handle -->
-          <rect x="86" y="76" width="32" height="12" rx="5" transform="rotate(-18 102 82)" fill="${item.wallColor}" stroke="#64748b" stroke-width="1.4" />
-          <path d="M106,89 L114,104 L106,120" fill="none" stroke="#64748b" stroke-width="2.4" stroke-linecap="round" />
-        </svg>
-      `;
-    } else if (item.sheetStyle || item.rugStyle || item.shirtStyle || item.pantsStyle || item.floorStyle || item.deskStyle) {
-      previewBox.innerHTML = buildTextilePreviewSvg(item);
-    }
-    if (isLocked) {
-      const lockBadge = document.createElement("span");
-      lockBadge.className = "shop-lock-badge";
-      lockBadge.textContent = bi("🔒 組合解鎖", "🔒 Bundle Unlock");
-      previewBox.appendChild(lockBadge);
-    }
+      const headingEl = document.createElement("h3");
+      headingEl.className = "shop-owned-section-title";
+      headingEl.textContent = sec.title;
 
-    const head = document.createElement("div");
-    head.className = "shop-item-head";
+      const countEl = document.createElement("span");
+      countEl.className = "shop-owned-section-count";
+      countEl.textContent = bi(`共 ${sec.items.length} 款`, `${sec.items.length}`);
 
-    const iconBox = document.createElement("div");
-    iconBox.className = "shop-item-icon";
-    const swatchHex = item.wallColor
-      || item.floorStyle?.baseColor
-      || item.deskStyle?.topColor
-      || item.sheetStyle?.blanketColor
-      || item.rugStyle?.baseColor
-      || item.shirtStyle?.shirtColor
-      || item.pantsStyle?.pantsColor;
-    if (swatchHex) {
-      const dot = document.createElement("span");
-      dot.className = "shop-item-swatch";
-      dot.style.background = swatchHex;
-      iconBox.appendChild(dot);
-    } else {
-      iconBox.textContent = item.icon || "🎁";
-    }
+      headerEl.append(headingEl, countEl);
 
-    const itemTitleText = getShopItemName(item);
-    const meta = document.createElement("div");
-    const title = document.createElement("div");
-    title.className = "shop-item-name";
-    title.textContent = itemTitleText;
-    const priceEl = document.createElement("div");
-    priceEl.className = "shop-item-price";
-    const xpReward = calculateShopPurchaseXp(item.price);
-    const resalePrice = isSellableShopItem(item) ? calculateShopResalePrice(item.price) : 0;
-    const xpSuffix = xpReward > 0 ? ` · +${xpReward} XP` : "";
-    const unitClams = bi("英蚌", "Clams");
-    priceEl.textContent = isPaint
-      ? bi(
-          `${item.price} 英蚌${isActivePaint ? "" : xpSuffix}（每次重刷計費）`,
-          `${item.price} Clams${isActivePaint ? "" : xpSuffix} (per repaint)`
-        )
-      : isFloor
-        ? bi(
-            `${item.price} 英蚌${isActiveFloor ? "" : xpSuffix}（每次重鋪計費）`,
-            `${item.price} Clams${isActiveFloor ? "" : xpSuffix} (per re-lay)`
-          )
-        : (isTextile && isPermanentOwned)
-          ? bi(`${item.price} 英蚌（已購，免費更換）`, `${item.price} Clams (owned · free swap)`)
-          : isPermanentOwned
-            ? (isSellableShopItem(item)
-              ? bi(`原價 ${item.price} 英蚌 · 二手價 ${resalePrice} 英蚌`, `Orig ${item.price} ${unitClams} · Resale ${resalePrice} ${unitClams}`)
-              : `${item.price} ${unitClams}`)
-            : `${item.price} ${unitClams}${xpSuffix}`;
-    meta.append(title, priceEl);
-    head.append(iconBox, meta);
+      const subGridEl = document.createElement("div");
+      subGridEl.className = "shop-grid";
+      sec.items.forEach(item => {
+        subGridEl.appendChild(createShopItemCard(item, cardCtx));
+      });
 
-    const desc = document.createElement("div");
-    desc.className = "shop-item-desc";
-    desc.textContent = getShopItemDesc(item);
+      sectionEl.append(headerEl, subGridEl);
+      gridEl.appendChild(sectionEl);
+    });
+  } else {
+    const visibleItems = shopResellFilterOnly
+      ? activeCatalog.filter(item => Boolean(owned[item.id]) && isSellableShopItem(item))
+      : (activeShopCategory === "all"
+        ? activeCatalog
+        : activeCatalog.filter(item => item.category === activeShopCategory));
+    visibleItems.forEach(item => {
+      gridEl.appendChild(createShopItemCard(item, cardCtx));
+    });
+  }
 
-    let gridBadgeEl = null;
-    if (gridMeta) {
-      const companions = getCompanionPlaceableIds(item.id);
-      const totalGridCells = companions.reduce((sum, cid) => {
-        const cm = PLACEABLE_FURNITURE_META[cid];
-        if (!cm) return sum;
-        return sum + (cm.surface === "wall" ? cm.gridW : cm.gridW * cm.gridD);
-      }, 0) || (gridMeta.surface === "wall" ? gridMeta.gridW : gridMeta.gridW * gridMeta.gridD);
-      gridBadgeEl = document.createElement("div");
-      gridBadgeEl.className = `shop-grid-badge${(!isPermanentOwned && !gridAvail.ok) ? " is-full" : ""}`;
-      gridBadgeEl.textContent = gridMeta.surface === "wall"
-        ? bi(`🧱 佔用 ${gridMeta.gridW} 格牆面網格`, `🧱 Uses ${gridMeta.gridW} wall grid cell(s)`)
-        : (companions.length > 1
-          ? bi(
-              `📐 佔用 ${companions.length} 組共 ${totalGridCells} 格地面（各可獨立拖曳旋轉）`,
-              `📐 ${companions.length} pieces (${totalGridCells} floor cells, moved independently)`
-            )
-          : bi(
-              `📐 佔用 ${gridMeta.gridW}×${gridMeta.gridD}（${gridMeta.gridW * gridMeta.gridD} 格地面）`,
-              `📐 ${gridMeta.gridW}×${gridMeta.gridD} (${gridMeta.gridW * gridMeta.gridD} floor cells)`
-            ));
-    }
-
-    const actionBtn = document.createElement("button");
-    actionBtn.type = "button";
-    actionBtn.className = "btn";
-    actionBtn.style.width = "100%";
-    let actionNode = actionBtn;
-
-    if (isActivePaint) {
-      actionBtn.textContent = bi("目前牆色 ✓", "Current Wall ✓");
-      actionBtn.disabled = true;
-    } else if (isActiveFloor) {
-      actionBtn.textContent = bi("目前地板 ✓", "Current Floor ✓");
-      actionBtn.disabled = true;
-    } else if (isActiveTextile) {
-      actionBtn.textContent = isApparel
-        ? bi("目前穿著中 ✓", "Wearing ✓")
-        : bi("目前使用中 ✓", "Equipped ✓");
-      actionBtn.disabled = true;
-    } else if (isTextile && isPermanentOwned) {
-      actionBtn.classList.add("btn-primary");
-      actionBtn.textContent = isApparel
-        ? bi("換穿這件（免費）", "Wear This (Free)")
-        : isDesk
-          ? bi("換用這款桌面（免費）", "Use This Desk (Free)")
-          : bi("套用更換（免費）", "Equip (Free)");
-      actionBtn.onclick = () => equipShopTextile(item.textileKind, item.id, actionBtn);
-    } else if (isPermanentOwned && isSellableShopItem(item)) {
-      const blockingDeps = getBlockingDependentOwnedItems(item.id, owned);
-      if (blockingDeps.length > 0) {
-        const depNames = blockingDeps.map(d => getShopItemName(d)).join(bi("」「", ", "));
-        actionBtn.textContent = bi(
-          `已擺進房間（需先賣出「${depNames}」）`,
-          `In Room (Sell "${depNames}" first)`
-        );
-        actionBtn.disabled = true;
-      } else if (pendingSellItemId === item.id) {
-        const confirmRow = document.createElement("div");
-        confirmRow.className = "shop-sell-row";
-        const confirmSellBtn = document.createElement("button");
-        confirmSellBtn.type = "button";
-        confirmSellBtn.className = "btn shop-sell-confirm-btn";
-        confirmSellBtn.textContent = bi(`確認賣出（+${resalePrice} 英蚌）`, `Confirm Sell (+${resalePrice})`);
-        confirmSellBtn.onclick = () => sellShopItem(item.id, confirmSellBtn);
-        const keepBtn = document.createElement("button");
-        keepBtn.type = "button";
-        keepBtn.className = "btn";
-        keepBtn.textContent = bi("保留", "Keep");
-        keepBtn.onclick = () => {
-          pendingSellItemId = null;
-          renderShopDialog();
-        };
-        confirmRow.append(confirmSellBtn, keepBtn);
-        actionNode = confirmRow;
-      } else {
-        actionBtn.className = "btn shop-sell-btn";
-        actionBtn.textContent = isInParcel
-          ? bi(`📦 待拆包裹 · 二手賣出（+${resalePrice} 英蚌）`, `📦 Unopened · Sell Half-Price (+${resalePrice})`)
-          : bi(`♻️ 二手賣出（+${resalePrice} 英蚌）`, `♻️ Sell Used (+${resalePrice} Clams)`);
-        actionBtn.title = bi(
-          `按定價的一半（${resalePrice} 英蚌）回收此家具並釋放空間`,
-          `Sell for half price (${resalePrice} Clams) & free up grid space`
-        );
-        actionBtn.onclick = () => {
-          clearFeedback("shop-feedback");
-          pendingSellItemId = item.id;
-          renderShopDialog();
-        };
-      }
-    } else if (isInParcel) {
-      actionBtn.textContent = bi("📦 包裹已送達門口（待拆箱擺放）", "📦 Parcel Waiting at Doorway");
-      actionBtn.disabled = true;
-    } else if (isPermanentOwned) {
-      actionBtn.textContent = bi("已擺進房間 ✓", "Placed in Studio ✓");
-      actionBtn.disabled = true;
-    } else if (isLocked) {
-      actionBtn.textContent = bi(
-        `🔒 需先購買：${missingPrereqs.map(p => p.name).join(" ＋ ")}`,
-        `🔒 Requires: ${missingPrereqs.map(p => p.name).join(" + ")}`
-      );
-      actionBtn.disabled = true;
-    } else if (gridAvail.placeable && !gridAvail.ok) {
-      actionBtn.textContent = bi(`空間不夠（需 ${gridAvail.neededCells} 格）`, `No Space (Needs ${gridAvail.neededCells})`);
-      actionBtn.onclick = () => {
-        showFeedback(
-          "shop-feedback",
-          "error",
-          bi(
-            `${gridAvail.reason}（可於下方點選「二手賣出」家具以回收原價一半英蚌並釋放空間）`,
-            `${gridAvail.reason} (You can sell existing furniture below for 50% Clams to free space.)`
-          )
-        );
-      };
-    } else if (!isSuperAdmin && clams < item.price) {
-      actionBtn.textContent = bi(`還差 ${item.price - clams} 英蚌`, `Need ${item.price - clams} more Clams`);
-      actionBtn.disabled = true;
-    } else {
-      actionBtn.classList.add("btn-primary");
-      actionBtn.textContent = isPaint
-        ? bi("購買並重新粉刷", "Buy & Repaint")
-        : isFloor
-          ? bi("購買並重鋪地板", "Buy & Re-lay Floor")
-          : isDesk
-            ? bi("購買並立刻換桌", "Buy & Apply Desk")
-            : isApparel
-              ? bi("購買並立刻換穿", "Buy & Wear")
-            : isTextile
-              ? bi("購買並立刻換上", "Buy & Equip")
-              : isShopParcelItem(item.id)
-                ? bi("購買並宅配到門口", "Buy & Deliver Parcel")
-                : bi("購買並放進房間", "Buy & Place in Studio");
-      actionBtn.onclick = () => purchaseShopItem(item.id, actionBtn);
-    }
-
-    if (gridBadgeEl) {
-      card.append(previewBox, head, gridBadgeEl, desc, actionNode);
-    } else {
-      card.append(previewBox, head, desc, actionNode);
-    }
-    gridEl.appendChild(card);
-  });
   if (dialogBodyEl) {
     dialogBodyEl.scrollTop = prevScrollTop;
   }

@@ -2092,6 +2092,50 @@ dialog.settings-dialog::backdrop {
   gap: 0.85rem;
 }
 
+.shop-grid.is-grouped {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+}
+
+.shop-owned-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.shop-owned-section + .shop-owned-section {
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border);
+}
+
+.shop-owned-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.shop-owned-section-title {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.shop-owned-section-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.14rem 0.6rem;
+}
+
 .shop-item-card {
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -2153,19 +2197,6 @@ dialog.settings-dialog::backdrop {
   width: 100%;
   height: 100%;
   display: block;
-}
-
-.shop-textile-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.55rem;
-  margin-bottom: 0.85rem;
-  padding: 0.55rem 0.75rem;
-  border-radius: 12px;
-  background: light-dark(#faf6f0, #161d2b);
-  border: 1px solid var(--border);
-  font-size: 0.84rem;
 }
 
 .shop-dialog-feedback {
