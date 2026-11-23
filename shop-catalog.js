@@ -1,4 +1,4 @@
-import { bi, isEn } from "./i18n.js?v=20261123h";
+import { bi, isEn } from "./i18n.js?v=20261123i";
 
 export const SHOP_CATEGORIES = [
   { id: "all", label: "全部商品", labelEn: "All Items" },
@@ -71,6 +71,12 @@ export const SHOP_CATALOG_EN = {
   floor_plant: { name: "Fiddle-Leaf Fig Planter", desc: "Woven-basket indoor fig tree bringing fresh greenery to your room." },
   arc_lamp_brass: { name: "Brass Dome Arc Floor Lamp", desc: "Dark marble base with slender brushed-brass arch & dome shade; click to toggle warm light." },
   arc_lamp_black: { name: "Matte Black Drum Arc Floor Lamp", desc: "Wide matte-black disc base, tall sweeping arch & drum shade; click to toggle glow." },
+  lamp_paper_lantern: { name: "Rice Paper Column Floor Lamp", desc: "Classic crinkled rice-paper lantern cylinder on wire legs with warm 2700K glow; click to toggle." },
+  lamp_uplighter_duo: { name: "Dual Uplighter & Reading Floor Lamp", desc: "Matte-black pole combining frosted uplighter shade & flexible reading spotlight bulb; click to toggle." },
+  lamp_tripod_linen: { name: "Nordic Oak Tripod Linen Floor Lamp", desc: "Tapered oak tripod legs with brass collar & oatmeal linen drum around a warm bulb; click to toggle." },
+  lamp_globe_opal: { name: "Opal Glass Globe Bulb Floor Lamp", desc: "Brushed-chrome stem with floating frosted milk-glass globe bulbs radiating soft glow; click to toggle." },
+  lamp_edison_cage: { name: "Edison Filament Diamond Cage Lamp", desc: "Geometric black wire cage suspending an exposed spiral-filament Edison bulb; click to toggle." },
+  lamp_mushroom_pleated: { name: "Cream Pleated Mushroom Floor Lamp", desc: "Warm-cream arched stem with amber pleated translucent dome shade for sunset glow; click to toggle." },
   cool_keyboard: { name: "RGB Mechanical Keyboard", desc: "Upgrade your desk setup with a glowing mechanical keyboard." },
   coffee_bar: { name: "Pour-Over Coffee Bar", desc: "Compact wooden brew station with gooseneck kettle for fresh fuel." },
   ergo_chair: { name: "Ergonomic Studio Chair", desc: "High-back breathable lumbar chair built for marathon commissions." },
@@ -1187,6 +1193,60 @@ export const DEFAULT_SHOP_CATALOG = [
     icon: "💡",
     previewImage: "./assets/shop/arc_lamp_black.jpg",
     desc: "簡約霧黑寬圓盤底座配高挑弧線燈桿與錐形深黑燈罩，擺在沙發或工作區旁質感滿分，可點擊開關照明。"
+  },
+  {
+    id: "lamp_paper_lantern",
+    name: "和紙圓柱落地燈",
+    category: "decor",
+    price: 150,
+    icon: "🏮",
+    previewImage: "./assets/shop/lamp_paper_lantern.jpg",
+    desc: "經典北歐風皺褶米白和紙長筒燈罩搭細鐵線三腳架，內置 2700K 暖白燈泡透出柔和均勻光暈，可點擊開關照明。"
+  },
+  {
+    id: "lamp_uplighter_duo",
+    name: "雙頭子母上照落地燈",
+    category: "decor",
+    price: 175,
+    icon: "💡",
+    previewImage: "./assets/shop/lamp_uplighter_duo.jpg",
+    desc: "霧黑金屬立柱頂端配磨砂上照碗燈照亮天花板，中段附可調式子閱讀聚光燈罩，工作與沙發閱讀都適合，可點擊開關。"
+  },
+  {
+    id: "lamp_tripod_linen",
+    name: "北歐白橡三腳亞麻立燈",
+    category: "decor",
+    price: 210,
+    icon: "🛋️",
+    previewImage: "./assets/shop/lamp_tripod_linen.jpg",
+    desc: "溫潤白橡實木三腳支架搭配黃銅頸環與燕麥色亞麻布燈罩，呈現經典北歐居家暖光燈泡氛圍，可點擊開關照明。"
+  },
+  {
+    id: "lamp_globe_opal",
+    name: "蛋白石圓球燈泡落地燈",
+    category: "decor",
+    price: 220,
+    icon: "⚪",
+    previewImage: "./assets/shop/lamp_globe_opal.jpg",
+    desc: "拉絲鍍鉻立柱點綴高低錯落的磨砂乳白圓球燈泡，光線 360 度柔和擴散不刺眼，可點擊開關月光般柔光。"
+  },
+  {
+    id: "lamp_edison_cage",
+    name: "工業風愛迪生烏絲籠燈",
+    category: "decor",
+    price: 240,
+    icon: "🕯️",
+    previewImage: "./assets/shop/lamp_edison_cage.jpg",
+    desc: "幾何霧黑線條鑽石籠罩內懸掛復古琥珀螺旋鎢絲愛迪生燈泡，造型俐落醒目，可點擊開關復古暖橘燈光。"
+  },
+  {
+    id: "lamp_mushroom_pleated",
+    name: "奶油百褶蘑菇美學立燈",
+    category: "decor",
+    price: 270,
+    icon: "🍄",
+    previewImage: "./assets/shop/lamp_mushroom_pleated.jpg",
+    desc: "奶杏烤漆曲線燈柱結合琥珀透光百褶蘑菇圓弧燈罩，開燈就像落日夕陽般溫暖治癒，可點擊開關照明。"
   },
   {
     id: "cool_keyboard",

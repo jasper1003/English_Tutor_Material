@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { bi, isEn } from "./i18n.js?v=20261123h";
+import { bi, isEn } from "./i18n.js?v=20261123i";
 import {
   DEFAULT_FLOOR_STYLE,
   DEFAULT_DESK_STYLE,
@@ -14,13 +14,13 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261123h";
+} from "./shop-catalog.js?v=20261123i";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261123h";
+} from "./app-helpers.js?v=20261123i";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -40,7 +40,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261123h";
+} from "./room-grid.js?v=20261123i";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -1834,8 +1834,21 @@ export class FreelancerRoomScene {
 
     this.deskLampOn = Boolean(options.deskLampOn ?? true);
     this.bedLampOn = Boolean(options.bedLampOn ?? false);
-    this.arcLampBrassOn = Boolean(options.arcLampBrassOn ?? true);
-    this.arcLampBlackOn = Boolean(options.arcLampBlackOn ?? true);
+    this.floorLampStates = {
+      ...(options.floorLampStates && typeof options.floorLampStates === "object" ? options.floorLampStates : {}),
+      arc_lamp_brass: Boolean(options.arcLampBrassOn ?? options.floorLampStates?.arc_lamp_brass ?? true),
+      arc_lamp_black: Boolean(options.arcLampBlackOn ?? options.floorLampStates?.arc_lamp_black ?? true),
+      lamp_paper_lantern: Boolean(options.floorLampStates?.lamp_paper_lantern ?? true),
+      lamp_uplighter_duo: Boolean(options.floorLampStates?.lamp_uplighter_duo ?? true),
+      lamp_tripod_linen: Boolean(options.floorLampStates?.lamp_tripod_linen ?? true),
+      lamp_globe_opal: Boolean(options.floorLampStates?.lamp_globe_opal ?? true),
+      lamp_edison_cage: Boolean(options.floorLampStates?.lamp_edison_cage ?? true),
+      lamp_mushroom_pleated: Boolean(options.floorLampStates?.lamp_mushroom_pleated ?? true)
+    };
+    this.arcLampBrassOn = this.floorLampStates.arc_lamp_brass;
+    this.arcLampBlackOn = this.floorLampStates.arc_lamp_black;
+    this.floorLampEntries = new Map();
+    this.hoveredLampId = null;
     this.vinylOn = Boolean(options.vinylOn ?? false);
     this.wallColorHex = options.wallColor || "#f3eadc";
     this.floorStyleId = options.floorStyle || DEFAULT_FLOOR_STYLE;
@@ -2097,6 +2110,15 @@ export class FreelancerRoomScene {
     this.arcLampBrassLight = new THREE.PointLight("#ffd699", 0, 5.8, 1.7);
 
     this.arcLampBlackLight = new THREE.PointLight("#ffe4b8", 0, 6.2, 1.65);
+
+    this.extraFloorLampLights = {
+      lamp_paper_lantern: new THREE.PointLight("#ffd698", 0, 5.6, 1.75),
+      lamp_uplighter_duo: new THREE.PointLight("#ffe3b2", 0, 6.0, 1.68),
+      lamp_tripod_linen: new THREE.PointLight("#ffd490", 0, 5.8, 1.72),
+      lamp_globe_opal: new THREE.PointLight("#ffebc6", 0, 6.1, 1.68),
+      lamp_edison_cage: new THREE.PointLight("#ffbe6b", 0, 5.5, 1.75),
+      lamp_mushroom_pleated: new THREE.PointLight("#ffcb7c", 0, 5.9, 1.7)
+    };
 
     this.tvGlowLight = new THREE.PointLight("#7dd3fc", 0, 6.4, 1.65);
   }
@@ -2776,6 +2798,415 @@ export class FreelancerRoomScene {
     this.arcLampBlackInner = arcBlackInner;
     this.arcLampBlackDiffMat = arcBlackBottom.material;
     this.arcLampBlackInnerMat = arcBlackInner.material;
+
+    const registerExtraFloorLamp = ({ id, group, light, lightPos, emissiveMeshes, onIntensity = 1.15, dayRange = [1.0, 2.9], labelZh, labelEn }) => {
+      if (light) {
+        light.position.set(lightPos[0], lightPos[1], lightPos[2]);
+        group.add(light);
+      }
+      group.visible = Boolean(this.ownedItems[id]);
+      this.furnitureGroup.add(group);
+      group.traverse(m => {
+        if (m.isMesh) {
+          m.userData.lampId = id;
+          this.addInteractive(m, "extraFloorLamp", id);
+        }
+      });
+      const isInitiallyOn = Boolean(this.floorLampStates[id] ?? true);
+      const tracked = emissiveMeshes.map(({ mesh, mult = 1.0 }) => {
+        const val = isInitiallyOn ? onIntensity * mult : 0.0;
+        if (mesh.material && "emissiveIntensity" in mesh.material) {
+          mesh.material.emissiveIntensity = val;
+        }
+        if (mesh.userData) {
+          mesh.userData.baseEmissiveIntensity = val;
+        }
+        return { mesh, mult };
+      });
+      this.floorLampEntries.set(id, { id, group, light, tracked, onIntensity, dayRange, labelZh, labelEn });
+    };
+
+    // 2d. IKEA HOLMÖ-inspired Rice Paper Column Floor Lamp
+    const paperLamp = new THREE.Group();
+    const wireLegMat = makeMat("#1f242c", 0.42, 0.55);
+    const paperShadeMat = new THREE.MeshStandardMaterial({
+      color: "#fbf4e6",
+      emissive: "#ffc97c",
+      emissiveIntensity: 1.05,
+      roughness: 0.78
+    });
+    for (let i = 0; i < 3; i++) {
+      const a = (i * Math.PI * 2) / 3 + Math.PI / 6;
+      const legCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(Math.cos(a) * 0.11, 0.22, Math.sin(a) * 0.11),
+        new THREE.Vector3(Math.cos(a) * 0.175, 0.015, Math.sin(a) * 0.175),
+        new THREE.Vector3(Math.cos(a + 0.35) * 0.14, 0.015, Math.sin(a + 0.35) * 0.14),
+        new THREE.Vector3(Math.cos(a + 0.25) * 0.06, 0.22, Math.sin(a + 0.25) * 0.06)
+      ]);
+      const legWire = new THREE.Mesh(new THREE.TubeGeometry(legCurve, 14, 0.008, 6, false), wireLegMat);
+      legWire.castShadow = true;
+      paperLamp.add(legWire);
+    }
+    const paperBody = new THREE.Mesh(new THREE.CylinderGeometry(0.155, 0.16, 1.18, 22), paperShadeMat);
+    paperBody.position.set(0, 0.81, 0);
+    paperBody.castShadow = true;
+    paperLamp.add(paperBody);
+    const paperCoreMat = new THREE.MeshStandardMaterial({
+      color: "#fff8e8",
+      emissive: "#ffe0a8",
+      emissiveIntensity: 1.4,
+      roughness: 0.4
+    });
+    const paperBand = new THREE.Mesh(new THREE.CylinderGeometry(0.157, 0.157, 0.42, 22, 1, true), paperCoreMat);
+    paperBand.position.set(0, 0.82, 0);
+    paperLamp.add(paperBand);
+    for (let r = 0; r < 8; r++) {
+      const rib = new THREE.Mesh(
+        new THREE.TorusGeometry(0.158, 0.0045, 6, 24),
+        makeMat("#d8cbb5", 0.72)
+      );
+      rib.rotation.x = Math.PI / 2;
+      rib.position.y = 0.29 + r * 0.15;
+      paperLamp.add(rib);
+    }
+    registerExtraFloorLamp({
+      id: "lamp_paper_lantern",
+      group: paperLamp,
+      light: this.extraFloorLampLights.lamp_paper_lantern,
+      lightPos: [0, 0.85, 0],
+      emissiveMeshes: [{ mesh: paperBody, mult: 0.92 }, { mesh: paperBand, mult: 1.25 }],
+      onIntensity: 1.05,
+      dayRange: [0.95, 2.75],
+      labelZh: "和紙圓柱落地燈",
+      labelEn: "rice paper floor lamp"
+    });
+
+    // 2e. IKEA TAGARP / NOT-inspired Dual Uplighter + Reading Arm Floor Lamp
+    const duoLamp = new THREE.Group();
+    const duoDarkMat = makeMat("#1a1f28", 0.38, 0.48);
+    const duoBase = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.18, 0.03, 24), duoDarkMat);
+    duoBase.position.y = 0.015;
+    duoBase.castShadow = true;
+    duoBase.receiveShadow = true;
+    duoLamp.add(duoBase);
+    const duoPole = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.018, 1.50, 12), duoDarkMat);
+    duoPole.position.y = 0.77;
+    duoPole.castShadow = true;
+    duoLamp.add(duoPole);
+    const duoCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.02, 0.06, 16), duoDarkMat);
+    duoCollar.position.y = 1.54;
+    duoLamp.add(duoCollar);
+    const duoBowlMat = new THREE.MeshStandardMaterial({
+      color: "#f8f4ea",
+      emissive: "#ffdb9c",
+      emissiveIntensity: 1.15,
+      roughness: 0.35,
+      side: THREE.DoubleSide
+    });
+    const duoBowl = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.055, 0.13, 22, 1, true), duoBowlMat);
+    duoBowl.position.y = 1.62;
+    duoLamp.add(duoBowl);
+    const duoTopBulb = new THREE.Mesh(new THREE.SphereGeometry(0.052, 12, 10), duoBowlMat.clone());
+    duoTopBulb.position.y = 1.62;
+    duoLamp.add(duoTopBulb);
+    const armCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 1.04, 0),
+      new THREE.Vector3(0.09, 1.14, 0.04),
+      new THREE.Vector3(0.18, 1.13, 0.11),
+      new THREE.Vector3(0.21, 1.04, 0.14)
+    ]);
+    const duoArm = new THREE.Mesh(new THREE.TubeGeometry(armCurve, 14, 0.0085, 8, false), duoDarkMat);
+    duoLamp.add(duoArm);
+    const duoSpotShade = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.062, 0.095, 16), duoDarkMat);
+    duoSpotShade.position.set(0.215, 0.99, 0.145);
+    duoSpotShade.rotation.z = 0.25;
+    duoSpotShade.rotation.x = -0.22;
+    duoLamp.add(duoSpotShade);
+    const duoSpotBulb = new THREE.Mesh(new THREE.SphereGeometry(0.036, 10, 8), duoBowlMat.clone());
+    duoSpotBulb.position.set(0.222, 0.955, 0.152);
+    duoLamp.add(duoSpotBulb);
+    registerExtraFloorLamp({
+      id: "lamp_uplighter_duo",
+      group: duoLamp,
+      light: this.extraFloorLampLights.lamp_uplighter_duo,
+      lightPos: [0, 1.68, 0],
+      emissiveMeshes: [
+        { mesh: duoBowl, mult: 0.95 },
+        { mesh: duoTopBulb, mult: 1.3 },
+        { mesh: duoSpotBulb, mult: 1.3 }
+      ],
+      onIntensity: 1.15,
+      dayRange: [1.05, 2.95],
+      labelZh: "雙頭子母上照落地燈",
+      labelEn: "dual uplighter floor lamp"
+    });
+
+    // 2f. IKEA LAUTERS-inspired Nordic Oak Tripod Linen Floor Lamp
+    const tripodLamp = new THREE.Group();
+    const oakLegMat = makeMat("#cfa16e", 0.62, 0.04);
+    const collarBrassMat = makeMat("#d4af68", 0.26, 0.78);
+    for (let i = 0; i < 3; i++) {
+      const a = (i * Math.PI * 2) / 3 + Math.PI / 6;
+      const start = new THREE.Vector3(Math.cos(a) * 0.20, 0.01, Math.sin(a) * 0.20);
+      const end = new THREE.Vector3(Math.cos(a) * 0.04, 1.22, Math.sin(a) * 0.04);
+      const legMesh = new THREE.Mesh(new THREE.TubeGeometry(new THREE.LineCurve3(start, end), 2, 0.018, 8, false), oakLegMat);
+      legMesh.castShadow = true;
+      tripodLamp.add(legMesh);
+    }
+    const tripodCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.056, 0.045, 16), collarBrassMat);
+    tripodCollar.position.y = 1.22;
+    tripodLamp.add(tripodCollar);
+    const tripodStem = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.11, 10), collarBrassMat);
+    tripodStem.position.y = 1.29;
+    tripodLamp.add(tripodStem);
+    const linenShadeMat = new THREE.MeshStandardMaterial({
+      color: "#e8dcc8",
+      emissive: "#ffc97b",
+      emissiveIntensity: 0.92,
+      roughness: 0.84,
+      side: THREE.DoubleSide
+    });
+    const tripodShade = new THREE.Mesh(new THREE.CylinderGeometry(0.185, 0.20, 0.25, 24, 1, true), linenShadeMat);
+    tripodShade.position.y = 1.43;
+    tripodShade.castShadow = true;
+    tripodLamp.add(tripodShade);
+    const tripodInnerMat = new THREE.MeshStandardMaterial({
+      color: "#fff8eb",
+      emissive: "#ffe0a6",
+      emissiveIntensity: 1.3,
+      roughness: 0.35
+    });
+    const tripodBulb = new THREE.Mesh(new THREE.SphereGeometry(0.052, 12, 10), tripodInnerMat);
+    tripodBulb.position.y = 1.38;
+    tripodLamp.add(tripodBulb);
+    const tripodDiffuser = new THREE.Mesh(new THREE.CircleGeometry(0.194, 22), tripodInnerMat.clone());
+    tripodDiffuser.rotation.x = Math.PI / 2;
+    tripodDiffuser.position.y = 1.31;
+    tripodLamp.add(tripodDiffuser);
+    registerExtraFloorLamp({
+      id: "lamp_tripod_linen",
+      group: tripodLamp,
+      light: this.extraFloorLampLights.lamp_tripod_linen,
+      lightPos: [0, 1.30, 0],
+      emissiveMeshes: [
+        { mesh: tripodShade, mult: 0.8 },
+        { mesh: tripodBulb, mult: 1.3 },
+        { mesh: tripodDiffuser, mult: 1.0 }
+      ],
+      onIntensity: 1.15,
+      dayRange: [1.05, 2.95],
+      labelZh: "北歐白橡三腳亞麻立燈",
+      labelEn: "Nordic oak tripod floor lamp"
+    });
+
+    // 2g. IKEA SIMRISHAMN / FADO-inspired Chrome & Frosted Opal Glass Globe Floor Lamp
+    const globeLamp = new THREE.Group();
+    const chromeMat = makeMat("#d8dee6", 0.20, 0.86);
+    const globeBase = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.175, 0.03, 24), chromeMat);
+    globeBase.position.y = 0.015;
+    globeBase.castShadow = true;
+    globeBase.receiveShadow = true;
+    globeLamp.add(globeBase);
+    const globePole = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.015, 1.44, 14), chromeMat);
+    globePole.position.y = 0.74;
+    globePole.castShadow = true;
+    globeLamp.add(globePole);
+    const leftBranch = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 1.24, 0),
+      new THREE.Vector3(-0.08, 1.15, 0.02),
+      new THREE.Vector3(-0.17, 1.20, 0.02),
+      new THREE.Vector3(-0.18, 1.29, 0.02)
+    ]);
+    const rightBranch = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 1.12, 0),
+      new THREE.Vector3(0.08, 1.04, -0.02),
+      new THREE.Vector3(0.16, 1.09, -0.02),
+      new THREE.Vector3(0.17, 1.17, -0.02)
+    ]);
+    globeLamp.add(new THREE.Mesh(new THREE.TubeGeometry(leftBranch, 14, 0.009, 8, false), chromeMat));
+    globeLamp.add(new THREE.Mesh(new THREE.TubeGeometry(rightBranch, 14, 0.009, 8, false), chromeMat));
+    const opalMat = new THREE.MeshStandardMaterial({
+      color: "#fffcf5",
+      emissive: "#ffe4b5",
+      emissiveIntensity: 1.22,
+      roughness: 0.25
+    });
+    const topOrb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 20, 16), opalMat);
+    topOrb.position.set(0, 1.56, 0);
+    globeLamp.add(topOrb);
+    const leftOrb = new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 14), opalMat.clone());
+    leftOrb.position.set(-0.18, 1.36, 0.02);
+    globeLamp.add(leftOrb);
+    const rightOrb = new THREE.Mesh(new THREE.SphereGeometry(0.082, 16, 14), opalMat.clone());
+    rightOrb.position.set(0.17, 1.24, -0.02);
+    globeLamp.add(rightOrb);
+    registerExtraFloorLamp({
+      id: "lamp_globe_opal",
+      group: globeLamp,
+      light: this.extraFloorLampLights.lamp_globe_opal,
+      lightPos: [0, 1.48, 0.05],
+      emissiveMeshes: [
+        { mesh: topOrb, mult: 1.05 },
+        { mesh: leftOrb, mult: 1.05 },
+        { mesh: rightOrb, mult: 1.05 }
+      ],
+      onIntensity: 1.2,
+      dayRange: [1.1, 3.05],
+      labelZh: "蛋白石圓球燈泡落地燈",
+      labelEn: "opal globe floor lamp"
+    });
+
+    // 2h. IKEA BRUNSTA / HEMMA-inspired Industrial Edison Bulb Diamond Wire Cage Lamp
+    const edisonLamp = new THREE.Group();
+    const ironMat = makeMat("#161920", 0.40, 0.55);
+    const edisonBase = new THREE.Mesh(new THREE.CylinderGeometry(0.175, 0.18, 0.032, 24), ironMat);
+    edisonBase.position.set(0, 0.016, -0.06);
+    edisonBase.castShadow = true;
+    edisonBase.receiveShadow = true;
+    edisonLamp.add(edisonBase);
+    const edisonFrameCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0.03, -0.16),
+      new THREE.Vector3(0, 1.68, -0.16),
+      new THREE.Vector3(0, 1.78, -0.06),
+      new THREE.Vector3(0, 1.78, 0.10),
+      new THREE.Vector3(0, 1.66, 0.12)
+    ]);
+    const edisonStand = new THREE.Mesh(new THREE.TubeGeometry(edisonFrameCurve, 24, 0.014, 8, false), ironMat);
+    edisonStand.castShadow = true;
+    edisonLamp.add(edisonStand);
+    const edisonCord = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.18, 8), ironMat);
+    edisonCord.position.set(0, 1.57, 0.12);
+    edisonLamp.add(edisonCord);
+    const edisonSocket = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.032, 0.055, 12), makeMat("#2c2520", 0.35, 0.6));
+    edisonSocket.position.set(0, 1.46, 0.12);
+    edisonLamp.add(edisonSocket);
+    const topRing = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.005, 6, 16), ironMat);
+    topRing.rotation.x = Math.PI / 2;
+    topRing.position.set(0, 1.44, 0.12);
+    edisonLamp.add(topRing);
+    const midRing = new THREE.Mesh(new THREE.TorusGeometry(0.145, 0.0055, 6, 8), ironMat);
+    midRing.rotation.x = Math.PI / 2;
+    midRing.position.set(0, 1.29, 0.12);
+    edisonLamp.add(midRing);
+    const botRing = new THREE.Mesh(new THREE.TorusGeometry(0.095, 0.0055, 6, 8), ironMat);
+    botRing.rotation.x = Math.PI / 2;
+    botRing.position.set(0, 1.18, 0.12);
+    edisonLamp.add(botRing);
+    for (let s = 0; s < 8; s++) {
+      const ang = (s * Math.PI * 2) / 8;
+      const pTop = new THREE.Vector3(Math.cos(ang) * 0.055, 1.44, 0.12 + Math.sin(ang) * 0.055);
+      const pMid = new THREE.Vector3(Math.cos(ang) * 0.145, 1.29, 0.12 + Math.sin(ang) * 0.145);
+      const pBot = new THREE.Vector3(Math.cos(ang) * 0.095, 1.18, 0.12 + Math.sin(ang) * 0.095);
+      edisonLamp.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.LineCurve3(pTop, pMid), 2, 0.0045, 5, false), ironMat));
+      edisonLamp.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.LineCurve3(pMid, pBot), 2, 0.0045, 5, false), ironMat));
+    }
+    const edisonFilamentMat = new THREE.MeshStandardMaterial({
+      color: "#ffd180",
+      emissive: "#ff9d3b",
+      emissiveIntensity: 1.85,
+      roughness: 0.2
+    });
+    const edisonBulb = new THREE.Mesh(new THREE.SphereGeometry(0.048, 12, 12), edisonFilamentMat);
+    edisonBulb.scale.set(0.85, 1.35, 0.85);
+    edisonBulb.position.set(0, 1.34, 0.12);
+    edisonLamp.add(edisonBulb);
+    const amberGlass = new THREE.Mesh(
+      new THREE.SphereGeometry(0.068, 14, 12),
+      new THREE.MeshStandardMaterial({
+        color: "#ffcf8c",
+        emissive: "#ffb357",
+        emissiveIntensity: 0.75,
+        transparent: true,
+        opacity: 0.42,
+        roughness: 0.12
+      })
+    );
+    amberGlass.scale.set(0.9, 1.35, 0.9);
+    amberGlass.position.set(0, 1.34, 0.12);
+    edisonLamp.add(amberGlass);
+    registerExtraFloorLamp({
+      id: "lamp_edison_cage",
+      group: edisonLamp,
+      light: this.extraFloorLampLights.lamp_edison_cage,
+      lightPos: [0, 1.30, 0.12],
+      emissiveMeshes: [
+        { mesh: edisonBulb, mult: 1.5 },
+        { mesh: amberGlass, mult: 0.7 }
+      ],
+      onIntensity: 1.2,
+      dayRange: [1.0, 2.9],
+      labelZh: "工業風愛迪生烏絲籠燈",
+      labelEn: "Edison filament cage lamp"
+    });
+
+    // 2i. Scandinavian Retro-Modern Pleated Cream Mushroom Dome Floor Lamp
+    const mushroomLamp = new THREE.Group();
+    const creamBodyMat = makeMat("#ece0cb", 0.26, 0.14);
+    const mushBase = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.19, 0.042, 24), creamBodyMat);
+    mushBase.position.set(0, 0.021, -0.05);
+    mushBase.castShadow = true;
+    mushBase.receiveShadow = true;
+    mushroomLamp.add(mushBase);
+    const mushCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0.04, -0.05),
+      new THREE.Vector3(0, 0.85, -0.10),
+      new THREE.Vector3(0, 1.44, -0.02),
+      new THREE.Vector3(0, 1.55, 0.12),
+      new THREE.Vector3(0, 1.48, 0.18)
+    ]);
+    const mushStem = new THREE.Mesh(new THREE.TubeGeometry(mushCurve, 24, 0.017, 10, false), creamBodyMat);
+    mushStem.castShadow = true;
+    mushroomLamp.add(mushStem);
+    const pleatedDomeMat = new THREE.MeshStandardMaterial({
+      color: "#f7dfb6",
+      emissive: "#ffb85c",
+      emissiveIntensity: 1.05,
+      roughness: 0.42,
+      side: THREE.DoubleSide
+    });
+    const mushDome = new THREE.Mesh(
+      new THREE.SphereGeometry(0.24, 24, 14, 0, Math.PI * 2, 0, Math.PI * 0.50),
+      pleatedDomeMat
+    );
+    mushDome.scale.set(1.0, 0.72, 1.0);
+    mushDome.position.set(0, 1.32, 0.18);
+    mushDome.castShadow = true;
+    mushroomLamp.add(mushDome);
+    for (let p = 0; p < 16; p++) {
+      const ang = (p * Math.PI * 2) / 16;
+      const rib = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.009, 0.17, 3, 6),
+        pleatedDomeMat.clone()
+      );
+      rib.position.set(Math.cos(ang) * 0.135, 1.40, 0.18 + Math.sin(ang) * 0.135);
+      rib.rotation.y = -ang;
+      rib.rotation.z = 0.72;
+      mushroomLamp.add(rib);
+    }
+    const mushBottomGlowMat = new THREE.MeshStandardMaterial({
+      color: "#fff7e2",
+      emissive: "#ffd085",
+      emissiveIntensity: 1.35,
+      roughness: 0.3
+    });
+    const mushBottomDiff = new THREE.Mesh(new THREE.CircleGeometry(0.228, 24), mushBottomGlowMat);
+    mushBottomDiff.rotation.x = Math.PI / 2;
+    mushBottomDiff.position.set(0, 1.32, 0.18);
+    mushroomLamp.add(mushBottomDiff);
+    registerExtraFloorLamp({
+      id: "lamp_mushroom_pleated",
+      group: mushroomLamp,
+      light: this.extraFloorLampLights.lamp_mushroom_pleated,
+      lightPos: [0, 1.24, 0.18],
+      emissiveMeshes: [
+        { mesh: mushDome, mult: 0.85 },
+        { mesh: mushBottomDiff, mult: 1.2 }
+      ],
+      onIntensity: 1.18,
+      dayRange: [1.05, 3.0],
+      labelZh: "奶油百褶蘑菇美學立燈",
+      labelEn: "pleated mushroom floor lamp"
+    });
 
     // 3. Coffee Bar Station (West wall north of TV)
     const coffeeBar = new THREE.Group();
@@ -4385,6 +4816,7 @@ export class FreelancerRoomScene {
 
   setArcLampBrass(isOn) {
     this.arcLampBrassOn = Boolean(isOn);
+    this.floorLampStates.arc_lamp_brass = this.arcLampBrassOn;
     const val = this.arcLampBrassOn ? 1.15 : 0.0;
     if (this.arcLampBrassDiffMat) this.arcLampBrassDiffMat.emissiveIntensity = val;
     if (this.arcLampBrassBulbMat) this.arcLampBrassBulbMat.emissiveIntensity = val;
@@ -4395,12 +4827,48 @@ export class FreelancerRoomScene {
 
   setArcLampBlack(isOn) {
     this.arcLampBlackOn = Boolean(isOn);
+    this.floorLampStates.arc_lamp_black = this.arcLampBlackOn;
     const val = this.arcLampBlackOn ? 1.2 : 0.0;
     if (this.arcLampBlackDiffMat) this.arcLampBlackDiffMat.emissiveIntensity = val;
     if (this.arcLampBlackInnerMat) this.arcLampBlackInnerMat.emissiveIntensity = val;
     if (this.arcLampBlackBottom?.userData) this.arcLampBlackBottom.userData.baseEmissiveIntensity = val;
     if (this.arcLampBlackInner?.userData) this.arcLampBlackInner.userData.baseEmissiveIntensity = val;
     this.renderIfPaused();
+  }
+
+  setFloorLamp(lampId, isOn) {
+    if (!lampId) return;
+    if (lampId === "arc_lamp_brass") {
+      this.setArcLampBrass(isOn);
+      return;
+    }
+    if (lampId === "arc_lamp_black") {
+      this.setArcLampBlack(isOn);
+      return;
+    }
+    const nextOn = Boolean(isOn);
+    this.floorLampStates[lampId] = nextOn;
+    const entry = this.floorLampEntries?.get(lampId);
+    if (!entry) return;
+    entry.tracked.forEach(({ mesh, mult }) => {
+      const val = nextOn ? entry.onIntensity * mult : 0.0;
+      if (mesh.material && "emissiveIntensity" in mesh.material) {
+        mesh.material.emissiveIntensity = val;
+      }
+      if (mesh.userData) {
+        mesh.userData.baseEmissiveIntensity = val;
+      }
+    });
+    this.renderIfPaused();
+  }
+
+  setFloorLampStates(statesObj = {}) {
+    if (!statesObj || typeof statesObj !== "object") return;
+    Object.entries(statesObj).forEach(([lampId, isOn]) => {
+      if (typeof isOn === "boolean") {
+        this.setFloorLamp(lampId, isOn);
+      }
+    });
   }
 
   setWallColor(hex) {
@@ -4514,6 +4982,7 @@ export class FreelancerRoomScene {
     if (itemId === "bed_lamp") this.setBedLamp(false);
     if (itemId === "arc_lamp_brass") this.setArcLampBrass(false);
     if (itemId === "arc_lamp_black") this.setArcLampBlack(false);
+    if (this.floorLampEntries?.has(itemId)) this.setFloorLamp(itemId, false);
     if (itemId === "vinyl_player") this.setVinylOn(false);
     const affectedActivities = {
       hamster_cage: ["watch_hamster"],
@@ -4615,6 +5084,9 @@ export class FreelancerRoomScene {
     if (this.floorPlantGroup) this.floorPlantGroup.visible = activePlaced("floor_plant") || editingThis("floor_plant");
     if (this.arcLampBrassGroup) this.arcLampBrassGroup.visible = activePlaced("arc_lamp_brass") || editingThis("arc_lamp_brass");
     if (this.arcLampBlackGroup) this.arcLampBlackGroup.visible = activePlaced("arc_lamp_black") || editingThis("arc_lamp_black");
+    this.floorLampEntries?.forEach((entry, lampId) => {
+      if (entry.group) entry.group.visible = activePlaced(lampId) || editingThis(lampId);
+    });
     if (this.coffeeBarGroup) this.coffeeBarGroup.visible = activePlaced("coffee_bar") || editingThis("coffee_bar");
     if (this.vinylPlayerGroup) this.vinylPlayerGroup.visible = activePlaced("vinyl_player") || editingThis("vinyl_player");
     if (this.orangeCatGroup) this.orangeCatGroup.visible = activePlaced("orange_cat") || editingThis("orange_cat");
@@ -4642,6 +5114,9 @@ export class FreelancerRoomScene {
       floor_plant: this.floorPlantGroup,
       arc_lamp_brass: this.arcLampBrassGroup,
       arc_lamp_black: this.arcLampBlackGroup,
+      ...(this.floorLampEntries
+        ? Object.fromEntries(Array.from(this.floorLampEntries.entries()).map(([id, entry]) => [id, entry.group]))
+        : {}),
       wall_poster: this.wallPosterGroup,
       wall_tv: this.wallTvGroup,
       dolby_atmos: this.atmosFrontGroup,
@@ -6198,6 +6673,13 @@ export class FreelancerRoomScene {
       const blackIntensity = THREE.MathUtils.lerp(1.1, 3.1, sample.darkness);
       this.arcLampBlackLight.intensity = (blackOwned && this.arcLampBlackOn) ? blackIntensity : 0;
     }
+    this.floorLampEntries?.forEach((entry, lampId) => {
+      if (!entry.light) return;
+      const lampVisible = Boolean(entry.group?.visible);
+      const [minI, maxI] = entry.dayRange || [1.0, 2.9];
+      const intensity = THREE.MathUtils.lerp(minI, maxI, sample.darkness);
+      entry.light.intensity = (lampVisible && this.floorLampStates[lampId]) ? intensity : 0;
+    });
 
     // Map 0..1 phase to 24h clock starting at 06:00 sunrise
     const totalMinutes = Math.floor(((phase + 0.25) % 1.0) * 1440);
@@ -6829,6 +7311,14 @@ export class FreelancerRoomScene {
           this.onHoverChange(bi("點擊開關黃銅穹頂釣魚落地燈", "Click to toggle brass arc floor lamp"));
         } else if (type === "arcLampBlack") {
           this.onHoverChange(bi("點擊開關極簡霧黑釣魚落地燈", "Click to toggle black arc floor lamp"));
+        } else if (type === "extraFloorLamp") {
+          this.hoveredLampId = visibleHit.object.userData.lampId || null;
+          const entry = this.hoveredLampId ? this.floorLampEntries?.get(this.hoveredLampId) : null;
+          this.onHoverChange(
+            entry
+              ? bi(`點擊開關${entry.labelZh}`, `Click to toggle ${entry.labelEn}`)
+              : bi("點擊開關落地燈", "Click to toggle floor lamp")
+          );
         } else if (type === "tv") {
           this.onHoverChange(
             this.tvActiveVideoId
@@ -7019,6 +7509,10 @@ export class FreelancerRoomScene {
       } else if (this.hoveredTarget === "arcLampBlack") {
         this.setArcLampBlack(!this.arcLampBlackOn);
         this.onArcLampToggle("arc_lamp_black", this.arcLampBlackOn);
+      } else if (this.hoveredTarget === "extraFloorLamp" && this.hoveredLampId) {
+        const nextOn = !this.floorLampStates[this.hoveredLampId];
+        this.setFloorLamp(this.hoveredLampId, nextOn);
+        this.onArcLampToggle(this.hoveredLampId, nextOn);
       } else if (this.hoveredTarget === "computer") {
         if (!this.spectating) this.goToWork();
       } else if (this.hoveredTarget === "tv") {

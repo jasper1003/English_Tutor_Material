@@ -1,4 +1,4 @@
-import { bi, isEn } from "./i18n.js?v=20261123h";
+import { bi, isEn } from "./i18n.js?v=20261123i";
 
 export const GRID_STEP = 0.5;
 export const GRID_CELLS = 16; // 16 x 16 cells across [-4.0, +4.0] room floor & walls
@@ -148,6 +148,66 @@ export const PLACEABLE_FURNITURE_META = {
     gridW: 1,
     gridD: 1
   },
+  lamp_paper_lantern: {
+    id: "lamp_paper_lantern",
+    name: "和紙圓柱落地燈",
+    nameEn: "Rice Paper Column Floor Lamp",
+    icon: "🏮",
+    starter: false,
+    surface: "floor",
+    gridW: 1,
+    gridD: 1
+  },
+  lamp_uplighter_duo: {
+    id: "lamp_uplighter_duo",
+    name: "雙頭子母上照落地燈",
+    nameEn: "Dual Uplighter & Reading Floor Lamp",
+    icon: "💡",
+    starter: false,
+    surface: "floor",
+    gridW: 1,
+    gridD: 1
+  },
+  lamp_tripod_linen: {
+    id: "lamp_tripod_linen",
+    name: "北歐白橡三腳亞麻立燈",
+    nameEn: "Nordic Oak Tripod Linen Floor Lamp",
+    icon: "🛋️",
+    starter: false,
+    surface: "floor",
+    gridW: 1,
+    gridD: 1
+  },
+  lamp_globe_opal: {
+    id: "lamp_globe_opal",
+    name: "蛋白石圓球燈泡落地燈",
+    nameEn: "Opal Glass Globe Bulb Floor Lamp",
+    icon: "⚪",
+    starter: false,
+    surface: "floor",
+    gridW: 1,
+    gridD: 1
+  },
+  lamp_edison_cage: {
+    id: "lamp_edison_cage",
+    name: "工業風愛迪生烏絲籠燈",
+    nameEn: "Edison Filament Diamond Cage Lamp",
+    icon: "🕯️",
+    starter: false,
+    surface: "floor",
+    gridW: 1,
+    gridD: 1
+  },
+  lamp_mushroom_pleated: {
+    id: "lamp_mushroom_pleated",
+    name: "奶油百褶蘑菇美學立燈",
+    nameEn: "Cream Pleated Mushroom Floor Lamp",
+    icon: "🍄",
+    starter: false,
+    surface: "floor",
+    gridW: 1,
+    gridD: 1
+  },
   wall_poster: {
     id: "wall_poster",
     name: "插畫海報掛畫",
@@ -211,6 +271,12 @@ export const DEFAULT_FURNITURE_LAYOUT = {
   floor_plant: { surface: "floor", gx: 14, gz: 6, rot: 0 },
   arc_lamp_brass: { surface: "floor", gx: 3, gz: 9, rot: 0 },
   arc_lamp_black: { surface: "floor", gx: 13, gz: 6, rot: 2 },
+  lamp_paper_lantern: { surface: "floor", gx: 15, gz: 15, rot: 0 },
+  lamp_uplighter_duo: { surface: "floor", gx: 2, gz: 1, rot: 0 },
+  lamp_tripod_linen: { surface: "floor", gx: 10, gz: 1, rot: 0 },
+  lamp_globe_opal: { surface: "floor", gx: 0, gz: 15, rot: 0 },
+  lamp_edison_cage: { surface: "floor", gx: 15, gz: 7, rot: 2 },
+  lamp_mushroom_pleated: { surface: "floor", gx: 11, gz: 10, rot: 0 },
   wall_poster: { surface: "wall", wall: "north", pos: 2 },
   wall_tv: { surface: "wall", wall: "west", pos: 6 },
   dolby_atmos: { surface: "floor", gx: 0, gz: 6, rot: 1 },

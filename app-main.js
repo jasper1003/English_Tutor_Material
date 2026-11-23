@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261123h";
+} from "./room-scene.js?v=20261123i";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261123h";
+} from "./shop-catalog.js?v=20261123i";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261123h";
+} from "./room-grid.js?v=20261123i";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -98,16 +98,16 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261123h";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261123h";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261123h";
+} from "./app-helpers.js?v=20261123i";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261123i";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261123i";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261123h";
+} from "./i18n.js?v=20261123i";
 
 applyStaticDomTranslations();
 
@@ -959,16 +959,26 @@ function loadSavedCameraZoom() {
 const ARC_LAMP_STORAGE_PREFIX = "room_arc_lamps_v1:";
 
 function loadSavedArcLampStates(uid) {
-  const defaults = { arc_lamp_brass: true, arc_lamp_black: true };
+  const defaults = {
+    arc_lamp_brass: true,
+    arc_lamp_black: true,
+    lamp_paper_lantern: true,
+    lamp_uplighter_duo: true,
+    lamp_tripod_linen: true,
+    lamp_globe_opal: true,
+    lamp_edison_cage: true,
+    lamp_mushroom_pleated: true
+  };
   if (!uid) return defaults;
   try {
     const raw = localStorage.getItem(`${ARC_LAMP_STORAGE_PREFIX}${uid}`);
     if (!raw) return defaults;
     const parsed = JSON.parse(raw);
-    return {
-      arc_lamp_brass: typeof parsed?.arc_lamp_brass === "boolean" ? parsed.arc_lamp_brass : true,
-      arc_lamp_black: typeof parsed?.arc_lamp_black === "boolean" ? parsed.arc_lamp_black : true
-    };
+    const out = { ...defaults };
+    Object.keys(defaults).forEach(k => {
+      if (typeof parsed?.[k] === "boolean") out[k] = parsed[k];
+    });
+    return out;
   } catch {
     return defaults;
   }
@@ -1097,6 +1107,7 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
       bedLampOn: typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false,
       arcLampBrassOn: arcLampStates.arc_lamp_brass,
       arcLampBlackOn: arcLampStates.arc_lamp_black,
+      floorLampStates: arcLampStates,
       vinylOn: typeof rs.vinylOn === "boolean" ? rs.vinylOn : false,
       wallColor: rs.wallColor || DEFAULT_WALL_COLOR,
       floorStyle: rs.floorStyle || DEFAULT_FLOOR_STYLE,
@@ -1171,6 +1182,7 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
     roomScene.setBedLamp(typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false);
     roomScene.setArcLampBrass(arcLampStates.arc_lamp_brass);
     roomScene.setArcLampBlack(arcLampStates.arc_lamp_black);
+    roomScene.setFloorLampStates?.(arcLampStates);
     roomScene.setVinylOn(typeof rs.vinylOn === "boolean" ? rs.vinylOn : false);
     roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
     roomScene.setFloorStyle(rs.floorStyle || DEFAULT_FLOOR_STYLE);
@@ -3640,7 +3652,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261123h`;
+    img.src = `${item.previewImage}?v=20261123i`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
