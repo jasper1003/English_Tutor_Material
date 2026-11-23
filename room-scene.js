@@ -14,7 +14,7 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261123c";
+} from "./shop-catalog.js?v=20261123d";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
@@ -1840,6 +1840,7 @@ export class FreelancerRoomScene {
     this.floorSurfaceMesh = null;
     this.floorSurfaceTex = null;
     this.deskTopMat = null;
+    this.deskTopMesh = null;
     this.deskLegMat = null;
     this.deskTopTex = null;
     this.bedSheetId = options.bedSheet || DEFAULT_BED_SHEET;
@@ -3533,8 +3534,6 @@ export class FreelancerRoomScene {
 
     const deskWood = makeMat("#cfa072", 0.52);
     const deskLegMat = makeMat("#4b5563", 0.45, 0.3);
-    this.deskTopMat = deskWood;
-    this.deskLegMat = deskLegMat;
 
     // Desk tabletop (rounded modern minimalist desk)
     const tableTop = new THREE.Mesh(new RoundedBoxGeometry(2.35, 0.11, 1.12, 4, 0.045), deskWood);
@@ -3542,7 +3541,11 @@ export class FreelancerRoomScene {
     tableTop.castShadow = true;
     tableTop.receiveShadow = true;
     workArea.add(tableTop);
+    // Assign deskTopMat AFTER addInteractive() because addInteractive clones mesh.material for hover glow!
     this.addInteractive(tableTop, "computer", "work_desk");
+    this.deskTopMesh = tableTop;
+    this.deskTopMat = tableTop.material;
+    this.deskLegMat = deskLegMat;
     this.applyDeskStyleVisuals();
 
     if (this.deskLampLight) {

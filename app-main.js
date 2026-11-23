@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261123c";
+} from "./room-scene.js?v=20261123d";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -63,7 +63,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261123c";
+} from "./shop-catalog.js?v=20261123d";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
