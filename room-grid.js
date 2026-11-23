@@ -128,6 +128,26 @@ export const PLACEABLE_FURNITURE_META = {
     gridW: 1,
     gridD: 1
   },
+  arc_lamp_brass: {
+    id: "arc_lamp_brass",
+    name: "黃銅穹頂釣魚落地燈",
+    nameEn: "Brass Dome Arc Floor Lamp",
+    icon: "💡",
+    starter: false,
+    surface: "floor",
+    gridW: 1,
+    gridD: 1
+  },
+  arc_lamp_black: {
+    id: "arc_lamp_black",
+    name: "極簡霧黑釣魚落地燈",
+    nameEn: "Matte Black Drum Arc Floor Lamp",
+    icon: "💡",
+    starter: false,
+    surface: "floor",
+    gridW: 1,
+    gridD: 1
+  },
   wall_poster: {
     id: "wall_poster",
     name: "插畫海報掛畫",
@@ -189,6 +209,8 @@ export const DEFAULT_FURNITURE_LAYOUT = {
   orange_cat: { surface: "floor", gx: 9, gz: 14, rot: 2 },
   bed_lamp: { surface: "floor", gx: 11, gz: 14, rot: 0 },
   floor_plant: { surface: "floor", gx: 14, gz: 6, rot: 0 },
+  arc_lamp_brass: { surface: "floor", gx: 3, gz: 9, rot: 0 },
+  arc_lamp_black: { surface: "floor", gx: 13, gz: 6, rot: 2 },
   wall_poster: { surface: "wall", wall: "north", pos: 2 },
   wall_tv: { surface: "wall", wall: "west", pos: 6 },
   dolby_atmos: { surface: "floor", gx: 0, gz: 6, rot: 1 },

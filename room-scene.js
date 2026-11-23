@@ -14,7 +14,7 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261123d";
+} from "./shop-catalog.js?v=20261123e";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
@@ -40,7 +40,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261122b";
+} from "./room-grid.js?v=20261123e";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -1833,6 +1833,8 @@ export class FreelancerRoomScene {
 
     this.deskLampOn = Boolean(options.deskLampOn ?? true);
     this.bedLampOn = Boolean(options.bedLampOn ?? false);
+    this.arcLampBrassOn = Boolean(options.arcLampBrassOn ?? true);
+    this.arcLampBlackOn = Boolean(options.arcLampBlackOn ?? true);
     this.vinylOn = Boolean(options.vinylOn ?? false);
     this.wallColorHex = options.wallColor || "#f3eadc";
     this.floorStyleId = options.floorStyle || DEFAULT_FLOOR_STYLE;
@@ -2090,6 +2092,10 @@ export class FreelancerRoomScene {
     this.screenGlowLight = new THREE.PointLight("#7cc4ff", 0.75, 3.2, 1.8);
 
     this.bedLampLight = new THREE.PointLight("#ffb86c", 0, 5.2, 1.8);
+
+    this.arcLampBrassLight = new THREE.PointLight("#ffd699", 0, 5.8, 1.7);
+
+    this.arcLampBlackLight = new THREE.PointLight("#ffe4b8", 0, 6.2, 1.65);
 
     this.tvGlowLight = new THREE.PointLight("#7dd3fc", 0, 6.4, 1.65);
   }
@@ -2620,6 +2626,155 @@ export class FreelancerRoomScene {
     floorPlant.traverse(m => {
       if (m.isMesh) this.addInteractive(m, "floorPlant", "floor_plant");
     });
+
+    // 2b. Shop item: Brass Dome Arc Floor Lamp (weighted dark marble base + slender brushed brass arch + glowing dome shade)
+    const arcBrass = new THREE.Group();
+    const brassMarbleMat = makeMat("#1f2530", 0.32, 0.25);
+    const brassMetalMat = makeMat("#d4af68", 0.24, 0.78);
+    const arcBrassBase = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.21, 0.045, 24), brassMarbleMat);
+    arcBrassBase.position.set(0, 0.0225, -0.06);
+    arcBrassBase.castShadow = true;
+    arcBrassBase.receiveShadow = true;
+    arcBrass.add(arcBrassBase);
+
+    const arcBrassCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.036, 0.04, 14), brassMetalMat);
+    arcBrassCollar.position.set(0, 0.06, -0.06);
+    arcBrass.add(arcBrassCollar);
+
+    const brassCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0.05, -0.06),
+      new THREE.Vector3(0, 0.96, -0.06),
+      new THREE.Vector3(0, 1.48, 0.02),
+      new THREE.Vector3(0, 1.56, 0.23),
+      new THREE.Vector3(0, 1.42, 0.35)
+    ]);
+    const arcBrassStem = new THREE.Mesh(new THREE.TubeGeometry(brassCurve, 26, 0.019, 10, false), brassMetalMat);
+    arcBrassStem.castShadow = true;
+    arcBrass.add(arcBrassStem);
+
+    const arcBrassSocket = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.034, 0.045, 14), brassMetalMat);
+    arcBrassSocket.position.set(0, 1.42, 0.35);
+    arcBrass.add(arcBrassSocket);
+
+    const brassDomeMat = new THREE.MeshStandardMaterial({
+      color: "#d4af68",
+      roughness: 0.24,
+      metalness: 0.78,
+      side: THREE.DoubleSide
+    });
+    const arcBrassDome = new THREE.Mesh(
+      new THREE.SphereGeometry(0.205, 24, 14, 0, Math.PI * 2, 0, Math.PI * 0.54),
+      brassDomeMat
+    );
+    arcBrassDome.position.set(0, 1.24, 0.35);
+    arcBrassDome.castShadow = true;
+    arcBrass.add(arcBrassDome);
+
+    this.arcLampBrassDiffMat = new THREE.MeshStandardMaterial({
+      color: "#fff7dc",
+      emissive: "#ffc978",
+      emissiveIntensity: this.arcLampBrassOn ? 1.15 : 0.0,
+      roughness: 0.3
+    });
+    const arcBrassDiffuser = new THREE.Mesh(new THREE.CircleGeometry(0.19, 22), this.arcLampBrassDiffMat);
+    arcBrassDiffuser.rotation.x = Math.PI / 2;
+    arcBrassDiffuser.position.set(0, 1.225, 0.35);
+    arcBrass.add(arcBrassDiffuser);
+
+    const arcBrassBulb = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), this.arcLampBrassDiffMat);
+    arcBrassBulb.position.set(0, 1.27, 0.35);
+    arcBrass.add(arcBrassBulb);
+
+    if (this.arcLampBrassLight) {
+      this.arcLampBrassLight.position.set(0, 1.14, 0.35);
+      arcBrass.add(this.arcLampBrassLight);
+    }
+
+    arcBrass.visible = Boolean(this.ownedItems.arc_lamp_brass);
+    this.arcLampBrassGroup = arcBrass;
+    this.furnitureGroup.add(arcBrass);
+    arcBrass.traverse(m => {
+      if (m.isMesh) this.addInteractive(m, "arcLampBrass", "arc_lamp_brass");
+    });
+    this.arcLampBrassDiffuser = arcBrassDiffuser;
+    this.arcLampBrassBulb = arcBrassBulb;
+    this.arcLampBrassDiffMat = arcBrassDiffuser.material;
+    this.arcLampBrassBulbMat = arcBrassBulb.material;
+
+    // 2c. Shop item: Matte Black Drum Arc Floor Lamp (wide flat disc base + tall sweeping black arch + tapered drum shade)
+    const arcBlack = new THREE.Group();
+    const blackBaseMat = makeMat("#141820", 0.42, 0.45);
+    const blackPoleMat = makeMat("#181d26", 0.35, 0.52);
+    const arcBlackBase = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.23, 0.024, 24), blackBaseMat);
+    arcBlackBase.position.set(0, 0.012, -0.05);
+    arcBlackBase.castShadow = true;
+    arcBlackBase.receiveShadow = true;
+    arcBlack.add(arcBlackBase);
+
+    const blackCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0.024, -0.17),
+      new THREE.Vector3(0, 1.12, -0.15),
+      new THREE.Vector3(0, 1.78, 0.03),
+      new THREE.Vector3(0, 1.88, 0.26),
+      new THREE.Vector3(0, 1.72, 0.40)
+    ]);
+    const arcBlackStem = new THREE.Mesh(new THREE.TubeGeometry(blackCurve, 28, 0.018, 10, false), blackPoleMat);
+    arcBlackStem.castShadow = true;
+    arcBlack.add(arcBlackStem);
+
+    const blackShadeMat = new THREE.MeshStandardMaterial({
+      color: "#151922",
+      roughness: 0.30,
+      metalness: 0.28,
+      side: THREE.DoubleSide
+    });
+    const arcBlackShade = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.16, 0.21, 0.28, 24, 1, true),
+      blackShadeMat
+    );
+    arcBlackShade.position.set(0, 1.56, 0.40);
+    arcBlackShade.castShadow = true;
+    arcBlack.add(arcBlackShade);
+
+    const arcBlackShadeCap = new THREE.Mesh(new THREE.CircleGeometry(0.16, 24), blackShadeMat);
+    arcBlackShadeCap.rotation.x = -Math.PI / 2;
+    arcBlackShadeCap.position.set(0, 1.70, 0.40);
+    arcBlack.add(arcBlackShadeCap);
+
+    this.arcLampBlackDiffMat = new THREE.MeshStandardMaterial({
+      color: "#fff8e6",
+      emissive: "#ffd58a",
+      emissiveIntensity: this.arcLampBlackOn ? 1.2 : 0.0,
+      roughness: 0.28,
+      side: THREE.DoubleSide
+    });
+    const arcBlackInner = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.154, 0.204, 0.26, 20, 1, true),
+      this.arcLampBlackDiffMat
+    );
+    arcBlackInner.position.set(0, 1.555, 0.40);
+    arcBlack.add(arcBlackInner);
+
+    const arcBlackBottom = new THREE.Mesh(new THREE.CircleGeometry(0.202, 24), this.arcLampBlackDiffMat);
+    arcBlackBottom.rotation.x = Math.PI / 2;
+    arcBlackBottom.position.set(0, 1.43, 0.40);
+    arcBlack.add(arcBlackBottom);
+
+    if (this.arcLampBlackLight) {
+      this.arcLampBlackLight.position.set(0, 1.35, 0.40);
+      arcBlack.add(this.arcLampBlackLight);
+    }
+
+    arcBlack.visible = Boolean(this.ownedItems.arc_lamp_black);
+    this.arcLampBlackGroup = arcBlack;
+    this.furnitureGroup.add(arcBlack);
+    arcBlack.traverse(m => {
+      if (m.isMesh) this.addInteractive(m, "arcLampBlack", "arc_lamp_black");
+    });
+    this.arcLampBlackBottom = arcBlackBottom;
+    this.arcLampBlackInner = arcBlackInner;
+    this.arcLampBlackDiffMat = arcBlackBottom.material;
+    this.arcLampBlackInnerMat = arcBlackInner.material;
 
     // 3. Coffee Bar Station (West wall north of TV)
     const coffeeBar = new THREE.Group();
@@ -4227,6 +4382,26 @@ export class FreelancerRoomScene {
     this.renderIfPaused();
   }
 
+  setArcLampBrass(isOn) {
+    this.arcLampBrassOn = Boolean(isOn);
+    const val = this.arcLampBrassOn ? 1.15 : 0.0;
+    if (this.arcLampBrassDiffMat) this.arcLampBrassDiffMat.emissiveIntensity = val;
+    if (this.arcLampBrassBulbMat) this.arcLampBrassBulbMat.emissiveIntensity = val;
+    if (this.arcLampBrassDiffuser?.userData) this.arcLampBrassDiffuser.userData.baseEmissiveIntensity = val;
+    if (this.arcLampBrassBulb?.userData) this.arcLampBrassBulb.userData.baseEmissiveIntensity = val;
+    this.renderIfPaused();
+  }
+
+  setArcLampBlack(isOn) {
+    this.arcLampBlackOn = Boolean(isOn);
+    const val = this.arcLampBlackOn ? 1.2 : 0.0;
+    if (this.arcLampBlackDiffMat) this.arcLampBlackDiffMat.emissiveIntensity = val;
+    if (this.arcLampBlackInnerMat) this.arcLampBlackInnerMat.emissiveIntensity = val;
+    if (this.arcLampBlackBottom?.userData) this.arcLampBlackBottom.userData.baseEmissiveIntensity = val;
+    if (this.arcLampBlackInner?.userData) this.arcLampBlackInner.userData.baseEmissiveIntensity = val;
+    this.renderIfPaused();
+  }
+
   setWallColor(hex) {
     if (!hex) return;
     this.wallColorHex = hex;
@@ -4336,6 +4511,8 @@ export class FreelancerRoomScene {
   handleSoldItemCleanup(itemId) {
     if (!itemId) return;
     if (itemId === "bed_lamp") this.setBedLamp(false);
+    if (itemId === "arc_lamp_brass") this.setArcLampBrass(false);
+    if (itemId === "arc_lamp_black") this.setArcLampBlack(false);
     if (itemId === "vinyl_player") this.setVinylOn(false);
     const affectedActivities = {
       hamster_cage: ["watch_hamster"],
@@ -4435,6 +4612,8 @@ export class FreelancerRoomScene {
     if (this.basicKeyboard) this.basicKeyboard.visible = !this.ownedItems.cool_keyboard;
     if (this.coatRackGroup) this.coatRackGroup.visible = activePlaced("coat_rack") || editingThis("coat_rack");
     if (this.floorPlantGroup) this.floorPlantGroup.visible = activePlaced("floor_plant") || editingThis("floor_plant");
+    if (this.arcLampBrassGroup) this.arcLampBrassGroup.visible = activePlaced("arc_lamp_brass") || editingThis("arc_lamp_brass");
+    if (this.arcLampBlackGroup) this.arcLampBlackGroup.visible = activePlaced("arc_lamp_black") || editingThis("arc_lamp_black");
     if (this.coffeeBarGroup) this.coffeeBarGroup.visible = activePlaced("coffee_bar") || editingThis("coffee_bar");
     if (this.vinylPlayerGroup) this.vinylPlayerGroup.visible = activePlaced("vinyl_player") || editingThis("vinyl_player");
     if (this.orangeCatGroup) this.orangeCatGroup.visible = activePlaced("orange_cat") || editingThis("orange_cat");
@@ -4460,6 +4639,8 @@ export class FreelancerRoomScene {
       orange_cat: this.orangeCatGroup,
       bed_lamp: this.bedLampGroup,
       floor_plant: this.floorPlantGroup,
+      arc_lamp_brass: this.arcLampBrassGroup,
+      arc_lamp_black: this.arcLampBlackGroup,
       wall_poster: this.wallPosterGroup,
       wall_tv: this.wallTvGroup,
       dolby_atmos: this.atmosFrontGroup,
@@ -6006,6 +6187,16 @@ export class FreelancerRoomScene {
       const bedIntensity = THREE.MathUtils.lerp(1.0, 2.6, sample.darkness);
       this.bedLampLight.intensity = (lampOwned && this.bedLampOn) ? bedIntensity : 0;
     }
+    if (this.arcLampBrassLight) {
+      const brassOwned = Boolean(this.arcLampBrassGroup?.visible);
+      const brassIntensity = THREE.MathUtils.lerp(1.1, 3.0, sample.darkness);
+      this.arcLampBrassLight.intensity = (brassOwned && this.arcLampBrassOn) ? brassIntensity : 0;
+    }
+    if (this.arcLampBlackLight) {
+      const blackOwned = Boolean(this.arcLampBlackGroup?.visible);
+      const blackIntensity = THREE.MathUtils.lerp(1.1, 3.1, sample.darkness);
+      this.arcLampBlackLight.intensity = (blackOwned && this.arcLampBlackOn) ? blackIntensity : 0;
+    }
 
     // Map 0..1 phase to 24h clock starting at 06:00 sunrise
     const totalMinutes = Math.floor(((phase + 0.25) % 1.0) * 1440);
@@ -6633,6 +6824,10 @@ export class FreelancerRoomScene {
           this.onHoverChange(bi("點擊開關檯燈", "Click to toggle desk lamp"));
         } else if (type === "bedLamp") {
           this.onHoverChange(bi("點擊開關床邊小夜燈", "Click to toggle bedside lamp"));
+        } else if (type === "arcLampBrass") {
+          this.onHoverChange(bi("點擊開關黃銅穹頂釣魚落地燈", "Click to toggle brass arc floor lamp"));
+        } else if (type === "arcLampBlack") {
+          this.onHoverChange(bi("點擊開關極簡霧黑釣魚落地燈", "Click to toggle black arc floor lamp"));
         } else if (type === "tv") {
           this.onHoverChange(
             this.tvActiveVideoId
@@ -6817,6 +7012,10 @@ export class FreelancerRoomScene {
       } else if (this.hoveredTarget === "bedLamp") {
         this.setBedLamp(!this.bedLampOn);
         this.onBedLampToggle(this.bedLampOn);
+      } else if (this.hoveredTarget === "arcLampBrass") {
+        this.setArcLampBrass(!this.arcLampBrassOn);
+      } else if (this.hoveredTarget === "arcLampBlack") {
+        this.setArcLampBlack(!this.arcLampBlackOn);
       } else if (this.hoveredTarget === "computer") {
         if (!this.spectating) this.goToWork();
       } else if (this.hoveredTarget === "tv") {

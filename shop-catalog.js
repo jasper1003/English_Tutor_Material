@@ -68,6 +68,8 @@ export const SHOP_CATALOG_EN = {
   coat_rack: { name: "Standing Coat Rack", desc: "Solid oak coat tree by the door for tote bags, scarves & caps." },
   bed_lamp: { name: "Warm Bedside Lamp", desc: "Glowing bedside lamp & mini nightstand; click to toggle." },
   floor_plant: { name: "Fiddle-Leaf Fig Planter", desc: "Woven-basket indoor fig tree bringing fresh greenery to your room." },
+  arc_lamp_brass: { name: "Brass Dome Arc Floor Lamp", desc: "Dark marble base with slender brushed-brass arch & dome shade; click to toggle warm light." },
+  arc_lamp_black: { name: "Matte Black Drum Arc Floor Lamp", desc: "Wide matte-black disc base, tall sweeping arch & drum shade; click to toggle glow." },
   cool_keyboard: { name: "RGB Mechanical Keyboard", desc: "Upgrade your desk setup with a glowing mechanical keyboard." },
   coffee_bar: { name: "Pour-Over Coffee Bar", desc: "Compact wooden brew station with gooseneck kettle for fresh fuel." },
   ergo_chair: { name: "Ergonomic Studio Chair", desc: "High-back breathable lumbar chair built for marathon commissions." },
@@ -1166,6 +1168,24 @@ export const DEFAULT_SHOP_CATALOG = [
     icon: "🌿",
     previewImage: "./assets/shop/floor_plant.jpg",
     desc: "擺在浴室與床尾之間的藤編籃大型琴葉榕，房間綠意滿分。"
+  },
+  {
+    id: "arc_lamp_brass",
+    name: "黃銅穹頂釣魚落地燈",
+    category: "decor",
+    price: 230,
+    icon: "💡",
+    previewImage: "./assets/shop/arc_lamp_brass.jpg",
+    desc: "深灰圓石底座搭細長拉絲黃銅弧形燈桿與半圓金屬穹頂燈罩，可自由擺放並點擊開關暖光。"
+  },
+  {
+    id: "arc_lamp_black",
+    name: "極簡霧黑釣魚落地燈",
+    category: "decor",
+    price: 250,
+    icon: "💡",
+    previewImage: "./assets/shop/arc_lamp_black.jpg",
+    desc: "簡約霧黑寬圓盤底座配高挑弧線燈桿與錐形深黑燈罩，擺在沙發或工作區旁質感滿分，可點擊開關照明。"
   },
   {
     id: "cool_keyboard",

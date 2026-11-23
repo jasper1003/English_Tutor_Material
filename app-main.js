@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261123d";
+} from "./room-scene.js?v=20261123e";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -63,7 +63,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261123d";
+} from "./shop-catalog.js?v=20261123e";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -71,7 +71,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261122b";
+} from "./room-grid.js?v=20261123e";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
