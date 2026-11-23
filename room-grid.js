@@ -1,4 +1,4 @@
-import { bi, isEn } from "./i18n.js?v=20261123k";
+import { bi, isEn } from "./i18n.js?v=20261123l";
 
 export const GRID_STEP = 0.5;
 export const GRID_CELLS = 16; // 16 x 16 cells across [-4.0, +4.0] room floor & walls
@@ -47,6 +47,17 @@ export const PLACEABLE_FURNITURE_META = {
     surface: "floor",
     gridW: 4,
     gridD: 5
+  },
+  cozy_rug: {
+    id: "cozy_rug",
+    name: "客廳地毯",
+    nameEn: "Studio Area Rug",
+    icon: "🧶",
+    starter: true,
+    isFloorOverlay: true,
+    surface: "floor",
+    gridW: 5,
+    gridD: 4
   },
   hamster_cage: {
     id: "hamster_cage",
@@ -311,6 +322,7 @@ export function getPlaceableFurnitureName(itemId) {
 export const DEFAULT_FURNITURE_LAYOUT = {
   work_desk: { surface: "floor", gx: 5, gz: 1, rot: 0 },
   single_bed: { surface: "floor", gx: 12, gz: 10, rot: 0 },
+  cozy_rug: { surface: "floor", gx: 4, gz: 7, rot: 0 },
   hamster_cage: { surface: "floor", gx: 3, gz: 1, rot: 0 },
   coffee_bar: { surface: "floor", gx: 0, gz: 3, rot: 1 },
   cozy_sofa: { surface: "floor", gx: 4, gz: 5, rot: 3 },
@@ -452,7 +464,7 @@ export function buildOccupancyMaps(ownedItems = {}, rawLayout = {}, rawPendingPa
   for (const [id, entry] of Object.entries(layout)) {
     if (excludedSet.has(id)) continue;
     const meta = PLACEABLE_FURNITURE_META[id];
-    if (!meta) continue;
+    if (!meta || meta.isFloorOverlay) continue;
     if (entry.surface === "wall") {
       for (let i = 0; i < meta.gridW; i++) {
         wallOccupied.set(getWallCellKey(entry.wall, entry.pos + i), id);
@@ -477,12 +489,13 @@ export function canPlaceFloorItem(itemId, gx, gz, rot, ownedItems = {}, rawLayou
   if (gx < 0 || gz < 0 || gx + w > GRID_CELLS || gz + d > GRID_CELLS) return false;
   const excludes = Array.isArray(excludeIds) ? [itemId, ...excludeIds] : itemId;
   const { floorOccupied } = buildOccupancyMaps(ownedItems, rawLayout, rawPendingParcels, excludes);
+  const isOverlay = Boolean(meta.isFloorOverlay);
   for (let ix = 0; ix < w; ix++) {
     for (let iz = 0; iz < d; iz++) {
       const cx = gx + ix;
       const cz = gz + iz;
       if (isFloorCellReserved(cx, cz)) return false;
-      if (floorOccupied.has(getFloorCellKey(cx, cz))) return false;
+      if (!isOverlay && floorOccupied.has(getFloorCellKey(cx, cz))) return false;
     }
   }
   return true;

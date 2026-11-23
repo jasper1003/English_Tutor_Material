@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { bi, isEn } from "./i18n.js?v=20261123k";
+import { bi, isEn } from "./i18n.js?v=20261123l";
 import {
   DEFAULT_FLOOR_STYLE,
   DEFAULT_DESK_STYLE,
@@ -16,13 +16,13 @@ import {
   resolvePantsStyle,
   SOFA_ITEM_IDS,
   hasOwnedSofa
-} from "./shop-catalog.js?v=20261123k";
+} from "./shop-catalog.js?v=20261123l";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261123k";
+} from "./app-helpers.js?v=20261123l";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -42,7 +42,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261123k";
+} from "./room-grid.js?v=20261123l";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -4024,10 +4024,19 @@ export class FreelancerRoomScene {
 
   rebuildRugMeshes() {
     if (!this.rugGroup) return;
+    if (Array.isArray(this.allInteractTargets)) {
+      this.allInteractTargets = this.allInteractTargets.filter(t => t.userData?.movableId !== "cozy_rug");
+    }
     while (this.rugGroup.children.length > 0) {
       const child = this.rugGroup.children.pop();
       this.rugGroup.remove(child);
     }
+
+    const finalizeRugInteractive = () => {
+      this.rugGroup.traverse(m => {
+        if (m.isMesh) this.addInteractive(m, "rug", "cozy_rug");
+      });
+    };
 
     const style = resolveRugStyle(this.rugStyleId);
     const baseMat = makeMat(style.baseColor, 0.95);
@@ -4041,6 +4050,7 @@ export class FreelancerRoomScene {
       inner.position.y = 0.018;
       inner.receiveShadow = true;
       this.rugGroup.add(outer, inner);
+      finalizeRugInteractive();
       return;
     }
 
@@ -4064,6 +4074,7 @@ export class FreelancerRoomScene {
           }
         }
       }
+      finalizeRugInteractive();
       return;
     }
 
@@ -4079,6 +4090,7 @@ export class FreelancerRoomScene {
       diamond.rotation.y = Math.PI / 4;
       diamond.receiveShadow = true;
       this.rugGroup.add(diamond);
+      finalizeRugInteractive();
       return;
     }
 
@@ -4097,6 +4109,7 @@ export class FreelancerRoomScene {
           this.rugGroup.add(tassel);
         });
       }
+      finalizeRugInteractive();
       return;
     }
 
@@ -4105,6 +4118,7 @@ export class FreelancerRoomScene {
     innerStripe.position.y = 0.017;
     innerStripe.receiveShadow = true;
     this.rugGroup.add(innerStripe);
+    finalizeRugInteractive();
   }
 
   buildBathroomCorner() {
@@ -5337,6 +5351,7 @@ export class FreelancerRoomScene {
     this.movableGroups = {
       work_desk: this.deskRootGroup,
       single_bed: this.bedGroup,
+      cozy_rug: this.rugGroup,
       hamster_cage: this.hamsterCageGroup,
       coffee_bar: this.coffeeBarGroup,
       cozy_sofa: this.sofaGroup,
@@ -7558,6 +7573,7 @@ export class FreelancerRoomScene {
 
       const hits = this.raycaster.intersectObjects(this.allInteractTargets, false);
       const visibleHit = hits.find(h => {
+        if (h.object.userData?.interactType === "rug") return false;
         let obj = h.object;
         while (obj) {
           if (!obj.visible) return false;
