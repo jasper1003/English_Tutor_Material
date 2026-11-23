@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { bi, isEn } from "./i18n.js?v=20261123f";
+import { bi, isEn } from "./i18n.js?v=20261123g";
 import {
   DEFAULT_FLOOR_STYLE,
   DEFAULT_DESK_STYLE,
@@ -14,13 +14,13 @@ import {
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261123f";
+} from "./shop-catalog.js?v=20261123g";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261123f";
+} from "./app-helpers.js?v=20261123g";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -40,7 +40,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261123f";
+} from "./room-grid.js?v=20261123g";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -1804,6 +1804,7 @@ export class FreelancerRoomScene {
     this.onEnterWork = options.onEnterWork || (() => {});
     this.onLampToggle = options.onLampToggle || (() => {});
     this.onBedLampToggle = options.onBedLampToggle || (() => {});
+    this.onArcLampToggle = options.onArcLampToggle || (() => {});
     this.onVinylToggle = options.onVinylToggle || (() => {});
     this.onOpenTv = options.onOpenTv || (() => {});
     this.onOpenPoster = options.onOpenPoster || (() => {});
@@ -7014,8 +7015,10 @@ export class FreelancerRoomScene {
         this.onBedLampToggle(this.bedLampOn);
       } else if (this.hoveredTarget === "arcLampBrass") {
         this.setArcLampBrass(!this.arcLampBrassOn);
+        this.onArcLampToggle("arc_lamp_brass", this.arcLampBrassOn);
       } else if (this.hoveredTarget === "arcLampBlack") {
         this.setArcLampBlack(!this.arcLampBlackOn);
+        this.onArcLampToggle("arc_lamp_black", this.arcLampBlackOn);
       } else if (this.hoveredTarget === "computer") {
         if (!this.spectating) this.goToWork();
       } else if (this.hoveredTarget === "tv") {

@@ -3795,6 +3795,19 @@ dialog.settings-dialog::backdrop {
   font-weight: 700;
 }
 
+.shop-resell-filter-btn {
+  padding: 0.28rem 0.65rem;
+  font-size: 0.78rem;
+  border-radius: 999px;
+}
+
+.shop-resell-filter-btn.is-active {
+  background: light-dark(#fef3c7, rgba(245, 158, 11, 0.22));
+  border-color: light-dark(#f59e0b, #fbbf24);
+  color: light-dark(#92400e, #fde68a);
+  font-weight: 700;
+}
+
 .shop-grid-badge {
   display: inline-flex;
   align-items: center;

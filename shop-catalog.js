@@ -1,4 +1,4 @@
-import { bi, isEn } from "./i18n.js?v=20261123f";
+import { bi, isEn } from "./i18n.js?v=20261123g";
 
 export const SHOP_CATEGORIES = [
   { id: "all", label: "全部商品", labelEn: "All Items" },
@@ -1344,6 +1344,10 @@ export function applyRemoteShopConfig(rows = []) {
       icon: String(row.icon || "").trim() || base?.icon || (category === "paint" ? "🎨" : "🎁"),
       desc: String(row.desc || "").trim() || base?.desc || ""
     };
+    const rowNameEn = String(row.nameEn || "").trim();
+    const rowDescEn = String(row.descEn || "").trim();
+    if (rowNameEn) merged.nameEn = rowNameEn;
+    if (rowDescEn) merged.descEn = rowDescEn;
     if (base?.requiresOwned) {
       merged.requiresOwned = [...base.requiresOwned];
     }

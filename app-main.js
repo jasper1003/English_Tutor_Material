@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261123f";
+} from "./room-scene.js?v=20261123g";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -63,7 +63,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261123f";
+} from "./shop-catalog.js?v=20261123g";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -71,7 +71,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261123f";
+} from "./room-grid.js?v=20261123g";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -93,16 +93,16 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261123f";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261123f";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261123f";
+} from "./app-helpers.js?v=20261123g";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261123g";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261123g";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261123f";
+} from "./i18n.js?v=20261123g";
 
 applyStaticDomTranslations();
 
@@ -951,6 +951,35 @@ function loadSavedCameraZoom() {
   return 1.0;
 }
 
+const ARC_LAMP_STORAGE_PREFIX = "room_arc_lamps_v1:";
+
+function loadSavedArcLampStates(uid) {
+  const defaults = { arc_lamp_brass: true, arc_lamp_black: true };
+  if (!uid) return defaults;
+  try {
+    const raw = localStorage.getItem(`${ARC_LAMP_STORAGE_PREFIX}${uid}`);
+    if (!raw) return defaults;
+    const parsed = JSON.parse(raw);
+    return {
+      arc_lamp_brass: typeof parsed?.arc_lamp_brass === "boolean" ? parsed.arc_lamp_brass : true,
+      arc_lamp_black: typeof parsed?.arc_lamp_black === "boolean" ? parsed.arc_lamp_black : true
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+function saveArcLampState(uid, lampId, isOn) {
+  if (!uid || !lampId) return;
+  try {
+    const prev = loadSavedArcLampStates(uid);
+    prev[lampId] = Boolean(isOn);
+    localStorage.setItem(`${ARC_LAMP_STORAGE_PREFIX}${uid}`, JSON.stringify(prev));
+  } catch {
+    // Ignore storage unavailability
+  }
+}
+
 function saveCameraZoom(zoom) {
   try {
     localStorage.setItem(ROOM_ZOOM_STORAGE_KEY, String(zoom));
@@ -1049,6 +1078,7 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
   const furnitureLayout = (rs.furnitureLayout && typeof rs.furnitureLayout === "object")
     ? { ...rs.furnitureLayout }
     : {};
+  const arcLampStates = loadSavedArcLampStates(targetCharacterId);
 
   if (!roomScene) {
     roomScene = new FreelancerRoomScene(wrap, {
@@ -1060,6 +1090,8 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
       cameraQuarter: Number.isInteger(rs.cameraQuarter) ? rs.cameraQuarter : 0,
       deskLampOn: typeof rs.deskLampOn === "boolean" ? rs.deskLampOn : true,
       bedLampOn: typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false,
+      arcLampBrassOn: arcLampStates.arc_lamp_brass,
+      arcLampBlackOn: arcLampStates.arc_lamp_black,
       vinylOn: typeof rs.vinylOn === "boolean" ? rs.vinylOn : false,
       wallColor: rs.wallColor || DEFAULT_WALL_COLOR,
       floorStyle: rs.floorStyle || DEFAULT_FLOOR_STYLE,
@@ -1081,6 +1113,11 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
       },
       onBedLampToggle: (isOn) => {
         persistRoomState({ bedLampOn: isOn });
+      },
+      onArcLampToggle: (lampId, isOn) => {
+        if (!spectatingStudentUid && currentUser?.uid) {
+          saveArcLampState(currentUser.uid, lampId, isOn);
+        }
       },
       onVinylToggle: (isOn) => {
         persistRoomState({ vinylOn: isOn });
@@ -1127,6 +1164,8 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
     });
     roomScene.setDeskLamp(typeof rs.deskLampOn === "boolean" ? rs.deskLampOn : true);
     roomScene.setBedLamp(typeof rs.bedLampOn === "boolean" ? rs.bedLampOn : false);
+    roomScene.setArcLampBrass(arcLampStates.arc_lamp_brass);
+    roomScene.setArcLampBlack(arcLampStates.arc_lamp_black);
     roomScene.setVinylOn(typeof rs.vinylOn === "boolean" ? rs.vinylOn : false);
     roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
     roomScene.setFloorStyle(rs.floorStyle || DEFAULT_FLOOR_STYLE);
@@ -2891,6 +2930,23 @@ function populateOnboardingForm(existingAvatar, isEditing = false) {
   renderOptionChoices("avatar-hairstyle-choices", HAIR_STYLES, "avatarHairStyle", cfg.hairStyle, false);
   renderOptionChoices("avatar-haircolor-choices", HAIR_COLORS, "avatarHairColor", cfg.hairColor, true);
   renderOptionChoices("avatar-outfit-choices", OUTFIT_COLORS, "avatarOutfit", cfg.outfitColor, true);
+  syncAvatarOutfitShopNote(isEditing);
+}
+
+function syncAvatarOutfitShopNote(isEditing = false) {
+  const noteEl = document.getElementById("avatar-outfit-shop-note");
+  if (!noteEl) return;
+  const equippedShopShirt = currentUserProfile?.roomState?.shirtStyle || DEFAULT_SHIRT_STYLE;
+  const wearingShopTop = Boolean(isEditing && equippedShopShirt && equippedShopShirt !== DEFAULT_SHIRT_STYLE);
+  noteEl.classList.toggle("hidden", !wearingShopTop);
+  if (wearingShopTop) {
+    const shirtItem = getShopItem(equippedShopShirt);
+    const shirtName = shirtItem ? getShopItemName(shirtItem) : equippedShopShirt;
+    noteEl.textContent = bi(
+      `👕 目前穿著商店上衣「${shirtName}」；此基本配色只套用於「基本素色上衣」，如需改回素色可至商店切換。`,
+      `👕 Wearing Studio Shop top "${shirtName}"; this color only changes the Basic Top (swap back anytime in Shop).`
+    );
+  }
 }
 
 document.getElementById("avatar-name-input").addEventListener("input", (e) => {
@@ -2990,6 +3046,7 @@ const shopDialog = document.getElementById("shop-dialog");
 let activeShopCategory = "all";
 let shopPurchaseBusy = false;
 let pendingSellItemId = null;
+let shopResellFilterOnly = false;
 
 function buildTextilePreviewSvg(item) {
   if (item.sheetStyle) {
@@ -3427,6 +3484,10 @@ function renderShopDialog() {
   const activeParcels = normalizePendingParcels(currentUserProfile?.roomState?.pendingParcels, owned);
   const gridStats = computeRoomGridStats(owned, activeLayout, activeParcels);
 
+  const activeCatalog = SHOP_CATALOG.filter(item => item.enabled !== false);
+  const resellableCount = activeCatalog.filter(it => Boolean(owned[it.id]) && isSellableShopItem(it)).length;
+  if (resellableCount === 0) shopResellFilterOnly = false;
+
   const capacityEl = document.getElementById("shop-grid-capacity-bar");
   if (capacityEl) {
     const parcelNote = Object.keys(activeParcels).length > 0
@@ -3437,6 +3498,23 @@ function renderShopDialog() {
       <span>${bi(`🧱 剩餘牆面網格：<strong class="${gridStats.wallRemaining < 3 ? "is-low" : ""}">${gridStats.wallRemaining}</strong> / ${gridStats.wallTotal} 格`, `🧱 Wall grid left: <strong class="${gridStats.wallRemaining < 3 ? "is-low" : ""}">${gridStats.wallRemaining}</strong> / ${gridStats.wallTotal}`)}</span>
       ${parcelNote}
     `;
+    if (resellableCount > 0) {
+      const resellBtn = document.createElement("button");
+      resellBtn.type = "button";
+      resellBtn.id = "shop-resell-filter-btn";
+      resellBtn.className = `btn shop-resell-filter-btn${shopResellFilterOnly ? " is-active" : ""}`;
+      resellBtn.textContent = shopResellFilterOnly
+        ? bi("✕ 顯示全部商品", "✕ Show All Items")
+        : bi(`♻️ 查看可轉售家具 (${resellableCount})`, `♻️ Resellable Items (${resellableCount})`);
+      resellBtn.onclick = () => {
+        shopResellFilterOnly = !shopResellFilterOnly;
+        pendingSellItemId = null;
+        if (shopResellFilterOnly) activeShopCategory = "all";
+        renderShopDialog();
+        if (dialogBodyEl) dialogBodyEl.scrollTop = 0;
+      };
+      capacityEl.appendChild(resellBtn);
+    }
   }
 
   balanceEl.textContent = isSuperAdmin ? "∞" : String(clams);
@@ -3444,10 +3522,11 @@ function renderShopDialog() {
   SHOP_CATEGORIES.forEach(cat => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `shop-tab-btn${cat.id === activeShopCategory ? " is-active" : ""}`;
+    btn.className = `shop-tab-btn${(!shopResellFilterOnly && cat.id === activeShopCategory) ? " is-active" : ""}`;
     btn.textContent = getShopCategoryLabel(cat);
     btn.onclick = () => {
       activeShopCategory = cat.id;
+      shopResellFilterOnly = false;
       pendingSellItemId = null;
       renderShopDialog();
       if (dialogBodyEl) dialogBodyEl.scrollTop = 0;
@@ -3459,11 +3538,12 @@ function renderShopDialog() {
   const hasCustomTextile = activeBedSheet !== DEFAULT_BED_SHEET || activeRugStyle !== DEFAULT_RUG_STYLE;
   const hasCustomShirt = activeShirtStyle !== DEFAULT_SHIRT_STYLE;
   const hasCustomPants = activePantsStyle !== DEFAULT_PANTS_STYLE;
-  const showResetBar =
+  const showResetBar = !shopResellFilterOnly && (
     ((activeShopCategory === "desk" || activeShopCategory === "all") && hasCustomDesk)
     || ((activeShopCategory === "textile" || activeShopCategory === "all") && hasCustomTextile)
     || ((activeShopCategory === "shirt" || activeShopCategory === "all") && hasCustomShirt)
-    || ((activeShopCategory === "pants" || activeShopCategory === "all") && hasCustomPants);
+    || ((activeShopCategory === "pants" || activeShopCategory === "all") && hasCustomPants)
+  );
   textileBarEl.innerHTML = "";
   textileBarEl.classList.toggle("hidden", !showResetBar);
   if (showResetBar) {
@@ -3514,10 +3594,11 @@ function renderShopDialog() {
   }
 
   gridEl.innerHTML = "";
-  const activeCatalog = SHOP_CATALOG.filter(item => item.enabled !== false);
-  const visibleItems = activeShopCategory === "all"
-    ? activeCatalog
-    : activeCatalog.filter(item => item.category === activeShopCategory);
+  const visibleItems = shopResellFilterOnly
+    ? activeCatalog.filter(item => Boolean(owned[item.id]) && isSellableShopItem(item))
+    : (activeShopCategory === "all"
+      ? activeCatalog
+      : activeCatalog.filter(item => item.category === activeShopCategory));
 
   visibleItems.forEach(item => {
     const isPaint = Boolean(item.consumable && item.wallColor);
@@ -3550,8 +3631,8 @@ function renderShopDialog() {
     previewBox.className = "shop-item-preview";
     if (item.previewImage) {
       const img = document.createElement("img");
-      img.src = `${item.previewImage}?v=20261120e`;
-      img.alt = item.name;
+      img.src = `${item.previewImage}?v=20261123g`;
+      img.alt = getShopItemName(item);
       img.loading = "lazy";
       previewBox.appendChild(img);
     } else if (item.wallColor) {
@@ -4757,6 +4838,7 @@ document.getElementById("room-shop-btn").addEventListener("click", () => {
     roomScene.exitFurnitureEditMode({ commit: true });
   }
   pendingSellItemId = null;
+  shopResellFilterOnly = false;
   clearFeedback("shop-feedback");
   renderShopDialog();
   shopDialog.showModal();
