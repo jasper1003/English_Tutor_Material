@@ -1,4 +1,4 @@
-import { bi, isEn } from "./i18n.js?v=20261123i";
+import { bi, isEn } from "./i18n.js?v=20261123j";
 
 export const SHOP_CATEGORIES = [
   { id: "all", label: "全部商品", labelEn: "All Items" },
@@ -81,13 +81,18 @@ export const SHOP_CATALOG_EN = {
   coffee_bar: { name: "Pour-Over Coffee Bar", desc: "Compact wooden brew station with gooseneck kettle for fresh fuel." },
   ergo_chair: { name: "Ergonomic Studio Chair", desc: "High-back breathable lumbar chair built for marathon commissions." },
   vinyl_player: { name: "Retro Vinyl Console", desc: "Walnut turntable cabinet along the wall; click to spin records." },
-  cozy_sofa: { name: "Cozy Fabric Sofa", desc: "Plush two-seater fabric couch perfect for relaxing or watching TV." },
+  cozy_sofa: { name: "Cozy Fabric Sofa", desc: "Plush two-seater fabric couch; own any sofa + TV to trigger cozy TV lounging." },
+  sofa_boucle_cream: { name: "Cream Bouclé Cloud Sofa", desc: "Sculpted cloud-soft cream bouclé couch with bolsters; own any sofa + TV to watch TV together." },
+  sofa_cognac_leather: { name: "Cognac Mid-Century Leather Sofa", desc: "Warm caramel aniline leather couch on a walnut frame; pairs with TV for cozy lounging." },
+  sofa_nordic_navy: { name: "Nordic Indigo Linen Loveseat", desc: "Compact deep-navy woven loveseat with wide armrests & oak legs; triggers sofa TV lounging." },
+  sofa_terracotta_velvet: { name: "Terracotta Velvet Lounge Sofa", desc: "Channel-tufted rust velvet lounge couch on slim brass legs; triggers sofa TV lounging." },
+  sofa_walnut_daybed: { name: "Japanese Walnut & Oat Futon Sofa", desc: "Slatted solid walnut futon loveseat with oatmeal linen cushions; pairs with TV to relax." },
   smart_toilet: { name: "Smart Heated Bidet Toilet", desc: "Upgrades the bathroom fixture with warm seat & subtle nightlight." },
   dual_monitor: { name: "Color-Calibrated Dual Display", desc: "Adds a vertical color-reference display next to your iMac." },
   wall_tv: { name: "Wall-Mounted Smart TV", desc: "Slim smart TV on your wall—click anytime to watch YouTube." },
   hamster_cage: { name: "Mochi the Hamster & Side Table", desc: "Adds a two-drawer side table beside your desk with Mochi running happily in his wheel!" },
   orange_cat: { name: "Ginger Cat & Pet Bed", desc: "Adopt an adorable orange tabby roommate who lounges in his own bed." },
-  dolby_atmos: { name: "Dolby Atmos Surround System", desc: "Unlocked with TV + Sofa! Includes a movable front soundbar/sub and rear towers." }
+  dolby_atmos: { name: "Dolby Atmos Surround System", desc: "Unlocked with TV + any Sofa! Includes a movable front soundbar/sub and rear towers." }
 };
 
 export function getShopCategoryLabel(cat) {
@@ -118,6 +123,23 @@ export const DEFAULT_BED_SHEET = "default";
 export const DEFAULT_RUG_STYLE = "default";
 export const DEFAULT_SHIRT_STYLE = "default";
 export const DEFAULT_PANTS_STYLE = "default";
+
+export const SOFA_ITEM_IDS = [
+  "cozy_sofa",
+  "sofa_boucle_cream",
+  "sofa_cognac_leather",
+  "sofa_nordic_navy",
+  "sofa_terracotta_velvet",
+  "sofa_walnut_daybed"
+];
+
+export function countOwnedSofas(owned = {}) {
+  return SOFA_ITEM_IDS.reduce((n, id) => n + (owned?.[id] === true ? 1 : 0), 0);
+}
+
+export function hasOwnedSofa(owned = {}) {
+  return countOwnedSofas(owned) > 0;
+}
 
 export const FLOOR_STYLE_PRESETS = {
   default: {
@@ -1291,7 +1313,52 @@ export const DEFAULT_SHOP_CATALOG = [
     price: 280,
     icon: "🛋️",
     previewImage: "./assets/shop/cozy_sofa.jpg",
-    desc: "面向大門旁牆面的柔軟雙人沙發，累了隨時可以喘口氣。"
+    desc: "面向大門旁牆面的柔軟雙人沙發；只要同時擁有任一款沙發與小電視，主角就會自動躺上沙發看電視放鬆。"
+  },
+  {
+    id: "sofa_walnut_daybed",
+    name: "和風胡桃木日系休閒沙發",
+    category: "decor",
+    price: 265,
+    icon: "🛋️",
+    previewImage: "./assets/shop/sofa_walnut_daybed.jpg",
+    desc: "胡桃實木格柵框架搭配厚實燕麥棉麻坐墊（僅佔 3×2 格）；同時擁有沙發與小電視即可觸發看電視休息行為。"
+  },
+  {
+    id: "sofa_nordic_navy",
+    name: "深海藍北歐麻布雙人沙發",
+    category: "decor",
+    price: 295,
+    icon: "🛋️",
+    previewImage: "./assets/shop/sofa_nordic_navy.jpg",
+    desc: "俐落 IKEA 風深海藍亞麻雙人沙發配淺橡木腳與芥末黃抱枕（佔 3×2 格）；配小電視即可看電視耍廢。"
+  },
+  {
+    id: "sofa_boucle_cream",
+    name: "雲朵奶油羊羔絨沙發",
+    category: "decor",
+    price: 310,
+    icon: "🛋️",
+    previewImage: "./assets/shop/sofa_boucle_cream.jpg",
+    desc: "圓潤蓬鬆的奶油白羊羔絨雲朵沙發搭圓筒靠枕，柔軟包覆感滿分；配小電視即可觸發沙發追劇休息。"
+  },
+  {
+    id: "sofa_terracotta_velvet",
+    name: "紅磚橘絲絨復古沙發",
+    category: "decor",
+    price: 330,
+    icon: "🛋️",
+    previewImage: "./assets/shop/sofa_terracotta_velvet.jpg",
+    desc: "垂直直條壓紋紅磚絲絨配細長拉絲黃銅腳，輕奢復古質感；配小電視即可觸發主角沙發看電視休息。"
+  },
+  {
+    id: "sofa_cognac_leather",
+    name: "焦糖復古皮革沙發",
+    category: "decor",
+    price: 350,
+    icon: "🛋️",
+    previewImage: "./assets/shop/sofa_cognac_leather.jpg",
+    desc: "溫潤焦糖植鞣皮革配胡桃木外框與橄欖綠腰枕；同時擁有沙發與小電視就會觸發自動看電視放鬆行為。"
   },
   {
     id: "smart_toilet",
@@ -1346,7 +1413,7 @@ export const DEFAULT_SHOP_CATALOG = [
     icon: "🔊",
     requiresOwned: ["wall_tv", "cozy_sofa"],
     previewImage: "./assets/shop/dolby_atmos.jpg",
-    desc: "購齊小電視與雙人沙發解鎖！含獨立可擺放的前置聲霸重低音與後環繞雙立柱音箱，不綁死電視與沙發、皆可自由移動旋轉。"
+    desc: "購齊小電視與任一款沙發解鎖！含獨立可擺放的前置聲霸重低音與後環繞雙立柱音箱，不綁死電視與沙發、皆可自由移動旋轉。"
   }
 ];
 
@@ -1436,10 +1503,20 @@ export function getMissingShopPrerequisites(item, owned = {}) {
   if (!item || !Array.isArray(item.requiresOwned) || item.requiresOwned.length === 0) {
     return [];
   }
+  const sofaCount = countOwnedSofas(owned);
   return item.requiresOwned
-    .filter(reqId => owned?.[reqId] !== true)
+    .filter(reqId => {
+      if (reqId === "cozy_sofa") return sofaCount === 0;
+      return owned?.[reqId] !== true;
+    })
     .map(reqId => {
       const reqItem = getShopItem(reqId);
+      if (reqId === "cozy_sofa") {
+        return {
+          id: reqId,
+          name: bi("任一款沙發", "Any Sofa")
+        };
+      }
       return {
         id: reqId,
         name: reqItem ? getShopItemName(reqItem) : bi(reqId, reqId)
@@ -1457,11 +1534,19 @@ export function isSellableShopItem(item) {
 }
 
 export function getBlockingDependentOwnedItems(itemId, owned = {}) {
-  return SHOP_CATALOG.filter(
-    other => owned?.[other.id] === true
-      && Array.isArray(other.requiresOwned)
-      && other.requiresOwned.includes(itemId)
-  );
+  const isSofaItem = SOFA_ITEM_IDS.includes(itemId);
+  const remainingSofasAfterSale = isSofaItem ? (countOwnedSofas(owned) - (owned?.[itemId] === true ? 1 : 0)) : 0;
+  return SHOP_CATALOG.filter(other => {
+    if (owned?.[other.id] !== true || !Array.isArray(other.requiresOwned)) return false;
+    if (other.requiresOwned.includes(itemId)) {
+      if (itemId === "cozy_sofa" && remainingSofasAfterSale > 0) return false;
+      return true;
+    }
+    if (isSofaItem && other.requiresOwned.includes("cozy_sofa") && remainingSofasAfterSale <= 0) {
+      return true;
+    }
+    return false;
+  });
 }
 
 export function normalizeOwnedItems(raw) {

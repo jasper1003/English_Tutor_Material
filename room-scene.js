@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { bi, isEn } from "./i18n.js?v=20261123i";
+import { bi, isEn } from "./i18n.js?v=20261123j";
 import {
   DEFAULT_FLOOR_STYLE,
   DEFAULT_DESK_STYLE,
@@ -13,14 +13,16 @@ import {
   resolveBedSheetStyle,
   resolveRugStyle,
   resolveShirtStyle,
-  resolvePantsStyle
-} from "./shop-catalog.js?v=20261123i";
+  resolvePantsStyle,
+  SOFA_ITEM_IDS,
+  hasOwnedSofa
+} from "./shop-catalog.js?v=20261123j";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261123i";
+} from "./app-helpers.js?v=20261123j";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -40,7 +42,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261123i";
+} from "./room-grid.js?v=20261123j";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -1849,6 +1851,9 @@ export class FreelancerRoomScene {
     this.arcLampBlackOn = this.floorLampStates.arc_lamp_black;
     this.floorLampEntries = new Map();
     this.hoveredLampId = null;
+    this.sofaGroups = new Map();
+    this.activeSofaId = null;
+    this.hoveredSofaId = null;
     this.vinylOn = Boolean(options.vinylOn ?? false);
     this.wallColorHex = options.wallColor || "#f3eadc";
     this.floorStyleId = options.floorStyle || DEFAULT_FLOOR_STYLE;
@@ -2470,10 +2475,230 @@ export class FreelancerRoomScene {
 
     sofaGroup.visible = Boolean(this.ownedItems.cozy_sofa);
     this.sofaGroup = sofaGroup;
+    this.sofaGroups.set("cozy_sofa", sofaGroup);
     this.furnitureGroup.add(sofaGroup);
     sofaGroup.traverse(m => {
       if (m.isMesh) this.addInteractive(m, "sofa", "cozy_sofa");
     });
+
+    // 1b. Additional Sofa Styles (4x2 two-seaters & 3x2 compact Scandinavian/Japandi loveseats)
+    const buildVariantSofa = (spec) => {
+      const grp = new THREE.Group();
+      const totalW = spec.width || 1.72;
+      const halfSpan = totalW * 0.42;
+      const legMat = makeMat(spec.legColor, spec.legRoughness ?? 0.45, spec.legMetalness ?? 0.08);
+      const bodyMat = makeMat(spec.bodyColor, spec.bodyRoughness ?? 0.85, spec.bodyMetalness ?? 0.02);
+      const cushionMat = makeMat(spec.cushionColor, spec.cushionRoughness ?? 0.84, spec.cushionMetalness ?? 0.02);
+      const pillowMat = makeMat(spec.pillowColor, 0.84, 0.02);
+
+      // Four legs
+      const legRadius = spec.legMetalness > 0.4 ? 0.022 : 0.038;
+      [
+        [-halfSpan, -0.24],
+        [halfSpan, -0.24],
+        [-halfSpan, 0.36],
+        [halfSpan, 0.36]
+      ].forEach(([lx, lz]) => {
+        const leg = new THREE.Mesh(
+          new THREE.CylinderGeometry(legRadius, legRadius * 0.8, 0.14, 10),
+          legMat
+        );
+        leg.position.set(lx, 0.07, lz);
+        leg.castShadow = true;
+        grp.add(leg);
+      });
+
+      // Plinth / Frame Apron (wooden frame if specified)
+      if (spec.frameColor) {
+        const frameMat = makeMat(spec.frameColor, 0.56, 0.04);
+        const apron = new THREE.Mesh(
+          new RoundedBoxGeometry(totalW, 0.10, 0.84, 3, 0.03),
+          frameMat
+        );
+        apron.position.set(0, 0.17, 0.06);
+        apron.castShadow = true;
+        apron.receiveShadow = true;
+        grp.add(apron);
+      }
+
+      const base = new THREE.Mesh(
+        new RoundedBoxGeometry(totalW - (spec.frameColor ? 0.08 : 0), 0.21, 0.80, 4, spec.rounded ? 0.09 : 0.05),
+        bodyMat
+      );
+      base.position.set(0, spec.frameColor ? 0.27 : 0.23, 0.07);
+      base.castShadow = true;
+      base.receiveShadow = true;
+      grp.add(base);
+
+      // Two plush seat cushions scaled to sofa width
+      const seatW = (totalW - 0.36) * 0.48;
+      const seatOffset = seatW * 0.52;
+      [-seatOffset, seatOffset].forEach(cx => {
+        const seat = new THREE.Mesh(
+          new RoundedBoxGeometry(seatW, 0.14, 0.64, 4, spec.rounded ? 0.065 : 0.05),
+          cushionMat
+        );
+        seat.position.set(cx, 0.40, 0.12);
+        seat.castShadow = true;
+        seat.receiveShadow = true;
+        grp.add(seat);
+      });
+
+      // Backrest + optional vertical channel tufting
+      const backrest = new THREE.Mesh(
+        new RoundedBoxGeometry(totalW - (spec.frameColor ? 0.10 : 0), 0.50, 0.20, 4, spec.rounded ? 0.085 : 0.06),
+        bodyMat
+      );
+      backrest.position.set(0, 0.55, -0.24);
+      backrest.rotation.x = -0.07;
+      backrest.castShadow = true;
+      grp.add(backrest);
+
+      if (spec.tufted) {
+        const fluteCount = 6;
+        const span = totalW - 0.42;
+        for (let f = 0; f < fluteCount; f++) {
+          const fx = -span * 0.5 + (span * f) / (fluteCount - 1);
+          const flute = new THREE.Mesh(
+            new THREE.CapsuleGeometry(0.065, 0.26, 4, 8),
+            cushionMat
+          );
+          flute.position.set(fx, 0.58, -0.15);
+          flute.rotation.x = -0.07;
+          flute.castShadow = true;
+          grp.add(flute);
+        }
+      }
+
+      // Armrests (slatted wood side-rails for Japandi futon or upholstered wide arms)
+      const armOffset = totalW * 0.5 - 0.085;
+      if (spec.slattedArms && spec.frameColor) {
+        const woodArmMat = makeMat(spec.frameColor, 0.56, 0.04);
+        [-armOffset, armOffset].forEach(ax => {
+          const topRail = new THREE.Mesh(new RoundedBoxGeometry(0.10, 0.07, 0.82, 3, 0.025), woodArmMat);
+          topRail.position.set(ax, 0.56, 0.06);
+          topRail.castShadow = true;
+          grp.add(topRail);
+          [-0.22, 0.06, 0.34].forEach(sz => {
+            const slat = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.34, 0.055), woodArmMat);
+            slat.position.set(ax, 0.38, sz);
+            slat.castShadow = true;
+            grp.add(slat);
+          });
+        });
+      } else {
+        const armW = spec.wideArms ? 0.19 : 0.16;
+        [-armOffset, armOffset].forEach(ax => {
+          const arm = new THREE.Mesh(
+            new RoundedBoxGeometry(armW, 0.36, 0.82, 4, spec.rounded ? 0.075 : 0.05),
+            bodyMat
+          );
+          arm.position.set(ax, 0.43, 0.07);
+          arm.castShadow = true;
+          grp.add(arm);
+        });
+      }
+
+      // Pillows / Bolsters
+      const pillowSpan = totalW * 0.26;
+      if (spec.bolsters) {
+        [-pillowSpan, pillowSpan].forEach(px => {
+          const bolster = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.085, 0.085, 0.32, 14),
+            pillowMat
+          );
+          bolster.rotation.z = Math.PI / 2;
+          bolster.position.set(px, 0.53, -0.04);
+          bolster.castShadow = true;
+          grp.add(bolster);
+        });
+      } else {
+        [-pillowSpan, pillowSpan].forEach((px, idx) => {
+          const pMat = (idx === 1 && spec.pillowColorAlt)
+            ? makeMat(spec.pillowColorAlt, 0.84, 0.02)
+            : pillowMat;
+          const throwPillow = new THREE.Mesh(
+            new RoundedBoxGeometry(0.26, 0.22, 0.11, 3, 0.04),
+            pMat
+          );
+          throwPillow.position.set(px, 0.57, -0.07);
+          throwPillow.rotation.set(-0.22, idx === 0 ? 0.24 : -0.24, 0);
+          throwPillow.castShadow = true;
+          grp.add(throwPillow);
+        });
+      }
+
+      grp.visible = Boolean(this.ownedItems[spec.id]);
+      this.sofaGroups.set(spec.id, grp);
+      this.furnitureGroup.add(grp);
+      grp.traverse(m => {
+        if (m.isMesh) this.addInteractive(m, "sofa", spec.id);
+      });
+    };
+
+    [
+      {
+        id: "sofa_boucle_cream",
+        width: 1.74,
+        bodyColor: "#f3eee4",
+        cushionColor: "#fbf8f1",
+        pillowColor: "#e6dfd1",
+        legColor: "#1b1f26",
+        rounded: true,
+        bolsters: true,
+        bodyRoughness: 0.94,
+        cushionRoughness: 0.94
+      },
+      {
+        id: "sofa_cognac_leather",
+        width: 1.72,
+        frameColor: "#633f28",
+        bodyColor: "#a65932",
+        cushionColor: "#b8683c",
+        pillowColor: "#6b7c5e",
+        legColor: "#543420",
+        bodyRoughness: 0.38,
+        cushionRoughness: 0.34
+      },
+      {
+        id: "sofa_nordic_navy",
+        width: 1.38,
+        bodyColor: "#284066",
+        cushionColor: "#314e7a",
+        pillowColor: "#dfa946",
+        pillowColorAlt: "#ede6d6",
+        legColor: "#cfa16e",
+        wideArms: true,
+        bodyRoughness: 0.88,
+        cushionRoughness: 0.86
+      },
+      {
+        id: "sofa_terracotta_velvet",
+        width: 1.72,
+        bodyColor: "#ba5a3c",
+        cushionColor: "#ca6949",
+        pillowColor: "#f2e9da",
+        legColor: "#d4af68",
+        legRoughness: 0.24,
+        legMetalness: 0.82,
+        tufted: true,
+        bolsters: true,
+        bodyRoughness: 0.72,
+        cushionRoughness: 0.7
+      },
+      {
+        id: "sofa_walnut_daybed",
+        width: 1.38,
+        frameColor: "#6b472f",
+        bodyColor: "#ded5c4",
+        cushionColor: "#eae2d3",
+        pillowColor: "#7f9681",
+        legColor: "#5e3d28",
+        slattedArms: true,
+        bodyRoughness: 0.9,
+        cushionRoughness: 0.88
+      }
+    ].forEach(buildVariantSofa);
 
     // 2. Shop item: Bedside Nightstand + Clickable Warm Night Lamp beside Bed Headboard
     const bedLampGroup = new THREE.Group();
@@ -4986,7 +5211,6 @@ export class FreelancerRoomScene {
     if (itemId === "vinyl_player") this.setVinylOn(false);
     const affectedActivities = {
       hamster_cage: ["watch_hamster"],
-      cozy_sofa: ["sofa_read", "sofa_tv"],
       wall_tv: ["watch_tv", "sofa_tv", "dolby_atmos"],
       dolby_atmos: ["dolby_atmos"],
       coffee_bar: ["coffee_break"],
@@ -4996,7 +5220,13 @@ export class FreelancerRoomScene {
       floor_plant: ["water_floor_plant"],
       wall_poster: ["admire_poster"],
       desk_plant: ["water_plant"]
-    }[itemId] || [];
+    }[itemId] || (SOFA_ITEM_IDS.includes(itemId) && !hasOwnedSofa(this.getPlacedOwnedItems())
+      ? ["sofa_read", "sofa_tv"]
+      : []);
+    if (SOFA_ITEM_IDS.includes(itemId) && this.activeSofaId === itemId) {
+      this.activeSofaId = null;
+      this.refreshActivityAnchors();
+    }
     if (affectedActivities.includes(this.currentActivity) || affectedActivities.includes(this.targetActivityId)) {
       this.placeCharacterAtIdleStart();
     }
@@ -5067,6 +5297,9 @@ export class FreelancerRoomScene {
     if (this.wallPosterGroup) this.wallPosterGroup.visible = activePlaced("wall_poster") || editingThis("wall_poster");
     if (this.wallTvGroup) this.wallTvGroup.visible = activePlaced("wall_tv") || editingThis("wall_tv");
     if (this.sofaGroup) this.sofaGroup.visible = activePlaced("cozy_sofa") || editingThis("cozy_sofa");
+    this.sofaGroups?.forEach((grp, sofaId) => {
+      if (grp) grp.visible = activePlaced(sofaId) || editingThis(sofaId);
+    });
     const atmosPlaced = Boolean(this.ownedItems.dolby_atmos) && !this.pendingParcels.dolby_atmos;
     if (this.atmosFrontGroup) {
       this.atmosFrontGroup.visible = (atmosPlaced && !this.editHiddenCompanions?.has("dolby_atmos"))
@@ -5107,6 +5340,9 @@ export class FreelancerRoomScene {
       hamster_cage: this.hamsterCageGroup,
       coffee_bar: this.coffeeBarGroup,
       cozy_sofa: this.sofaGroup,
+      ...(this.sofaGroups
+        ? Object.fromEntries(Array.from(this.sofaGroups.entries()))
+        : {}),
       coat_rack: this.coatRackGroup,
       vinyl_player: this.vinylPlayerGroup,
       orange_cat: this.orangeCatGroup,
@@ -5379,11 +5615,12 @@ export class FreelancerRoomScene {
       }
     }
 
-    // Sofa anchors
-    if (this.sofaGroup) {
-      const sofaRot = this.sofaGroup.rotation.y;
-      const sofaSeatWorld = localToWorld(this.sofaGroup, 0, 0.08);
-      this.sofaFrontAnchor.copy(this.clampWalkableFloorPoint(localToWorld(this.sofaGroup, 0, 0.84)));
+    // Sofa anchors (supports any placed sofa in the room)
+    const activeSofaGrp = this.getPrimaryPlacedSofaGroup();
+    if (activeSofaGrp) {
+      const sofaRot = activeSofaGrp.rotation.y;
+      const sofaSeatWorld = localToWorld(activeSofaGrp, 0, 0.08);
+      this.sofaFrontAnchor.copy(this.clampWalkableFloorPoint(localToWorld(activeSofaGrp, 0, 0.84)));
       this.actionSpots.sofa_read.pos.copy(sofaSeatWorld);
       this.actionSpots.sofa_read.rotY = sofaRot;
       this.actionSpots.sofa_tv.pos.copy(sofaSeatWorld);
@@ -5890,6 +6127,14 @@ export class FreelancerRoomScene {
     if (wasParcel && Object.keys(this.pendingParcels).length === 0) {
       // Automatically return cleanly to room play right after placing the newly unboxed item
       this.exitFurnitureEditMode({ commit: false });
+      const placedNow = this.getPlacedOwnedItems();
+      if ((SOFA_ITEM_IDS.includes(id) || id === "wall_tv") && hasOwnedSofa(placedNow) && placedNow.wall_tv) {
+        if (SOFA_ITEM_IDS.includes(id)) {
+          this.activeSofaId = id;
+          this.refreshActivityAnchors();
+        }
+        this.commandActivity(this.actionSpots.sofa_tv, 180);
+      }
     } else if (wasParcel && Object.keys(this.pendingParcels).length > 0) {
       this.openNextParcelBox();
     } else {
@@ -6153,14 +6398,15 @@ export class FreelancerRoomScene {
 
   pickCelebrateLeisureSpot() {
     const owned = this.getPlacedOwnedItems();
+    const hasSofa = hasOwnedSofa(owned);
     const options = [];
     if (owned.orange_cat) options.push(this.actionSpots.pet_cat);
     if (owned.hamster_cage) options.push(this.actionSpots.watch_hamster);
-    if (owned.cozy_sofa && owned.wall_tv) options.push(this.actionSpots.sofa_tv);
+    if (hasSofa && owned.wall_tv) options.push(this.actionSpots.sofa_tv);
     if (owned.vinyl_player) options.push(this.actionSpots.listen_vinyl);
     if (owned.coffee_bar) options.push(this.actionSpots.coffee_break);
-    if (owned.wall_tv && !owned.cozy_sofa) options.push(this.actionSpots.watch_tv);
-    if (owned.cozy_sofa) options.push(this.actionSpots.sofa_read);
+    if (owned.wall_tv && !hasSofa) options.push(this.actionSpots.watch_tv);
+    if (hasSofa) options.push(this.actionSpots.sofa_read);
     const gamingSpot = this.chillSpots.find(s => s.id === "gaming");
     const eatSpot = this.chillSpots.find(s => s.id === "eat");
     if (gamingSpot) options.push(gamingSpot);
@@ -6359,15 +6605,41 @@ export class FreelancerRoomScene {
     return pos.x >= 1.75 && pos.x <= 3.55 && pos.z >= 0.75 && pos.z <= 3.35;
   }
 
+  getPrimaryPlacedSofaGroup() {
+    const placed = this.getPlacedOwnedItems();
+    if (this.activeSofaId && placed[this.activeSofaId] && this.sofaGroups?.get(this.activeSofaId)?.visible) {
+      return this.sofaGroups.get(this.activeSofaId);
+    }
+    for (const sofaId of SOFA_ITEM_IDS) {
+      if (placed[sofaId] && this.sofaGroups?.get(sofaId)?.visible) {
+        return this.sofaGroups.get(sofaId);
+      }
+    }
+    for (const sofaId of SOFA_ITEM_IDS) {
+      const grp = this.sofaGroups?.get(sofaId);
+      if (grp?.visible) return grp;
+    }
+    return this.sofaGroup || null;
+  }
+
   isOnSofa(pos = this.charRoot?.position) {
     if (!pos) return false;
-    if (this.sofaGroup) {
+    if (this.sofaGroups && this.sofaGroups.size > 0) {
+      for (const grp of this.sofaGroups.values()) {
+        if (!grp?.visible) continue;
+        grp.updateWorldMatrix(true, false);
+        const local = pos.clone();
+        grp.worldToLocal(local);
+        if (Math.abs(local.x) <= 0.95 && Math.abs(local.z) <= 0.52) return true;
+      }
+    }
+    if (this.sofaGroup?.visible) {
       this.sofaGroup.updateWorldMatrix(true, false);
       const local = pos.clone();
       this.sofaGroup.worldToLocal(local);
       return Math.abs(local.x) <= 0.95 && Math.abs(local.z) <= 0.52;
     }
-    return pos.x >= -2.26 && pos.x <= -1.25 && pos.z >= -1.25 && pos.z <= 0.55;
+    return false;
   }
 
   isNearDesk(pos = this.charRoot?.position) {
@@ -7339,8 +7611,15 @@ export class FreelancerRoomScene {
           this.onHoverChange(bi("點擊更換掛畫圖案／裁切自訂照片", "Click to customize framed wall poster"));
         } else if (type === "computer") {
           this.onHoverChange(bi("點擊電腦／電繪板開始接案學習", "Click computer/tablet to open freelance quests"));
+        } else if (type === "sofa") {
+          this.hoveredSofaId = visibleHit.object.userData.movableId || "cozy_sofa";
+          this.onHoverChange(
+            this.getPlacedOwnedItems().wall_tv
+              ? bi("點擊坐上沙發看電視放鬆", "Click to relax & watch TV on sofa")
+              : bi("點擊坐上沙發看書休息", "Click to relax & read on sofa")
+          );
         } else {
-          // Silent discovery for bed / sink / toilet / sofa / plant / coatRack / floorPlant
+          // Silent discovery for bed / sink / toilet / plant / coatRack / floorPlant
           this.onHoverChange("");
         }
         return;
@@ -7517,13 +7796,13 @@ export class FreelancerRoomScene {
         if (!this.spectating) this.goToWork();
       } else if (this.hoveredTarget === "tv") {
         if (!this.spectating) {
-          const spot = this.getPlacedOwnedItems().cozy_sofa ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
+          const spot = hasOwnedSofa(this.getPlacedOwnedItems()) ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
           this.commandActivity(spot, 180);
           this.onOpenTv();
         }
       } else if (this.hoveredTarget === "atmos") {
         this.playAtmosChime();
-        const spot = this.getPlacedOwnedItems().cozy_sofa ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
+        const spot = hasOwnedSofa(this.getPlacedOwnedItems()) ? this.actionSpots.sofa_tv : this.actionSpots.watch_tv;
         this.commandActivity(spot, 180);
         this.showBubble(this.pickRandomThought("dolby_atmos"), 4600);
         this.thoughtCooldown = 10;
@@ -7546,7 +7825,11 @@ export class FreelancerRoomScene {
       } else if (this.hoveredTarget === "floorPlant") {
         this.commandActivity(this.actionSpots.water_floor_plant, 14);
       } else if (this.hoveredTarget === "sofa") {
-        const spot = (this.ownedItems.wall_tv && Math.random() < 0.5)
+        if (this.hoveredSofaId) {
+          this.activeSofaId = this.hoveredSofaId;
+          this.refreshActivityAnchors();
+        }
+        const spot = this.getPlacedOwnedItems().wall_tv
           ? this.actionSpots.sofa_tv
           : this.actionSpots.sofa_read;
         this.commandActivity(spot, 180);

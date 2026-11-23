@@ -1,4 +1,5 @@
-import { bi, isEn } from "./i18n.js?v=20261123i";
+import { bi, isEn } from "./i18n.js?v=20261123j";
+import { hasOwnedSofa } from "./shop-catalog.js?v=20261123j";
 
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
@@ -597,12 +598,13 @@ export const CHARACTER_PERSONAS = [
 
 export function listAvailableRoomActivities(ownedItems = {}, isNightTime = false) {
   const owned = ownedItems || {};
-  const readActivity = owned.cozy_sofa ? "sofa_read" : "read";
+  const hasSofa = hasOwnedSofa(owned);
+  const readActivity = hasSofa ? "sofa_read" : "read";
   const activities = ["phone", "exercise", readActivity, "eat", "gaming"];
   if (isNightTime) {
     activities.push("sleep");
   }
-  if (owned.cozy_sofa && owned.wall_tv) {
+  if (hasSofa && owned.wall_tv) {
     activities.push("sofa_tv");
   } else if (owned.wall_tv) {
     activities.push("watch_tv");
@@ -678,6 +680,7 @@ export function pickPersonaWeightedActivity(
     let weight = 1;
     if (preferredSet.has(id)) weight += 2.2;
     if (id === personalId) weight += 1.6;
+    if (id === "sofa_tv") weight += 1.4;
     if (id === "sleep") {
       weight = isNightTime ? (weight + nightSleepW) : 0.4;
     }

@@ -1,4 +1,4 @@
-import { bi, isEn } from "./i18n.js?v=20261123i";
+import { bi, isEn } from "./i18n.js?v=20261123j";
 
 export const GRID_STEP = 0.5;
 export const GRID_CELLS = 16; // 16 x 16 cells across [-4.0, +4.0] room floor & walls
@@ -72,6 +72,56 @@ export const PLACEABLE_FURNITURE_META = {
     id: "cozy_sofa",
     name: "雙人布藝沙發",
     nameEn: "Cozy Fabric Sofa",
+    icon: "🛋️",
+    starter: false,
+    surface: "floor",
+    gridW: 4,
+    gridD: 2
+  },
+  sofa_walnut_daybed: {
+    id: "sofa_walnut_daybed",
+    name: "和風胡桃木日系休閒沙發",
+    nameEn: "Japanese Walnut & Oat Futon Sofa",
+    icon: "🛋️",
+    starter: false,
+    surface: "floor",
+    gridW: 3,
+    gridD: 2
+  },
+  sofa_nordic_navy: {
+    id: "sofa_nordic_navy",
+    name: "深海藍北歐麻布雙人沙發",
+    nameEn: "Nordic Indigo Linen Loveseat",
+    icon: "🛋️",
+    starter: false,
+    surface: "floor",
+    gridW: 3,
+    gridD: 2
+  },
+  sofa_boucle_cream: {
+    id: "sofa_boucle_cream",
+    name: "雲朵奶油羊羔絨沙發",
+    nameEn: "Cream Bouclé Cloud Sofa",
+    icon: "🛋️",
+    starter: false,
+    surface: "floor",
+    gridW: 4,
+    gridD: 2
+  },
+  sofa_terracotta_velvet: {
+    id: "sofa_terracotta_velvet",
+    name: "紅磚橘絲絨復古沙發",
+    nameEn: "Terracotta Velvet Lounge Sofa",
+    icon: "🛋️",
+    starter: false,
+    surface: "floor",
+    gridW: 4,
+    gridD: 2
+  },
+  sofa_cognac_leather: {
+    id: "sofa_cognac_leather",
+    name: "焦糖復古皮革沙發",
+    nameEn: "Cognac Mid-Century Leather Sofa",
     icon: "🛋️",
     starter: false,
     surface: "floor",
@@ -264,6 +314,11 @@ export const DEFAULT_FURNITURE_LAYOUT = {
   hamster_cage: { surface: "floor", gx: 3, gz: 1, rot: 0 },
   coffee_bar: { surface: "floor", gx: 0, gz: 3, rot: 1 },
   cozy_sofa: { surface: "floor", gx: 4, gz: 5, rot: 3 },
+  sofa_boucle_cream: { surface: "floor", gx: 7, gz: 7, rot: 0 },
+  sofa_cognac_leather: { surface: "floor", gx: 7, gz: 10, rot: 0 },
+  sofa_nordic_navy: { surface: "floor", gx: 3, gz: 11, rot: 0 },
+  sofa_terracotta_velvet: { surface: "floor", gx: 7, gz: 12, rot: 2 },
+  sofa_walnut_daybed: { surface: "floor", gx: 11, gz: 7, rot: 3 },
   coat_rack: { surface: "floor", gx: 1, gz: 14, rot: 0 },
   vinyl_player: { surface: "floor", gx: 5, gz: 15, rot: 2 },
   orange_cat: { surface: "floor", gx: 9, gz: 14, rot: 2 },
