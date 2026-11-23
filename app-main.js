@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261123l";
+} from "./room-scene.js?v=20261124a";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261123l";
+} from "./shop-catalog.js?v=20261124a";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261123l";
+} from "./room-grid.js?v=20261124a";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -98,16 +98,16 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261123l";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261123l";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261123l";
+} from "./app-helpers.js?v=20261124a";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261124a";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124a";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261123l";
+} from "./i18n.js?v=20261124a";
 
 applyStaticDomTranslations();
 
@@ -3652,7 +3652,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261123l`;
+    img.src = `${item.previewImage}?v=20261124a`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);

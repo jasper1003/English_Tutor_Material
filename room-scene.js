@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { bi, isEn } from "./i18n.js?v=20261123l";
+import { bi, isEn } from "./i18n.js?v=20261124a";
 import {
   DEFAULT_FLOOR_STYLE,
   DEFAULT_DESK_STYLE,
@@ -16,13 +16,13 @@ import {
   resolvePantsStyle,
   SOFA_ITEM_IDS,
   hasOwnedSofa
-} from "./shop-catalog.js?v=20261123l";
+} from "./shop-catalog.js?v=20261124a";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261123l";
+} from "./app-helpers.js?v=20261124a";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -42,7 +42,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261123l";
+} from "./room-grid.js?v=20261124a";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -4276,12 +4276,95 @@ export class FreelancerRoomScene {
     basin.castShadow = true;
     sinkGroup.add(basin);
 
+    const basinPool = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.16, 0.012, 20),
+      makeMat("#dbeafe", 0.18, 0.08)
+    );
+    basinPool.position.set(0, 0.808, 0.05);
+    sinkGroup.add(basinPool);
+
     const faucet = new THREE.Mesh(new RoundedBoxGeometry(0.06, 0.16, 0.12, 2, 0.02), chromeMat);
     faucet.position.set(0, 0.86, -0.1);
     sinkGroup.add(faucet);
 
+    const faucetSpout = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.12, 10), chromeMat);
+    faucetSpout.rotation.x = Math.PI / 2;
+    faucetSpout.position.set(0, 0.92, -0.02);
+    sinkGroup.add(faucetSpout);
+
+    const faucetTip = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.012, 0.03, 10), chromeMat);
+    faucetTip.position.set(0, 0.905, 0.032);
+    sinkGroup.add(faucetTip);
+
+    // Animated running tap water effect (shown while character is washing hands)
+    const faucetWaterGroup = new THREE.Group();
+    faucetWaterGroup.position.set(0, 0, 0.032);
+    faucetWaterGroup.visible = false;
+
+    const waterStreamMat = new THREE.MeshStandardMaterial({
+      color: "#bae6fd",
+      emissive: "#7dd3fc",
+      emissiveIntensity: 0.35,
+      transparent: true,
+      opacity: 0.78,
+      roughness: 0.12
+    });
+    const waterStream = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.016, 0.105, 10), waterStreamMat);
+    waterStream.position.set(0, 0.858, 0);
+    faucetWaterGroup.add(waterStream);
+
+    const dropGeo = new THREE.SphereGeometry(0.012, 8, 8);
+    const faucetDrops = [];
+    for (let i = 0; i < 6; i++) {
+      const drop = new THREE.Mesh(dropGeo, waterStreamMat.clone());
+      drop.position.set(0, 0.89, 0);
+      faucetWaterGroup.add(drop);
+      faucetDrops.push({ mesh: drop, phase: i / 6 });
+    }
+
+    const faucetRipples = [];
+    for (let i = 0; i < 2; i++) {
+      const rippleMat = new THREE.MeshBasicMaterial({
+        color: "#e0f2fe",
+        transparent: true,
+        opacity: 0.7,
+        side: THREE.DoubleSide
+      });
+      const ripple = new THREE.Mesh(new THREE.RingGeometry(0.025, 0.04, 20), rippleMat);
+      ripple.rotation.x = -Math.PI / 2;
+      ripple.position.set(0, 0.816, 0.008);
+      faucetWaterGroup.add(ripple);
+      faucetRipples.push({ mesh: ripple, mat: rippleMat, phase: i * 0.5 });
+    }
+
+    const washBubbles = [];
+    const bubbleMatBase = new THREE.MeshStandardMaterial({
+      color: "#f0f9ff",
+      emissive: "#bae6fd",
+      emissiveIntensity: 0.3,
+      transparent: true,
+      opacity: 0.85,
+      roughness: 0.2
+    });
+    for (let i = 0; i < 5; i++) {
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), bubbleMatBase.clone());
+      faucetWaterGroup.add(b);
+      washBubbles.push({
+        mesh: b,
+        angle: (i * Math.PI * 2) / 5,
+        phase: i / 5
+      });
+    }
+
+    sinkGroup.add(faucetWaterGroup);
+    this.faucetWaterGroup = faucetWaterGroup;
+    this.faucetWaterStream = waterStream;
+    this.faucetDrops = faucetDrops;
+    this.faucetRipples = faucetRipples;
+    this.washBubbles = washBubbles;
+
     bathGroup.add(sinkGroup);
-    [sinkPed, basin, faucet].forEach(m => this.addInteractive(m, "sink"));
+    [sinkPed, basin, basinPool, faucet, faucetSpout, faucetTip].forEach(m => this.addInteractive(m, "sink"));
   }
 
   buildSingleBed() {
@@ -7995,6 +8078,42 @@ export class FreelancerRoomScene {
     }
   }
 
+  updateFaucetWater(elapsedSec = performance.now() / 1000) {
+    if (!this.faucetWaterGroup) return;
+    const isWashingHands = this.charState === "IDLE" && this.currentActivity === "wash";
+    this.faucetWaterGroup.visible = isWashingHands;
+    if (!isWashingHands) return;
+    if (this.faucetWaterStream) {
+      const flutter = 0.88 + Math.sin(elapsedSec * 24) * 0.16;
+      this.faucetWaterStream.scale.set(flutter, 1, flutter);
+    }
+    (this.faucetDrops || []).forEach(d => {
+      const p = (elapsedSec * 2.8 + d.phase) % 1;
+      d.mesh.position.y = 0.902 - p * 0.09;
+      const s = 0.75 + Math.sin(p * Math.PI) * 0.45;
+      d.mesh.scale.set(s, 1.35, s);
+      d.mesh.position.x = Math.sin(elapsedSec * 14 + d.phase * 12) * 0.008;
+    });
+    (this.faucetRipples || []).forEach(r => {
+      const p = (elapsedSec * 1.45 + r.phase) % 1;
+      const sc = 0.65 + p * 3.1;
+      r.mesh.scale.set(sc, sc, 1);
+      r.mat.opacity = (1 - p) * 0.72;
+    });
+    (this.washBubbles || []).forEach(b => {
+      const p = (elapsedSec * 1.9 + b.phase) % 1;
+      const rad = 0.025 + p * 0.07;
+      b.mesh.position.set(
+        Math.cos(b.angle + elapsedSec * 1.5) * rad,
+        0.822 + Math.sin(p * Math.PI) * 0.065,
+        0.01 + Math.sin(b.angle + elapsedSec * 1.5) * rad
+      );
+      const sc = (1 - p * 0.45) * (0.7 + Math.sin(p * Math.PI) * 0.4);
+      b.mesh.scale.setScalar(sc);
+      b.mesh.material.opacity = (1 - p) * 0.85;
+    });
+  }
+
   animate = () => {
     if (this.disposed || this.paused) return;
     this.animFrameId = requestAnimationFrame(this.animate);
@@ -8026,6 +8145,9 @@ export class FreelancerRoomScene {
     if (this.parcelGroup?.visible) {
       this.parcelGroup.position.y = 0.04 + Math.abs(Math.sin(elapsedSec * 2.2)) * 0.018;
     }
+
+    // Running water stream, droplets, ripples & soap bubbles while washing hands
+    this.updateFaucetWater(elapsedSec);
 
     // Gentle wagging tail + breathing on orange tabby cat
     if (this.orangeCatGroup?.visible) {
