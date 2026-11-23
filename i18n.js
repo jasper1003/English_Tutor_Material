@@ -288,8 +288,8 @@ const STATIC_DOM_TRANSLATIONS = [
   // Onboarding
   {
     selector: "#onboarding-subtitle",
-    zh: "在入住單人租屋處之前，幫這位靠畫畫接案維持生活的主角取個名字並設定外觀吧！",
-    en: "Before moving into your studio apartment, name and customize your freelance illustrator!"
+    zh: "在入住單人租屋處之前，幫這位靠畫畫接案維持生活的主角取個名字並設定外觀吧！\n角色造型可在日後繼續更改。",
+    en: "Before moving into your studio apartment, name and customize your freelance illustrator!\nYou can continue changing your character's look later."
   },
   { selector: "#onboarding-preview-aside", ariaLabelZh: "角色即時 3D 預覽", ariaLabelEn: "Live 3D character preview" },
   { selector: "#onboarding-drag-hint", zh: "↔ 左右拖曳檢視", en: "↔ Drag left/right to rotate" },

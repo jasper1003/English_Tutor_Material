@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261123e";
+} from "./room-scene.js?v=20261123f";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -63,7 +63,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261123e";
+} from "./shop-catalog.js?v=20261123f";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -71,7 +71,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261123e";
+} from "./room-grid.js?v=20261123f";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -93,16 +93,16 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261122b";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261122b";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261122b";
+} from "./app-helpers.js?v=20261123f";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261123f";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261123f";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261122b";
+} from "./i18n.js?v=20261123f";
 
 applyStaticDomTranslations();
 
@@ -2865,6 +2865,7 @@ function populateOnboardingForm(existingAvatar, isEditing = false) {
   const cancelBtn = document.getElementById("cancel-avatar-edit-btn");
   const saveBtn = document.getElementById("save-avatar-btn");
   const titleEl = document.getElementById("onboarding-title");
+  const subtitleEl = document.getElementById("onboarding-subtitle");
 
   clearFeedback("onboarding-feedback");
   nameInput.value = cfg.name || "";
@@ -2874,6 +2875,10 @@ function populateOnboardingForm(existingAvatar, isEditing = false) {
   );
   document.getElementById("avatar-preview-name").textContent = cfg.name || bi("接案繪師", "Freelance Artist");
   cancelBtn.classList.toggle("hidden", !isEditing);
+  if (subtitleEl) {
+    // Intro onboarding instruction is shown only on initial character creation after signup
+    subtitleEl.classList.toggle("hidden", Boolean(isEditing));
+  }
   titleEl.textContent = isEditing
     ? bi("調整角色造型與名字", "Customize Character Look & Name")
     : bi("建立你的接案繪師角色", "Create Your Freelance Illustrator");

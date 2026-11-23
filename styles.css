@@ -1226,6 +1226,11 @@ main {
   margin-bottom: 1.4rem;
 }
 
+#onboarding-subtitle {
+  white-space: pre-line;
+  line-height: 1.55;
+}
+
 .btn-google {
   width: 100%;
   display: inline-flex;
