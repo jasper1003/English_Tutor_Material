@@ -3,16 +3,18 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import { bi, isEn } from "./i18n.js?v=20261122b";
 import {
   DEFAULT_FLOOR_STYLE,
+  DEFAULT_DESK_STYLE,
   DEFAULT_BED_SHEET,
   DEFAULT_RUG_STYLE,
   DEFAULT_SHIRT_STYLE,
   DEFAULT_PANTS_STYLE,
   resolveFloorStyle,
+  resolveDeskStyle,
   resolveBedSheetStyle,
   resolveRugStyle,
   resolveShirtStyle,
   resolvePantsStyle
-} from "./shop-catalog.js?v=20261123b";
+} from "./shop-catalog.js?v=20261123c";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
@@ -796,6 +798,116 @@ function createFloorPatternTexture(preset) {
   tex.wrapT = THREE.RepeatWrapping;
   const rep = pattern === "marble" ? 3 : pattern === "tatami" ? 3 : 4;
   tex.repeat.set(rep, rep);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function createDeskTopTexture(preset) {
+  if (typeof document === "undefined") return null;
+  const style = preset || resolveDeskStyle(DEFAULT_DESK_STYLE);
+  if (!style || style.id === DEFAULT_DESK_STYLE) return null;
+  const pattern = style.pattern || "wood";
+  const base = style.topColor || "#cfa072";
+  const grain = style.grainColor || "#bc8b5b";
+  const detail = style.detailColor || "#d9b084";
+
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  const rng = createSeededRng(`desk:${style.id}`);
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, size, size);
+
+  if (pattern === "wood") {
+    ctx.strokeStyle = grain;
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 28; i++) {
+      ctx.globalAlpha = 0.14 + rng() * 0.16;
+      const y = (i / 28) * size + (rng() - 0.5) * 6;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.bezierCurveTo(size * 0.35, y + (rng() - 0.5) * 10, size * 0.7, y + (rng() - 0.5) * 10, size, y);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = detail;
+    ctx.lineWidth = 1.1;
+    for (let i = 0; i < 12; i++) {
+      ctx.globalAlpha = 0.12 + rng() * 0.1;
+      const y = rng() * size;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(size, y + (rng() - 0.5) * 4);
+      ctx.stroke();
+    }
+  } else if (pattern === "marble") {
+    for (let v = 0; v < 7; v++) {
+      const startX = rng() * size;
+      const startY = rng() * size;
+      ctx.strokeStyle = v % 2 === 0 ? grain : detail;
+      ctx.lineWidth = v % 3 === 0 ? 2.4 : 1.2;
+      ctx.globalAlpha = v % 3 === 0 ? 0.52 : 0.34;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      let cx = startX;
+      let cy = startY;
+      for (let s = 0; s < 4; s++) {
+        const nx = cx + 32 + rng() * 44;
+        const ny = cy + (rng() - 0.5) * 52;
+        ctx.quadraticCurveTo(cx + 18, cy + (rng() - 0.5) * 28, nx, ny);
+        cx = nx;
+        cy = ny;
+      }
+      ctx.stroke();
+    }
+  } else if (pattern === "terrazzo") {
+    const chipColors = [grain, detail, "#e9c46a", "#8d99ae", "#f4f1ea"];
+    for (let i = 0; i < 85; i++) {
+      const cx = rng() * size;
+      const cy = rng() * size;
+      const rad = 3 + rng() * 7;
+      const sides = 3 + Math.floor(rng() * 3);
+      ctx.fillStyle = chipColors[Math.floor(rng() * chipColors.length)];
+      ctx.globalAlpha = 0.62 + rng() * 0.3;
+      ctx.beginPath();
+      for (let k = 0; k < sides; k++) {
+        const ang = (k / sides) * Math.PI * 2 + rng() * 0.5;
+        const rr = rad * (0.6 + rng() * 0.5);
+        const px = cx + Math.cos(ang) * rr;
+        const py = cy + Math.sin(ang) * rr;
+        if (k === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+  } else if (pattern === "brushed") {
+    for (let y = 0; y < size; y += 2) {
+      ctx.strokeStyle = rng() > 0.5 ? grain : detail;
+      ctx.globalAlpha = 0.1 + rng() * 0.14;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(size, y);
+      ctx.stroke();
+    }
+  } else if (pattern === "matte") {
+    for (let i = 0; i < 160; i++) {
+      ctx.fillStyle = i % 2 === 0 ? grain : detail;
+      ctx.globalAlpha = 0.06 + rng() * 0.08;
+      ctx.fillRect(rng() * size, rng() * size, 2 + rng() * 4, 1 + rng() * 2);
+    }
+  }
+
+  ctx.globalAlpha = 1;
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(2, 1);
   tex.needsUpdate = true;
   return tex;
 }
@@ -1724,8 +1836,12 @@ export class FreelancerRoomScene {
     this.vinylOn = Boolean(options.vinylOn ?? false);
     this.wallColorHex = options.wallColor || "#f3eadc";
     this.floorStyleId = options.floorStyle || DEFAULT_FLOOR_STYLE;
+    this.deskStyleId = options.deskStyle || DEFAULT_DESK_STYLE;
     this.floorSurfaceMesh = null;
     this.floorSurfaceTex = null;
+    this.deskTopMat = null;
+    this.deskLegMat = null;
+    this.deskTopTex = null;
     this.bedSheetId = options.bedSheet || DEFAULT_BED_SHEET;
     this.rugStyleId = options.rugStyle || DEFAULT_RUG_STYLE;
     this.posterImageDataUrl = typeof options.posterImage === "string" ? options.posterImage.trim() : "";
@@ -3417,6 +3533,8 @@ export class FreelancerRoomScene {
 
     const deskWood = makeMat("#cfa072", 0.52);
     const deskLegMat = makeMat("#4b5563", 0.45, 0.3);
+    this.deskTopMat = deskWood;
+    this.deskLegMat = deskLegMat;
 
     // Desk tabletop (rounded modern minimalist desk)
     const tableTop = new THREE.Mesh(new RoundedBoxGeometry(2.35, 0.11, 1.12, 4, 0.045), deskWood);
@@ -3425,6 +3543,7 @@ export class FreelancerRoomScene {
     tableTop.receiveShadow = true;
     workArea.add(tableTop);
     this.addInteractive(tableTop, "computer", "work_desk");
+    this.applyDeskStyleVisuals();
 
     if (this.deskLampLight) {
       this.deskLampLight.position.set(-0.85, 1.55, 0.10);
@@ -4164,6 +4283,42 @@ export class FreelancerRoomScene {
     if (this.floorStyleId === nextId && this.floorSurfaceTex) return;
     this.floorStyleId = nextId;
     this.applyFloorStyleVisuals();
+    this.renderIfPaused();
+  }
+
+  applyDeskStyleVisuals() {
+    const preset = resolveDeskStyle(this.deskStyleId);
+    if (this.deskTopMat) {
+      if (this.deskTopTex) {
+        this.deskTopTex.dispose();
+        this.deskTopTex = null;
+      }
+      const tex = createDeskTopTexture(preset);
+      if (tex) {
+        this.deskTopTex = tex;
+        this.deskTopMat.map = tex;
+        this.deskTopMat.color.set("#ffffff");
+      } else {
+        this.deskTopMat.map = null;
+        this.deskTopMat.color.set(preset.topColor || "#cfa072");
+      }
+      this.deskTopMat.roughness = preset.roughness ?? 0.52;
+      this.deskTopMat.metalness = preset.metalness ?? 0.02;
+      this.deskTopMat.needsUpdate = true;
+    }
+    if (this.deskLegMat) {
+      this.deskLegMat.color.set(preset.legColor || "#4b5563");
+      this.deskLegMat.roughness = preset.legRoughness ?? 0.45;
+      this.deskLegMat.metalness = preset.legMetalness ?? 0.30;
+      this.deskLegMat.needsUpdate = true;
+    }
+  }
+
+  setDeskStyle(deskStyleId) {
+    const nextId = deskStyleId || DEFAULT_DESK_STYLE;
+    if (this.deskStyleId === nextId && (nextId === DEFAULT_DESK_STYLE || this.deskTopTex)) return;
+    this.deskStyleId = nextId;
+    this.applyDeskStyleVisuals();
     this.renderIfPaused();
   }
 
@@ -7009,6 +7164,10 @@ export class FreelancerRoomScene {
     if (this.floorSurfaceTex) {
       this.floorSurfaceTex.dispose();
       this.floorSurfaceTex = null;
+    }
+    if (this.deskTopTex) {
+      this.deskTopTex.dispose();
+      this.deskTopTex = null;
     }
     this.renderer?.dispose();
   }

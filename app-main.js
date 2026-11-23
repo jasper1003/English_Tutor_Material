@@ -43,12 +43,13 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261123b";
+} from "./room-scene.js?v=20261123c";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
   DEFAULT_WALL_COLOR,
   DEFAULT_FLOOR_STYLE,
+  DEFAULT_DESK_STYLE,
   DEFAULT_BED_SHEET,
   DEFAULT_RUG_STYLE,
   DEFAULT_SHIRT_STYLE,
@@ -62,7 +63,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261123b";
+} from "./shop-catalog.js?v=20261123c";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -1062,6 +1063,7 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
       vinylOn: typeof rs.vinylOn === "boolean" ? rs.vinylOn : false,
       wallColor: rs.wallColor || DEFAULT_WALL_COLOR,
       floorStyle: rs.floorStyle || DEFAULT_FLOOR_STYLE,
+      deskStyle: getActiveRoomStyle(rs, "deskStyle", DEFAULT_DESK_STYLE),
       bedSheet: rs.bedSheet || DEFAULT_BED_SHEET,
       rugStyle: rs.rugStyle || DEFAULT_RUG_STYLE,
       posterImage: rs.posterImage || "",
@@ -1128,6 +1130,7 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
     roomScene.setVinylOn(typeof rs.vinylOn === "boolean" ? rs.vinylOn : false);
     roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
     roomScene.setFloorStyle(rs.floorStyle || DEFAULT_FLOOR_STYLE);
+    roomScene.setDeskStyle(getActiveRoomStyle(rs, "deskStyle", DEFAULT_DESK_STYLE));
     roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
     roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
     roomScene.setPosterImage(rs.posterImage || "");
@@ -3244,6 +3247,65 @@ function buildTextilePreviewSvg(item) {
       </svg>
     `;
   }
+  if (item.deskStyle) {
+    const ds = item.deskStyle;
+    const topCol = ds.topColor || "#cfa072";
+    const grainCol = ds.grainColor || "#bc8b5b";
+    const detailCol = ds.detailColor || "#d9b084";
+    const legCol = ds.legColor || "#4b5563";
+    let surfaceSvg = "";
+    if (ds.pattern === "wood" || ds.pattern === "brushed") {
+      surfaceSvg = `
+        <line x1="60" y1="68" x2="152" y2="108" stroke="${grainCol}" stroke-width="1.4" opacity="0.58" />
+        <line x1="78" y1="60" x2="170" y2="100" stroke="${grainCol}" stroke-width="1.4" opacity="0.58" />
+        <line x1="96" y1="52" x2="188" y2="92" stroke="${detailCol}" stroke-width="1.1" opacity="0.55" />
+      `;
+    } else if (ds.pattern === "marble") {
+      surfaceSvg = `
+        <path d="M58,74 Q110,82 146,56 T186,84" fill="none" stroke="${grainCol}" stroke-width="1.8" opacity="0.68" />
+        <path d="M84,96 Q130,86 168,104" fill="none" stroke="${detailCol}" stroke-width="1.4" opacity="0.72" />
+      `;
+    } else if (ds.pattern === "terrazzo") {
+      surfaceSvg = `
+        <polygon points="88,68 96,65 93,73" fill="${grainCol}" />
+        <polygon points="126,64 134,68 128,74" fill="${detailCol}" />
+        <polygon points="108,84 116,80 113,89" fill="${grainCol}" />
+        <polygon points="146,82 155,79 152,88" fill="${detailCol}" />
+        <polygon points="74,80 82,78 79,86" fill="#e9c46a" />
+      `;
+    }
+    return `
+      <svg class="shop-paint-preview-svg" viewBox="0 0 240 180" aria-hidden="true">
+        <defs>
+          <linearGradient id="bg-${item.id}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f7f2ea" />
+            <stop offset="100%" stop-color="#e9e0d3" />
+          </linearGradient>
+          <clipPath id="clip-${item.id}">
+            <polygon points="44,74 118,42 196,76 122,108" />
+          </clipPath>
+        </defs>
+        <rect width="240" height="180" fill="url(#bg-${item.id})" />
+        <!-- Floor shadow -->
+        <ellipse cx="120" cy="144" rx="74" ry="18" fill="#d6c5b0" opacity="0.48" />
+        <!-- 4 Cylindrical Legs matching 3D desk design -->
+        <rect x="115" y="76" width="7" height="52" rx="3" fill="${legCol}" opacity="0.82" />
+        <rect x="52" y="80" width="7" height="58" rx="3" fill="${legCol}" />
+        <rect x="181" y="82" width="7" height="58" rx="3" fill="${legCol}" />
+        <rect x="119" y="108" width="7" height="56" rx="3" fill="${legCol}" />
+        <!-- Rounded Minimalist Tabletop -->
+        <polygon points="44,74 122,108 122,118 44,84" fill="${topCol}" />
+        <polygon points="44,74 122,108 122,118 44,84" fill="#0f172a" fill-opacity="0.08" />
+        <polygon points="122,108 196,76 196,86 122,118" fill="${topCol}" />
+        <polygon points="122,108 196,76 196,86 122,118" fill="#0f172a" fill-opacity="0.16" />
+        <polygon points="44,74 118,42 196,76 122,108" fill="${topCol}" />
+        <g clip-path="url(#clip-${item.id})">
+          ${surfaceSvg}
+        </g>
+        <polygon points="44,74 118,42 196,76 122,108" fill="none" stroke="rgba(15,23,42,0.12)" stroke-width="1" />
+      </svg>
+    `;
+  }
   return "";
 }
 
@@ -3306,6 +3368,8 @@ async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
     currentUserProfile.roomState = nextRoomState;
     if (textileKind === "bedSheet") {
       roomScene?.setBedSheet(nextId);
+    } else if (textileKind === "deskStyle") {
+      roomScene?.setDeskStyle(nextId);
     } else if (textileKind === "rugStyle") {
       roomScene?.setRugStyle(nextId);
     } else if (textileKind === "shirtStyle") {
@@ -3315,6 +3379,7 @@ async function equipShopTextile(textileKind, nextId, triggerBtn = null) {
     }
     const defaultLabels = {
       bedSheet: bi("經典海鹽藍床組", "Sea-Salt Blue Bedding"),
+      deskStyle: bi("經典原木蜂蜜桌", "Classic Honey Wood Desk"),
       rugStyle: bi("奶油燕麥原味地毯", "Oatmeal Cream Rug"),
       shirtStyle: bi("基本素色上衣", "Basic Studio Top"),
       pantsStyle: bi("經典深灰長褲", "Classic Charcoal Trousers")
@@ -3348,6 +3413,7 @@ function renderShopDialog() {
   const owned = normalizeOwnedItems(currentUserProfile?.ownedItems);
   const activeWallColor = (currentUserProfile?.roomState?.wallColor || DEFAULT_WALL_COLOR).toLowerCase();
   const activeFloorStyle = currentUserProfile?.roomState?.floorStyle || DEFAULT_FLOOR_STYLE;
+  const activeDeskStyle = getActiveRoomStyle(currentUserProfile?.roomState, "deskStyle", DEFAULT_DESK_STYLE);
   const activeBedSheet = currentUserProfile?.roomState?.bedSheet || DEFAULT_BED_SHEET;
   const activeRugStyle = currentUserProfile?.roomState?.rugStyle || DEFAULT_RUG_STYLE;
   const activeShirtStyle = currentUserProfile?.roomState?.shirtStyle || DEFAULT_SHIRT_STYLE;
@@ -3384,11 +3450,13 @@ function renderShopDialog() {
     tabsEl.appendChild(btn);
   });
 
+  const hasCustomDesk = activeDeskStyle !== DEFAULT_DESK_STYLE;
   const hasCustomTextile = activeBedSheet !== DEFAULT_BED_SHEET || activeRugStyle !== DEFAULT_RUG_STYLE;
   const hasCustomShirt = activeShirtStyle !== DEFAULT_SHIRT_STYLE;
   const hasCustomPants = activePantsStyle !== DEFAULT_PANTS_STYLE;
   const showResetBar =
-    ((activeShopCategory === "textile" || activeShopCategory === "all") && hasCustomTextile)
+    ((activeShopCategory === "desk" || activeShopCategory === "all") && hasCustomDesk)
+    || ((activeShopCategory === "textile" || activeShopCategory === "all") && hasCustomTextile)
     || ((activeShopCategory === "shirt" || activeShopCategory === "all") && hasCustomShirt)
     || ((activeShopCategory === "pants" || activeShopCategory === "all") && hasCustomPants);
   textileBarEl.innerHTML = "";
@@ -3398,6 +3466,14 @@ function renderShopDialog() {
     note.style.marginInlineEnd = "auto";
     note.textContent = bi("目前套用造型／織品中，可隨時換回預設：", "Active custom style — restore defaults anytime:");
     textileBarEl.appendChild(note);
+    if ((activeShopCategory === "desk" || activeShopCategory === "all") && hasCustomDesk) {
+      const resetDeskBtn = document.createElement("button");
+      resetDeskBtn.type = "button";
+      resetDeskBtn.className = "btn";
+      resetDeskBtn.textContent = bi("換回原木蜂蜜桌", "Restore Honey Wood Desk");
+      resetDeskBtn.onclick = () => equipShopTextile("deskStyle", DEFAULT_DESK_STYLE, resetDeskBtn);
+      textileBarEl.appendChild(resetDeskBtn);
+    }
     if ((activeShopCategory === "textile" || activeShopCategory === "all") && activeBedSheet !== DEFAULT_BED_SHEET) {
       const resetSheetBtn = document.createElement("button");
       resetSheetBtn.type = "button";
@@ -3442,6 +3518,7 @@ function renderShopDialog() {
     const isPaint = Boolean(item.consumable && item.wallColor);
     const isFloor = Boolean(item.consumable && item.floorStyle);
     const isTextile = !isFloor && Boolean(item.textileKind);
+    const isDesk = item.textileKind === "deskStyle";
     const isApparel = item.textileKind === "shirtStyle" || item.textileKind === "pantsStyle";
     const isActivePaint = isPaint && item.wallColor.toLowerCase() === activeWallColor;
     const itemFloorTarget = item.floorStyleId || item.id;
@@ -3503,7 +3580,7 @@ function renderShopDialog() {
           <path d="M106,89 L114,104 L106,120" fill="none" stroke="#64748b" stroke-width="2.4" stroke-linecap="round" />
         </svg>
       `;
-    } else if (item.sheetStyle || item.rugStyle || item.shirtStyle || item.pantsStyle || item.floorStyle) {
+    } else if (item.sheetStyle || item.rugStyle || item.shirtStyle || item.pantsStyle || item.floorStyle || item.deskStyle) {
       previewBox.innerHTML = buildTextilePreviewSvg(item);
     }
     if (isLocked) {
@@ -3520,6 +3597,7 @@ function renderShopDialog() {
     iconBox.className = "shop-item-icon";
     const swatchHex = item.wallColor
       || item.floorStyle?.baseColor
+      || item.deskStyle?.topColor
       || item.sheetStyle?.blanketColor
       || item.rugStyle?.baseColor
       || item.shirtStyle?.shirtColor
@@ -3612,7 +3690,9 @@ function renderShopDialog() {
       actionBtn.classList.add("btn-primary");
       actionBtn.textContent = isApparel
         ? bi("換穿這件（免費）", "Wear This (Free)")
-        : bi("套用更換（免費）", "Equip (Free)");
+        : isDesk
+          ? bi("換用這款桌面（免費）", "Use This Desk (Free)")
+          : bi("套用更換（免費）", "Equip (Free)");
       actionBtn.onclick = () => equipShopTextile(item.textileKind, item.id, actionBtn);
     } else if (isPermanentOwned && isSellableShopItem(item)) {
       const blockingDeps = getBlockingDependentOwnedItems(item.id, owned);
@@ -3689,8 +3769,10 @@ function renderShopDialog() {
         ? bi("購買並重新粉刷", "Buy & Repaint")
         : isFloor
           ? bi("購買並重鋪地板", "Buy & Re-lay Floor")
-          : isApparel
-            ? bi("購買並立刻換穿", "Buy & Wear")
+          : isDesk
+            ? bi("購買並立刻換桌", "Buy & Apply Desk")
+            : isApparel
+              ? bi("購買並立刻換穿", "Buy & Wear")
             : isTextile
               ? bi("購買並立刻換上", "Buy & Equip")
               : isShopParcelItem(item.id)
@@ -3853,13 +3935,15 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       }
       tx.update(userRef, patch);
       if (item.price > 0) {
-        const ledgerPrefix = item.textileKind === "shirtStyle"
-          ? bi("購入上衣", "Bought Top")
-          : item.textileKind === "pantsStyle"
-            ? bi("購入褲子", "Bought Bottoms")
-            : item.textileKind
-              ? bi("購入織品", "Bought Textile")
-              : bi("購買家具", "Bought Furniture");
+        const ledgerPrefix = item.textileKind === "deskStyle"
+          ? bi("購入書桌材質", "Bought Desk Finish")
+          : item.textileKind === "shirtStyle"
+            ? bi("購入上衣", "Bought Top")
+            : item.textileKind === "pantsStyle"
+              ? bi("購入褲子", "Bought Bottoms")
+              : item.textileKind
+                ? bi("購入織品", "Bought Textile")
+                : bi("購買家具", "Bought Furniture");
         queueLedgerTransaction(tx, currentUser.uid, {
           type: "purchase",
           category: item.category,
@@ -3924,6 +4008,12 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
       showFeedback("shop-feedback", "success", bi(
         `已購入「${localizedItemName}」並立即鋪好${xpMsg}！`,
         `Purchased & laid down "${localizedItemName}"${xpMsg}!`
+      ));
+    } else if (item.textileKind === "deskStyle") {
+      roomScene?.setDeskStyle(item.id);
+      showFeedback("shop-feedback", "success", bi(
+        `已購入「${localizedItemName}」並立刻換上新書桌材質${xpMsg}！`,
+        `Purchased & applied "${localizedItemName}"${xpMsg}!`
       ));
     } else if (item.textileKind === "shirtStyle") {
       roomScene?.setShirtStyle(item.id);
@@ -5008,7 +5098,9 @@ function renderFinanceDialog() {
                 ? "🎨"
                 : tx.category === "floor"
                   ? "🪵"
-                  : tx.category === "textile"
+                  : tx.category === "desk"
+                    ? "🪑"
+                    : tx.category === "textile"
                     ? "🛏️"
                     : tx.category === "gear"
                       ? "⌨️"
@@ -5540,6 +5632,7 @@ function startUserRealtimeListener(uid, nonce) {
       const nextOwned = normalizeOwnedItems(data.ownedItems);
       roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
       roomScene.setFloorStyle(rs.floorStyle || DEFAULT_FLOOR_STYLE);
+      roomScene.setDeskStyle(getActiveRoomStyle(rs, "deskStyle", DEFAULT_DESK_STYLE));
       roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
       roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
       roomScene.setShirtStyle(rs.shirtStyle || DEFAULT_SHIRT_STYLE);

@@ -4,6 +4,7 @@ export const SHOP_CATEGORIES = [
   { id: "all", label: "全部商品", labelEn: "All Items" },
   { id: "paint", label: "牆面粉刷", labelEn: "Wall Paint" },
   { id: "floor", label: "地板材質", labelEn: "Flooring" },
+  { id: "desk", label: "書桌材質", labelEn: "Desk Materials" },
   { id: "textile", label: "床單地毯", labelEn: "Bedding & Rugs" },
   { id: "shirt", label: "上衣穿搭", labelEn: "Tops" },
   { id: "pants", label: "褲款下著", labelEn: "Bottoms" },
@@ -27,6 +28,13 @@ export const SHOP_CATALOG_EN = {
   floor_checker_retro: { name: "Retro Cream & Cocoa Checker", desc: "Mid-century checkered ceramic tiles with crisp espresso contrast (charged per re-lay)." },
   floor_hex_terracotta: { name: "Mediterranean Hex Terracotta", desc: "Sun-baked clay hexagon tiles framed in creamy ivory mortar (charged per re-lay)." },
   floor_moroccan_star: { name: "Moroccan Geometric Tile", desc: "Handcrafted cobalt blue and ivory star-motif artisan tiles (charged per re-lay)." },
+  desk_walnut_brass: { name: "Dark Walnut & Brushed Brass Desk", desc: "Rich walnut grain tabletop paired with champagne brass legs; swap anytime for free." },
+  desk_ash_white: { name: "Nordic Ash & Crisp White Desk", desc: "Airy bleached ash tabletop on matte white cylindrical legs; swap anytime for free." },
+  desk_matte_obsidian: { name: "Matte Obsidian & Titanium Desk", desc: "Sleek matte charcoal laminate top with dark titanium legs; swap anytime for free." },
+  desk_carrara_marble: { name: "Carrara Marble & Gold Desk", desc: "Smooth Carrara marble tabletop with subtle grey veins & satin gold legs; swap anytime." },
+  desk_terrazzo_mint: { name: "Mint Terrazzo & Cream Desk", desc: "Speckled sage-terrazzo tabletop paired with warm cream metal legs; swap anytime." },
+  desk_brushed_alu: { name: "Brushed Aluminum Studio Desk", desc: "Anodized brushed silver aluminum tabletop with slate-silver legs; swap anytime." },
+  desk_sakura_pastel: { name: "Morandi Rose & Champagne Desk", desc: "Soft satin blush-rose lacquer tabletop with light champagne legs; swap anytime." },
   sheet_terracotta: { name: "Warm Terracotta Bedding", desc: "Washed terracotta duvet with cream sheets. Free to swap anytime." },
   sheet_sage: { name: "Forest Sage Bedding", desc: "Fresh sage cotton quilt with soft green pillowcases for restful sleep." },
   sheet_sakura: { name: "Blush Sakura Bedding", desc: "Gentle sakura pink cotton bedding with airy cloud pillows." },
@@ -96,6 +104,7 @@ export function getShopItemDesc(item) {
 
 export const DEFAULT_WALL_COLOR = "#f3eadc";
 export const DEFAULT_FLOOR_STYLE = "default";
+export const DEFAULT_DESK_STYLE = "default";
 export const DEFAULT_BED_SHEET = "default";
 export const DEFAULT_RUG_STYLE = "default";
 export const DEFAULT_SHIRT_STYLE = "default";
@@ -201,6 +210,113 @@ export const FLOOR_STYLE_PRESETS = {
     detailColor: "#7597bf",
     roughness: 0.46,
     metalness: 0.04
+  }
+};
+
+export const DESK_STYLE_PRESETS = {
+  default: {
+    id: "default",
+    name: "經典原木蜂蜜桌",
+    pattern: "wood",
+    topColor: "#cfa072",
+    grainColor: "#bc8b5b",
+    detailColor: "#d9b084",
+    roughness: 0.52,
+    metalness: 0.02,
+    legColor: "#4b5563",
+    legRoughness: 0.45,
+    legMetalness: 0.30
+  },
+  desk_walnut_brass: {
+    id: "desk_walnut_brass",
+    name: "黑胡桃實木×香檳金腳",
+    pattern: "wood",
+    topColor: "#5f402e",
+    grainColor: "#462c1e",
+    detailColor: "#75513c",
+    roughness: 0.48,
+    metalness: 0.04,
+    legColor: "#c7a467",
+    legRoughness: 0.28,
+    legMetalness: 0.68
+  },
+  desk_ash_white: {
+    id: "desk_ash_white",
+    name: "北歐白蠟木×純白腳",
+    pattern: "wood",
+    topColor: "#e8dfd1",
+    grainColor: "#d3c6b4",
+    detailColor: "#f0e9dd",
+    roughness: 0.58,
+    metalness: 0.02,
+    legColor: "#e5e7eb",
+    legRoughness: 0.42,
+    legMetalness: 0.25
+  },
+  desk_matte_obsidian: {
+    id: "desk_matte_obsidian",
+    name: "極簡曜石霧黑×鈦灰腳",
+    pattern: "matte",
+    topColor: "#272b33",
+    grainColor: "#1d2027",
+    detailColor: "#363c48",
+    roughness: 0.64,
+    metalness: 0.14,
+    legColor: "#3f4654",
+    legRoughness: 0.35,
+    legMetalness: 0.55
+  },
+  desk_carrara_marble: {
+    id: "desk_carrara_marble",
+    name: "雪花大理石×霧金桌腳",
+    pattern: "marble",
+    topColor: "#f3f1ec",
+    grainColor: "#b8c0ca",
+    detailColor: "#d8dde4",
+    roughness: 0.22,
+    metalness: 0.08,
+    legColor: "#d1ae6c",
+    legRoughness: 0.26,
+    legMetalness: 0.72
+  },
+  desk_terrazzo_mint: {
+    id: "desk_terrazzo_mint",
+    name: "薄荷水磨石×奶白桌腳",
+    pattern: "terrazzo",
+    topColor: "#e6ece8",
+    grainColor: "#6b9c87",
+    detailColor: "#d48263",
+    roughness: 0.34,
+    metalness: 0.05,
+    legColor: "#dfd7ca",
+    legRoughness: 0.40,
+    legMetalness: 0.25
+  },
+  desk_brushed_alu: {
+    id: "desk_brushed_alu",
+    name: "航太拉絲銀鋁×鐵灰腳",
+    pattern: "brushed",
+    topColor: "#cfd6df",
+    grainColor: "#b3bcc8",
+    detailColor: "#e2e7ef",
+    roughness: 0.28,
+    metalness: 0.74,
+    legColor: "#64748b",
+    legRoughness: 0.30,
+    legMetalness: 0.65
+  },
+  desk_sakura_pastel: {
+    id: "desk_sakura_pastel",
+    name: "莫蘭迪櫻粉烤漆×奶油金腳",
+    pattern: "matte",
+    topColor: "#ead0ce",
+    grainColor: "#d9b5b2",
+    detailColor: "#f3dfdd",
+    roughness: 0.36,
+    metalness: 0.08,
+    legColor: "#d8c2a6",
+    legRoughness: 0.32,
+    legMetalness: 0.58
   }
 };
 
@@ -657,6 +773,76 @@ export const DEFAULT_SHOP_CATALOG = [
     desc: "象牙白底勾勒靛青星芒菱紋藝術花磚，打造獨樹一格的視覺亮點，每次重鋪皆需重新付費施作。"
   },
   {
+    id: "desk_ash_white",
+    name: "北歐白蠟木×純白桌腳",
+    category: "desk",
+    textileKind: "deskStyle",
+    price: 120,
+    icon: "🪵",
+    deskStyle: DESK_STYLE_PRESETS.desk_ash_white,
+    desc: "保留相同極簡書桌尺寸，換成清爽淺白蠟木桌面與霧白桌腳，購買後可免費隨時切換。"
+  },
+  {
+    id: "desk_walnut_brass",
+    name: "黑胡桃實木×香檳金腳",
+    category: "desk",
+    textileKind: "deskStyle",
+    price: 140,
+    icon: "🤎",
+    deskStyle: DESK_STYLE_PRESETS.desk_walnut_brass,
+    desc: "保留相同極簡書桌尺寸，換成深沉胡桃木紋桌面搭配香檳金柱腳，購買後可免費隨時切換。"
+  },
+  {
+    id: "desk_sakura_pastel",
+    name: "莫蘭迪櫻粉烤漆×奶油金腳",
+    category: "desk",
+    textileKind: "deskStyle",
+    price: 140,
+    icon: "🌸",
+    deskStyle: DESK_STYLE_PRESETS.desk_sakura_pastel,
+    desc: "保留相同極簡書桌尺寸，柔霧櫻粉緞面桌面配奶油香檳金桌腳，購買後可免費隨時切換。"
+  },
+  {
+    id: "desk_matte_obsidian",
+    name: "極簡曜石霧黑×鈦灰腳",
+    category: "desk",
+    textileKind: "deskStyle",
+    price: 150,
+    icon: "🖤",
+    deskStyle: DESK_STYLE_PRESETS.desk_matte_obsidian,
+    desc: "保留相同極簡書桌尺寸，耐看霧黑桌面搭配深鈦灰圓柱腳，購買後可免費隨時切換。"
+  },
+  {
+    id: "desk_terrazzo_mint",
+    name: "薄荷水磨石×奶白桌腳",
+    category: "desk",
+    textileKind: "deskStyle",
+    price: 170,
+    icon: "🪨",
+    deskStyle: DESK_STYLE_PRESETS.desk_terrazzo_mint,
+    desc: "保留相同極簡書桌尺寸，鼠尾草薄荷水磨石質感桌面配奶白桌腳，購買後可免費隨時切換。"
+  },
+  {
+    id: "desk_brushed_alu",
+    name: "航太拉絲銀鋁×鐵灰腳",
+    category: "desk",
+    textileKind: "deskStyle",
+    price: 180,
+    icon: "🪩",
+    deskStyle: DESK_STYLE_PRESETS.desk_brushed_alu,
+    desc: "保留相同極簡書桌尺寸，金屬拉絲銀鋁工作檯面配鐵灰金屬腳，購買後可免費隨時切換。"
+  },
+  {
+    id: "desk_carrara_marble",
+    name: "雪花大理石×霧金桌腳",
+    category: "desk",
+    textileKind: "deskStyle",
+    price: 200,
+    icon: "🏛️",
+    deskStyle: DESK_STYLE_PRESETS.desk_carrara_marble,
+    desc: "保留相同極簡書桌尺寸，亮澤卡拉拉白雪花大理石桌面配霧金桌腳，購買後可免費隨時切換。"
+  },
+  {
     id: "sheet_terracotta",
     name: "焦糖暖橘純棉床組",
     category: "textile",
@@ -1101,7 +1287,7 @@ function parseSheetBool(raw, defaultValue = true) {
 export function applyRemoteShopConfig(rows = []) {
   if (!Array.isArray(rows) || rows.length === 0) return SHOP_CATALOG;
 
-  const validCats = new Set(["paint", "floor", "textile", "shirt", "pants", "decor", "gear"]);
+  const validCats = new Set(["paint", "floor", "desk", "textile", "shirt", "pants", "decor", "gear"]);
   const baseById = new Map(DEFAULT_SHOP_CATALOG.map(item => [item.id, item]));
   const overrides = new Map();
   const extraOrder = [];
@@ -1208,6 +1394,10 @@ export function resolveFloorStyle(floorStyleId) {
     return FLOOR_STYLE_PRESETS[DEFAULT_FLOOR_STYLE];
   }
   return FLOOR_STYLE_PRESETS[floorStyleId] || FLOOR_STYLE_PRESETS[DEFAULT_FLOOR_STYLE];
+}
+
+export function resolveDeskStyle(deskStyleId) {
+  return DESK_STYLE_PRESETS[deskStyleId] || DESK_STYLE_PRESETS[DEFAULT_DESK_STYLE];
 }
 
 export function resolveBedSheetStyle(bedSheetId) {
