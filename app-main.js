@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261123j";
+} from "./room-scene.js?v=20261123k";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261123j";
+} from "./shop-catalog.js?v=20261123k";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261123j";
+} from "./room-grid.js?v=20261123k";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -98,16 +98,16 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261123j";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261123j";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261123j";
+} from "./app-helpers.js?v=20261123k";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261123k";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261123k";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261123j";
+} from "./i18n.js?v=20261123k";
 
 applyStaticDomTranslations();
 
@@ -3652,7 +3652,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261123j`;
+    img.src = `${item.previewImage}?v=20261123k`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
@@ -3884,7 +3884,7 @@ function createShopItemCard(item, ctx) {
             : isTextile
               ? bi("購買並立刻換上", "Buy & Equip")
               : isShopParcelItem(item.id)
-                ? bi("購買並宅配到門口", "Buy & Deliver Parcel")
+                ? bi("購買", "Buy")
                 : bi("購買並放進房間", "Buy & Place in Studio");
     actionBtn.onclick = () => purchaseShopItem(item.id, actionBtn);
   }
