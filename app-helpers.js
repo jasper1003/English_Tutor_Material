@@ -1,5 +1,5 @@
-import { bi, isEn } from "./i18n.js?v=20261124e";
-import { hasOwnedSofa } from "./shop-catalog.js?v=20261124e";
+import { bi, isEn } from "./i18n.js?v=20261124f";
+import { hasOwnedSofa } from "./shop-catalog.js?v=20261124f";
 
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
@@ -750,4 +750,63 @@ export function normalizeSavedNavState(raw) {
     reviewStudentUid: (typeof raw.reviewStudentUid === "string" && raw.reviewStudentUid.trim()) ? raw.reviewStudentUid.trim() : null,
     scrollY: Number.isFinite(scrollRaw) && scrollRaw > 0 ? scrollRaw : 0
   };
+}
+
+/**
+ * Determine which unit index on the Quest Map represents the user's latest progress frontier.
+ */
+export function resolveQuestProgressTargetIndex({
+  lessons = [],
+  completedDates = null,
+  isSubmittedFn = null,
+  hasEarnedXpFn = null,
+  hasSavedAnswersFn = null,
+  lastVisitedDate = "",
+  role = "student",
+  totalXp = 0,
+  defaultLessonXp = 40
+} = {}) {
+  const total = Array.isArray(lessons) ? lessons.length : 0;
+  if (total === 0) return -1;
+
+  const completed = completedDates instanceof Set ? completedDates : new Set();
+  let highestDoneIdx = -1;
+  let highestSavedIdx = -1;
+
+  for (let i = 0; i < total; i++) {
+    const dateStr = lessons[i]?.Date || "";
+    const hasDone =
+      completed.has(dateStr) ||
+      Boolean(isSubmittedFn?.(dateStr)) ||
+      Boolean(hasEarnedXpFn?.(dateStr));
+    if (hasDone) highestDoneIdx = i;
+
+    if (Boolean(hasSavedAnswersFn?.(dateStr))) {
+      highestSavedIdx = i;
+    }
+  }
+
+  if (highestSavedIdx > highestDoneIdx) {
+    return highestSavedIdx;
+  }
+  if (highestDoneIdx >= 0) {
+    return Math.min(highestDoneIdx + 1, total - 1);
+  }
+
+  if (lastVisitedDate) {
+    const visitedIdx = lessons.findIndex(l => l?.Date === lastVisitedDate);
+    if (visitedIdx >= 0) return visitedIdx;
+  }
+
+  if (role === "super_admin" || role === "admin") {
+    return total - 1;
+  }
+
+  const safeXp = Number(totalXp || 0);
+  const unitXp = Math.max(1, Number(defaultLessonXp || 40));
+  if (safeXp >= unitXp) {
+    return Math.min(Math.floor(safeXp / unitXp), total - 1);
+  }
+
+  return 0;
 }

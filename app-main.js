@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261124e";
+} from "./room-scene.js?v=20261124f";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261124e";
+} from "./shop-catalog.js?v=20261124f";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261124e";
+} from "./room-grid.js?v=20261124f";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -98,17 +98,18 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError,
-  normalizeSavedNavState
-} from "./app-helpers.js?v=20261124e";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261124e";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124e";
+  normalizeSavedNavState,
+  resolveQuestProgressTargetIndex
+} from "./app-helpers.js?v=20261124f";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261124f";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124f";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261124e";
+} from "./i18n.js?v=20261124f";
 
 applyStaticDomTranslations();
 
@@ -1361,14 +1362,62 @@ function enterRoomView(fromWorkDesktop = false) {
   saveNavState();
 }
 
+const LAST_VISITED_LESSON_STORAGE_PREFIX = "quest_last_lesson_v1:";
+
+function saveLastVisitedLessonDate(dateStr) {
+  if (!currentUser?.uid || !dateStr) return;
+  try {
+    localStorage.setItem(`${LAST_VISITED_LESSON_STORAGE_PREFIX}${currentUser.uid}`, String(dateStr));
+  } catch {
+    // Ignore storage quota or private mode issues
+  }
+}
+
+function loadLastVisitedLessonDate() {
+  if (!currentUser?.uid) return "";
+  try {
+    return localStorage.getItem(`${LAST_VISITED_LESSON_STORAGE_PREFIX}${currentUser.uid}`) || "";
+  } catch {
+    return "";
+  }
+}
+
+function resolveHomeQuestProgressIndex(completedSet) {
+  return resolveQuestProgressTargetIndex({
+    lessons: db.lessons,
+    completedDates: completedSet,
+    isSubmittedFn: isLessonSubmitted,
+    hasEarnedXpFn: hasEarnedLessonXp,
+    hasSavedAnswersFn: (dateStr) => Object.keys(loadSavedQuizAnswers(dateStr)).length > 0,
+    lastVisitedDate: loadLastVisitedLessonDate(),
+    role: currentRole,
+    totalXp: currentUserProfile?.xp ?? 0,
+    defaultLessonXp: DEFAULT_LESSON_XP
+  });
+}
+
+function scrollQuestStepIntoCenter(stepEl) {
+  if (!stepEl) return;
+  const rect = stepEl.getBoundingClientRect();
+  const headerEl = document.querySelector(".header");
+  const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 0;
+  const availableHeight = Math.max(240, window.innerHeight - headerHeight);
+  const targetTop = Math.max(
+    0,
+    Math.round(window.scrollY + rect.top - headerHeight - (availableHeight - rect.height) / 2)
+  );
+  window.scrollTo({ top: targetTop, behavior: "auto" });
+}
+
 function openWorkDesktop({ restoreScrollY = null } = {}) {
   if (!currentUser || !sheetsLoaded) return;
   currentScreen = "desktop";
   activeLessonDate = null;
   activeLessonSyncCommission = null;
   hideAllPrimaryScreens();
-  renderHome();
-  if (Number.isFinite(restoreScrollY) && restoreScrollY > 0) {
+  const hasSavedScroll = Number.isFinite(restoreScrollY) && restoreScrollY > 0;
+  renderHome({ scrollToLatest: !hasSavedScroll });
+  if (hasSavedScroll) {
     requestAnimationFrame(() => window.scrollTo(0, restoreScrollY));
   }
   saveNavState();
@@ -1392,6 +1441,7 @@ async function openLesson(dateStr, { force = false, restoreScrollY = null } = {}
   }
   currentScreen = "lesson";
   activeLessonDate = dateStr;
+  saveLastVisitedLessonDate(dateStr);
   renderLesson(dateStr);
   if (Number.isFinite(restoreScrollY) && restoreScrollY > 0) {
     requestAnimationFrame(() => window.scrollTo(0, restoreScrollY));
@@ -1764,7 +1814,7 @@ function drawQuestPath() {
   svg.innerHTML = paths.join("");
 }
 
-function renderHome() {
+function renderHome({ scrollToLatest = false } = {}) {
   document.getElementById("lesson-view").classList.add("hidden");
   document.getElementById("lesson-actions").style.display = "none";
   const homeView = document.getElementById("home-view");
@@ -1794,7 +1844,7 @@ function renderHome() {
   svg.setAttribute("aria-hidden", "true");
   mapEl.appendChild(svg);
 
-  const firstUncompletedIndex = db.lessons.findIndex(l => !completedSet.has(l.Date));
+  const targetProgressIndex = resolveHomeQuestProgressIndex(completedSet);
   let currentProgressStep = null;
   let lastUnlockedStep = null;
 
@@ -1802,7 +1852,7 @@ function renderHome() {
     const vocabCount = db.vocab.filter(v => v.Date === lesson.Date).length;
     const isCompleted = completedSet.has(lesson.Date);
     const isSubmitted = isLessonSubmitted(lesson.Date);
-    const isCurrent = idx === firstUncompletedIndex;
+    const isCurrent = idx === targetProgressIndex;
     const unitLabel = `UNIT ${String(idx + 1).padStart(2, "0")}`;
     const offsetX = WAVE_OFFSETS_PX[idx % WAVE_OFFSETS_PX.length];
 
@@ -1891,9 +1941,12 @@ function renderHome() {
   homeView.classList.remove("hidden");
   requestAnimationFrame(() => {
     drawQuestPath();
-    const targetStep = currentProgressStep || lastUnlockedStep;
-    if (targetStep) {
-      targetStep.scrollIntoView({ behavior: "auto", block: "center" });
+    if (scrollToLatest) {
+      const targetStep = currentProgressStep || lastUnlockedStep;
+      if (targetStep) {
+        scrollQuestStepIntoCenter(targetStep);
+        saveNavState();
+      }
     }
   });
 
@@ -3983,7 +4036,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261124e`;
+    img.src = `${item.previewImage}?v=20261124f`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
