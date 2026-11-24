@@ -1,5 +1,5 @@
-import { bi, isEn } from "./i18n.js?v=20261124i";
-import { hasOwnedSofa } from "./shop-catalog.js?v=20261124i";
+import { bi, isEn } from "./i18n.js?v=20261124j";
+import { hasOwnedSofa } from "./shop-catalog.js?v=20261124j";
 
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
@@ -809,4 +809,74 @@ export function resolveQuestProgressTargetIndex({
   }
 
   return 0;
+}
+
+/**
+ * Format duration in seconds concisely for the teacher review panel.
+ */
+export function formatExamDuration(rawSec) {
+  const sec = Math.max(0, Math.trunc(Number(rawSec) || 0));
+  const hours = Math.floor(sec / 3600);
+  const mins = Math.floor((sec % 3600) / 60);
+  const remSec = sec % 60;
+  if (hours > 0) {
+    return bi(`${hours}時 ${mins}分 ${remSec}秒`, `${hours}h ${mins}m ${remSec}s`);
+  }
+  if (mins > 0) {
+    return bi(`${mins}分 ${remSec}秒`, `${mins}m ${remSec}s`);
+  }
+  return bi(`${remSec}秒`, `${remSec}s`);
+}
+
+/**
+ * Sanitize and classify a student's submission telemetry for the teacher review dialog.
+ */
+export function evaluateSubmissionMetrics(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const firstTryTotal = Math.max(0, Math.min(1000, Math.trunc(Number(raw.firstTryTotal) || 0)));
+  const firstTryCorrect = Math.max(0, Math.min(firstTryTotal, Math.trunc(Number(raw.firstTryCorrect) || 0)));
+  const totalClicks = Math.max(0, Math.min(50000, Math.trunc(Number(raw.totalClicks) || 0)));
+  const elapsedSec = Math.max(0, Math.min(86400, Math.trunc(Number(raw.elapsedSec) || 0)));
+  const retryCount = Math.max(0, Math.min(1000, Math.trunc(Number(raw.retryCount) || 0)));
+  const submittedAt = Math.max(0, Math.trunc(Number(raw.submittedAt) || 0));
+
+  const firstTryPct = firstTryTotal > 0 ? Math.round((firstTryCorrect / firstTryTotal) * 100) : null;
+  const clicksPerQuestion = firstTryTotal > 0 ? Math.round((totalClicks / firstTryTotal) * 100) / 100 : 0;
+  const secPerQuestion = firstTryTotal > 0 ? Math.round((elapsedSec / firstTryTotal) * 10) / 10 : 0;
+
+  let level = "good";
+  let badgeText = bi("🟢 作答正常", "🟢 Normal Pace");
+  let summaryHint = bi("首次作答率與作答節奏正常，可安心驗收發放英蚌。", "First-try accuracy and pacing look solid for approval.");
+
+  if (firstTryTotal === 0) {
+    level = "neutral";
+    badgeText = bi("📋 閱讀單元", "📋 Reading Unit");
+    summaryHint = bi("本單元無選擇題記錄，僅統計停留與完成時間。", "No quiz items recorded; showing active study time.");
+  } else if ((firstTryTotal >= 3 && secPerQuestion < 4) || (firstTryPct < 55 && clicksPerQuestion >= 1.8)) {
+    level = "alert";
+    badgeText = bi("🔴 疑似速通", "🔴 Speedrun Alert");
+    summaryHint = secPerQuestion < 4
+      ? bi(`平均每題僅 ${secPerQuestion} 秒，作答時間偏短，建議檢視或退回確認。`, `Only ${secPerQuestion}s per question on average; consider requesting revision.`)
+      : bi(`首次答對率僅 ${firstTryPct}% 且每題平均點擊 ${clicksPerQuestion} 次，疑似連續試錯猜答案。`, `First-try accuracy ${firstTryPct}% with ${clicksPerQuestion} clicks/question suggests trial-and-error guessing.`);
+  } else if (firstTryPct < 75 || clicksPerQuestion > 1.6 || retryCount >= 3) {
+    level = "caution";
+    badgeText = bi("🟡 建議留意", "🟡 Needs Check");
+    summaryHint = bi("首次答對率略低或嘗試／重考次數較多，建議確認學生理解後再發放。", "Lower first-try accuracy or multiple retries; verify comprehension before paying.");
+  }
+
+  return {
+    firstTryCorrect,
+    firstTryTotal,
+    firstTryPct,
+    totalClicks,
+    elapsedSec,
+    retryCount,
+    submittedAt,
+    clicksPerQuestion,
+    secPerQuestion,
+    durationText: formatExamDuration(elapsedSec),
+    level,
+    badgeText,
+    summaryHint
+  };
 }

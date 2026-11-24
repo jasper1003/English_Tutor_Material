@@ -3156,31 +3156,202 @@ dialog.settings-dialog::backdrop {
 }
 
 /* Admin Client Review Dialog */
+dialog.settings-dialog.review-dialog {
+  width: min(680px, calc(100vw - 1.5rem));
+}
+
 .admin-review-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.78rem 0.95rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.admin-review-row-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
-  padding: 0.75rem 0.9rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--surface-subtle);
 }
 
 .admin-review-meta {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  min-width: 180px;
+  gap: 0.22rem;
+  min-width: 200px;
   flex: 1;
+}
+
+.admin-review-title-line {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
 }
 
 .admin-review-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
+}
+
+.review-signal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.16rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.review-signal-pill.is-good {
+  color: light-dark(#15803d, #86efac);
+  background: light-dark(#dcfce7, rgba(22, 163, 74, 0.2));
+  border-color: light-dark(#bbf7d0, rgba(34, 197, 94, 0.35));
+}
+
+.review-signal-pill.is-caution {
+  color: light-dark(#b45309, #fcd34d);
+  background: light-dark(#fef3c7, rgba(245, 158, 11, 0.2));
+  border-color: light-dark(#fde68a, rgba(245, 158, 11, 0.38));
+}
+
+.review-signal-pill.is-alert {
+  color: light-dark(#b91c1c, #fca5a5);
+  background: light-dark(#fee2e2, rgba(239, 68, 68, 0.2));
+  border-color: light-dark(#fecaca, rgba(239, 68, 68, 0.38));
+}
+
+.review-signal-pill.is-neutral {
+  color: var(--muted);
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.review-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.review-toggle-btn[aria-expanded="true"] .review-chevron {
+  transform: rotate(180deg);
+}
+
+.review-chevron {
+  display: inline-block;
+  font-size: 0.72rem;
+  transition: transform 0.18s ease;
+}
+
+/* Smooth zero-lag CSS grid accordion for expanded review metrics + actions */
+.review-drawer-shell {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.16s ease, margin-top 0.18s ease;
+  margin-top: 0;
+}
+
+.review-drawer-shell.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 0.75rem;
+}
+
+.review-drawer-inner {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.review-drawer-card {
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.review-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .review-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.review-metric-tile {
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+}
+
+.review-metric-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.review-metric-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.review-metric-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.review-audit-note {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+
+.review-audit-note.is-alert {
+  color: light-dark(#991b1b, #fecaca);
+  background: light-dark(#fef2f2, rgba(239, 68, 68, 0.15));
+}
+
+.review-audit-note.is-caution {
+  color: light-dark(#92400e, #fde68a);
+  background: light-dark(#fffbeb, rgba(245, 158, 11, 0.15));
+}
+
+.review-drawer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border);
 }
 
 .reward-input-sm {

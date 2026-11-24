@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261124i";
+} from "./room-scene.js?v=20261124j";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261124i";
+} from "./shop-catalog.js?v=20261124j";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261124i";
+} from "./room-grid.js?v=20261124j";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -99,17 +99,19 @@ import {
   clearFeedback,
   translateAuthError,
   normalizeSavedNavState,
-  resolveQuestProgressTargetIndex
-} from "./app-helpers.js?v=20261124i";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261124i";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124i";
+  resolveQuestProgressTargetIndex,
+  evaluateSubmissionMetrics,
+  formatExamDuration
+} from "./app-helpers.js?v=20261124j";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261124j";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124j";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261124i";
+} from "./i18n.js?v=20261124j";
 
 applyStaticDomTranslations();
 
@@ -593,9 +595,29 @@ function syncXpProgressUI({ allowCelebrate = false, overrideXp = null } = {}) {
   return progress;
 }
 
+function sanitizeSubmissionMetricsMap(rawMap) {
+  if (!rawMap || typeof rawMap !== "object" || Array.isArray(rawMap)) return {};
+  const out = {};
+  for (const [k, v] of Object.entries(rawMap)) {
+    if (!k || !v || typeof v !== "object" || Array.isArray(v)) continue;
+    const firstTryTotal = Math.max(0, Math.min(1000, Math.trunc(Number(v.firstTryTotal) || 0)));
+    const firstTryCorrect = Math.max(0, Math.min(firstTryTotal, Math.trunc(Number(v.firstTryCorrect) || 0)));
+    out[String(k).slice(0, 32)] = {
+      firstTryCorrect,
+      firstTryTotal,
+      totalClicks: Math.max(0, Math.min(50000, Math.trunc(Number(v.totalClicks) || 0))),
+      elapsedSec: Math.max(0, Math.min(86400, Math.trunc(Number(v.elapsedSec) || 0))),
+      retryCount: Math.max(0, Math.min(1000, Math.trunc(Number(v.retryCount) || 0))),
+      submittedAt: Math.max(0, Math.trunc(Number(v.submittedAt) || 0))
+    };
+  }
+  return out;
+}
+
 async function setLessonSubmitted(dateStr, nextSubmitted) {
   if (!currentUser || isLessonCompleted(dateStr)) return { submitted: false, xpGranted: 0 };
   const targetSubmitted = Boolean(nextSubmitted);
+  const metricSnapshot = targetSubmitted ? buildSubmissionMetricSnapshot(dateStr) : null;
   const userRef = doc(firestoreDb, "users", currentUser.uid);
 
   const result = await runTransaction(firestoreDb, async (tx) => {
@@ -603,12 +625,18 @@ async function setLessonSubmitted(dateStr, nextSubmitted) {
     const data = snap.exists() ? (snap.data() || {}) : {};
     const submittedMap = sanitizeBoolMap(data.submittedLessons);
     const xpAwardedMap = sanitizeBoolMap(data.xpAwardedLessons);
+    const metricsMap = sanitizeSubmissionMetricsMap(data.submissionMetrics);
     submittedMap[dateStr] = targetSubmitted;
 
     const patch = {
       submittedLessons: submittedMap,
       updatedAt: serverTimestamp()
     };
+
+    if (targetSubmitted && metricSnapshot) {
+      metricsMap[dateStr] = metricSnapshot;
+      patch.submissionMetrics = metricsMap;
+    }
 
     let xpGranted = 0;
     let nextXp = Math.max(0, Math.trunc(Number(data.xp ?? currentUserProfile?.xp ?? 0)));
@@ -625,7 +653,7 @@ async function setLessonSubmitted(dateStr, nextSubmitted) {
     }
 
     tx.update(userRef, patch);
-    return { submitted: targetSubmitted, submittedMap, xpAwardedMap, nextXp, xpGranted };
+    return { submitted: targetSubmitted, submittedMap, xpAwardedMap, metricsMap, nextXp, xpGranted };
   });
 
   userSubmittedLessons = result.submittedMap;
@@ -633,6 +661,7 @@ async function setLessonSubmitted(dateStr, nextSubmitted) {
   if (currentUserProfile) {
     currentUserProfile.submittedLessons = result.submittedMap;
     currentUserProfile.xpAwardedLessons = result.xpAwardedMap;
+    currentUserProfile.submissionMetrics = result.metricsMap;
     currentUserProfile.xp = result.nextXp;
   }
   if (result.xpGranted > 0) {
@@ -1438,6 +1467,7 @@ function enterRoomView(fromWorkDesktop = false) {
   }
 
   stopAllListeningAudio();
+  flushLessonActiveElapsedTime({ pause: true });
   currentScreen = "room";
   activeLessonDate = null;
   activeLessonSyncCommission = null;
@@ -1504,6 +1534,7 @@ function scrollQuestStepIntoCenter(stepEl) {
 function openWorkDesktop({ restoreScrollY = null } = {}) {
   if (!currentUser || !sheetsLoaded) return;
   stopAllListeningAudio();
+  flushLessonActiveElapsedTime({ pause: true });
   currentScreen = "desktop";
   activeLessonDate = null;
   activeLessonSyncCommission = null;
@@ -1535,6 +1566,7 @@ async function openLesson(dateStr, { force = false, restoreScrollY = null } = {}
   currentScreen = "lesson";
   activeLessonDate = dateStr;
   saveLastVisitedLessonDate(dateStr);
+  startOrResumeLessonTimer(dateStr);
   renderLesson(dateStr);
   if (Number.isFinite(restoreScrollY) && restoreScrollY > 0) {
     requestAnimationFrame(() => window.scrollTo(0, restoreScrollY));
@@ -2080,6 +2112,166 @@ function renderHome({ scrollToLatest = false } = {}) {
   }
 }
 
+function getQuizTelemetryStorageKey(dateStr) {
+  return `quiz_telemetry_v1:${currentUser?.uid || "anon"}:${dateStr}`;
+}
+
+function loadQuizTelemetry(dateStr) {
+  const empty = { firstAnswers: {}, totalClicks: 0, elapsedMs: 0, retryCount: 0, updatedAt: 0 };
+  if (!dateStr) return empty;
+  try {
+    const raw = localStorage.getItem(getQuizTelemetryStorageKey(dateStr));
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return empty;
+    const firstAnswers = (parsed.firstAnswers && typeof parsed.firstAnswers === "object" && !Array.isArray(parsed.firstAnswers))
+      ? { ...parsed.firstAnswers }
+      : {};
+    return {
+      firstAnswers,
+      totalClicks: Math.max(0, Math.trunc(Number(parsed.totalClicks) || 0)),
+      elapsedMs: Math.max(0, Math.trunc(Number(parsed.elapsedMs) || 0)),
+      retryCount: Math.max(0, Math.trunc(Number(parsed.retryCount) || 0)),
+      updatedAt: Math.max(0, Math.trunc(Number(parsed.updatedAt) || 0))
+    };
+  } catch {
+    return empty;
+  }
+}
+
+function saveQuizTelemetry(dateStr, data) {
+  if (!dateStr) return;
+  try {
+    localStorage.setItem(
+      getQuizTelemetryStorageKey(dateStr),
+      JSON.stringify({ ...data, updatedAt: Date.now() })
+    );
+  } catch {
+    // Ignore storage quota or private mode failures
+  }
+}
+
+let activeLessonTimerDate = null;
+let activeLessonTimerLastTickMs = 0;
+
+function flushLessonActiveElapsedTime({ pause = false } = {}) {
+  if (!activeLessonTimerDate || !activeLessonTimerLastTickMs) {
+    if (pause) {
+      activeLessonTimerDate = null;
+      activeLessonTimerLastTickMs = 0;
+    }
+    return;
+  }
+  const now = Date.now();
+  const delta = Math.min(60000, Math.max(0, now - activeLessonTimerLastTickMs));
+  if (delta > 0) {
+    const telemetry = loadQuizTelemetry(activeLessonTimerDate);
+    telemetry.elapsedMs += delta;
+    saveQuizTelemetry(activeLessonTimerDate, telemetry);
+  }
+  if (pause) {
+    activeLessonTimerDate = null;
+    activeLessonTimerLastTickMs = 0;
+  } else {
+    activeLessonTimerLastTickMs = now;
+  }
+}
+
+function startOrResumeLessonTimer(dateStr) {
+  if (!dateStr) return;
+  if (activeLessonTimerDate && activeLessonTimerDate !== dateStr) {
+    flushLessonActiveElapsedTime({ pause: true });
+  }
+  if (!document.hidden) {
+    activeLessonTimerDate = dateStr;
+    if (!activeLessonTimerLastTickMs) {
+      activeLessonTimerLastTickMs = Date.now();
+    }
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    flushLessonActiveElapsedTime({ pause: true });
+  } else if (currentScreen === "lesson" && activeLessonDate) {
+    startOrResumeLessonTimer(activeLessonDate);
+  }
+});
+
+window.addEventListener("beforeunload", () => {
+  flushLessonActiveElapsedTime({ pause: true });
+});
+
+function recordQuizOptionAttempt(dateStr, qIdx, val) {
+  flushLessonActiveElapsedTime();
+  const telemetry = loadQuizTelemetry(dateStr);
+  const key = String(qIdx);
+  if (!Object.prototype.hasOwnProperty.call(telemetry.firstAnswers, key)) {
+    telemetry.firstAnswers[key] = String(val || "").trim();
+  }
+  telemetry.totalClicks += 1;
+  saveQuizTelemetry(dateStr, telemetry);
+}
+
+function resetQuizTelemetryForRetry(dateStr) {
+  flushLessonActiveElapsedTime({ pause: true });
+  const prev = loadQuizTelemetry(dateStr);
+  const next = {
+    firstAnswers: {},
+    totalClicks: 0,
+    elapsedMs: 0,
+    retryCount: Math.min(1000, (prev.retryCount || 0) + 1),
+    updatedAt: Date.now()
+  };
+  saveQuizTelemetry(dateStr, next);
+  activeLessonTimerDate = dateStr;
+  activeLessonTimerLastTickMs = document.hidden ? 0 : Date.now();
+}
+
+function syncTelemetryBaselineFromSavedAnswers(dateStr, savedAnswers) {
+  if (!dateStr || !savedAnswers || typeof savedAnswers !== "object") return;
+  const keys = Object.keys(savedAnswers);
+  if (keys.length === 0) return;
+  const telemetry = loadQuizTelemetry(dateStr);
+  let dirty = false;
+  for (const key of keys) {
+    if (!Object.prototype.hasOwnProperty.call(telemetry.firstAnswers, key) && savedAnswers[key]) {
+      telemetry.firstAnswers[key] = String(savedAnswers[key]).trim();
+      dirty = true;
+    }
+  }
+  if (telemetry.totalClicks < keys.length) {
+    telemetry.totalClicks = keys.length;
+    dirty = true;
+  }
+  if (dirty) saveQuizTelemetry(dateStr, telemetry);
+}
+
+function buildSubmissionMetricSnapshot(dateStr) {
+  flushLessonActiveElapsedTime();
+  const telemetry = loadQuizTelemetry(dateStr);
+  const lessonQuiz = db.quiz.filter(q => q.Date === dateStr);
+  const totalQuestions = lessonQuiz.length;
+  let firstTryCorrect = 0;
+
+  lessonQuiz.forEach((q, idx) => {
+    const expected = String(q?.Answer || "").trim().toUpperCase();
+    const firstPicked = String(telemetry.firstAnswers[String(idx)] || "").trim().toUpperCase();
+    if (expected && firstPicked && firstPicked === expected) {
+      firstTryCorrect += 1;
+    }
+  });
+
+  return {
+    firstTryCorrect,
+    firstTryTotal: totalQuestions,
+    totalClicks: Math.max(0, Math.min(50000, Math.trunc(telemetry.totalClicks))),
+    elapsedSec: Math.max(0, Math.min(86400, Math.round(telemetry.elapsedMs / 1000))),
+    retryCount: Math.max(0, Math.min(1000, Math.trunc(telemetry.retryCount))),
+    submittedAt: Date.now()
+  };
+}
+
 function getQuizStorageKey(dateStr) {
   return `quiz_progress:${currentUser?.uid || "anon"}:${dateStr}`;
 }
@@ -2164,6 +2356,7 @@ function createLessonQuestionCard(q, idx, dateStr, lessonQuiz) {
   radios.forEach(radio => {
     radio.addEventListener("change", (e) => {
       saveQuizAnswer(dateStr, idx, e.target.value);
+      recordQuizOptionAttempt(dateStr, idx, e.target.value);
       handleInstantQuizFeedback(idx, q, e.target.value, qCard, lessonQuiz);
     });
   });
@@ -2633,6 +2826,7 @@ function renderLesson(dateStr) {
   // Hydrate previously selected quiz answers without triggering confetti bursts
   const quizScopeEl = document.getElementById("reading-quiz-section") || quizContainer;
   const savedAnswers = loadSavedQuizAnswers(dateStr);
+  syncTelemetryBaselineFromSavedAnswers(dateStr, savedAnswers);
   lessonQuiz.forEach((q, idx) => {
     const savedVal = savedAnswers[String(idx)];
     if (!savedVal) return;
@@ -2646,6 +2840,7 @@ function renderLesson(dateStr) {
 
   document.getElementById("reset-quiz-btn").onclick = () => {
     clearSavedQuizAnswers(dateStr);
+    resetQuizTelemetryForRetry(dateStr);
     renderLesson(dateStr);
   };
 
@@ -4340,7 +4535,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261124i`;
+    img.src = `${item.previewImage}?v=20261124j`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
@@ -6188,10 +6383,17 @@ document.getElementById("finance-test-rent-btn").addEventListener("click", () =>
   payMonthlyRent({ isTestDemo: true });
 });
 
+let lessonTimerTickCounter = 0;
+
 setInterval(() => {
   if (document.hidden || !currentUser || !currentUserProfile) return;
   if (currentScreen === "room" || financeDialog.open) {
     updateRentCountdownUI();
+  }
+  lessonTimerTickCounter = (lessonTimerTickCounter + 1) % 5;
+  if (lessonTimerTickCounter === 0 && currentScreen === "lesson" && activeLessonDate) {
+    startOrResumeLessonTimer(activeLessonDate);
+    flushLessonActiveElapsedTime();
   }
   maybeCollectMonthlyRent();
 }, 1000);
@@ -6424,7 +6626,8 @@ function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
       stu.xp ?? 0,
       stu.approvedLessons || {},
       stu.completionOverrides || {},
-      stu.submittedLessons || {}
+      stu.submittedLessons || {},
+      stu.submissionMetrics || {}
     ]))
   );
   if (!preserveUid && reviewSig === lastAdminReviewSig && selectEl.options.length > 0 && selectEl.value) {
@@ -6469,6 +6672,233 @@ function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
   renderSelectedStudentReview();
 }
 
+const expandedReviewRowKeys = new Set();
+
+function createReviewMetricTile(label, valueText, subText) {
+  const tile = document.createElement("div");
+  tile.className = "review-metric-tile";
+
+  const lbl = document.createElement("span");
+  lbl.className = "review-metric-label";
+  lbl.textContent = label;
+
+  const val = document.createElement("strong");
+  val.className = "review-metric-value";
+  val.textContent = valueText;
+
+  const sub = document.createElement("span");
+  sub.className = "review-metric-sub";
+  sub.textContent = subText;
+
+  tile.append(lbl, val, sub);
+  return tile;
+}
+
+export function buildAdminSubmissionReviewRow({
+  rowKey,
+  stu,
+  dateStr,
+  headingText,
+  sublineText,
+  isPending = false,
+  isApproved = false,
+  highlightPending = false,
+  metricRaw = null,
+  onApprove = null,
+  onReject = null
+}) {
+  const row = document.createElement("div");
+  row.className = `admin-review-row${highlightPending ? " is-pending-row" : ""}`;
+  row.dataset.reviewKey = rowKey;
+
+  const metrics = evaluateSubmissionMetrics(metricRaw);
+
+  const head = document.createElement("div");
+  head.className = "admin-review-row-head";
+
+  const meta = document.createElement("div");
+  meta.className = "admin-review-meta";
+
+  const titleLine = document.createElement("div");
+  titleLine.className = "admin-review-title-line";
+  const titleStrong = document.createElement("strong");
+  titleStrong.textContent = headingText;
+  titleLine.appendChild(titleStrong);
+
+  if (metrics && (isPending || isApproved)) {
+    const signalPill = document.createElement("span");
+    signalPill.className = `review-signal-pill is-${metrics.level}`;
+    signalPill.textContent = metrics.badgeText;
+    titleLine.appendChild(signalPill);
+  }
+
+  const subSpan = document.createElement("span");
+  subSpan.className = "form-hint";
+  subSpan.textContent = sublineText;
+  meta.append(titleLine, subSpan);
+
+  const actionsEl = document.createElement("div");
+  actionsEl.className = "admin-review-actions";
+
+  if (isApproved) {
+    const tag = document.createElement("span");
+    tag.className = "role-badge verified-badge";
+    tag.textContent = bi("已驗收通過 ✓", "Approved ✓");
+    actionsEl.appendChild(tag);
+  }
+
+  const hasDrawer = isPending || Boolean(metrics);
+  let toggleBtn = null;
+  let drawerShell = null;
+
+  const createActionControls = (isDrawerFooter) => {
+    const rewardInput = document.createElement("input");
+    rewardInput.type = "number";
+    rewardInput.className = "reward-input-sm";
+    rewardInput.value = String(UNIT_REWARD_CLAMS);
+    rewardInput.min = "0";
+    rewardInput.max = "100000";
+    rewardInput.setAttribute("aria-label", bi(`${dateStr} 驗收報酬英蚌`, `Payout Clams for ${dateStr}`));
+
+    const approveBtn = document.createElement("button");
+    approveBtn.type = "button";
+    approveBtn.className = "btn btn-primary btn-sm";
+    approveBtn.textContent = isDrawerFooter
+      ? bi("✓ 確定沒問題，驗收發錢", "✓ Confirm & Pay")
+      : bi("驗收並撥款", "Approve & Pay");
+    approveBtn.addEventListener("click", async () => {
+      approveBtn.disabled = true;
+      clearFeedback("admin-review-feedback");
+      try {
+        await onApprove?.(rewardInput.value, { approveBtn });
+        expandedReviewRowKeys.delete(rowKey);
+      } catch (err) {
+        showFeedback("admin-review-feedback", "error", translateAuthError(err));
+        approveBtn.disabled = false;
+      }
+    });
+
+    const controls = [rewardInput, approveBtn];
+    if (isPending && onReject) {
+      const rejectBtn = document.createElement("button");
+      rejectBtn.type = "button";
+      rejectBtn.className = "btn btn-sm";
+      rejectBtn.textContent = bi("↩ 退回修改", "↩ Request Revision");
+      rejectBtn.addEventListener("click", async () => {
+        rejectBtn.disabled = true;
+        clearFeedback("admin-review-feedback");
+        try {
+          await onReject?.({ rejectBtn });
+          expandedReviewRowKeys.delete(rowKey);
+        } catch (err) {
+          showFeedback("admin-review-feedback", "error", translateAuthError(err));
+          rejectBtn.disabled = false;
+        }
+      });
+      controls.push(rejectBtn);
+    }
+    return controls;
+  };
+
+  if (hasDrawer) {
+    const isInitiallyOpen = expandedReviewRowKeys.has(rowKey);
+    toggleBtn = document.createElement("button");
+    toggleBtn.type = "button";
+    toggleBtn.className = "btn btn-sm review-toggle-btn";
+    toggleBtn.setAttribute("aria-expanded", isInitiallyOpen ? "true" : "false");
+    toggleBtn.innerHTML = `<span>${isPending ? bi("🔍 審核數據", "🔍 Audit Details") : bi("📊 作答數據", "📊 Exam Stats")}</span><span class="review-chevron" aria-hidden="true">▾</span>`;
+
+    drawerShell = document.createElement("div");
+    drawerShell.className = `review-drawer-shell${isInitiallyOpen ? " is-open" : ""}`;
+    drawerShell.setAttribute("aria-hidden", isInitiallyOpen ? "false" : "true");
+
+    const drawerInner = document.createElement("div");
+    drawerInner.className = "review-drawer-inner";
+
+    const drawerCard = document.createElement("div");
+    drawerCard.className = "review-drawer-card";
+
+    if (metrics) {
+      const grid = document.createElement("div");
+      grid.className = "review-metrics-grid";
+
+      const accVal = metrics.firstTryPct !== null ? `${metrics.firstTryPct}%` : "—";
+      const accSub = metrics.firstTryTotal > 0
+        ? bi(`${metrics.firstTryCorrect} / ${metrics.firstTryTotal} 題一次對`, `${metrics.firstTryCorrect} / ${metrics.firstTryTotal} first-try`)
+        : bi("無選擇題", "No quiz items");
+      const clickSub = metrics.firstTryTotal > 0
+        ? bi(`平均 ${metrics.clicksPerQuestion} 次/題`, `${metrics.clicksPerQuestion} / question`)
+        : bi("僅紀錄互動", "Interaction count");
+      const timeSub = metrics.firstTryTotal > 0
+        ? bi(`約 ${metrics.secPerQuestion} 秒/題`, `~${metrics.secPerQuestion}s / question`)
+        : bi("主動停留時間", "Active study time");
+      const retrySub = metrics.retryCount === 0
+        ? bi("首次直接送出", "First submission")
+        : bi(`按下重考 ${metrics.retryCount} 次`, `Reset ${metrics.retryCount} time(s)`);
+
+      grid.append(
+        createReviewMetricTile(bi("首次答對率", "First-Try Accuracy"), accVal, accSub),
+        createReviewMetricTile(bi("總點擊次數", "Total Clicks"), bi(`${metrics.totalClicks} 次`, `${metrics.totalClicks}`), clickSub),
+        createReviewMetricTile(bi("作答耗時", "Time Spent"), metrics.durationText, timeSub),
+        createReviewMetricTile(bi("重考次數", "Retries"), bi(`${metrics.retryCount} 次`, `${metrics.retryCount}`), retrySub)
+      );
+
+      const noteEl = document.createElement("div");
+      noteEl.className = `review-audit-note${metrics.level === "alert" ? " is-alert" : metrics.level === "caution" ? " is-caution" : ""}`;
+      noteEl.textContent = metrics.summaryHint;
+
+      drawerCard.append(grid, noteEl);
+    } else {
+      const legacyNote = document.createElement("div");
+      legacyNote.className = "review-audit-note";
+      legacyNote.textContent = bi("此為早期交稿紀錄，尚未寫入作答統計數據。", "Legacy submission recorded prior to exam telemetry.");
+      drawerCard.appendChild(legacyNote);
+    }
+
+    if (isPending && !isApproved) {
+      const footer = document.createElement("div");
+      footer.className = "review-drawer-footer";
+
+      const labelHint = document.createElement("span");
+      labelHint.className = "form-hint";
+      labelHint.textContent = bi("確認審核無誤後輸入獎勵金額並撥款：", "Verify metrics and confirm payout:");
+
+      const btnGroup = document.createElement("div");
+      btnGroup.className = "admin-review-actions";
+      btnGroup.append(...createActionControls(true));
+
+      footer.append(labelHint, btnGroup);
+      drawerCard.appendChild(footer);
+    }
+
+    drawerInner.appendChild(drawerCard);
+    drawerShell.appendChild(drawerInner);
+
+    toggleBtn.addEventListener("click", () => {
+      const willOpen = !drawerShell.classList.contains("is-open");
+      drawerShell.classList.toggle("is-open", willOpen);
+      drawerShell.setAttribute("aria-hidden", willOpen ? "false" : "true");
+      toggleBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      if (willOpen) {
+        expandedReviewRowKeys.add(rowKey);
+      } else {
+        expandedReviewRowKeys.delete(rowKey);
+      }
+    });
+
+    actionsEl.appendChild(toggleBtn);
+  } else if (!isApproved) {
+    actionsEl.append(...createActionControls(false));
+  }
+
+  head.append(meta, actionsEl);
+  row.appendChild(head);
+  if (drawerShell) {
+    row.appendChild(drawerShell);
+  }
+  return row;
+}
+
 function renderPendingReviewQueue() {
   const queueEl = document.getElementById("review-pending-queue");
   if (!queueEl) return;
@@ -6479,13 +6909,15 @@ function renderPendingReviewQueue() {
     const approved = stu.approvedLessons || {};
     const overrides = stu.completionOverrides || {};
     const submitted = stu.submittedLessons || {};
+    const metricsMap = stu.submissionMetrics || {};
     Object.keys(submitted).forEach(dateKey => {
       if (submitted[dateKey] && !approved[dateKey] && !overrides[dateKey]) {
         const lessonMeta = db.lessons.find(l => l.Date === dateKey);
         pendingEntries.push({
           stu,
           dateStr: dateKey,
-          title: lessonMeta?.Title || bi("英語單元任務", "English Quest")
+          title: lessonMeta?.Title || bi("英語單元任務", "English Quest"),
+          metricRaw: metricsMap[dateKey] || null
         });
       }
     });
@@ -6501,38 +6933,23 @@ function renderPendingReviewQueue() {
     return;
   }
 
-  pendingEntries.forEach(({ stu, dateStr, title }) => {
-    const row = document.createElement("div");
-    row.className = "admin-review-row is-pending-row";
+  pendingEntries.forEach(({ stu, dateStr, title, metricRaw }) => {
     const stuLabel = stu.avatar?.name
       ? `${stu.displayName || stu.email} [${stu.avatar.name}]`
       : (stu.displayName || stu.email);
-    row.innerHTML = `
-      <div class="admin-review-meta">
-        <strong>🔔 ${escapeHtml(stuLabel)} — ${escapeHtml(dateStr)} · ${escapeHtml(title)}</strong>
-        <span class="form-hint">${escapeHtml(stu.email || "")} ｜ ${bi("目前餘額", "Balance:")} ${Math.trunc(Number(stu.clams ?? STARTER_CLAMS))} ${bi("英蚌", "Clams")}</span>
-      </div>
-      <div class="admin-review-actions"></div>
-    `;
 
-    const actionsEl = row.querySelector(".admin-review-actions");
-    const rewardInput = document.createElement("input");
-    rewardInput.type = "number";
-    rewardInput.className = "reward-input-sm";
-    rewardInput.value = String(UNIT_REWARD_CLAMS);
-    rewardInput.min = "0";
-    rewardInput.max = "100000";
-    rewardInput.setAttribute("aria-label", bi(`${stuLabel} ${dateStr} 驗收報酬英蚌`, `Payout Clams for ${stuLabel} (${dateStr})`));
-
-    const approveBtn = document.createElement("button");
-    approveBtn.type = "button";
-    approveBtn.className = "btn btn-primary btn-sm";
-    approveBtn.textContent = bi("✓ 驗收並發錢", "✓ Approve & Pay");
-    approveBtn.addEventListener("click", async () => {
-      approveBtn.disabled = true;
-      clearFeedback("admin-review-feedback");
-      try {
-        const res = await approveStudentLesson(stu.uid, dateStr, rewardInput.value);
+    const row = buildAdminSubmissionReviewRow({
+      rowKey: `pending:${stu.uid}:${dateStr}`,
+      stu,
+      dateStr,
+      headingText: `🔔 ${stuLabel} — ${dateStr} · ${title}`,
+      sublineText: `${stu.email || ""} ｜ ${bi("目前餘額", "Balance:")} ${Math.trunc(Number(stu.clams ?? STARTER_CLAMS))} ${bi("英蚌", "Clams")}`,
+      isPending: true,
+      isApproved: false,
+      highlightPending: true,
+      metricRaw,
+      onApprove: async (clamVal) => {
+        const res = await approveStudentLesson(stu.uid, dateStr, clamVal);
         const xpNote = res.xpGranted > 0 ? bi(`與 +${res.xpGranted} XP`, ` & +${res.xpGranted} XP`) : "";
         showFeedback(
           "admin-review-feedback",
@@ -6540,35 +6957,18 @@ function renderPendingReviewQueue() {
           res.alreadyApproved
             ? bi(`${stuLabel} 的 ${dateStr} 已是驗收狀態。`, `${stuLabel}'s ${dateStr} is already approved.`)
             : bi(
-                `已驗收 ${stuLabel}（${dateStr}）並即時發放 ${rewardInput.value} 英蚌${xpNote}！`,
-                `Approved ${stuLabel} (${dateStr}) and awarded ${rewardInput.value} Clams${xpNote}!`
+                `已驗收 ${stuLabel}（${dateStr}）並即時發放 ${clamVal} 英蚌${xpNote}！`,
+                `Approved ${stuLabel} (${dateStr}) and awarded ${clamVal} Clams${xpNote}!`
               )
         );
         await loadStudentsForReview(stu.uid);
-      } catch (err) {
-        showFeedback("admin-review-feedback", "error", translateAuthError(err));
-        approveBtn.disabled = false;
-      }
-    });
-
-    const rejectBtn = document.createElement("button");
-    rejectBtn.type = "button";
-    rejectBtn.className = "btn btn-sm";
-    rejectBtn.textContent = bi("退回修改", "Request Revision");
-    rejectBtn.addEventListener("click", async () => {
-      rejectBtn.disabled = true;
-      clearFeedback("admin-review-feedback");
-      try {
+      },
+      onReject: async () => {
         await rejectStudentSubmission(stu.uid, dateStr);
         showFeedback("admin-review-feedback", "info", bi(`已退回 ${stuLabel} 的 ${dateStr} 交稿。`, `Returned ${stuLabel}'s ${dateStr} submission.`));
         await loadStudentsForReview(stu.uid);
-      } catch (err) {
-        showFeedback("admin-review-feedback", "error", translateAuthError(err));
-        rejectBtn.disabled = false;
       }
     });
-
-    actionsEl.append(rewardInput, approveBtn, rejectBtn);
     queueEl.appendChild(row);
   });
 }
@@ -6949,6 +7349,7 @@ function renderSelectedStudentReview() {
   const approved = stu.approvedLessons || {};
   const overrides = stu.completionOverrides || {};
   const submitted = stu.submittedLessons || {};
+  const metricsMap = stu.submissionMetrics || {};
 
   // Sort all lessons: pending submissions first, then unapproved, then approved
   const activeLessons = [...db.lessons]
@@ -6970,81 +7371,43 @@ function renderSelectedStudentReview() {
   activeLessons.forEach(lesson => {
     const isApproved = Boolean(approved[lesson.Date] || overrides[lesson.Date]);
     const isPending = !isApproved && Boolean(submitted[lesson.Date]);
+    const statusText = isApproved
+      ? bi("✓ 已驗收並撥款", "✓ Approved & Paid")
+      : isPending
+      ? bi("🔔 學生已提交作品，等待您驗收！", "🔔 Submitted — awaiting your review!")
+      : bi("尚未交稿（老師亦可直接現場結算）", "Not submitted yet (can still approve manually)");
 
-    const row = document.createElement("div");
-    row.className = "admin-review-row";
-    row.innerHTML = `
-      <div class="admin-review-meta">
-        <strong>${escapeHtml(lesson.Date)} · ${escapeHtml(lesson.Title || "Untitled")}</strong>
-        <span class="form-hint">${isApproved ? bi("✓ 已驗收並撥款", "✓ Approved & Paid") : isPending ? bi("🔔 學生已提交作品，等待您驗收！", "🔔 Submitted — awaiting your review!") : bi("尚未交稿（老師亦可直接現場結算）", "Not submitted yet (can still approve manually)")}</span>
-      </div>
-      <div class="admin-review-actions"></div>
-    `;
-
-    const actionsEl = row.querySelector(".admin-review-actions");
-    if (isApproved) {
-      const tag = document.createElement("span");
-      tag.className = "role-badge verified-badge";
-      tag.textContent = bi("已驗收通過 ✓", "Approved ✓");
-      actionsEl.appendChild(tag);
-    } else {
-      const rewardInput = document.createElement("input");
-      rewardInput.type = "number";
-      rewardInput.className = "reward-input-sm";
-      rewardInput.value = String(UNIT_REWARD_CLAMS);
-      rewardInput.min = "0";
-      rewardInput.max = "100000";
-      rewardInput.setAttribute("aria-label", bi(`${lesson.Date} 驗收報酬英蚌`, `Payout Clams for ${lesson.Date}`));
-
-      const approveBtn = document.createElement("button");
-      approveBtn.type = "button";
-      approveBtn.className = "btn btn-primary btn-sm";
-      approveBtn.textContent = bi("驗收並撥款", "Approve & Pay");
-      approveBtn.addEventListener("click", async () => {
-        approveBtn.disabled = true;
-        clearFeedback("admin-review-feedback");
-        try {
-          const res = await approveStudentLesson(stu.uid, lesson.Date, rewardInput.value);
-          const xpNote = res.xpGranted > 0 ? bi(`與 +${res.xpGranted} XP`, ` & +${res.xpGranted} XP`) : "";
-          showFeedback(
-            "admin-review-feedback",
-            "success",
-            res.alreadyApproved
-              ? bi(`${lesson.Date} 已是驗收狀態。`, `${lesson.Date} is already approved.`)
-              : bi(
-                  `已驗收 ${lesson.Date} 並撥款 ${rewardInput.value} 英蚌${xpNote}！`,
-                  `Approved ${lesson.Date} and awarded ${rewardInput.value} Clams${xpNote}!`
-                )
-          );
-          await loadStudentsForReview(stu.uid);
-        } catch (err) {
-          showFeedback("admin-review-feedback", "error", translateAuthError(err));
-          approveBtn.disabled = false;
-        }
-      });
-
-      actionsEl.appendChild(rewardInput);
-      actionsEl.appendChild(approveBtn);
-
-      if (isPending) {
-        const rejectBtn = document.createElement("button");
-        rejectBtn.type = "button";
-        rejectBtn.className = "btn btn-sm";
-        rejectBtn.textContent = bi("退回修改", "Request Revision");
-        rejectBtn.addEventListener("click", async () => {
-          rejectBtn.disabled = true;
-          try {
-            await rejectStudentSubmission(stu.uid, lesson.Date);
-            showFeedback("admin-review-feedback", "info", bi(`已退回 ${lesson.Date} 請繪師修改再交。`, `Returned ${lesson.Date} for revision.`));
-            await loadStudentsForReview(stu.uid);
-          } catch (err) {
-            showFeedback("admin-review-feedback", "error", translateAuthError(err));
-            rejectBtn.disabled = false;
-          }
-        });
-        actionsEl.appendChild(rejectBtn);
+    const row = buildAdminSubmissionReviewRow({
+      rowKey: `student:${stu.uid}:${lesson.Date}`,
+      stu,
+      dateStr: lesson.Date,
+      headingText: `${lesson.Date} · ${lesson.Title || "Untitled"}`,
+      sublineText: statusText,
+      isPending,
+      isApproved,
+      highlightPending: isPending,
+      metricRaw: metricsMap[lesson.Date] || null,
+      onApprove: async (clamVal) => {
+        const res = await approveStudentLesson(stu.uid, lesson.Date, clamVal);
+        const xpNote = res.xpGranted > 0 ? bi(`與 +${res.xpGranted} XP`, ` & +${res.xpGranted} XP`) : "";
+        showFeedback(
+          "admin-review-feedback",
+          "success",
+          res.alreadyApproved
+            ? bi(`${lesson.Date} 已是驗收狀態。`, `${lesson.Date} is already approved.`)
+            : bi(
+                `已驗收 ${lesson.Date} 並撥款 ${clamVal} 英蚌${xpNote}！`,
+                `Approved ${lesson.Date} and awarded ${clamVal} Clams${xpNote}!`
+              )
+        );
+        await loadStudentsForReview(stu.uid);
+      },
+      onReject: async () => {
+        await rejectStudentSubmission(stu.uid, lesson.Date);
+        showFeedback("admin-review-feedback", "info", bi(`已退回 ${lesson.Date} 請繪師修改再交。`, `Returned ${lesson.Date} for revision.`));
+        await loadStudentsForReview(stu.uid);
       }
-    }
+    });
 
     listEl.appendChild(row);
   });
@@ -7129,6 +7492,7 @@ document.getElementById("admin-reset-all-lessons-btn")?.addEventListener("click"
         || Object.keys(d.submittedLessons || {}).length > 0
         || Object.keys(d.completionOverrides || {}).length > 0
         || Object.keys(d.xpAwardedLessons || {}).length > 0
+        || Object.keys(d.submissionMetrics || {}).length > 0
       );
     });
     for (let i = 0; i < targets.length; i += 400) {
@@ -7139,6 +7503,7 @@ document.getElementById("admin-reset-all-lessons-btn")?.addEventListener("click"
           submittedLessons: {},
           completionOverrides: {},
           xpAwardedLessons: {},
+          submissionMetrics: {},
           updatedAt: serverTimestamp()
         });
       });
@@ -7153,6 +7518,7 @@ document.getElementById("admin-reset-all-lessons-btn")?.addEventListener("click"
       currentUserProfile.submittedLessons = {};
       currentUserProfile.completionOverrides = {};
       currentUserProfile.xpAwardedLessons = {};
+      currentUserProfile.submissionMetrics = {};
       if (currentScreen === "desktop") renderHome();
       if (currentScreen === "lesson" && activeLessonDate) activeLessonSyncCommission?.();
     }
