@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261124c";
+} from "./room-scene.js?v=20261124d";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261124c";
+} from "./shop-catalog.js?v=20261124d";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261124c";
+} from "./room-grid.js?v=20261124d";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -97,17 +97,18 @@ import {
   escapeHtml,
   showFeedback,
   clearFeedback,
-  translateAuthError
-} from "./app-helpers.js?v=20261124c";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261124c";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124c";
+  translateAuthError,
+  normalizeSavedNavState
+} from "./app-helpers.js?v=20261124d";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261124d";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124d";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261124c";
+} from "./i18n.js?v=20261124d";
 
 applyStaticDomTranslations();
 
@@ -178,6 +179,71 @@ let isEditingAvatarFromRoom = false;
 let activeTvVideo = null;
 let tvPowerOffRequested = false;
 let spectatingStudentUid = null;
+const NAV_STATE_STORAGE_PREFIX = "studio_nav_state_v1:";
+let isRestoringNavState = false;
+let restoredNavSessionKey = "";
+let pendingRestoreSpectateUid = null;
+
+function getActiveOpenModalKey() {
+  if (document.getElementById("shop-dialog")?.open) return "shop";
+  if (document.getElementById("finance-dialog")?.open) return "finance";
+  if (document.getElementById("settings-dialog")?.open) return "settings";
+  if (document.getElementById("tv-dialog")?.open) return "tv";
+  if (document.getElementById("poster-dialog")?.open) return "poster";
+  if (document.getElementById("admin-review-dialog")?.open) return "adminReview";
+  return null;
+}
+
+function loadSavedNavState(uid) {
+  if (!uid) return null;
+  try {
+    const raw = localStorage.getItem(`${NAV_STATE_STORAGE_PREFIX}${uid}`);
+    if (!raw) return null;
+    return normalizeSavedNavState(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+function saveNavState() {
+  if (isRestoringNavState || !currentUser?.uid) return;
+  if (!["room", "desktop", "lesson", "onboarding"].includes(currentScreen)) return;
+  if (currentScreen === "onboarding" && !isEditingAvatarFromRoom && !currentUserProfile?.avatar) {
+    return;
+  }
+  const snapshot = {
+    screen: currentScreen,
+    lessonDate: currentScreen === "lesson" ? (activeLessonDate || null) : null,
+    isEditingAvatar: currentScreen === "onboarding" ? Boolean(isEditingAvatarFromRoom) : false,
+    modal: getActiveOpenModalKey(),
+    shopCategory: activeShopCategory || "all",
+    shopResellOnly: Boolean(shopResellFilterOnly),
+    financeFilter: activeFinanceFilter || "all",
+    financeMonth: activeFinanceMonth || "",
+    spectatingUid: spectatingStudentUid || null,
+    reviewStudentUid: document.getElementById("review-student-select")?.value || null,
+    scrollY: (currentScreen === "lesson" || currentScreen === "desktop")
+      ? Math.max(0, Math.round(window.scrollY || 0))
+      : 0,
+    updatedAt: Date.now()
+  };
+  try {
+    localStorage.setItem(`${NAV_STATE_STORAGE_PREFIX}${currentUser.uid}`, JSON.stringify(snapshot));
+  } catch {
+    // Ignore storage quota or private mode issues
+  }
+}
+
+function clearSavedNavState(uid) {
+  if (!uid) return;
+  try {
+    localStorage.removeItem(`${NAV_STATE_STORAGE_PREFIX}${uid}`);
+  } catch {
+    // Ignore storage unavailability
+  }
+}
+
+window.addEventListener("beforeunload", saveNavState);
 
 function sync3dSceneLifecycle() {
   const blocked = document.hidden || Boolean(document.querySelector("dialog[open]"));
@@ -761,6 +827,7 @@ function showOnboardingScreen(isEditing = false) {
     avatarPreviewScene.updateAvatar(currentValues);
   }
   sync3dSceneLifecycle();
+  if (isEditing) saveNavState();
 }
 
 function syncEditModeToolbarUI(state = null) {
@@ -1263,6 +1330,7 @@ function spectateStudentRoom(targetUid, { preserveCamera = false } = {}) {
   populateSpectateStudentSelect(targetStu.uid);
   sync3dSceneLifecycle();
   syncRoomHUD();
+  saveNavState();
 }
 
 function exitSpectateRoom() {
@@ -1290,34 +1358,124 @@ function enterRoomView(fromWorkDesktop = false) {
   syncRoomHUD();
   updateRentCountdownUI();
   maybeShowIntroStoryBanner();
+  saveNavState();
 }
 
-function openWorkDesktop() {
+function openWorkDesktop({ restoreScrollY = null } = {}) {
   if (!currentUser || !sheetsLoaded) return;
   currentScreen = "desktop";
   activeLessonDate = null;
   activeLessonSyncCommission = null;
   hideAllPrimaryScreens();
   renderHome();
+  if (Number.isFinite(restoreScrollY) && restoreScrollY > 0) {
+    requestAnimationFrame(() => window.scrollTo(0, restoreScrollY));
+  }
+  saveNavState();
 }
 
-async function openLesson(dateStr) {
-  if (!currentUser || !sheetsLoaded) return;
-  if (currentScreen !== "desktop" && currentScreen !== "lesson") return;
+async function openLesson(dateStr, { force = false, restoreScrollY = null } = {}) {
+  if (!currentUser || !sheetsLoaded) return false;
+  if (!force && currentScreen !== "desktop" && currentScreen !== "lesson") return false;
   const lesson = db.lessons.find(l => l.Date === dateStr);
-  if (!lesson) return openWorkDesktop();
+  if (!lesson) {
+    openWorkDesktop();
+    return false;
+  }
   if (!sheetsDetailsLoaded && sheetsStage2Promise) {
     try {
       await sheetsStage2Promise;
     } catch (err) {
       alert(bi(`無法載入單元單字與測驗資料：${err?.message || err}`, `Failed to load lesson vocabulary & quiz: ${err?.message || err}`));
-      return;
+      return false;
     }
   }
   currentScreen = "lesson";
   activeLessonDate = dateStr;
   renderLesson(dateStr);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (Number.isFinite(restoreScrollY) && restoreScrollY > 0) {
+    requestAnimationFrame(() => window.scrollTo(0, restoreScrollY));
+  } else if (!force) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  saveNavState();
+  return true;
+}
+
+function restoreOpenModalFromNav(saved) {
+  const owned = normalizeOwnedItems(currentUserProfile?.ownedItems);
+  const modal = saved?.modal;
+  if (!modal) return;
+  if (modal === "shop") {
+    pendingSellItemId = null;
+    clearFeedback("shop-feedback");
+    renderShopDialog();
+    if (!shopDialog.open) shopDialog.showModal();
+  } else if (modal === "finance") {
+    clearFeedback("finance-feedback");
+    renderFinanceDialog();
+    if (!financeDialog.open) financeDialog.showModal();
+    updateRentCountdownUI();
+  } else if (modal === "settings") {
+    populateSettingsDialog();
+    if (!settingsDialog.open) settingsDialog.showModal();
+  } else if (modal === "poster" && owned.wall_poster) {
+    openPosterCustomizer();
+  } else if (modal === "tv" && owned.wall_tv) {
+    openTvModalPlayer();
+  } else if (modal === "adminReview" && (currentRole === "super_admin" || currentRole === "admin")) {
+    if (!adminReviewDialog.open) adminReviewDialog.showModal();
+    if (cachedStudents.length > 0) {
+      syncCachedStudentsSnapshot(cachedStudents, saved.reviewStudentUid || null);
+    }
+    loadStudentsForReview(saved.reviewStudentUid || null);
+  }
+}
+
+async function restoreSavedNavStateOrDefault() {
+  if (!currentUser?.uid) return;
+  const sessionKey = `${currentUser.uid}:${authSessionNonce}`;
+  if (restoredNavSessionKey === sessionKey) return;
+  restoredNavSessionKey = sessionKey;
+
+  const saved = loadSavedNavState(currentUser.uid);
+  if (!saved) {
+    enterRoomView(false);
+    return;
+  }
+
+  isRestoringNavState = true;
+  try {
+    if (SHOP_CATEGORIES.some(c => c.id === saved.shopCategory)) {
+      activeShopCategory = saved.shopCategory;
+    }
+    shopResellFilterOnly = Boolean(saved.shopResellOnly);
+    activeFinanceFilter = saved.financeFilter || "all";
+    if (saved.financeMonth) {
+      activeFinanceMonth = saved.financeMonth;
+    }
+
+    if (saved.screen === "lesson" && saved.lessonDate && db.lessons.some(l => l.Date === saved.lessonDate)) {
+      await openLesson(saved.lessonDate, { force: true, restoreScrollY: saved.scrollY });
+    } else if (saved.screen === "desktop") {
+      openWorkDesktop({ restoreScrollY: saved.scrollY });
+    } else if (saved.screen === "onboarding" && saved.isEditingAvatar) {
+      showOnboardingScreen(true);
+    } else {
+      enterRoomView(false);
+      if (saved.spectatingUid && (currentRole === "super_admin" || currentRole === "admin")) {
+        if (cachedStudents.some(s => s.uid === saved.spectatingUid)) {
+          spectateStudentRoom(saved.spectatingUid);
+        } else {
+          pendingRestoreSpectateUid = saved.spectatingUid;
+        }
+      }
+    }
+    restoreOpenModalFromNav(saved);
+  } finally {
+    isRestoringNavState = false;
+    saveNavState();
+  }
 }
 
 function renderAppState() {
@@ -1371,7 +1529,7 @@ function renderAppState() {
   if (!currentUserProfile?.avatar) {
     showOnboardingScreen(false);
   } else {
-    enterRoomView(false);
+    restoreSavedNavStateOrDefault();
   }
 }
 
@@ -2473,7 +2631,10 @@ function setupModalDialogFallbacks(dialogEl, openBtns, closeBtns, onCloseCb) {
 }
 
 document.addEventListener("visibilitychange", sync3dSceneLifecycle);
-const dialogOpenObserver = new MutationObserver(sync3dSceneLifecycle);
+const dialogOpenObserver = new MutationObserver(() => {
+  sync3dSceneLifecycle();
+  saveNavState();
+});
 document.querySelectorAll("dialog").forEach(dlg => {
   dialogOpenObserver.observe(dlg, { attributes: true, attributeFilter: ["open"] });
 });
@@ -2673,6 +2834,7 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
   btn.disabled = true;
   try {
     if (settingsDialog.open) settingsDialog.close();
+    clearSavedNavState(currentUser?.uid);
     await signOut(auth);
   } finally {
     btn.disabled = false;
@@ -3663,7 +3825,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261124c`;
+    img.src = `${item.previewImage}?v=20261124d`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
@@ -4031,6 +4193,7 @@ function renderShopDialog() {
   if (dialogBodyEl) {
     dialogBodyEl.scrollTop = prevScrollTop;
   }
+  saveNavState();
 }
 
 async function purchaseShopItem(itemId, triggerBtn = null) {
@@ -5239,6 +5402,7 @@ function renderFinanceDialog() {
     b.onclick = () => {
       activeFinanceFilter = tab.id;
       renderFinanceDialog();
+      saveNavState();
     };
     tabsEl.appendChild(b);
   });
@@ -5477,6 +5641,7 @@ document.getElementById("room-finance-btn").addEventListener("click", () => {
 document.getElementById("finance-month-select").addEventListener("change", (e) => {
   activeFinanceMonth = e.currentTarget.value;
   renderFinanceDialog();
+  saveNavState();
 });
 document.getElementById("finance-pay-rent-btn").addEventListener("click", () => {
   payMonthlyRent({ isTestDemo: false });
@@ -5684,6 +5849,15 @@ function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
   if (pendingBadge) {
     pendingBadge.textContent = String(totalPending);
     pendingBadge.classList.toggle("hidden", totalPending <= 0);
+  }
+
+  if (pendingRestoreSpectateUid && currentScreen === "room" && !getActiveOpenModalKey()) {
+    const restoreUid = pendingRestoreSpectateUid;
+    pendingRestoreSpectateUid = null;
+    if (cachedStudents.some(s => s.uid === restoreUid)) {
+      spectateStudentRoom(restoreUid);
+      return;
+    }
   }
 
   if (spectatingStudentUid && currentScreen === "room") {
@@ -6470,6 +6644,7 @@ document.getElementById("auth-lang-toggle-btn")?.addEventListener("click", () =>
 document.getElementById("review-student-select").addEventListener("change", () => {
   clearFeedback("admin-review-feedback");
   renderSelectedStudentReview();
+  saveNavState();
 });
 
 document.getElementById("admin-visit-room-btn")?.addEventListener("click", () => {
@@ -6534,6 +6709,8 @@ onAuthStateChanged(auth, async (user) => {
   currentRole = "student";
 
   if (!user) {
+    restoredNavSessionKey = "";
+    pendingRestoreSpectateUid = null;
     authResolved = true;
     syncXpProgressUI({ allowCelebrate: false });
     renderAppState();

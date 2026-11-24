@@ -1,5 +1,5 @@
-import { bi, isEn } from "./i18n.js?v=20261124c";
-import { hasOwnedSofa } from "./shop-catalog.js?v=20261124c";
+import { bi, isEn } from "./i18n.js?v=20261124d";
+import { hasOwnedSofa } from "./shop-catalog.js?v=20261124d";
 
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
@@ -717,4 +717,37 @@ export function evaluateProfileRentMood(
     ? "paid"
     : "chill";
   return { status, isDue, hasRentAlert, daysLeft, deficit, paidThisMonth };
+}
+
+const VALID_NAV_SCREENS = new Set(["room", "desktop", "lesson", "onboarding"]);
+const VALID_NAV_MODALS = new Set(["shop", "finance", "settings", "poster", "tv", "adminReview"]);
+const VALID_FINANCE_FILTERS = new Set(["all", "expense", "income"]);
+
+export function normalizeSavedNavState(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const screen = VALID_NAV_SCREENS.has(raw.screen) ? raw.screen : "room";
+  const lessonDate = (screen === "lesson" && typeof raw.lessonDate === "string" && raw.lessonDate.trim())
+    ? raw.lessonDate.trim()
+    : null;
+  const modal = VALID_NAV_MODALS.has(raw.modal) ? raw.modal : null;
+  const shopCategory = (typeof raw.shopCategory === "string" && raw.shopCategory.trim())
+    ? raw.shopCategory.trim()
+    : "all";
+  const financeMonth = (typeof raw.financeMonth === "string" && /^\d{4}-\d{2}$/.test(raw.financeMonth.trim()))
+    ? raw.financeMonth.trim()
+    : "";
+  const scrollRaw = Math.trunc(Number(raw.scrollY));
+  return {
+    screen: (screen === "lesson" && !lessonDate) ? "desktop" : screen,
+    lessonDate,
+    isEditingAvatar: screen === "onboarding" ? Boolean(raw.isEditingAvatar) : false,
+    modal,
+    shopCategory,
+    shopResellOnly: Boolean(raw.shopResellOnly),
+    financeFilter: VALID_FINANCE_FILTERS.has(raw.financeFilter) ? raw.financeFilter : "all",
+    financeMonth,
+    spectatingUid: (typeof raw.spectatingUid === "string" && raw.spectatingUid.trim()) ? raw.spectatingUid.trim() : null,
+    reviewStudentUid: (typeof raw.reviewStudentUid === "string" && raw.reviewStudentUid.trim()) ? raw.reviewStudentUid.trim() : null,
+    scrollY: Number.isFinite(scrollRaw) && scrollRaw > 0 ? scrollRaw : 0
+  };
 }

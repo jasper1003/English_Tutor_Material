@@ -1,4 +1,4 @@
-import { bi, isEn } from "./i18n.js?v=20261124c";
+import { bi, isEn } from "./i18n.js?v=20261124d";
 
 export const GRID_STEP = 0.5;
 export const GRID_CELLS = 16; // 16 x 16 cells across [-4.0, +4.0] room floor & walls
