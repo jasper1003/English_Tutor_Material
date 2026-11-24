@@ -1,7 +1,7 @@
-import { escapeHtml, speakWord } from "./app-helpers.js?v=20261124a";
-import { bi } from "./i18n.js?v=20261124a";
+import { escapeHtml, speakWord } from "./app-helpers.js?v=20261124b";
+import { bi } from "./i18n.js?v=20261124b";
 
-const HINTS_PREF_KEY = "reading_vocab_hints_on";
+const HINTS_PREF_KEY = "reading_vocab_hints_on_v2";
 const VALID_MARK_VALUES = ["yellow", "mint", "blue"];
 
 const IRREGULAR_FIRST_WORDS = {
@@ -195,9 +195,9 @@ function saveReadingMarks(storageKey, marks) {
 
 function readHintsEnabledPref() {
   try {
-    return localStorage.getItem(HINTS_PREF_KEY) !== "false";
+    return localStorage.getItem(HINTS_PREF_KEY) === "true";
   } catch {
-    return true;
+    return false;
   }
 }
 
