@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261124h";
+} from "./room-scene.js?v=20261124i";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261124h";
+} from "./shop-catalog.js?v=20261124i";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261124h";
+} from "./room-grid.js?v=20261124i";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -100,16 +100,16 @@ import {
   translateAuthError,
   normalizeSavedNavState,
   resolveQuestProgressTargetIndex
-} from "./app-helpers.js?v=20261124h";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261124h";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124h";
+} from "./app-helpers.js?v=20261124i";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261124i";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124i";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261124h";
+} from "./i18n.js?v=20261124i";
 
 applyStaticDomTranslations();
 
@@ -264,12 +264,48 @@ function sync3dSceneLifecycle() {
   }
 }
 
+const SHEETS_FETCH_TIMEOUT_MS = 12000;
+const SHEETS_FETCH_MAX_ATTEMPTS = 3;
+
 async function fetchRawSheetTab(sheetName, extraParams = "") {
   const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json${extraParams}&sheet=${encodeURIComponent(sheetName)}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`無法讀取工作表：${sheetName}`);
-  const text = await res.text();
-  const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+  let lastErr = null;
+  let text = "";
+
+  for (let attempt = 0; attempt < SHEETS_FETCH_MAX_ATTEMPTS; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), SHEETS_FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) {
+        const retryable = res.status === 429 || res.status >= 500;
+        const err = new Error(`無法讀取工作表：${sheetName} (HTTP ${res.status})`);
+        if (!retryable || attempt === SHEETS_FETCH_MAX_ATTEMPTS - 1) throw err;
+        lastErr = err;
+      } else {
+        text = await res.text();
+        lastErr = null;
+        break;
+      }
+    } catch (err) {
+      lastErr = err?.name === "AbortError"
+        ? new Error(`讀取工作表逾時：${sheetName}`)
+        : err;
+      if (attempt === SHEETS_FETCH_MAX_ATTEMPTS - 1) break;
+    } finally {
+      clearTimeout(timer);
+    }
+    const jitterMs = 350 * (attempt + 1) + Math.floor(Math.random() * 350);
+    await new Promise(resolve => setTimeout(resolve, jitterMs));
+  }
+
+  if (lastErr) throw lastErr;
+  const startIdx = text.indexOf("{");
+  const endIdx = text.lastIndexOf("}");
+  if (startIdx === -1 || endIdx <= startIdx) {
+    throw new Error(`工作表 ${sheetName} 回傳格式異常`);
+  }
+  const jsonStr = text.substring(startIdx, endIdx + 1);
   const data = JSON.parse(jsonStr);
 
   if (data.status === "error") {
@@ -1126,10 +1162,14 @@ function syncRoomHUD() {
   }
 }
 
-async function persistRoomState(patch) {
-  if (!currentUser || !currentUserProfile || spectatingStudentUid) return false;
-  const nextRoomState = {
-    ...(currentUserProfile.roomState || {
+const ROOM_STATE_FLUSH_DELAY_MS = 380;
+let pendingRoomStatePatch = null;
+let roomStateFlushTimer = null;
+let roomStateWriteChain = Promise.resolve(true);
+
+function buildMergedRoomState(baseState, patch) {
+  return {
+    ...(baseState || {
       cameraQuarter: 0,
       deskLampOn: true,
       bedLampOn: false,
@@ -1137,18 +1177,59 @@ async function persistRoomState(patch) {
     }),
     ...patch
   };
-  currentUserProfile.roomState = nextRoomState;
-  try {
-    await updateDoc(doc(firestoreDb, "users", currentUser.uid), {
-      roomState: nextRoomState,
-      updatedAt: serverTimestamp()
-    });
-    return true;
-  } catch (err) {
-    console.error("Failed to save roomState:", err);
-    return false;
-  }
 }
+
+async function flushPendingRoomState() {
+  if (roomStateFlushTimer) {
+    clearTimeout(roomStateFlushTimer);
+    roomStateFlushTimer = null;
+  }
+  const patch = pendingRoomStatePatch;
+  pendingRoomStatePatch = null;
+  if (!patch || !currentUser || !currentUserProfile || spectatingStudentUid) return true;
+
+  const targetUid = currentUser.uid;
+  const writePromise = roomStateWriteChain.then(async () => {
+    if (!currentUser || currentUser.uid !== targetUid || spectatingStudentUid) return false;
+    const latestState = buildMergedRoomState(currentUserProfile?.roomState, patch);
+    if (currentUserProfile) currentUserProfile.roomState = latestState;
+    try {
+      await updateDoc(doc(firestoreDb, "users", targetUid), {
+        roomState: latestState,
+        updatedAt: serverTimestamp()
+      });
+      return true;
+    } catch (err) {
+      console.error("Failed to save roomState:", err);
+      return false;
+    }
+  });
+  roomStateWriteChain = writePromise.catch(() => false);
+  return writePromise;
+}
+
+function persistRoomState(patch, { immediate = false } = {}) {
+  if (!currentUser || !currentUserProfile || spectatingStudentUid) return Promise.resolve(false);
+  pendingRoomStatePatch = {
+    ...(pendingRoomStatePatch || {}),
+    ...patch
+  };
+  currentUserProfile.roomState = buildMergedRoomState(currentUserProfile.roomState, patch);
+  if (immediate || Object.prototype.hasOwnProperty.call(patch, "furnitureLayout") || Object.prototype.hasOwnProperty.call(patch, "pendingParcels")) {
+    return flushPendingRoomState();
+  }
+  if (roomStateFlushTimer) clearTimeout(roomStateFlushTimer);
+  roomStateFlushTimer = setTimeout(() => {
+    flushPendingRoomState();
+  }, ROOM_STATE_FLUSH_DELAY_MS);
+  return Promise.resolve(true);
+}
+
+window.addEventListener("beforeunload", () => {
+  if (pendingRoomStatePatch) {
+    flushPendingRoomState();
+  }
+});
 
 function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCamera = false } = {}) {
   const wrap = document.getElementById("room-canvas-wrap");
@@ -1339,6 +1420,16 @@ function exitSpectateRoom() {
   enterRoomView(false);
 }
 
+function stopAllListeningAudio() {
+  document.querySelectorAll(".listening-audio-el").forEach(audioEl => {
+    try {
+      if (!audioEl.paused) audioEl.pause();
+    } catch {
+      // Ignore media pause failure on detached elements
+    }
+  });
+}
+
 function enterRoomView(fromWorkDesktop = false) {
   spectatingStudentUid = null;
   if (!currentUser || !currentUserProfile?.avatar) {
@@ -1346,6 +1437,7 @@ function enterRoomView(fromWorkDesktop = false) {
     return;
   }
 
+  stopAllListeningAudio();
   currentScreen = "room";
   activeLessonDate = null;
   activeLessonSyncCommission = null;
@@ -1411,6 +1503,7 @@ function scrollQuestStepIntoCenter(stepEl) {
 
 function openWorkDesktop({ restoreScrollY = null } = {}) {
   if (!currentUser || !sheetsLoaded) return;
+  stopAllListeningAudio();
   currentScreen = "desktop";
   activeLessonDate = null;
   activeLessonSyncCommission = null;
@@ -1636,6 +1729,7 @@ function applyRemoteTvVideos(rows = []) {
 }
 
 const SHEETS_CACHE_KEY = `sheets_cache_v2:${SPREADSHEET_ID}`;
+const SHEETS_FRESH_TTL_MS = 45000;
 let latestSheetSnapshot = {
   lessons: [],
   vocab: [],
@@ -1645,6 +1739,14 @@ let latestSheetSnapshot = {
   tvRows: [],
   thoughtRows: []
 };
+
+function computeSheetStageDigest(parts) {
+  try {
+    return JSON.stringify(parts);
+  } catch {
+    return "";
+  }
+}
 
 function readSheetsCache() {
   try {
@@ -1698,38 +1800,56 @@ function refreshLiveSheetViews() {
 
 async function loadSheets() {
   const cached = readSheetsCache();
+  let prevCoreDigest = "";
+  let prevDetailsDigest = "";
   if (cached) {
     applySheetCore(cached.lessons, cached.shopRows || [], cached.settingRows || []);
     applySheetDetails(cached.vocab, cached.quiz, cached.tvRows || [], cached.thoughtRows || []);
+    prevCoreDigest = computeSheetStageDigest([cached.lessons, cached.shopRows || [], cached.settingRows || []]);
+    prevDetailsDigest = computeSheetStageDigest([cached.vocab, cached.quiz, cached.tvRows || [], cached.thoughtRows || []]);
     sheetsLoaded = true;
     sheetsDetailsLoaded = true;
     sheetsError = null;
     renderAppState();
+
+    const cacheAgeMs = Date.now() - Number(cached.ts || 0);
+    if (Number.isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs < SHEETS_FRESH_TTL_MS) {
+      sheetsStage2Promise = Promise.resolve();
+      return;
+    }
   }
 
+  // Run Stage 1 (small metadata) before Stage 2 (vocab/quiz) so all users don't burst 7 concurrent Sheet calls at t=0
   const stage1Promise = Promise.all([
     fetchSheetTab("Lessons"),
     fetchOptionalSheetTab("Shop"),
     fetchOptionalSheetTab("Settings")
   ]);
-  const stage2Promise = Promise.all([
-    fetchSheetTab("Vocab"),
-    fetchSheetTab("Quiz"),
-    fetchOptionalSheetTab("TV_Videos"),
-    fetchOptionalSheetTab("Room_Thoughts")
-  ]);
+
+  const stage2Promise = stage1Promise
+    .catch(() => null)
+    .then(() => Promise.all([
+      fetchSheetTab("Vocab"),
+      fetchSheetTab("Quiz"),
+      fetchOptionalSheetTab("TV_Videos"),
+      fetchOptionalSheetTab("Room_Thoughts")
+    ]));
   sheetsStage2Promise = stage2Promise;
 
   try {
     const [lessons, shopRows, settingRows] = await stage1Promise;
     const wasLoaded = sheetsLoaded;
-    applySheetCore(lessons, shopRows, settingRows);
-    sheetsLoaded = true;
-    sheetsError = null;
-    if (!wasLoaded) {
-      renderAppState();
-    } else {
-      refreshLiveSheetViews();
+    const nextCoreDigest = computeSheetStageDigest([lessons, shopRows, settingRows]);
+    if (!wasLoaded || nextCoreDigest !== prevCoreDigest) {
+      applySheetCore(lessons, shopRows, settingRows);
+      prevCoreDigest = nextCoreDigest;
+      sheetsLoaded = true;
+      sheetsError = null;
+      if (!wasLoaded) {
+        renderAppState();
+      } else {
+        refreshLiveSheetViews();
+      }
     }
   } catch (err) {
     if (!sheetsLoaded) {
@@ -1742,13 +1862,17 @@ async function loadSheets() {
 
   try {
     const [vocab, quiz, tvRows, thoughtRows] = await stage2Promise;
+    const nextDetailsDigest = computeSheetStageDigest([vocab, quiz, tvRows, thoughtRows]);
+    const detailsChanged = !sheetsDetailsLoaded || nextDetailsDigest !== prevDetailsDigest;
     applySheetDetails(vocab, quiz, tvRows, thoughtRows);
     sheetsDetailsLoaded = true;
     writeSheetsCache(latestSheetSnapshot);
-    if (currentScreen === "desktop") {
-      renderHome();
-    } else if (currentScreen === "lesson" && activeLessonDate) {
-      renderLesson(activeLessonDate);
+    if (detailsChanged) {
+      if (currentScreen === "desktop") {
+        renderHome();
+      } else if (currentScreen === "lesson" && activeLessonDate) {
+        renderLesson(activeLessonDate);
+      }
     }
   } catch (err) {
     if (!sheetsDetailsLoaded) {
@@ -2010,7 +2134,7 @@ function createLessonQuestionCard(q, idx, dateStr, lessonQuiz) {
       { key: "B", text: q.Option_B },
       { key: "C", text: q.Option_C },
       { key: "D", text: q.Option_D }
-    ].filter(o => o.text && o.text !== "-");
+    ].filter(o => o.text !== undefined && o.text !== null && String(o.text).trim() !== "" && String(o.text).trim() !== "-");
 
     opts.forEach(o => {
       optionsHtml += `
@@ -2375,6 +2499,8 @@ function renderLesson(dateStr) {
   const progressFill = document.getElementById("quiz-progress-fill");
   const popoverEl = document.getElementById("reading-vocab-popover");
 
+  stopAllListeningAudio();
+  clearReadingScaffold();
   quizContainer.innerHTML = "";
   if (sectionedEl) sectionedEl.innerHTML = "";
   if (progressFill) {
@@ -4214,7 +4340,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261124h`;
+    img.src = `${item.previewImage}?v=20261124i`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
@@ -5558,6 +5684,11 @@ let activeFinanceFilter = "all"; // "all" | "expense" | "income"
 let activeFinanceMonth = getMonthKey();
 let rentActionBusy = false;
 
+const AUTO_RENT_FAILURE_COOLDOWN_MS = 30000;
+let lastRentCountdownBadgeText = "";
+let lastRentBtnLabel = "";
+let nextAutoRentRetryAt = 0;
+
 function updateRentCountdownUI() {
   const btn = document.getElementById("room-finance-btn");
   const msgBadgeEl = document.getElementById("room-rent-msg-badge");
@@ -5570,8 +5701,11 @@ function updateRentCountdownUI() {
     isDue,
     hasRentAlert,
     daysLeft,
+    msLeft,
     deficit: rentDeficit,
-    paidThisMonth
+    paidThisMonth,
+    clams,
+    isSuperAdmin
   } = evaluateProfileRentMood(profile, currentRole, {
     monthlyRentClams: MONTHLY_RENT_CLAMS,
     starterClams: STARTER_CLAMS,
@@ -5589,12 +5723,13 @@ function updateRentCountdownUI() {
 
   if (btn) {
     btn.classList.toggle("is-rent-alert", hasRentAlert);
-    btn.setAttribute(
-      "aria-label",
-      hasRentAlert
-        ? bi(`記帳（1 則待繳房租通知，應繳 ${MONTHLY_RENT_CLAMS} 英蚌）`, `Ledger (1 rent notice: ${MONTHLY_RENT_CLAMS} Clams due)`)
-        : bi("記帳", "Ledger")
-    );
+    const nextLabel = hasRentAlert
+      ? bi(`記帳（1 則待繳房租通知，應繳 ${MONTHLY_RENT_CLAMS} 英蚌）`, `Ledger (1 rent notice: ${MONTHLY_RENT_CLAMS} Clams due)`)
+      : bi("記帳", "Ledger");
+    if (nextLabel !== lastRentBtnLabel) {
+      btn.setAttribute("aria-label", nextLabel);
+      lastRentBtnLabel = nextLabel;
+    }
   }
   if (msgBadgeEl) {
     msgBadgeEl.classList.toggle("hidden", !hasRentAlert);
@@ -5602,9 +5737,13 @@ function updateRentCountdownUI() {
 
   if (financeDialog.open) {
     if (badge) {
-      badge.textContent = isDue
+      const nextBadgeText = isDue
         ? bi(`⚠️ 本期房租 ${MONTHLY_RENT_CLAMS} 英蚌已到期`, `⚠️ Rent Due: ${MONTHLY_RENT_CLAMS} Clams`)
         : bi(`⏳ 距下次繳租：${formatRentCountdown(msLeft, false)}`, `⏳ Next rent in: ${formatRentCountdown(msLeft, false)}`);
+      if (nextBadgeText !== lastRentCountdownBadgeText) {
+        badge.textContent = nextBadgeText;
+        lastRentCountdownBadgeText = nextBadgeText;
+      }
     }
     if (payBtn) {
       payBtn.classList.toggle("hidden", !isDue || isSuperAdmin);
@@ -5988,11 +6127,21 @@ async function payMonthlyRent({ isTestDemo = false } = {}) {
 async function maybeCollectMonthlyRent() {
   if (!currentUser || !currentUserProfile || rentActionBusy) return;
   if (currentRole === "super_admin") return;
+  const now = Date.now();
+  if (now < nextAutoRentRetryAt) return;
   const dueAt = Number(currentUserProfile.nextRentDueAt || 0);
-  if (!dueAt || Date.now() < dueAt) return;
+  if (!dueAt || now < dueAt) return;
   const clams = Math.trunc(Number(currentUserProfile.clams ?? STARTER_CLAMS));
   if (clams >= MONTHLY_RENT_CLAMS) {
-    await payMonthlyRent({ isTestDemo: false });
+    try {
+      await payMonthlyRent({ isTestDemo: false });
+      const stillDue = Number(currentUserProfile?.nextRentDueAt || 0) <= Date.now();
+      if (stillDue) {
+        nextAutoRentRetryAt = Date.now() + AUTO_RENT_FAILURE_COOLDOWN_MS;
+      }
+    } catch {
+      nextAutoRentRetryAt = Date.now() + AUTO_RENT_FAILURE_COOLDOWN_MS;
+    }
   }
 }
 
@@ -6040,8 +6189,10 @@ document.getElementById("finance-test-rent-btn").addEventListener("click", () =>
 });
 
 setInterval(() => {
-  if (!currentUser || !currentUserProfile) return;
-  updateRentCountdownUI();
+  if (document.hidden || !currentUser || !currentUserProfile) return;
+  if (currentScreen === "room" || financeDialog.open) {
+    updateRentCountdownUI();
+  }
   maybeCollectMonthlyRent();
 }, 1000);
 
@@ -6063,39 +6214,6 @@ document.getElementById("room-zoom-toggle-btn")?.addEventListener("click", () =>
   toggleBtn.classList.toggle("is-active", opening);
   toggleBtn.setAttribute("aria-expanded", String(opening));
   syncRoomZoomUI();
-
-document.getElementById("room-story-next-btn")?.addEventListener("click", () => {
-  advanceIntroStoryBanner();
-});
-
-document.getElementById("room-story-text")?.addEventListener("click", () => {
-  advanceIntroStoryBanner();
-});
-
-document.getElementById("room-story-skip-btn")?.addEventListener("click", () => {
-  closeIntroStoryBanner({ markSeen: true });
-});
-
-document.addEventListener("keydown", (e) => {
-  if (!introStoryActive || currentScreen !== "room") return;
-  if (document.querySelector("dialog[open]")) return;
-  const tag = e.target?.tagName;
-  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-  if (e.key === "Escape") {
-    e.preventDefault();
-    closeIntroStoryBanner({ markSeen: true });
-    return;
-  }
-  if (e.key === "ArrowRight") {
-    e.preventDefault();
-    advanceIntroStoryBanner();
-    return;
-  }
-  if ((e.key === "Enter" || e.key === " ") && tag !== "BUTTON") {
-    e.preventDefault();
-    advanceIntroStoryBanner();
-  }
-});
 });
 
 document.getElementById("room-zoom-out-btn")?.addEventListener("click", () => {
@@ -6195,6 +6313,13 @@ window.addEventListener("keydown", (e) => {
 let cachedStudents = [];
 let unsubscribeUserRealtime = null;
 let unsubscribeAdminQueueRealtime = null;
+let lastAdminPendingTotal = -1;
+let lastAdminReviewSig = "";
+let lastSpectatedVisualSig = "";
+let lastUserProgressSig = "";
+let lastUserRoomVisualSig = "";
+let lastUserDialogSig = "";
+let lastUserHeaderSig = "";
 
 function stopRealtimeListeners() {
   if (unsubscribeUserRealtime) {
@@ -6211,6 +6336,13 @@ function stopRealtimeListeners() {
   }
   cachedStudents = [];
   cachedTransactions = [];
+  lastAdminPendingTotal = -1;
+  lastAdminReviewSig = "";
+  lastSpectatedVisualSig = "";
+  lastUserProgressSig = "";
+  lastUserRoomVisualSig = "";
+  lastUserDialogSig = "";
+  lastUserHeaderSig = "";
   const badge = document.getElementById("admin-pending-badge");
   if (badge) {
     badge.textContent = "0";
@@ -6221,7 +6353,7 @@ function stopRealtimeListeners() {
 function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
   cachedStudents = docsList;
 
-  // Update live pending badge on header button
+  // Update live pending badge on header button only when count changes
   let totalPending = 0;
   cachedStudents.forEach(stu => {
     const approved = stu.approvedLessons || {};
@@ -6234,10 +6366,13 @@ function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
     });
   });
 
-  const pendingBadge = document.getElementById("admin-pending-badge");
-  if (pendingBadge) {
-    pendingBadge.textContent = String(totalPending);
-    pendingBadge.classList.toggle("hidden", totalPending <= 0);
+  if (totalPending !== lastAdminPendingTotal) {
+    lastAdminPendingTotal = totalPending;
+    const pendingBadge = document.getElementById("admin-pending-badge");
+    if (pendingBadge) {
+      pendingBadge.textContent = String(totalPending);
+      pendingBadge.classList.toggle("hidden", totalPending <= 0);
+    }
   }
 
   if (pendingRestoreSpectateUid && currentScreen === "room" && !getActiveOpenModalKey()) {
@@ -6251,11 +6386,24 @@ function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
 
   if (spectatingStudentUid && currentScreen === "room") {
     const liveStu = cachedStudents.find(s => s.uid === spectatingStudentUid);
-    populateSpectateStudentSelect(spectatingStudentUid);
-    if (liveStu && roomScene) {
-      applyProfileToRoomScene(liveStu, { preserveCamera: true });
-      syncRoomHUD();
+    if (liveStu) {
+      const nextSpectatedSig = JSON.stringify({
+        avatar: liveStu.avatar || null,
+        ownedItems: liveStu.ownedItems || null,
+        roomState: liveStu.roomState || null,
+        xp: liveStu.xp ?? 0
+      });
+      if (nextSpectatedSig !== lastSpectatedVisualSig) {
+        lastSpectatedVisualSig = nextSpectatedSig;
+        populateSpectateStudentSelect(spectatingStudentUid);
+        if (roomScene) {
+          applyProfileToRoomScene(liveStu, { preserveCamera: true });
+          syncRoomHUD();
+        }
+      }
     }
+  } else {
+    lastSpectatedVisualSig = "";
   }
 
   if (!adminReviewDialog.open) return;
@@ -6264,6 +6412,25 @@ function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
   const summaryEl = document.getElementById("review-student-summary");
   const listEl = document.getElementById("review-lessons-list");
   const targetUid = preserveUid || selectEl.value;
+
+  // Ignore unrelated room-only writes from other online students while admin reviews submissions
+  const reviewSig = JSON.stringify(
+    cachedStudents.map(stu => ([
+      stu.uid,
+      stu.displayName || "",
+      stu.email || "",
+      stu.avatar?.name || "",
+      stu.clams ?? STARTER_CLAMS,
+      stu.xp ?? 0,
+      stu.approvedLessons || {},
+      stu.completionOverrides || {},
+      stu.submittedLessons || {}
+    ]))
+  );
+  if (!preserveUid && reviewSig === lastAdminReviewSig && selectEl.options.length > 0 && selectEl.value) {
+    return;
+  }
+  lastAdminReviewSig = reviewSig;
 
   renderPendingReviewQueue();
 
@@ -6429,40 +6596,86 @@ function startUserRealtimeListener(uid, nonce) {
     }
 
     const displayName = formatDisplayName(currentUser, data);
-    updateHeaderAccountUI(currentUser, currentRole, displayName, data.clams ?? STARTER_CLAMS);
-    syncXpProgressUI({ allowCelebrate: true });
+    const headerSig = JSON.stringify([displayName, currentRole, data.clams ?? STARTER_CLAMS, data.xp ?? 0]);
+    if (headerSig !== lastUserHeaderSig) {
+      lastUserHeaderSig = headerSig;
+      updateHeaderAccountUI(currentUser, currentRole, displayName, data.clams ?? STARTER_CLAMS);
+      syncXpProgressUI({ allowCelebrate: true });
+    }
+
+    const rs = data.roomState || {};
+    const nextOwned = normalizeOwnedItems(data.ownedItems);
     if (roomScene && !spectatingStudentUid) {
-      const rs = data.roomState || {};
-      const nextOwned = normalizeOwnedItems(data.ownedItems);
-      roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
-      roomScene.setFloorStyle(rs.floorStyle || DEFAULT_FLOOR_STYLE);
-      roomScene.setDeskStyle(getActiveRoomStyle(rs, "deskStyle", DEFAULT_DESK_STYLE));
-      roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
-      roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
-      roomScene.setShirtStyle(rs.shirtStyle || DEFAULT_SHIRT_STYLE);
-      roomScene.setPantsStyle(rs.pantsStyle || DEFAULT_PANTS_STYLE);
-      roomScene.setPosterImage(rs.posterImage || "");
-      roomScene.setVinylOn(Boolean(rs.vinylOn ?? false));
-      if (!roomScene.editMode) {
-        roomScene.setOwnedAndParcels(nextOwned, rs.pendingParcels || {});
-        roomScene.applyFurnitureLayout(rs.furnitureLayout || {});
-      } else {
-        roomScene.applyOwnedItems(nextOwned);
+      const roomVisualSig = JSON.stringify({
+        wallColor: rs.wallColor || DEFAULT_WALL_COLOR,
+        floorStyle: rs.floorStyle || DEFAULT_FLOOR_STYLE,
+        deskStyle: getActiveRoomStyle(rs, "deskStyle", DEFAULT_DESK_STYLE),
+        bedSheet: rs.bedSheet || DEFAULT_BED_SHEET,
+        rugStyle: rs.rugStyle || DEFAULT_RUG_STYLE,
+        shirtStyle: rs.shirtStyle || DEFAULT_SHIRT_STYLE,
+        pantsStyle: rs.pantsStyle || DEFAULT_PANTS_STYLE,
+        posterImage: rs.posterImage || "",
+        vinylOn: Boolean(rs.vinylOn ?? false),
+        ownedItems: nextOwned,
+        pendingParcels: rs.pendingParcels || {},
+        furnitureLayout: rs.furnitureLayout || {}
+      });
+      if (roomVisualSig !== lastUserRoomVisualSig) {
+        lastUserRoomVisualSig = roomVisualSig;
+        roomScene.setWallColor(rs.wallColor || DEFAULT_WALL_COLOR);
+        roomScene.setFloorStyle(rs.floorStyle || DEFAULT_FLOOR_STYLE);
+        roomScene.setDeskStyle(getActiveRoomStyle(rs, "deskStyle", DEFAULT_DESK_STYLE));
+        roomScene.setBedSheet(rs.bedSheet || DEFAULT_BED_SHEET);
+        roomScene.setRugStyle(rs.rugStyle || DEFAULT_RUG_STYLE);
+        roomScene.setShirtStyle(rs.shirtStyle || DEFAULT_SHIRT_STYLE);
+        roomScene.setPantsStyle(rs.pantsStyle || DEFAULT_PANTS_STYLE);
+        roomScene.setPosterImage(rs.posterImage || "");
+        roomScene.setVinylOn(Boolean(rs.vinylOn ?? false));
+        if (!roomScene.editMode) {
+          roomScene.setOwnedAndParcels(nextOwned, rs.pendingParcels || {});
+          roomScene.applyFurnitureLayout(rs.furnitureLayout || {});
+        } else {
+          roomScene.applyOwnedItems(nextOwned);
+        }
       }
     }
-    if (shopDialog.open) {
-      renderShopDialog();
+
+    const dialogSig = JSON.stringify([
+      data.clams ?? STARTER_CLAMS,
+      data.xp ?? 0,
+      nextOwned,
+      rs.wallColor || "",
+      rs.floorStyle || "",
+      rs.bedSheet || "",
+      rs.rugStyle || "",
+      rs.shirtStyle || "",
+      rs.pantsStyle || "",
+      rs.customStyles || null,
+      rs.pendingParcels || null,
+      data.nextRentDueAt || 0,
+      data.lastRentPaidMonth || ""
+    ]);
+    if (dialogSig !== lastUserDialogSig) {
+      lastUserDialogSig = dialogSig;
+      if (shopDialog.open) renderShopDialog();
+      if (financeDialog.open) renderFinanceDialog();
+      if (!spectatingStudentUid) updateRentCountdownUI();
     }
-    if (financeDialog.open) {
-      renderFinanceDialog();
-    }
-    if (!spectatingStudentUid) {
-      updateRentCountdownUI();
-    }
-    if (currentScreen === "desktop") {
-      renderHome();
-    } else if (currentScreen === "lesson" && activeLessonDate) {
-      activeLessonSyncCommission?.();
+
+    const progressSig = JSON.stringify([
+      userCompletionOverrides,
+      userSubmittedLessons,
+      userApprovedLessons,
+      userXpAwardedLessons,
+      data.xp ?? 0
+    ]);
+    if (progressSig !== lastUserProgressSig) {
+      lastUserProgressSig = progressSig;
+      if (currentScreen === "desktop") {
+        renderHome();
+      } else if (currentScreen === "lesson" && activeLessonDate) {
+        activeLessonSyncCommission?.();
+      }
     }
   }, (err) => {
     console.warn("User realtime listener warning:", err?.message || err);

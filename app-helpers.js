@@ -1,5 +1,5 @@
-import { bi, isEn } from "./i18n.js?v=20261124h";
-import { hasOwnedSofa } from "./shop-catalog.js?v=20261124h";
+import { bi, isEn } from "./i18n.js?v=20261124i";
+import { hasOwnedSofa } from "./shop-catalog.js?v=20261124i";
 
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
@@ -716,7 +716,7 @@ export function evaluateProfileRentMood(
     : (paidThisMonth && daysLeft >= 20)
     ? "paid"
     : "chill";
-  return { status, isDue, hasRentAlert, daysLeft, deficit, paidThisMonth };
+  return { status, isDue, hasRentAlert, daysLeft, msLeft, deficit, paidThisMonth, clams, isSuperAdmin };
 }
 
 const VALID_NAV_SCREENS = new Set(["room", "desktop", "lesson", "onboarding"]);
