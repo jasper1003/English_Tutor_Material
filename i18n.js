@@ -38,7 +38,7 @@ export function applyDocumentLangAttribute(lang = getUiLanguage()) {
 
 const STATIC_DOM_TRANSLATIONS = [
   // Header & navigation
-  { selector: "#back-btn", zh: "← 返回工作台地圖", en: "← Back to Quest Map" },
+  { selector: "#back-btn", zh: "← 返回地圖", en: "← Back to Map" },
   { selector: "#back-room-btn", zh: "🏠 回到租屋處", en: "🏠 Back to Studio" },
   {
     selector: "label.theme-switch",
