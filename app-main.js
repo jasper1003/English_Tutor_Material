@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261124j";
+} from "./room-scene.js?v=20261124k";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261124j";
+} from "./shop-catalog.js?v=20261124k";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261124j";
+} from "./room-grid.js?v=20261124k";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -102,16 +102,16 @@ import {
   resolveQuestProgressTargetIndex,
   evaluateSubmissionMetrics,
   formatExamDuration
-} from "./app-helpers.js?v=20261124j";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261124j";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124j";
+} from "./app-helpers.js?v=20261124k";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261124k";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124k";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261124j";
+} from "./i18n.js?v=20261124k";
 
 applyStaticDomTranslations();
 
@@ -2338,13 +2338,15 @@ function createLessonQuestionCard(q, idx, dateStr, lessonQuiz) {
     });
   }
 
+  const displayQuestionText = String(q.Question || "").replace(/^\[(?:單字|文法)[^\]]*\]\s*/, "");
+
   qCard.innerHTML = `
     <div class="question-type-badge">Question ${idx + 1} · ${typeLabel}</div>
-    <div class="question-text">${escapeHtml(q.Question)}</div>
+    <div class="question-text">${escapeHtml(displayQuestionText)}</div>
     <div class="options-list">${optionsHtml}</div>
     <div id="feedback_pill_${idx}" style="margin-top: 10px;"></div>
     <details class="explanation-details" id="exp_${idx}">
-      <summary class="explanation-summary">${bi("▸ 展開解析提示與證據（點擊查看）", "▸ Explanation & Evidence (click to expand)")}</summary>
+      <summary class="explanation-summary">${bi("▸ 展開解析", "▸ Explanation")}</summary>
       <div class="explanation-content">
         <div><strong>${bi("正確答案：", "Answer: ")}</strong>${escapeHtml(q.Answer)}</div>
         <div style="margin-top: 4px;">${escapeHtml(q.Explanation || "")}</div>
@@ -4535,7 +4537,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261124j`;
+    img.src = `${item.previewImage}?v=20261124k`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
