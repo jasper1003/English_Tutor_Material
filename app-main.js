@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261124f";
+} from "./room-scene.js?v=20261124g";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261124f";
+} from "./shop-catalog.js?v=20261124g";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261124f";
+} from "./room-grid.js?v=20261124g";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -100,16 +100,16 @@ import {
   translateAuthError,
   normalizeSavedNavState,
   resolveQuestProgressTargetIndex
-} from "./app-helpers.js?v=20261124f";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261124f";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124f";
+} from "./app-helpers.js?v=20261124g";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261124g";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124g";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261124f";
+} from "./i18n.js?v=20261124g";
 
 applyStaticDomTranslations();
 
@@ -2047,43 +2047,71 @@ function createLessonQuestionCard(q, idx, dateStr, lessonQuiz) {
   return qCard;
 }
 
-function buildSectionedExamBlocks(passageText, lessonQuiz) {
+export function buildSectionedExamBlocks(passageText, lessonQuiz) {
   const normalized = String(passageText || "").replace(/<br\s*\/?>/gi, "\n");
   const markerRe = /【([^】]+)】/g;
   const matches = [...normalized.matchAll(markerRe)];
   if (matches.length < 2) return null;
 
-  const passageSections = matches.map((m, i) => {
+  const rawSections = matches.map((m, i) => {
     const title = m[1].trim();
     const start = m.index + m[0].length;
     const end = i + 1 < matches.length ? matches[i + 1].index : normalized.length;
-    const body = normalized.slice(start, end).trim();
+    let body = normalized.slice(start, end).trim();
+    let audioSrc = "";
+    const audioLineMatch = body.match(/^AUDIO:\s*(\S+)\s*\n?/i);
+    if (audioLineMatch) {
+      audioSrc = audioLineMatch[1].trim();
+      body = body.slice(audioLineMatch[0].length).trim();
+    }
+    return { title, body, audioSrc };
+  });
+
+  const hasListening = rawSections.some(s => s.title.includes("聽力測驗") || Boolean(s.audioSrc));
+  const partBase = hasListening ? 1 : 0;
+
+  const parsedSections = rawSections.map((raw, i) => {
+    const { title, body, audioSrc } = raw;
     let prefix = "";
     let sectionKey = `sec_${i}`;
     let headingZh = title;
     let headingEn = title;
-    if (title.includes("克漏字")) {
+    let isListening = false;
+
+    if (title.includes("聽力測驗 A")) {
+      prefix = "[聽力 A";
+      isListening = true;
+      sectionKey = "listening_a";
+      headingZh = "第一大題（一）：聽力測驗 — 男女對話";
+      headingEn = "Part 1A: Listening — Short Dialogue";
+    } else if (title.includes("聽力測驗 B")) {
+      prefix = "[聽力 B";
+      isListening = true;
+      sectionKey = "listening_b";
+      headingZh = "第一大題（二）：聽力測驗 — 論說型短文";
+      headingEn = "Part 1B: Listening — Expository Talk";
+    } else if (title.includes("克漏字")) {
       prefix = "[克漏字";
       sectionKey = "cloze";
-      headingZh = "第三部分：克漏字測驗";
-      headingEn = "Part 3: Cloze Passage";
+      headingZh = `第${partBase + 3}部分：克漏字測驗`;
+      headingEn = `Part ${partBase + 3}: Cloze Passage`;
     } else if (title.includes("閱讀測驗 A")) {
       prefix = "[閱讀 A";
       sectionKey = "reading_a";
-      headingZh = "第四部分：閱讀測驗 A（人物對話）";
-      headingEn = "Part 4: Reading A — Dialogue";
+      headingZh = `第${partBase + 4}部分：閱讀測驗 A（人物對話）`;
+      headingEn = `Part ${partBase + 4}: Reading A — Dialogue`;
     } else if (title.includes("閱讀測驗 B")) {
       prefix = "[閱讀 B";
       sectionKey = "reading_b";
-      headingZh = "第五部分：閱讀測驗 B（報導型文章）";
-      headingEn = "Part 5: Reading B — News Report";
+      headingZh = `第${partBase + 5}部分：閱讀測驗 B（報導型文章）`;
+      headingEn = `Part ${partBase + 5}: Reading B — News Report`;
     } else if (title.includes("閱讀測驗 C")) {
       prefix = "[閱讀 C";
       sectionKey = "reading_c";
-      headingZh = "第六部分：閱讀測驗 C（公告型文章）";
-      headingEn = "Part 6: Reading C — Public Notice";
+      headingZh = `第${partBase + 6}部分：閱讀測驗 C（公告型文章）`;
+      headingEn = `Part ${partBase + 6}: Reading C — Public Notice`;
     }
-    return { title, body, prefix, sectionKey, headingZh, headingEn, items: [] };
+    return { title, body, audioSrc, isListening, prefix, sectionKey, headingZh, headingEn, items: [] };
   });
 
   const vocabStandalone = [];
@@ -2092,7 +2120,7 @@ function buildSectionedExamBlocks(passageText, lessonQuiz) {
 
   lessonQuiz.forEach((q, idx) => {
     const text = String(q?.Question || "").trim();
-    const matchedSection = passageSections.find(sec => sec.prefix && text.startsWith(sec.prefix));
+    const matchedSection = parsedSections.find(sec => sec.prefix && text.startsWith(sec.prefix));
     if (matchedSection) {
       matchedSection.items.push({ q, idx });
     } else if (text.startsWith("[單字")) {
@@ -2105,13 +2133,137 @@ function buildSectionedExamBlocks(passageText, lessonQuiz) {
   });
 
   return {
+    listeningSections: parsedSections.filter(sec => sec.isListening && (sec.items.length > 0 || sec.audioSrc)),
     standaloneGroups: [
-      { id: "vocab_mc", headingZh: "第一部分：單字／片語填空選擇題", headingEn: "Part 1: Vocabulary Multiple Choice", items: vocabStandalone },
-      { id: "grammar_mc", headingZh: "第二部分：文法選擇題", headingEn: "Part 2: Grammar Multiple Choice", items: grammarStandalone },
+      {
+        id: "vocab_mc",
+        headingZh: hasListening ? "第二大題：單字／片語填空選擇題" : "第一部分：單字／片語填空選擇題",
+        headingEn: hasListening ? "Part 2: Vocabulary Multiple Choice" : "Part 1: Vocabulary Multiple Choice",
+        items: vocabStandalone
+      },
+      {
+        id: "grammar_mc",
+        headingZh: hasListening ? "第三大題：文法選擇題" : "第二部分：文法選擇題",
+        headingEn: hasListening ? "Part 3: Grammar Multiple Choice" : "Part 2: Grammar Multiple Choice",
+        items: grammarStandalone
+      },
       { id: "other_mc", headingZh: "綜合練習題", headingEn: "Practice Questions", items: otherStandalone }
     ].filter(g => g.items.length > 0),
-    passageSections: passageSections.filter(sec => sec.items.length > 0 || sec.body.length > 0)
+    passageSections: parsedSections.filter(sec => !sec.isListening && (sec.items.length > 0 || sec.body.length > 0))
   };
+}
+
+export function renderListeningSectionCard(sec) {
+  const pane = document.createElement("article");
+  pane.className = "listening-pane";
+
+  const header = document.createElement("div");
+  header.className = "listening-header";
+  const badge = document.createElement("span");
+  badge.className = "listening-badge";
+  badge.textContent = bi("🎧 聽力音檔", "🎧 LISTENING AUDIO");
+  const titleEl = document.createElement("h4");
+  titleEl.className = "listening-title";
+  titleEl.textContent = sec.title;
+  header.append(badge, titleEl);
+
+  const playerBox = document.createElement("div");
+  playerBox.className = "listening-player-box";
+
+  const audioEl = document.createElement("audio");
+  audioEl.className = "listening-audio-el";
+  audioEl.controls = true;
+  audioEl.preload = "metadata";
+  if (sec.audioSrc) {
+    audioEl.src = sec.audioSrc;
+  }
+
+  let activeRate = 1;
+  const applyPlaybackRate = (rate) => {
+    activeRate = rate;
+    audioEl.defaultPlaybackRate = rate;
+    audioEl.playbackRate = rate;
+  };
+
+  audioEl.addEventListener("loadedmetadata", () => {
+    audioEl.playbackRate = activeRate;
+  });
+  audioEl.addEventListener("play", () => {
+    audioEl.playbackRate = activeRate;
+    document.querySelectorAll(".listening-audio-el").forEach(other => {
+      if (other !== audioEl && !other.paused) {
+        other.pause();
+      }
+    });
+  });
+
+  const speedRow = document.createElement("div");
+  speedRow.className = "listening-speed-row";
+  const speedLabel = document.createElement("span");
+  speedLabel.className = "listening-speed-label";
+  speedLabel.textContent = bi("播放倍速：", "Playback speed:");
+
+  const speedGroup = document.createElement("div");
+  speedGroup.className = "listening-speed-group";
+  speedGroup.setAttribute("role", "group");
+  speedGroup.setAttribute("aria-label", bi("音檔播放倍速", "Audio playback speed"));
+
+  [
+    { rate: 0.75, label: "0.75x" },
+    { rate: 1, label: "1x" },
+    { rate: 1.25, label: "1.25x" }
+  ].forEach(({ rate, label }) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `listening-speed-btn${rate === 1 ? " is-active" : ""}`;
+    btn.dataset.rate = String(rate);
+    btn.textContent = label;
+    btn.setAttribute("aria-pressed", rate === 1 ? "true" : "false");
+    btn.addEventListener("click", () => {
+      applyPlaybackRate(rate);
+      speedGroup.querySelectorAll(".listening-speed-btn").forEach(otherBtn => {
+        const isSelf = otherBtn === btn;
+        otherBtn.classList.toggle("is-active", isSelf);
+        otherBtn.setAttribute("aria-pressed", isSelf ? "true" : "false");
+      });
+    });
+    speedGroup.appendChild(btn);
+  });
+
+  speedRow.append(speedLabel, speedGroup);
+  playerBox.append(audioEl, speedRow);
+
+  const details = document.createElement("details");
+  details.className = "listening-transcript-details";
+  const summary = document.createElement("summary");
+  summary.className = "listening-transcript-summary";
+  summary.textContent = bi("▸ 展開聽力文字稿（點擊查看）", "▸ Listening Transcript (click to expand)");
+
+  const transcriptBody = document.createElement("div");
+  transcriptBody.className = "listening-transcript-body";
+
+  String(sec.body || "")
+    .split(/\n+/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .forEach(line => {
+      const p = document.createElement("p");
+      p.className = "listening-transcript-line";
+      const spkMatch = line.match(/^([A-Z][a-zA-Z]+):\s*(.*)$/);
+      if (spkMatch) {
+        const spk = document.createElement("span");
+        spk.className = "listening-transcript-speaker";
+        spk.textContent = `${spkMatch[1]}:`;
+        p.append(spk, document.createTextNode(spkMatch[2]));
+      } else {
+        p.textContent = line;
+      }
+      transcriptBody.appendChild(p);
+    });
+
+  details.append(summary, transcriptBody);
+  pane.append(header, playerBox, details);
+  return pane;
 }
 
 function renderLesson(dateStr) {
@@ -2236,6 +2388,32 @@ function renderLesson(dateStr) {
     splitDefaultEl.classList.add("hidden");
     sectionedEl.classList.remove("hidden");
     clearReadingScaffold();
+
+    // 0. Listening sections FIRST at the very top (audio + speed controls + collapsed transcript paired with its MCQs)
+    (sectionedExam.listeningSections || []).forEach(sec => {
+      const secBlock = document.createElement("section");
+      secBlock.className = "quiz-section-block quiz-listening-block";
+
+      const heading = document.createElement("h3");
+      heading.className = "quiz-section-heading";
+      heading.textContent = bi(sec.headingZh, sec.headingEn);
+      secBlock.appendChild(heading);
+
+      const split = document.createElement("div");
+      split.className = "ielts-split";
+
+      const listeningPane = renderListeningSectionCard(sec);
+
+      const quizPane = document.createElement("div");
+      quizPane.className = "quiz-pane";
+      sec.items.forEach(({ q, idx }) => {
+        quizPane.appendChild(createLessonQuestionCard(q, idx, dateStr, lessonQuiz));
+      });
+
+      split.append(listeningPane, quizPane);
+      secBlock.appendChild(split);
+      sectionedEl.appendChild(secBlock);
+    });
 
     // 1. Standalone Vocabulary & Grammar sections (no left reading passage alongside them!)
     sectionedExam.standaloneGroups.forEach(group => {
@@ -4036,7 +4214,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261124f`;
+    img.src = `${item.previewImage}?v=20261124g`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
