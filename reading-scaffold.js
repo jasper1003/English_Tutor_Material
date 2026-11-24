@@ -1,5 +1,5 @@
-import { escapeHtml, speakWord } from "./app-helpers.js?v=20261124d";
-import { bi } from "./i18n.js?v=20261124d";
+import { escapeHtml, speakWord } from "./app-helpers.js?v=20261124e";
+import { bi } from "./i18n.js?v=20261124e";
 
 const HINTS_PREF_KEY = "reading_vocab_hints_on_v2";
 const VALID_MARK_VALUES = ["yellow", "mint", "blue"];
@@ -268,7 +268,7 @@ function isPopoverShown(el) {
   return el.classList.contains("is-open");
 }
 
-let activeScaffoldCleanup = null;
+const activeScaffoldCleanups = new Set();
 
 export function renderInteractiveReadingPassage({
   bodyEl,
@@ -277,14 +277,18 @@ export function renderInteractiveReadingPassage({
   passageText,
   vocabRows = [],
   uid = "guest",
-  dateStr = "default"
+  dateStr = "default",
+  sectionKey = "",
+  preserveExisting = false
 }) {
-  activeScaffoldCleanup?.();
-  activeScaffoldCleanup = null;
+  if (!preserveExisting) {
+    clearReadingScaffold();
+  }
 
   if (!bodyEl) return;
 
-  const storageKey = `reading_marks:${uid || "guest"}:${dateStr || "default"}`;
+  const cleanSec = sectionKey ? `:${sectionKey}` : "";
+  const storageKey = `reading_marks:${uid || "guest"}:${dateStr || "default"}${cleanSec}`;
   let marks = loadReadingMarks(storageKey);
   let penEnabled = true;
   let hintsEnabled = readHintsEnabledPref();
@@ -601,7 +605,7 @@ export function renderInteractiveReadingPassage({
   window.addEventListener("scroll", onViewportChange, true);
   window.addEventListener("resize", onViewportChange);
 
-  activeScaffoldCleanup = () => {
+  const cleanupFn = () => {
     hidePopover();
     bodyEl.removeEventListener("click", onBodyClick);
     bodyEl.removeEventListener("mouseover", onChipPointerEnter);
@@ -611,9 +615,16 @@ export function renderInteractiveReadingPassage({
     window.removeEventListener("scroll", onViewportChange, true);
     window.removeEventListener("resize", onViewportChange);
   };
+  activeScaffoldCleanups.add(cleanupFn);
 }
 
 export function clearReadingScaffold() {
-  activeScaffoldCleanup?.();
-  activeScaffoldCleanup = null;
+  for (const fn of activeScaffoldCleanups) {
+    try {
+      fn();
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+  activeScaffoldCleanups.clear();
 }

@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261124d";
+} from "./room-scene.js?v=20261124e";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261124d";
+} from "./shop-catalog.js?v=20261124e";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261124d";
+} from "./room-grid.js?v=20261124e";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -99,16 +99,16 @@ import {
   clearFeedback,
   translateAuthError,
   normalizeSavedNavState
-} from "./app-helpers.js?v=20261124d";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261124d";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124d";
+} from "./app-helpers.js?v=20261124e";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261124e";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124e";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261124d";
+} from "./i18n.js?v=20261124e";
 
 applyStaticDomTranslations();
 
@@ -1585,7 +1585,7 @@ function applyRemoteTvVideos(rows = []) {
   }
 }
 
-const SHEETS_CACHE_KEY = `sheets_cache_v1:${SPREADSHEET_ID}`;
+const SHEETS_CACHE_KEY = `sheets_cache_v2:${SPREADSHEET_ID}`;
 let latestSheetSnapshot = {
   lessons: [],
   vocab: [],
@@ -1697,6 +1697,8 @@ async function loadSheets() {
     writeSheetsCache(latestSheetSnapshot);
     if (currentScreen === "desktop") {
       renderHome();
+    } else if (currentScreen === "lesson" && activeLessonDate) {
+      renderLesson(activeLessonDate);
     }
   } catch (err) {
     if (!sheetsDetailsLoaded) {
@@ -1931,6 +1933,134 @@ function clearSavedQuizAnswers(dateStr) {
   } catch {}
 }
 
+function createLessonQuestionCard(q, idx, dateStr, lessonQuiz) {
+  const qCard = document.createElement("div");
+  qCard.className = "question-card";
+  qCard.dataset.index = idx;
+
+  const isTFNG = (q.Type || "").toUpperCase() === "TFNG";
+  const typeLabel = isTFNG ? "TRUE / FALSE / NOT GIVEN" : "MULTIPLE CHOICE";
+
+  let optionsHtml = "";
+  if (isTFNG) {
+    ["TRUE", "FALSE", "NOT GIVEN"].forEach(val => {
+      optionsHtml += `
+        <label class="option-label" data-value="${val}">
+          <input type="radio" name="q_${idx}" value="${val}" />
+          <span>${val}</span>
+        </label>
+      `;
+    });
+  } else {
+    const opts = [
+      { key: "A", text: q.Option_A },
+      { key: "B", text: q.Option_B },
+      { key: "C", text: q.Option_C },
+      { key: "D", text: q.Option_D }
+    ].filter(o => o.text && o.text !== "-");
+
+    opts.forEach(o => {
+      optionsHtml += `
+        <label class="option-label" data-value="${o.key}">
+          <input type="radio" name="q_${idx}" value="${o.key}" />
+          <span><strong>(${o.key})</strong> ${escapeHtml(o.text)}</span>
+        </label>
+      `;
+    });
+  }
+
+  qCard.innerHTML = `
+    <div class="question-type-badge">Question ${idx + 1} · ${typeLabel}</div>
+    <div class="question-text">${escapeHtml(q.Question)}</div>
+    <div class="options-list">${optionsHtml}</div>
+    <div id="feedback_pill_${idx}" style="margin-top: 10px;"></div>
+    <details class="explanation-details" id="exp_${idx}">
+      <summary class="explanation-summary">${bi("▸ 展開解析提示與證據（點擊查看）", "▸ Explanation & Evidence (click to expand)")}</summary>
+      <div class="explanation-content">
+        <div><strong>${bi("正確答案：", "Answer: ")}</strong>${escapeHtml(q.Answer)}</div>
+        <div style="margin-top: 4px;">${escapeHtml(q.Explanation || "")}</div>
+      </div>
+    </details>
+  `;
+
+  const radios = qCard.querySelectorAll(`input[name="q_${idx}"]`);
+  radios.forEach(radio => {
+    radio.addEventListener("change", (e) => {
+      saveQuizAnswer(dateStr, idx, e.target.value);
+      handleInstantQuizFeedback(idx, q, e.target.value, qCard, lessonQuiz);
+    });
+  });
+
+  return qCard;
+}
+
+function buildSectionedExamBlocks(passageText, lessonQuiz) {
+  const normalized = String(passageText || "").replace(/<br\s*\/?>/gi, "\n");
+  const markerRe = /【([^】]+)】/g;
+  const matches = [...normalized.matchAll(markerRe)];
+  if (matches.length < 2) return null;
+
+  const passageSections = matches.map((m, i) => {
+    const title = m[1].trim();
+    const start = m.index + m[0].length;
+    const end = i + 1 < matches.length ? matches[i + 1].index : normalized.length;
+    const body = normalized.slice(start, end).trim();
+    let prefix = "";
+    let sectionKey = `sec_${i}`;
+    let headingZh = title;
+    let headingEn = title;
+    if (title.includes("克漏字")) {
+      prefix = "[克漏字";
+      sectionKey = "cloze";
+      headingZh = "第三部分：克漏字測驗";
+      headingEn = "Part 3: Cloze Passage";
+    } else if (title.includes("閱讀測驗 A")) {
+      prefix = "[閱讀 A";
+      sectionKey = "reading_a";
+      headingZh = "第四部分：閱讀測驗 A（人物對話）";
+      headingEn = "Part 4: Reading A — Dialogue";
+    } else if (title.includes("閱讀測驗 B")) {
+      prefix = "[閱讀 B";
+      sectionKey = "reading_b";
+      headingZh = "第五部分：閱讀測驗 B（報導型文章）";
+      headingEn = "Part 5: Reading B — News Report";
+    } else if (title.includes("閱讀測驗 C")) {
+      prefix = "[閱讀 C";
+      sectionKey = "reading_c";
+      headingZh = "第六部分：閱讀測驗 C（公告型文章）";
+      headingEn = "Part 6: Reading C — Public Notice";
+    }
+    return { title, body, prefix, sectionKey, headingZh, headingEn, items: [] };
+  });
+
+  const vocabStandalone = [];
+  const grammarStandalone = [];
+  const otherStandalone = [];
+
+  lessonQuiz.forEach((q, idx) => {
+    const text = String(q?.Question || "").trim();
+    const matchedSection = passageSections.find(sec => sec.prefix && text.startsWith(sec.prefix));
+    if (matchedSection) {
+      matchedSection.items.push({ q, idx });
+    } else if (text.startsWith("[單字")) {
+      vocabStandalone.push({ q, idx });
+    } else if (text.startsWith("[文法")) {
+      grammarStandalone.push({ q, idx });
+    } else {
+      otherStandalone.push({ q, idx });
+    }
+  });
+
+  return {
+    standaloneGroups: [
+      { id: "vocab_mc", headingZh: "第一部分：單字／片語填空選擇題", headingEn: "Part 1: Vocabulary Multiple Choice", items: vocabStandalone },
+      { id: "grammar_mc", headingZh: "第二部分：文法選擇題", headingEn: "Part 2: Grammar Multiple Choice", items: grammarStandalone },
+      { id: "other_mc", headingZh: "綜合練習題", headingEn: "Practice Questions", items: otherStandalone }
+    ].filter(g => g.items.length > 0),
+    passageSections: passageSections.filter(sec => sec.items.length > 0 || sec.body.length > 0)
+  };
+}
+
 function renderLesson(dateStr) {
   const lesson = db.lessons.find(l => l.Date === dateStr);
   if (!lesson) return openWorkDesktop();
@@ -2034,94 +2164,122 @@ function renderLesson(dateStr) {
   syncLessonXpBadge();
 
   const lessonQuiz = db.quiz.filter(q => q.Date === dateStr);
-  document.getElementById("reading-title").textContent = lesson.Reading_Title || "Reading Passage";
-  renderInteractiveReadingPassage({
-    bodyEl: document.getElementById("reading-body"),
-    toolsEl: document.getElementById("reading-tools-container"),
-    popoverEl: document.getElementById("reading-vocab-popover"),
-    passageText: lesson.Reading_Passage || "",
-    vocabRows: lessonVocab,
-    uid: currentUser?.uid || "guest",
-    dateStr
-  });
-
+  const splitDefaultEl = document.getElementById("reading-split-default");
+  const sectionedEl = document.getElementById("sectioned-quiz-container");
   const quizContainer = document.getElementById("quiz-container");
   const progressFill = document.getElementById("quiz-progress-fill");
+  const popoverEl = document.getElementById("reading-vocab-popover");
+
   quizContainer.innerHTML = "";
+  if (sectionedEl) sectionedEl.innerHTML = "";
   if (progressFill) {
     progressFill.style.width = "0%";
     const track = progressFill.parentElement;
     if (track) track.setAttribute("aria-valuenow", "0");
   }
 
-  lessonQuiz.forEach((q, idx) => {
-    const qCard = document.createElement("div");
-    qCard.className = "question-card";
-    qCard.dataset.index = idx;
+  const sectionedExam = buildSectionedExamBlocks(lesson.Reading_Passage || "", lessonQuiz);
+  if (sectionedExam && sectionedEl && splitDefaultEl) {
+    splitDefaultEl.classList.add("hidden");
+    sectionedEl.classList.remove("hidden");
+    clearReadingScaffold();
 
-    const isTFNG = (q.Type || "").toUpperCase() === "TFNG";
-    const typeLabel = isTFNG ? "TRUE / FALSE / NOT GIVEN" : "MULTIPLE CHOICE";
+    // 1. Standalone Vocabulary & Grammar sections (no left reading passage alongside them!)
+    sectionedExam.standaloneGroups.forEach(group => {
+      const secBlock = document.createElement("section");
+      secBlock.className = "quiz-section-block";
 
-    let optionsHtml = "";
-    if (isTFNG) {
-      ["TRUE", "FALSE", "NOT GIVEN"].forEach(val => {
-        optionsHtml += `
-          <label class="option-label" data-value="${val}">
-            <input type="radio" name="q_${idx}" value="${val}" />
-            <span>${val}</span>
-          </label>
-        `;
+      const heading = document.createElement("h3");
+      heading.className = "quiz-section-heading";
+      heading.textContent = bi(group.headingZh, group.headingEn);
+      secBlock.appendChild(heading);
+
+      const grid = document.createElement("div");
+      grid.className = "quiz-standalone-grid";
+      group.items.forEach(({ q, idx }) => {
+        grid.appendChild(createLessonQuestionCard(q, idx, dateStr, lessonQuiz));
       });
-    } else {
-      const opts = [
-        { key: "A", text: q.Option_A },
-        { key: "B", text: q.Option_B },
-        { key: "C", text: q.Option_C },
-        { key: "D", text: q.Option_D }
-      ].filter(o => o.text && o.text !== "-");
-
-      opts.forEach(o => {
-        optionsHtml += `
-          <label class="option-label" data-value="${o.key}">
-            <input type="radio" name="q_${idx}" value="${o.key}" />
-            <span><strong>(${o.key})</strong> ${escapeHtml(o.text)}</span>
-          </label>
-        `;
-      });
-    }
-
-    qCard.innerHTML = `
-      <div class="question-type-badge">Question ${idx + 1} · ${typeLabel}</div>
-      <div class="question-text">${escapeHtml(q.Question)}</div>
-      <div class="options-list">${optionsHtml}</div>
-      <div id="feedback_pill_${idx}" style="margin-top: 10px;"></div>
-      <details class="explanation-details" id="exp_${idx}">
-        <summary class="explanation-summary">${bi("▸ 展開解析提示與證據（點擊查看）", "▸ Explanation & Evidence (click to expand)")}</summary>
-        <div class="explanation-content">
-          <div><strong>${bi("正確答案：", "Answer: ")}</strong>${escapeHtml(q.Answer)}</div>
-          <div style="margin-top: 4px;">${escapeHtml(q.Explanation || "")}</div>
-        </div>
-      </details>
-    `;
-
-    // 即時回饋：點選選項瞬間判定與微多巴胺慶祝
-    const radios = qCard.querySelectorAll(`input[name="q_${idx}"]`);
-    radios.forEach(radio => {
-      radio.addEventListener("change", (e) => {
-        saveQuizAnswer(dateStr, idx, e.target.value);
-        handleInstantQuizFeedback(idx, q, e.target.value, qCard, lessonQuiz);
-      });
+      secBlock.appendChild(grid);
+      sectionedEl.appendChild(secBlock);
     });
 
-    quizContainer.appendChild(qCard);
-  });
+    // 2. Paired Reading / Cloze blocks (each passage appears ONLY alongside its own questions!)
+    sectionedExam.passageSections.forEach(sec => {
+      const secBlock = document.createElement("section");
+      secBlock.className = "quiz-section-block";
+
+      const heading = document.createElement("h3");
+      heading.className = "quiz-section-heading";
+      heading.textContent = bi(sec.headingZh, sec.headingEn);
+      secBlock.appendChild(heading);
+
+      const split = document.createElement("div");
+      split.className = "ielts-split";
+
+      const readingPane = document.createElement("article");
+      readingPane.className = "reading-pane";
+
+      const readingHeader = document.createElement("div");
+      readingHeader.className = "reading-header";
+      const readingTitle = document.createElement("h4");
+      readingTitle.className = "reading-title";
+      readingTitle.textContent = sec.title;
+      const toolsContainer = document.createElement("div");
+      toolsContainer.className = "reading-tools-slot";
+      readingHeader.append(readingTitle, toolsContainer);
+
+      const bodyEl = document.createElement("div");
+      bodyEl.className = "reading-body";
+      readingPane.append(readingHeader, bodyEl);
+
+      const quizPane = document.createElement("div");
+      quizPane.className = "quiz-pane";
+      sec.items.forEach(({ q, idx }) => {
+        quizPane.appendChild(createLessonQuestionCard(q, idx, dateStr, lessonQuiz));
+      });
+
+      split.append(readingPane, quizPane);
+      secBlock.appendChild(split);
+      sectionedEl.appendChild(secBlock);
+
+      renderInteractiveReadingPassage({
+        bodyEl,
+        toolsEl: toolsContainer,
+        popoverEl,
+        passageText: sec.body,
+        vocabRows: lessonVocab,
+        uid: currentUser?.uid || "guest",
+        dateStr,
+        sectionKey: sec.sectionKey,
+        preserveExisting: true
+      });
+    });
+  } else {
+    if (sectionedEl) sectionedEl.classList.add("hidden");
+    splitDefaultEl?.classList.remove("hidden");
+    document.getElementById("reading-title").textContent = lesson.Reading_Title || "Reading Passage";
+    renderInteractiveReadingPassage({
+      bodyEl: document.getElementById("reading-body"),
+      toolsEl: document.getElementById("reading-tools-container"),
+      popoverEl,
+      passageText: lesson.Reading_Passage || "",
+      vocabRows: lessonVocab,
+      uid: currentUser?.uid || "guest",
+      dateStr
+    });
+
+    lessonQuiz.forEach((q, idx) => {
+      quizContainer.appendChild(createLessonQuestionCard(q, idx, dateStr, lessonQuiz));
+    });
+  }
 
   // Hydrate previously selected quiz answers without triggering confetti bursts
+  const quizScopeEl = document.getElementById("reading-quiz-section") || quizContainer;
   const savedAnswers = loadSavedQuizAnswers(dateStr);
   lessonQuiz.forEach((q, idx) => {
     const savedVal = savedAnswers[String(idx)];
     if (!savedVal) return;
-    const qCard = quizContainer.querySelector(`.question-card[data-index="${idx}"]`);
+    const qCard = quizScopeEl.querySelector(`.question-card[data-index="${idx}"]`);
     const radio = qCard?.querySelector(`input[name="q_${idx}"][value="${CSS.escape(savedVal)}"]`);
     if (radio) {
       radio.checked = true;
@@ -3825,7 +3983,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261124d`;
+    img.src = `${item.previewImage}?v=20261124e`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);

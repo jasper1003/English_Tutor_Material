@@ -769,7 +769,7 @@ main {
   line-height: 1.6;
 }
 
-/* IELTS Split Layout (Reading + Quiz) */
+/* Reading & Quiz Split Layout */
 .ielts-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -829,6 +829,43 @@ main {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+.sectioned-quiz-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2.25rem;
+}
+
+.quiz-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.quiz-section-heading {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding-left: 0.7rem;
+  border-left: 4px solid var(--primary);
+}
+
+.quiz-standalone-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+@media (max-width: 720px) {
+  .quiz-standalone-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .question-card {
@@ -3468,12 +3505,12 @@ dialog.settings-dialog::backdrop {
   -webkit-box-decoration-break: clone;
 }
 
-#reading-body[data-pen-mode="yellow"] .reading-sentence {
+.reading-body[data-pen-mode="yellow"] .reading-sentence {
   cursor: pointer;
 }
 
 @media (hover: hover) {
-  #reading-body[data-pen-mode="yellow"] .reading-sentence:hover {
+  .reading-body[data-pen-mode="yellow"] .reading-sentence:hover {
     background: light-dark(rgba(254, 240, 138, 0.35), rgba(234, 179, 8, 0.12));
   }
 }
@@ -3499,7 +3536,7 @@ dialog.settings-dialog::backdrop {
   line-height: inherit;
 }
 
-#reading-body[data-vocab-hints="on"] .reading-vocab-chip {
+.reading-body[data-vocab-hints="on"] .reading-vocab-chip {
   background: light-dark(rgba(99, 102, 241, 0.12), rgba(129, 140, 248, 0.22));
   border-radius: 4px;
   padding-inline: 0.22em;
@@ -3509,7 +3546,7 @@ dialog.settings-dialog::backdrop {
 }
 
 @media (hover: hover) {
-  #reading-body[data-vocab-hints="on"] .reading-vocab-chip:hover {
+  .reading-body[data-vocab-hints="on"] .reading-vocab-chip:hover {
     background: light-dark(rgba(99, 102, 241, 0.22), rgba(129, 140, 248, 0.34));
   }
 }

@@ -123,7 +123,7 @@ const STATIC_DOM_TRANSLATIONS = [
   {
     selector: "#settings-lang-hint",
     zh: "可隨時切換繁體中文或英文介面（英語閱讀與測驗題目維持英文原文）。",
-    en: "Switch between Traditional Chinese and English anytime (IELTS reading and quizzes stay in English)."
+    en: "Switch between Traditional Chinese and English anytime (reading passages and quizzes stay in English)."
   },
   { selector: "#settings-profile-heading", zh: "顯示名稱", en: "Display Name" },
   { selector: "#settings-display-name-label-text", zh: "名稱", en: "Name" },

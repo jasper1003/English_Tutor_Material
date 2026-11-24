@@ -28,7 +28,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261124d" />
+  <link rel="stylesheet" href="./styles.css?v=20261124e" />
 </head>
 <body>
 
@@ -988,10 +988,16 @@
         <div class="vocab-grid" id="vocab-grid"></div>
       </div>
 
-      <!-- IELTS Reading & Quiz Section -->
+      <!-- Reading & Quiz Section -->
       <div class="section-block" id="reading-quiz-section">
-        <h2 class="section-heading">IELTS Reading &amp; Comprehension</h2>
-        <div class="ielts-split">
+        <h2 class="section-heading" id="reading-quiz-heading">Reading &amp; Comprehension</h2>
+        <div class="quiz-header-bar" id="quiz-header-bar" style="margin-bottom: 18px;">
+          <div class="quiz-progress-track" id="quiz-progress-track" aria-label="測驗進度" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+          </div>
+          <button type="button" class="btn-ghost-sm" id="reset-quiz-btn">重新作答</button>
+        </div>
+        <div class="ielts-split" id="reading-split-default">
           <article class="reading-pane">
             <div class="reading-header">
               <h3 class="reading-title" id="reading-title"></h3>
@@ -1001,15 +1007,10 @@
           </article>
 
           <div class="quiz-pane">
-            <div class="quiz-header-bar" id="quiz-header-bar">
-              <div class="quiz-progress-track" id="quiz-progress-track" aria-label="測驗進度" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
-              </div>
-              <button type="button" class="btn-ghost-sm" id="reset-quiz-btn">重新作答</button>
-            </div>
             <div id="quiz-container" style="display: flex; flex-direction: column; gap: 18px;"></div>
           </div>
         </div>
+        <div id="sectioned-quiz-container" class="sectioned-quiz-container hidden"></div>
       </div>
 
       <!-- Commission Submission to Client (Teacher) -->
@@ -1036,6 +1037,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261124d"></script>
+  <script type="module" src="./app-main.js?v=20261124e"></script>
 </body>
 </html>
