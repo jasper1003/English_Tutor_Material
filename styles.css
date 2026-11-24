@@ -4447,6 +4447,305 @@ dialog.settings-dialog.review-dialog {
   justify-content: center;
 }
 
+/* Dual-Track Admin Chooser & IELTS Reading Exam Mode */
+.admin-track-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.track-chooser-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.track-choice-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 1rem 1.15rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.track-choice-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.track-choice-card.is-ielts {
+  border-color: light-dark(#93c5fd, rgba(59, 130, 246, 0.45));
+  background: light-dark(#eff6ff, rgba(37, 99, 235, 0.12));
+}
+
+.track-choice-icon {
+  font-size: 1.9rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.track-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.track-choice-text strong {
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.track-choice-text span {
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.ielts-timer-bar {
+  position: sticky;
+  top: 76px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1.05rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+
+.ielts-timer-clock {
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+  letter-spacing: 0.03em;
+}
+
+.ielts-timer-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ielts-answered-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-inline-end: 0.35rem;
+}
+
+.ielts-diagram-box {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin-bottom: 0.9rem;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.ielts-diagram-box img {
+  max-width: 100%;
+  height: auto;
+  display: inline-block;
+  border-radius: 6px;
+}
+
+.ielts-group-prompt {
+  padding: 0.7rem 0.95rem;
+  border-radius: 10px;
+  background: light-dark(#eff6ff, rgba(59, 130, 246, 0.12));
+  border-left: 3px solid var(--primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.ielts-question-card.has-draft {
+  border-color: var(--primary);
+}
+
+.ielts-choice-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ielts-pill-btn {
+  min-inline-size: 44px;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.ielts-pill-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.ielts-pill-btn.is-selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.ielts-pill-btn:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.ielts-blank-input {
+  max-width: 360px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ielts-answer-reveal {
+  margin-top: 0.75rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.ielts-answer-reveal.is-correct {
+  background: light-dark(#dcfce7, rgba(34, 197, 94, 0.16));
+  color: light-dark(#166534, #86efac);
+}
+
+.ielts-answer-reveal.is-wrong {
+  background: light-dark(#fee2e2, rgba(239, 68, 68, 0.16));
+  color: light-dark(#991b1b, #fca5a5);
+}
+
+.ielts-audit-hint,
+.ielts-audit-note {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.ielts-exam-footer-card {
+  padding: 1.25rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.ielts-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ielts-submit-buttons {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.ielts-result-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ielts-result-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .ielts-result-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ielts-stat-box {
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.ielts-stat-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.ielts-stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.ielts-stat-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.ielts-result-actions {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.ielts-prompt-details {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  overflow: hidden;
+}
+
+.ielts-prompt-summary {
+  padding: 0.7rem 0.95rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.ielts-prompt-textarea {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  padding: 0.85rem;
+  resize: vertical;
+}
+
 .hidden {
   display: none !important;
 }

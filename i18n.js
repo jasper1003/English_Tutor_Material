@@ -369,6 +369,14 @@ const STATIC_DOM_TRANSLATIONS = [
 
   // Home work desktop & lesson view
   { selector: "#home-page-title", zh: "接案工作台（英語任務）", en: "Freelance Desk (English Quests)" },
+  { selector: "#link-ielts-sheet-btn", zh: "🔗 連結 IELTS 試算表", en: "🔗 Link IELTS Sheet", titleZh: "連結獨立存放 IELTS 考古題的 Google 試算表 ID", titleEn: "Link external Google Sheet ID for IELTS practice bank" },
+  { selector: "#track-chooser-title", zh: "💻 選擇書桌工作題庫", en: "💻 Select Study Bank" },
+  { selector: "#close-track-chooser-btn", ariaLabelZh: "關閉選擇視窗", ariaLabelEn: "Close track chooser" },
+  { selector: "#track-chooser-subtitle", zh: "請選擇目前要開啟的工作題庫（學生端不會看見您的雅思考古題庫）：", en: "Choose which question bank to open (students never see your personal IELTS bank):" },
+  { selector: "#choose-track-student-btn strong", zh: "學生英文課程進度", en: "Student Curriculum" },
+  { selector: "#choose-track-student-btn span", zh: "管理與檢視學生單元任務、單字與聽讀測驗", en: "Manage student unit quests, vocabulary, and comprehension quizzes" },
+  { selector: "#choose-track-ielts-btn strong", zh: "IELTS General Reading 題庫", en: "IELTS General Reading Bank" },
+  { selector: "#choose-track-ielts-btn span", zh: "雅思考古閱讀測驗 · 內建碼表計時、交卷批改與一鍵生成 Gemini 檢討 Prompt", en: "General Training reading mock tests with stopwatch, delayed grading, and Gemini review prompt" },
   { selector: "#map-back-room-btn", zh: "🏠 離開電腦回到租屋處", en: "🏠 Leave Desk & Back to Studio" },
   { selector: "#home-xp-banner", ariaLabelZh: "繪師聲望與經驗值進度", ariaLabelEn: "Artist reputation & XP progress" },
   { selector: "#quiz-progress-track", ariaLabelZh: "測驗進度", ariaLabelEn: "Quiz progress" },

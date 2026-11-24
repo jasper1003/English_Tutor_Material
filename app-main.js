@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261124k";
+} from "./room-scene.js?v=20261124l";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261124k";
+} from "./shop-catalog.js?v=20261124l";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261124k";
+} from "./room-grid.js?v=20261124l";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -101,17 +101,18 @@ import {
   normalizeSavedNavState,
   resolveQuestProgressTargetIndex,
   evaluateSubmissionMetrics,
-  formatExamDuration
-} from "./app-helpers.js?v=20261124k";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261124k";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124k";
+  formatExamDuration,
+  gradeIeltsExam
+} from "./app-helpers.js?v=20261124l";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261124l";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124l";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261124k";
+} from "./i18n.js?v=20261124l";
 
 applyStaticDomTranslations();
 
@@ -186,14 +187,110 @@ const NAV_STATE_STORAGE_PREFIX = "studio_nav_state_v1:";
 let isRestoringNavState = false;
 let restoredNavSessionKey = "";
 let pendingRestoreSpectateUid = null;
+let activeWorkTrack = "student"; // "student" | "ielts"
+let ieltsBank = { tests: [], questions: [], sourceKind: "bundled", sheetId: "", loaded: false };
+let ieltsLoadPromise = null;
+let ieltsModuleCache = null;
+
+function isAdminRole() {
+  return currentRole === "super_admin" || currentRole === "admin";
+}
+
+function isIeltsLessonId(id) {
+  return String(id || "").startsWith("ielts:");
+}
+
+async function getIeltsModule() {
+  if (!ieltsModuleCache) {
+    ieltsModuleCache = await import("./ielts-exam.js?v=20261124l");
+  }
+  return ieltsModuleCache;
+}
+
+async function ensureIeltsBankLoaded({ force = false } = {}) {
+  if (!isAdminRole()) return null;
+  if (ieltsBank.loaded && !force) return ieltsBank;
+  if (ieltsLoadPromise && !force) return ieltsLoadPromise;
+  ieltsLoadPromise = (async () => {
+    const mod = await getIeltsModule();
+    const res = await mod.loadIeltsBank({
+      fetchRawTabFn: (sid, tab, extra) => fetchRawSheetTabById(sid, tab, extra)
+    });
+    ieltsBank = {
+      tests: res.tests || [],
+      questions: res.questions || [],
+      sourceKind: res.sourceKind || "bundled",
+      sheetId: res.sheetId || "",
+      loaded: true
+    };
+    return ieltsBank;
+  })();
+  try {
+    return await ieltsLoadPromise;
+  } finally {
+    ieltsLoadPromise = null;
+  }
+}
+
+function stopIeltsTimerIfLoaded() {
+  try {
+    ieltsModuleCache?.stopIeltsExamTimer?.();
+  } catch {
+    // Ignore timer cleanup errors
+  }
+}
+
+function openTrackChooserDialog() {
+  if (!isAdminRole()) {
+    activeWorkTrack = "student";
+    openWorkDesktop({ track: "student" });
+    return;
+  }
+  const dlg = document.getElementById("track-chooser-dialog");
+  if (!dlg) {
+    openWorkDesktop({ track: activeWorkTrack });
+    return;
+  }
+  if (!dlg.open) dlg.showModal();
+  saveNavState();
+}
+
+async function enterWorkTrack(track) {
+  const targetTrack = (track === "ielts" && isAdminRole()) ? "ielts" : "student";
+  activeWorkTrack = targetTrack;
+  const dlg = document.getElementById("track-chooser-dialog");
+  if (dlg?.open) dlg.close();
+  if (targetTrack === "ielts") {
+    await ensureIeltsBankLoaded();
+  }
+  await openWorkDesktop({ track: targetTrack });
+}
+
+function findLessonAnyTrack(dateStr) {
+  const stuMatch = db.lessons.find(l => l.Date === dateStr);
+  if (stuMatch) return stuMatch;
+  if (isIeltsLessonId(dateStr) && ieltsBank.loaded) {
+    const t = ieltsBank.tests.find(x => x.Test_ID === dateStr);
+    if (t) {
+      return {
+        ...t,
+        Date: t.Test_ID,
+        Grammar_Focus: t.Topics || "",
+        XP: t.XP ?? 60
+      };
+    }
+  }
+  return null;
+}
 
 function getActiveOpenModalKey() {
   if (document.getElementById("shop-dialog")?.open) return "shop";
   if (document.getElementById("finance-dialog")?.open) return "finance";
   if (document.getElementById("settings-dialog")?.open) return "settings";
-  if (document.getElementById("tv-dialog")?.open) return "tv";
   if (document.getElementById("poster-dialog")?.open) return "poster";
+  if (document.getElementById("tv-dialog")?.open) return "tv";
   if (document.getElementById("admin-review-dialog")?.open) return "adminReview";
+  if (document.getElementById("track-chooser-dialog")?.open && isAdminRole()) return "trackChooser";
   return null;
 }
 
@@ -217,6 +314,7 @@ function saveNavState() {
   const snapshot = {
     screen: currentScreen,
     lessonDate: currentScreen === "lesson" ? (activeLessonDate || null) : null,
+    workTrack: isAdminRole() ? activeWorkTrack : "student",
     isEditingAvatar: currentScreen === "onboarding" ? Boolean(isEditingAvatarFromRoom) : false,
     modal: getActiveOpenModalKey(),
     shopCategory: activeShopCategory || "all",
@@ -270,7 +368,11 @@ const SHEETS_FETCH_TIMEOUT_MS = 12000;
 const SHEETS_FETCH_MAX_ATTEMPTS = 3;
 
 async function fetchRawSheetTab(sheetName, extraParams = "") {
-  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json${extraParams}&sheet=${encodeURIComponent(sheetName)}`;
+  return fetchRawSheetTabById(SPREADSHEET_ID, sheetName, extraParams);
+}
+
+async function fetchRawSheetTabById(sheetId, sheetName, extraParams = "") {
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json${extraParams}&sheet=${encodeURIComponent(sheetName)}`;
   let lastErr = null;
   let text = "";
 
@@ -373,11 +475,12 @@ function hasEarnedLessonXp(dateStr) {
   return Boolean(userXpAwardedLessons[dateStr]);
 }
 
-function getCompletedLessons() {
+function getCompletedLessons(lessonsList = db.lessons) {
   const completed = new Set();
-  db.lessons.forEach(l => {
-    if (isLessonCompleted(l.Date)) {
-      completed.add(l.Date);
+  (lessonsList || []).forEach(l => {
+    const key = l?.Date || l?.Test_ID;
+    if (key && isLessonCompleted(key)) {
+      completed.add(key);
     }
   });
   return completed;
@@ -641,7 +744,7 @@ async function setLessonSubmitted(dateStr, nextSubmitted) {
     let xpGranted = 0;
     let nextXp = Math.max(0, Math.trunc(Number(data.xp ?? currentUserProfile?.xp ?? 0)));
     if (targetSubmitted && !xpAwardedMap[dateStr]) {
-      const lessonMeta = db.lessons.find(l => l.Date === dateStr);
+      const lessonMeta = findLessonAnyTrack(dateStr);
       const unitXp = Math.max(0, Math.min(1000, getLessonXp(lessonMeta)));
       if (unitXp > 0) {
         xpAwardedMap[dateStr] = true;
@@ -1311,7 +1414,12 @@ function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCam
       usesSharedTvIframe: true,
       onEnterWork: () => {
         if (spectatingStudentUid) return;
-        openWorkDesktop();
+        if (isAdminRole()) {
+          openTrackChooserDialog();
+        } else {
+          activeWorkTrack = "student";
+          openWorkDesktop({ track: "student" });
+        }
       },
       onLampToggle: (isOn) => {
         persistRoomState({ deskLampOn: isOn });
@@ -1467,6 +1575,7 @@ function enterRoomView(fromWorkDesktop = false) {
   }
 
   stopAllListeningAudio();
+  stopIeltsTimerIfLoaded();
   flushLessonActiveElapsedTime({ pause: true });
   currentScreen = "room";
   activeLessonDate = null;
@@ -1531,9 +1640,18 @@ function scrollQuestStepIntoCenter(stepEl) {
   window.scrollTo({ top: targetTop, behavior: "auto" });
 }
 
-function openWorkDesktop({ restoreScrollY = null } = {}) {
+async function openWorkDesktop({ restoreScrollY = null, track = null } = {}) {
   if (!currentUser || !sheetsLoaded) return;
+  if (track === "ielts" || track === "student") {
+    activeWorkTrack = (track === "ielts" && isAdminRole()) ? "ielts" : "student";
+  } else if (activeWorkTrack === "ielts" && !isAdminRole()) {
+    activeWorkTrack = "student";
+  }
+  if (activeWorkTrack === "ielts" && isAdminRole() && !ieltsBank.loaded) {
+    await ensureIeltsBankLoaded();
+  }
   stopAllListeningAudio();
+  stopIeltsTimerIfLoaded();
   flushLessonActiveElapsedTime({ pause: true });
   currentScreen = "desktop";
   activeLessonDate = null;
@@ -1550,9 +1668,38 @@ function openWorkDesktop({ restoreScrollY = null } = {}) {
 async function openLesson(dateStr, { force = false, restoreScrollY = null } = {}) {
   if (!currentUser || !sheetsLoaded) return false;
   if (!force && currentScreen !== "desktop" && currentScreen !== "lesson") return false;
+
+  if (isIeltsLessonId(dateStr)) {
+    if (!isAdminRole()) {
+      activeWorkTrack = "student";
+      await openWorkDesktop({ track: "student" });
+      return false;
+    }
+    activeWorkTrack = "ielts";
+    await ensureIeltsBankLoaded();
+    const ieltsTest = ieltsBank.tests.find(t => t.Test_ID === dateStr);
+    if (!ieltsTest || String(ieltsTest.Ready || "").toUpperCase() !== "TRUE") {
+      await openWorkDesktop({ track: "ielts" });
+      return false;
+    }
+    currentScreen = "lesson";
+    activeLessonDate = dateStr;
+    saveLastVisitedLessonDate(dateStr);
+    startOrResumeLessonTimer(dateStr);
+    await renderLesson(dateStr);
+    if (Number.isFinite(restoreScrollY) && restoreScrollY > 0) {
+      requestAnimationFrame(() => window.scrollTo(0, restoreScrollY));
+    } else if (!force) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    saveNavState();
+    return true;
+  }
+
+  activeWorkTrack = "student";
   const lesson = db.lessons.find(l => l.Date === dateStr);
   if (!lesson) {
-    openWorkDesktop();
+    await openWorkDesktop({ track: "student" });
     return false;
   }
   if (!sheetsDetailsLoaded && sheetsStage2Promise) {
@@ -1567,7 +1714,7 @@ async function openLesson(dateStr, { force = false, restoreScrollY = null } = {}
   activeLessonDate = dateStr;
   saveLastVisitedLessonDate(dateStr);
   startOrResumeLessonTimer(dateStr);
-  renderLesson(dateStr);
+  await renderLesson(dateStr);
   if (Number.isFinite(restoreScrollY) && restoreScrollY > 0) {
     requestAnimationFrame(() => window.scrollTo(0, restoreScrollY));
   } else if (!force) {
@@ -1598,12 +1745,15 @@ function restoreOpenModalFromNav(saved) {
     openPosterCustomizer();
   } else if (modal === "tv" && owned.wall_tv) {
     openTvModalPlayer();
-  } else if (modal === "adminReview" && (currentRole === "super_admin" || currentRole === "admin")) {
+  } else if (modal === "adminReview" && isAdminRole()) {
     if (!adminReviewDialog.open) adminReviewDialog.showModal();
     if (cachedStudents.length > 0) {
       syncCachedStudentsSnapshot(cachedStudents, saved.reviewStudentUid || null);
     }
     loadStudentsForReview(saved.reviewStudentUid || null);
+  } else if (modal === "trackChooser" && isAdminRole()) {
+    const dlg = document.getElementById("track-chooser-dialog");
+    if (dlg && !dlg.open) dlg.showModal();
   }
 }
 
@@ -1621,6 +1771,7 @@ async function restoreSavedNavStateOrDefault() {
 
   isRestoringNavState = true;
   try {
+    activeWorkTrack = (saved.workTrack === "ielts" && isAdminRole()) ? "ielts" : "student";
     if (SHOP_CATEGORIES.some(c => c.id === saved.shopCategory)) {
       activeShopCategory = saved.shopCategory;
     }
@@ -1630,15 +1781,33 @@ async function restoreSavedNavStateOrDefault() {
       activeFinanceMonth = saved.financeMonth;
     }
 
-    if (saved.screen === "lesson" && saved.lessonDate && db.lessons.some(l => l.Date === saved.lessonDate)) {
+    if (saved.screen === "lesson" && saved.lessonDate && isIeltsLessonId(saved.lessonDate)) {
+      if (isAdminRole()) {
+        await ensureIeltsBankLoaded();
+        const readyMatch = ieltsBank.tests.some(
+          t => t.Test_ID === saved.lessonDate && String(t.Ready || "").toUpperCase() === "TRUE"
+        );
+        if (readyMatch) {
+          await openLesson(saved.lessonDate, { force: true, restoreScrollY: saved.scrollY });
+        } else {
+          await openWorkDesktop({ track: "ielts", restoreScrollY: saved.scrollY });
+        }
+      } else {
+        activeWorkTrack = "student";
+        enterRoomView(false);
+      }
+    } else if (saved.screen === "lesson" && saved.lessonDate && db.lessons.some(l => l.Date === saved.lessonDate)) {
       await openLesson(saved.lessonDate, { force: true, restoreScrollY: saved.scrollY });
     } else if (saved.screen === "desktop") {
-      openWorkDesktop({ restoreScrollY: saved.scrollY });
+      if (activeWorkTrack === "ielts" && isAdminRole()) {
+        await ensureIeltsBankLoaded();
+      }
+      await openWorkDesktop({ track: activeWorkTrack, restoreScrollY: saved.scrollY });
     } else if (saved.screen === "onboarding" && saved.isEditingAvatar) {
       showOnboardingScreen(true);
     } else {
       enterRoomView(false);
-      if (saved.spectatingUid && (currentRole === "super_admin" || currentRole === "admin")) {
+      if (saved.spectatingUid && isAdminRole()) {
         if (cachedStudents.some(s => s.uid === saved.spectatingUid)) {
           spectateStudentRoom(saved.spectatingUid);
         } else {
@@ -1727,7 +1896,7 @@ function applyRemoteSettings(rows = []) {
     }
   }
   const homeRewardHint = document.getElementById("home-reward-hint");
-  if (homeRewardHint) {
+  if (homeRewardHint && activeWorkTrack !== "ielts") {
     homeRewardHint.textContent = bi(
       `完成任務即可自動獲得對應 XP；送交甲方老師驗收通過後，每單元再領 +${UNIT_REWARD_CLAMS} 英蚌報酬`,
       `Earn XP automatically as you finish quests, plus +${UNIT_REWARD_CLAMS} Clams after client review!`
@@ -1970,6 +2139,79 @@ function drawQuestPath() {
   svg.innerHTML = paths.join("");
 }
 
+function buildUnlockedQuestStepElement({
+  offsetX,
+  unitLabel,
+  circleText,
+  badgeText,
+  title,
+  subtitle,
+  metaHtml,
+  isCompleted,
+  isSubmitted,
+  isCurrent,
+  onOpen
+}) {
+  const step = document.createElement("div");
+  step.className = `quest-step${isCompleted ? " is-completed" : isSubmitted ? " is-submitted" : ""}`;
+  step.style.setProperty("--step-x", `${offsetX}px`);
+
+  let circleIcon = circleText;
+  if (isCompleted) {
+    circleIcon = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+  } else if (isSubmitted) {
+    circleIcon = "⏳";
+  }
+
+  const circleBtn = document.createElement("button");
+  circleBtn.type = "button";
+  circleBtn.className = `quest-node-circle${isCurrent ? " is-current" : ""}`;
+  circleBtn.setAttribute("aria-label", `${unitLabel} ${title || ""}`);
+  circleBtn.innerHTML = circleIcon;
+  circleBtn.addEventListener("click", onOpen);
+
+  const statusSuffix = isCompleted
+    ? bi(" · 已驗收撥款", " · Approved & Paid")
+    : isSubmitted
+    ? bi(" · 待案主驗收", " · Pending Review")
+    : "";
+
+  const cardBtn = document.createElement("button");
+  cardBtn.type = "button";
+  cardBtn.className = "quest-node-card";
+  cardBtn.style.textAlign = "center";
+  cardBtn.innerHTML = `
+    <div class="quest-node-top">
+      <span class="quest-unit-tag">${escapeHtml(unitLabel)}${statusSuffix}</span>
+      <span class="quest-node-date">${escapeHtml(badgeText)}</span>
+    </div>
+    <div class="quest-node-title">${escapeHtml(title || "Untitled Lesson")}</div>
+    ${subtitle ? `<div class="quest-node-grammar">${escapeHtml(subtitle)}</div>` : ""}
+    <div class="quest-node-meta">${metaHtml}</div>
+  `;
+  cardBtn.addEventListener("click", onOpen);
+
+  step.append(circleBtn, cardBtn);
+  return step;
+}
+
+function buildLockedQuestStepElement({ offsetX, fadeOpacity, labelText }) {
+  const step = document.createElement("div");
+  step.className = "quest-step is-locked";
+  step.style.setProperty("--step-x", `${offsetX}px`);
+  step.style.opacity = String(fadeOpacity);
+  step.setAttribute("aria-disabled", "true");
+  step.innerHTML = `
+    <div class="quest-node-circle" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+    </div>
+    <div class="quest-node-card">
+      <div class="quest-locked-label">${escapeHtml(labelText)}</div>
+    </div>
+  `;
+  return step;
+}
+
 function renderHome({ scrollToLatest = false } = {}) {
   document.getElementById("lesson-view").classList.add("hidden");
   document.getElementById("lesson-actions").style.display = "none";
@@ -1977,17 +2219,170 @@ function renderHome({ scrollToLatest = false } = {}) {
   const mapEl = document.getElementById("quest-map");
   mapEl.innerHTML = "";
 
+  const isAdmin = isAdminRole();
+  if (!isAdmin && activeWorkTrack === "ielts") {
+    activeWorkTrack = "student";
+  }
+
+  const adminTrackControls = document.getElementById("admin-track-controls");
+  const switchTrackBtn = document.getElementById("switch-work-track-btn");
+  const linkIeltsSheetBtn = document.getElementById("link-ielts-sheet-btn");
+  if (adminTrackControls) {
+    adminTrackControls.classList.toggle("hidden", !isAdmin);
+  }
+  if (switchTrackBtn) {
+    switchTrackBtn.textContent = activeWorkTrack === "ielts"
+      ? bi("🔄 切回學生課程", "🔄 Student Track")
+      : bi("📘 切換至雅思閱讀", "📘 IELTS GT Bank");
+  }
+  if (linkIeltsSheetBtn) {
+    linkIeltsSheetBtn.classList.toggle("hidden", !(isAdmin && activeWorkTrack === "ielts"));
+  }
+
+  const pageTitleEl = document.getElementById("home-page-title");
+  const homeHintEl = document.getElementById("home-reward-hint");
+  syncXpProgressUI({ allowCelebrate: false });
+
+  if (activeWorkTrack === "ielts") {
+    if (pageTitleEl) {
+      pageTitleEl.textContent = bi("IELTS General Reading 題庫", "IELTS General Reading Bank");
+    }
+    if (!ieltsBank.loaded) {
+      mapEl.innerHTML = `<p style="color: var(--muted); text-align: center;">${bi("正在載入 IELTS General Reading 題庫…", "Loading IELTS General Reading bank…")}</p>`;
+      homeView.classList.remove("hidden");
+      ensureIeltsBankLoaded().then(() => {
+        if (currentScreen === "desktop" && activeWorkTrack === "ielts") {
+          renderHome({ scrollToLatest });
+        }
+      });
+      return;
+    }
+
+    const ieltsItems = ieltsBank.tests.map(t => ({
+      ...t,
+      Date: t.Test_ID,
+      Grammar_Focus: t.Topics || "",
+      XP: t.XP ?? 60
+    }));
+    const readyItems = ieltsItems.filter(t => String(t.Ready).toUpperCase() === "TRUE");
+    const completedSet = getCompletedLessons(readyItems);
+    const completedRealCount = readyItems.filter(l => completedSet.has(l.Date)).length;
+    document.getElementById("map-completed-count").textContent = bi(
+      `已驗收 ${completedRealCount} / ${readyItems.length} 回`,
+      `Approved: ${completedRealCount} / ${readyItems.length}`
+    );
+
+    if (homeHintEl) {
+      const srcNote = ieltsBank.sourceKind === "google_sheet"
+        ? bi(`已連結外部 Google Sheet · 第 1 批啟用 ${readyItems.length}/${ieltsItems.length} 回`, `Google Sheet synced · Batch 1: ${readyItems.length}/${ieltsItems.length} active`)
+        : bi(`內建第 1 批（Test 1–${readyItems.length} 已啟用，共 ${ieltsItems.length} 回）· 內建碼表與 Gemini Prompt`, `Bundled Batch 1 (Tests 1–${readyItems.length} active of ${ieltsItems.length}) · Built-in stopwatch & Gemini prompt`);
+      homeHintEl.textContent = `${srcNote} · +60 XP / +${UNIT_REWARD_CLAMS} ${bi("英蚌", "Clams")}`;
+    }
+
+    if (ieltsItems.length === 0) {
+      mapEl.innerHTML = `<p style="color: var(--muted); text-align: center;">${bi("目前尚無 IELTS 測驗題庫資料。", "No IELTS tests available yet.")}</p>`;
+      homeView.classList.remove("hidden");
+      return;
+    }
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.classList.add("map-path-svg");
+    svg.setAttribute("aria-hidden", "true");
+    mapEl.appendChild(svg);
+
+    const targetReadyIdx = resolveQuestProgressTargetIndex({
+      lessons: readyItems,
+      completedDates: completedSet,
+      isSubmittedFn: isLessonSubmitted,
+      hasEarnedXpFn: hasEarnedLessonXp,
+      hasSavedAnswersFn: (id) => Object.keys(loadSavedQuizAnswers(id)).length > 0,
+      lastVisitedDate: loadLastVisitedLessonDate(),
+      role: currentRole,
+      totalXp: currentUserProfile?.xp ?? 0,
+      defaultLessonXp: 60
+    });
+    const currentReadyId = readyItems[targetReadyIdx]?.Date || "";
+    let currentProgressStep = null;
+    let lastUnlockedStep = null;
+
+    ieltsItems.forEach((item, idx) => {
+      const num = item.Test_Num || idx + 1;
+      const numLabel = String(num).padStart(2, "0");
+      const unitLabel = `TEST ${numLabel}`;
+      const offsetX = WAVE_OFFSETS_PX[idx % WAVE_OFFSETS_PX.length];
+      const isReady = String(item.Ready).toUpperCase() === "TRUE";
+
+      if (isReady) {
+        const isCompleted = completedSet.has(item.Date);
+        const isSubmitted = isLessonSubmitted(item.Date);
+        const isCurrent = item.Date === currentReadyId;
+        const lessonXp = getLessonXp(item);
+        const xpAlreadyClaimed = hasEarnedLessonXp(item.Date);
+        const xpBadgeHtml = isCompleted
+          ? ""
+          : xpAlreadyClaimed
+          ? ` · <span class="quest-xp-pill">${bi("XP 已領 ✓", "XP Claimed ✓")}</span>`
+          : ` · <span class="quest-xp-pill">+${lessonXp} XP</span>`;
+        const metaHtml = `${bi("題數：40 題", "Questions: 40")}${xpBadgeHtml}${isCompleted ? "" : ` · <span class="quest-reward-pill">${bi(`報酬 +${UNIT_REWARD_CLAMS} 英蚌`, `Reward +${UNIT_REWARD_CLAMS} Clams`)}</span>`}`;
+
+        const step = buildUnlockedQuestStepElement({
+          offsetX,
+          unitLabel,
+          circleText: numLabel,
+          badgeText: `GT-${numLabel}`,
+          title: item.Title || `General Reading Test ${num}`,
+          subtitle: item.Topics || "",
+          metaHtml,
+          isCompleted,
+          isSubmitted,
+          isCurrent,
+          onOpen: () => openLesson(item.Date)
+        });
+        if (isCurrent) currentProgressStep = step;
+        lastUnlockedStep = step;
+        mapEl.appendChild(step);
+      } else {
+        const titleHint = item.Title ? ` — ${item.Title}` : "";
+        const step = buildLockedQuestStepElement({
+          offsetX,
+          fadeOpacity: 0.56,
+          labelText: `${unitLabel} · ${bi("待批次匯入", "Batch Pending")}${titleHint}`
+        });
+        mapEl.appendChild(step);
+      }
+    });
+
+    homeView.classList.remove("hidden");
+    requestAnimationFrame(() => {
+      drawQuestPath();
+      if (scrollToLatest) {
+        const targetStep = currentProgressStep || lastUnlockedStep;
+        if (targetStep) {
+          scrollQuestStepIntoCenter(targetStep);
+          saveNavState();
+        }
+      }
+    });
+    if (!questResizeObserver && "ResizeObserver" in window) {
+      questResizeObserver = new ResizeObserver(() => drawQuestPath());
+      questResizeObserver.observe(mapEl);
+    }
+    return;
+  }
+
+  // Default Student Curriculum Track
+  if (pageTitleEl) {
+    pageTitleEl.textContent = bi("接案工作台（英語任務）", "Freelance Desk (English Quests)");
+  }
   const completedSet = getCompletedLessons();
   const completedRealCount = db.lessons.filter(l => completedSet.has(l.Date)).length;
   document.getElementById("map-completed-count").textContent = bi(`已驗收 ${completedRealCount} 關`, `Approved: ${completedRealCount}`);
-  const homeHintEl = document.getElementById("home-reward-hint");
   if (homeHintEl) {
     homeHintEl.textContent = bi(
       `完成任務即可自動獲得對應 XP；送交甲方老師驗收通過後，每單元再領 +${UNIT_REWARD_CLAMS} 英蚌報酬`,
       `Earn XP automatically as you finish quests, plus +${UNIT_REWARD_CLAMS} Clams after client review!`
     );
   }
-  syncXpProgressUI({ allowCelebrate: false });
 
   if (db.lessons.length === 0) {
     mapEl.innerHTML = `<p style="color: var(--muted); text-align: center;">${bi("目前試算表中尚無課程資料。", "No lessons available yet.")}</p>`;
@@ -2011,37 +2406,6 @@ function renderHome({ scrollToLatest = false } = {}) {
     const isCurrent = idx === targetProgressIndex;
     const unitLabel = `UNIT ${String(idx + 1).padStart(2, "0")}`;
     const offsetX = WAVE_OFFSETS_PX[idx % WAVE_OFFSETS_PX.length];
-
-    const step = document.createElement("div");
-    step.className = `quest-step${isCompleted ? " is-completed" : isSubmitted ? " is-submitted" : ""}`;
-    step.style.setProperty("--step-x", `${offsetX}px`);
-    if (isCurrent) currentProgressStep = step;
-    lastUnlockedStep = step;
-
-    let circleIcon = String(idx + 1).padStart(2, "0");
-    if (isCompleted) {
-      circleIcon = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-    } else if (isSubmitted) {
-      circleIcon = "⏳";
-    }
-
-    const circleBtn = document.createElement("button");
-    circleBtn.type = "button";
-    circleBtn.className = `quest-node-circle${isCurrent ? " is-current" : ""}`;
-    circleBtn.setAttribute("aria-label", `${unitLabel} ${lesson.Title || ""}`);
-    circleBtn.innerHTML = circleIcon;
-    circleBtn.addEventListener("click", () => openLesson(lesson.Date));
-
-    const statusSuffix = isCompleted
-      ? bi(" · 已驗收撥款", " · Approved & Paid")
-      : isSubmitted
-      ? bi(" · 待案主驗收", " · Pending Review")
-      : "";
-
-    const cardBtn = document.createElement("button");
-    cardBtn.type = "button";
-    cardBtn.className = "quest-node-card";
-    cardBtn.style.textAlign = "center";
     const lessonXp = getLessonXp(lesson);
     const xpAlreadyClaimed = hasEarnedLessonXp(lesson.Date);
     const xpBadgeHtml = isCompleted
@@ -2049,21 +2413,23 @@ function renderHome({ scrollToLatest = false } = {}) {
       : xpAlreadyClaimed
       ? ` · <span class="quest-xp-pill">${bi("XP 已領 ✓", "XP Claimed ✓")}</span>`
       : ` · <span class="quest-xp-pill">+${lessonXp} XP</span>`;
-    cardBtn.innerHTML = `
-      <div class="quest-node-top">
-        <span class="quest-unit-tag">${unitLabel}${statusSuffix}</span>
-        <span class="quest-node-date">${escapeHtml(lesson.Date)}</span>
-      </div>
-      <div class="quest-node-title">${escapeHtml(lesson.Title || "Untitled Lesson")}</div>
-      ${lesson.Grammar_Focus ? `<div class="quest-node-grammar">${escapeHtml(lesson.Grammar_Focus)}</div>` : ""}
-      <div class="quest-node-meta">
-        ${bi(`單字：${vocabCount} 個`, `Vocab: ${vocabCount}`)}${xpBadgeHtml}${isCompleted ? "" : ` · <span class="quest-reward-pill">${bi(`報酬 +${UNIT_REWARD_CLAMS} 英蚌`, `Reward +${UNIT_REWARD_CLAMS} Clams`)}</span>`}
-      </div>
-    `;
-    cardBtn.addEventListener("click", () => openLesson(lesson.Date));
+    const metaHtml = `${bi(`單字：${vocabCount} 個`, `Vocab: ${vocabCount}`)}${xpBadgeHtml}${isCompleted ? "" : ` · <span class="quest-reward-pill">${bi(`報酬 +${UNIT_REWARD_CLAMS} 英蚌`, `Reward +${UNIT_REWARD_CLAMS} Clams`)}</span>`}`;
 
-    step.appendChild(circleBtn);
-    step.appendChild(cardBtn);
+    const step = buildUnlockedQuestStepElement({
+      offsetX,
+      unitLabel,
+      circleText: String(idx + 1).padStart(2, "0"),
+      badgeText: lesson.Date,
+      title: lesson.Title || "Untitled Lesson",
+      subtitle: lesson.Grammar_Focus || "",
+      metaHtml,
+      isCompleted,
+      isSubmitted,
+      isCurrent,
+      onOpen: () => openLesson(lesson.Date)
+    });
+    if (isCurrent) currentProgressStep = step;
+    lastUnlockedStep = step;
     mapEl.appendChild(step);
   });
 
@@ -2074,23 +2440,11 @@ function renderHome({ scrollToLatest = false } = {}) {
   for (let j = 0; j < lockedCount; j++) {
     const idx = db.lessons.length + j;
     const unitLabel = `UNIT ${String(idx + 1).padStart(2, "0")}`;
-    const offsetX = WAVE_OFFSETS_PX[idx % WAVE_OFFSETS_PX.length];
-    const fadeOpacity = Math.max(0.45, 0.85 - j * 0.12);
-
-    const step = document.createElement("div");
-    step.className = "quest-step is-locked";
-    step.style.setProperty("--step-x", `${offsetX}px`);
-    step.style.opacity = String(fadeOpacity);
-    step.setAttribute("aria-disabled", "true");
-
-    step.innerHTML = `
-      <div class="quest-node-circle" aria-hidden="true">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-      </div>
-      <div class="quest-node-card">
-        <div class="quest-locked-label">${unitLabel} · ${bi("尚未發案解鎖", "Commission Locked")}</div>
-      </div>
-    `;
+    const step = buildLockedQuestStepElement({
+      offsetX: WAVE_OFFSETS_PX[idx % WAVE_OFFSETS_PX.length],
+      fadeOpacity: Math.max(0.45, 0.85 - j * 0.12),
+      labelText: `${unitLabel} · ${bi("尚未發案解鎖", "Commission Locked")}`
+    });
     mapEl.appendChild(step);
   }
 
@@ -2250,6 +2604,37 @@ function syncTelemetryBaselineFromSavedAnswers(dateStr, savedAnswers) {
 function buildSubmissionMetricSnapshot(dateStr) {
   flushLessonActiveElapsedTime();
   const telemetry = loadQuizTelemetry(dateStr);
+
+  if (isIeltsLessonId(dateStr) && ieltsBank.loaded) {
+    const ieltsQs = ieltsBank.questions
+      .filter(q => q.Test_ID === dateStr)
+      .sort((a, b) => Number(a.Q_Num || 0) - Number(b.Q_Num || 0));
+    const gradedFirst = gradeIeltsExam(ieltsQs, telemetry.firstAnswers || {});
+    let ieltsElapsedSec = Math.round(telemetry.elapsedMs / 1000);
+    try {
+      const gradedRaw = localStorage.getItem(`ielts_graded_v1:${currentUser?.uid || "anon"}:${dateStr}`);
+      const gradedParsed = gradedRaw ? JSON.parse(gradedRaw) : null;
+      if (gradedParsed && Number.isFinite(Number(gradedParsed.elapsedSec))) {
+        ieltsElapsedSec = Math.max(ieltsElapsedSec, Math.trunc(Number(gradedParsed.elapsedSec)));
+      }
+      const timerRaw = localStorage.getItem(`ielts_timer_v1:${currentUser?.uid || "anon"}:${dateStr}`);
+      const timerParsed = timerRaw ? JSON.parse(timerRaw) : null;
+      if (timerParsed && Number.isFinite(Number(timerParsed.elapsedMs))) {
+        ieltsElapsedSec = Math.max(ieltsElapsedSec, Math.round(Number(timerParsed.elapsedMs) / 1000));
+      }
+    } catch {
+      // Ignore storage read issues
+    }
+    return {
+      firstTryCorrect: gradedFirst.correctCount,
+      firstTryTotal: ieltsQs.length,
+      totalClicks: Math.max(0, Math.min(50000, Math.trunc(telemetry.totalClicks))),
+      elapsedSec: Math.max(0, Math.min(86400, ieltsElapsedSec)),
+      retryCount: Math.max(0, Math.min(1000, Math.trunc(telemetry.retryCount))),
+      submittedAt: Date.now()
+    };
+  }
+
   const lessonQuiz = db.quiz.filter(q => q.Date === dateStr);
   const totalQuestions = lessonQuiz.length;
   let firstTryCorrect = 0;
@@ -2585,7 +2970,129 @@ export function renderListeningSectionCard(sec) {
   return pane;
 }
 
-function renderLesson(dateStr) {
+async function renderLesson(dateStr) {
+  if (isIeltsLessonId(dateStr)) {
+    if (!isAdminRole()) {
+      activeWorkTrack = "student";
+      return openWorkDesktop({ track: "student" });
+    }
+    await ensureIeltsBankLoaded();
+    const ieltsTest = ieltsBank.tests.find(t => t.Test_ID === dateStr);
+    if (!ieltsTest || String(ieltsTest.Ready || "").toUpperCase() !== "TRUE") {
+      return openWorkDesktop({ track: "ielts" });
+    }
+    const ieltsMod = await getIeltsModule();
+    const ieltsLesson = findLessonAnyTrack(dateStr);
+    const ieltsQs = ieltsBank.questions
+      .filter(q => q.Test_ID === dateStr)
+      .sort((a, b) => Number(a.Q_Num || 0) - Number(b.Q_Num || 0));
+
+    document.getElementById("home-view").classList.add("hidden");
+    document.getElementById("lesson-actions").style.display = "flex";
+    const lessonView = document.getElementById("lesson-view");
+
+    document.getElementById("lesson-date-badge").textContent = `GT TEST ${String(ieltsTest.Test_Num).padStart(2, "0")}`;
+    document.getElementById("lesson-title").textContent = ieltsTest.Title || `General Training Reading Test ${ieltsTest.Test_Num}`;
+    document.getElementById("lesson-grammar").textContent = ieltsTest.Topics || "";
+    document.getElementById("vocab-section")?.classList.add("hidden");
+    document.getElementById("vocab-grid").innerHTML = "";
+    document.getElementById("reset-quiz-btn")?.classList.add("hidden");
+
+    const lessonXp = getLessonXp(ieltsLesson);
+    const xpBadgeEl = document.getElementById("lesson-xp-badge");
+    const syncIeltsXpBadge = () => {
+      if (!xpBadgeEl) return;
+      if (isLessonCompleted(dateStr)) {
+        xpBadgeEl.textContent = bi("✓ 已驗收", "✓ Approved");
+      } else if (hasEarnedLessonXp(dateStr)) {
+        xpBadgeEl.textContent = bi("⚡ XP 已領", "⚡ XP Claimed");
+      } else {
+        xpBadgeEl.textContent = `⚡ +${lessonXp} XP`;
+      }
+    };
+    syncIeltsXpBadge();
+
+    stopAllListeningAudio();
+    clearReadingScaffold();
+    document.getElementById("quiz-container").innerHTML = "";
+
+    ieltsMod.renderIeltsExamView({
+      testMeta: ieltsTest,
+      questions: ieltsQs,
+      uid: currentUser?.uid || "anon",
+      loadSavedAnswers: loadSavedQuizAnswers,
+      saveAnswer: saveQuizAnswer,
+      clearSavedAnswers: clearSavedQuizAnswers,
+      onRecordClick: recordQuizOptionAttempt,
+      onResetTelemetry: resetQuizTelemetryForRetry,
+      popoverEl: document.getElementById("reading-vocab-popover")
+    });
+
+    const syncIeltsCommissionUI = () => {
+      const statusEl = document.getElementById("lesson-complete-status");
+      const submitBtn = document.getElementById("toggle-complete-btn");
+      const approved = isLessonCompleted(dateStr);
+      const submitted = isLessonSubmitted(dateStr);
+      const xpClaimedHere = hasEarnedLessonXp(dateStr);
+      syncIeltsXpBadge();
+
+      submitBtn.classList.remove("is-completed", "is-submitted");
+      if (approved) {
+        statusEl.textContent = bi("✓ 已驗收發放英蚌（本回 IELTS 模考已完成結算）", "✓ Approved & Paid (IELTS practice settled)");
+        statusEl.classList.add("is-completed");
+        submitBtn.textContent = bi("已驗收完成 ✓", "Approved ✓");
+        submitBtn.classList.add("is-completed");
+        submitBtn.disabled = true;
+      } else if (submitted) {
+        statusEl.textContent = bi(
+          `⏳ 已申請結算！${xpClaimedHere ? "經驗值 XP 已入帳，" : ""}可於右上角英蚌驗收台核發 +${UNIT_REWARD_CLAMS} 英蚌`,
+          `⏳ Submitted! ${xpClaimedHere ? "XP credited—" : ""}approve via wallet panel for +${UNIT_REWARD_CLAMS} Clams`
+        );
+        statusEl.classList.remove("is-completed");
+        submitBtn.textContent = bi("待驗收發款（點此收回）", "Pending Approval (Withdraw)");
+        submitBtn.classList.add("is-submitted");
+        submitBtn.disabled = false;
+      } else {
+        statusEl.textContent = bi(
+          `完成交卷批改後按下完成任務，系統將自動發放 ${xpClaimedHere ? "（XP 已領）" : `+${lessonXp} XP 並`}申請 +${UNIT_REWARD_CLAMS} 英蚌`,
+          `After grading your exam, submit to ${xpClaimedHere ? "request" : `claim +${lessonXp} XP & request`} +${UNIT_REWARD_CLAMS} Clams`
+        );
+        statusEl.classList.remove("is-completed");
+        submitBtn.textContent = bi("完成任務並申請英蚌", "Submit & Claim Rewards");
+        submitBtn.disabled = false;
+      }
+    };
+
+    activeLessonSyncCommission = syncIeltsCommissionUI;
+    syncIeltsCommissionUI();
+    document.getElementById("toggle-complete-btn").onclick = async () => {
+      if (isLessonCompleted(dateStr)) return;
+      const submitBtn = document.getElementById("toggle-complete-btn");
+      const targetSubmitted = !isLessonSubmitted(dateStr);
+      submitBtn.disabled = true;
+      try {
+        await setLessonSubmitted(dateStr, targetSubmitted);
+        syncIeltsCommissionUI();
+        if (targetSubmitted) {
+          pendingWorkCelebration = "submitted";
+          launchFullCelebration();
+        } else if (pendingWorkCelebration === "submitted") {
+          pendingWorkCelebration = null;
+        }
+      } catch (err) {
+        alert(translateAuthError(err));
+      } finally {
+        syncIeltsCommissionUI();
+      }
+    };
+
+    lessonView.classList.remove("hidden");
+    return;
+  }
+
+  stopIeltsTimerIfLoaded();
+  document.getElementById("reset-quiz-btn")?.classList.remove("hidden");
+
   const lesson = db.lessons.find(l => l.Date === dateStr);
   if (!lesson) return openWorkDesktop();
 
@@ -3393,6 +3900,47 @@ setupModalDialogFallbacks(
   [],
   [document.getElementById("close-tv-btn")]
 );
+
+setupModalDialogFallbacks(
+  document.getElementById("track-chooser-dialog"),
+  [],
+  [document.getElementById("close-track-chooser-btn")]
+);
+
+document.getElementById("choose-track-student-btn")?.addEventListener("click", () => {
+  enterWorkTrack("student");
+});
+document.getElementById("choose-track-ielts-btn")?.addEventListener("click", () => {
+  enterWorkTrack("ielts");
+});
+document.getElementById("switch-work-track-btn")?.addEventListener("click", () => {
+  enterWorkTrack(activeWorkTrack === "ielts" ? "student" : "ielts");
+});
+document.getElementById("link-ielts-sheet-btn")?.addEventListener("click", async () => {
+  if (!isAdminRole()) return;
+  const ieltsMod = await getIeltsModule();
+  const currentId = ieltsMod.getSavedIeltsSheetId();
+  const input = window.prompt(
+    bi(
+      "請貼上獨立存放 IELTS 考古題的 Google 試算表網址或 ID（須包含 IELTS_Tests 與 IELTS_Questions 分頁，並開啟「知道連結的使用者皆可檢視」；留空並確定可回復為內建題庫）：",
+      "Paste the Google Sheet URL or ID for your IELTS bank (tabs: IELTS_Tests & IELTS_Questions, shared Anyone with link; leave blank to use bundled bank):"
+    ),
+    currentId
+  );
+  if (input === null) return;
+  const savedId = ieltsMod.setSavedIeltsSheetId(input);
+  await ensureIeltsBankLoaded({ force: true });
+  if (currentScreen === "desktop") {
+    renderHome({ scrollToLatest: false });
+  }
+  if (!savedId) {
+    alert(bi("已清除外部連結，回復使用系統內建第 1 批 IELTS 題庫。", "Cleared external Sheet link; using bundled Batch 1 IELTS bank."));
+  } else if (ieltsBank.sourceKind === "google_sheet") {
+    alert(bi(`已成功同步外部 IELTS Google Sheet（共 ${ieltsBank.tests.length} 回）！`, `Synced remote IELTS Google Sheet (${ieltsBank.tests.length} tests)!`));
+  } else {
+    alert(bi("無法從該試算表讀取 IELTS_Tests / IELTS_Questions，請確認分頁名稱與檢視權限（目前已先保留內建題庫）。", "Could not read IELTS_Tests / IELTS_Questions from that Sheet. Check tab names & viewer permissions (falling back to bundled bank)."));
+  }
+});
 
 setupModalDialogFallbacks(
   document.getElementById("poster-dialog"),
@@ -4537,7 +5085,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261124k`;
+    img.src = `${item.previewImage}?v=20261124l`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
@@ -6500,7 +7048,8 @@ document.getElementById("room-edit-avatar-btn").addEventListener("click", () => 
 
 window.addEventListener("keydown", (e) => {
   if (currentScreen !== "room" || !roomScene) return;
-  if (settingsDialog.open || adminReviewDialog.open || shopDialog.open || tvDialog.open || financeDialog.open) return;
+  const trackChooserEl = document.getElementById("track-chooser-dialog");
+  if (settingsDialog.open || adminReviewDialog.open || shopDialog.open || tvDialog.open || financeDialog.open || trackChooserEl?.open) return;
   if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
   if (e.key === "q" || e.key === "Q") {
     const q = roomScene.rotateLeft();
@@ -6914,11 +7463,14 @@ function renderPendingReviewQueue() {
     const metricsMap = stu.submissionMetrics || {};
     Object.keys(submitted).forEach(dateKey => {
       if (submitted[dateKey] && !approved[dateKey] && !overrides[dateKey]) {
-        const lessonMeta = db.lessons.find(l => l.Date === dateKey);
+        const lessonMeta = findLessonAnyTrack(dateKey);
+        const defaultTitle = isIeltsLessonId(dateKey)
+          ? dateKey.replace(/^ielts:/i, "IELTS ").toUpperCase()
+          : bi("英語單元任務", "English Quest");
         pendingEntries.push({
           stu,
           dateStr: dateKey,
-          title: lessonMeta?.Title || bi("英語單元任務", "English Quest"),
+          title: lessonMeta?.Title || defaultTitle,
           metricRaw: metricsMap[dateKey] || null
         });
       }
@@ -7128,8 +7680,15 @@ async function loadStudentsForReview(preserveUid = null) {
 
 async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount) {
   const safeReward = Math.max(0, Math.min(100000, Math.trunc(Number(rewardAmount) || 0)));
-  const lessonMeta = db.lessons.find(l => l.Date === dateStr);
-  const resolvedXp = xpAmount !== undefined && xpAmount !== null ? xpAmount : getLessonXp(lessonMeta);
+  let lessonMeta = findLessonAnyTrack(dateStr);
+  if (!lessonMeta && isIeltsLessonId(dateStr) && isAdminRole()) {
+    await ensureIeltsBankLoaded();
+    lessonMeta = findLessonAnyTrack(dateStr);
+  }
+  const fallbackXp = isIeltsLessonId(dateStr) ? 60 : DEFAULT_LESSON_XP;
+  const resolvedXp = xpAmount !== undefined && xpAmount !== null
+    ? xpAmount
+    : (lessonMeta ? getLessonXp(lessonMeta) : fallbackXp);
   const safeXp = Math.max(0, Math.min(10000, Math.trunc(Number(resolvedXp) || 0)));
   const stuRef = doc(firestoreDb, "users", studentUid);
 
@@ -7353,8 +7912,42 @@ function renderSelectedStudentReview() {
   const submitted = stu.submittedLessons || {};
   const metricsMap = stu.submissionMetrics || {};
 
-  // Sort all lessons: pending submissions first, then unapproved, then approved
-  const activeLessons = [...db.lessons]
+  // Sort all lessons (and any ready/recorded IELTS tests for admins): pending first, then unapproved, then approved
+  const combinedMap = new Map();
+  db.lessons.forEach(l => {
+    if (l?.Date) combinedMap.set(l.Date, l);
+  });
+  const isTargetAdminAccount = (stu.email || "").trim().toLowerCase() === SUPER_ADMIN_EMAIL || stu.uid === currentUser?.uid;
+  if (isTargetAdminAccount && ieltsBank.loaded) {
+    ieltsBank.tests
+      .filter(t => String(t.Ready).toUpperCase() === "TRUE")
+      .forEach(t => {
+        if (!combinedMap.has(t.Test_ID)) {
+          combinedMap.set(t.Test_ID, {
+            Date: t.Test_ID,
+            Title: t.Title || t.Test_ID,
+            XP: t.XP ?? 60
+          });
+        }
+      });
+  }
+  [
+    ...Object.keys(submitted),
+    ...Object.keys(approved),
+    ...Object.keys(overrides),
+    ...Object.keys(metricsMap)
+  ].forEach(key => {
+    if (isIeltsLessonId(key) && !combinedMap.has(key)) {
+      const meta = findLessonAnyTrack(key);
+      combinedMap.set(key, {
+        Date: key,
+        Title: meta?.Title || key.replace(/^ielts:/i, "IELTS ").toUpperCase(),
+        XP: meta?.XP ?? 60
+      });
+    }
+  });
+
+  const activeLessons = Array.from(combinedMap.values())
     .sort((a, b) => {
       const sa = submitted[a.Date] && !approved[a.Date] ? 0 : (approved[a.Date] || overrides[a.Date] ? 2 : 1);
       const sb = submitted[b.Date] && !approved[b.Date] ? 0 : (approved[b.Date] || overrides[b.Date] ? 2 : 1);
@@ -7416,16 +8009,32 @@ function renderSelectedStudentReview() {
 }
 
 openAdminReviewBtn?.addEventListener("click", () => {
-  if (currentRole !== "super_admin" && currentRole !== "admin") return;
+  if (!isAdminRole()) return;
   if (!adminReviewDialog.open) {
     adminReviewDialog.showModal();
   }
   if (cachedStudents.length > 0) {
     syncCachedStudentsSnapshot(cachedStudents);
   }
+  if (!ieltsBank.loaded) {
+    ensureIeltsBankLoaded().then(() => {
+      if (adminReviewDialog.open) {
+        renderPendingReviewQueue();
+        renderSelectedStudentReview();
+      }
+    });
+  }
   loadStudentsForReview();
 });
 document.getElementById("refresh-review-btn").addEventListener("click", () => {
+  if (isAdminRole() && !ieltsBank.loaded) {
+    ensureIeltsBankLoaded().then(() => {
+      if (adminReviewDialog.open) {
+        renderPendingReviewQueue();
+        renderSelectedStudentReview();
+      }
+    });
+  }
   loadStudentsForReview(document.getElementById("review-student-select").value);
 });
 document.getElementById("admin-preview-story-btn")?.addEventListener("click", () => {
@@ -7677,6 +8286,8 @@ onAuthStateChanged(auth, async (user) => {
   pendingRankUpToast = null;
   dismissRankUpToast(false);
   currentRole = "student";
+  activeWorkTrack = "student";
+  stopIeltsTimerIfLoaded();
 
   if (!user) {
     restoredNavSessionKey = "";

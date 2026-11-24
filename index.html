@@ -28,7 +28,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261124k" />
+  <link rel="stylesheet" href="./styles.css?v=20261124l" />
 </head>
 <body>
 
@@ -446,6 +446,42 @@
             commandfor="admin-review-dialog"
             style="margin-inline-start: auto;"
           >關閉</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Admin Track Chooser Modal (Student Curriculum vs IELTS GT Reading Bank) -->
+    <dialog id="track-chooser-dialog" class="settings-dialog" closedby="any" aria-labelledby="track-chooser-title">
+      <div class="dialog-shell">
+        <div class="dialog-header">
+          <h2 class="dialog-title" id="track-chooser-title">💻 選擇書桌工作題庫</h2>
+          <button
+            type="button"
+            class="dialog-close-btn"
+            id="close-track-chooser-btn"
+            command="close"
+            commandfor="track-chooser-dialog"
+            aria-label="關閉選擇視窗"
+          >✕</button>
+        </div>
+        <div class="dialog-body">
+          <p class="form-hint" id="track-chooser-subtitle">請選擇目前要開啟的工作題庫（學生端不會看見您的雅思考古題庫）：</p>
+          <div class="track-chooser-grid">
+            <button type="button" class="track-choice-card" id="choose-track-student-btn">
+              <span class="track-choice-icon" aria-hidden="true">🎓</span>
+              <div class="track-choice-text">
+                <strong>學生英文課程進度</strong>
+                <span>管理與檢視學生單元任務、單字與聽讀測驗</span>
+              </div>
+            </button>
+            <button type="button" class="track-choice-card is-ielts" id="choose-track-ielts-btn">
+              <span class="track-choice-icon" aria-hidden="true">📘</span>
+              <div class="track-choice-text">
+                <strong>IELTS General Reading 題庫</strong>
+                <span>雅思考古閱讀測驗 · 內建碼表計時、交卷批改與一鍵生成 Gemini 檢討 Prompt</span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
     </dialog>
@@ -960,6 +996,10 @@
           <p class="form-hint" id="home-reward-hint">完成練習並送交甲方老師驗收通過後，每單元可獲得 +200 英蚌報酬</p>
         </div>
         <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+          <div id="admin-track-controls" class="admin-track-controls hidden">
+            <button type="button" class="btn btn-sm" id="switch-work-track-btn">🔄 切換題庫</button>
+            <button type="button" class="btn btn-sm hidden" id="link-ielts-sheet-btn" title="連結獨立存放 IELTS 考古題的 Google 試算表 ID">🔗 連結 IELTS 試算表</button>
+          </div>
           <div class="map-progress-pill" id="map-progress-pill">
             <span class="map-progress-dot" aria-hidden="true"></span>
             <span id="map-completed-count">已驗收 0 關</span>
@@ -1037,6 +1077,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261124k"></script>
+  <script type="module" src="./app-main.js?v=20261124l"></script>
 </body>
 </html>

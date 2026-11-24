@@ -1,5 +1,5 @@
-import { bi, isEn } from "./i18n.js?v=20261124k";
-import { hasOwnedSofa } from "./shop-catalog.js?v=20261124k";
+import { bi, isEn } from "./i18n.js?v=20261124l";
+import { hasOwnedSofa } from "./shop-catalog.js?v=20261124l";
 
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
@@ -720,8 +720,9 @@ export function evaluateProfileRentMood(
 }
 
 const VALID_NAV_SCREENS = new Set(["room", "desktop", "lesson", "onboarding"]);
-const VALID_NAV_MODALS = new Set(["shop", "finance", "settings", "poster", "tv", "adminReview"]);
+const VALID_NAV_MODALS = new Set(["shop", "finance", "settings", "poster", "tv", "adminReview", "trackChooser"]);
 const VALID_FINANCE_FILTERS = new Set(["all", "expense", "income"]);
+const VALID_WORK_TRACKS = new Set(["student", "ielts"]);
 
 export function normalizeSavedNavState(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
@@ -736,10 +737,12 @@ export function normalizeSavedNavState(raw) {
   const financeMonth = (typeof raw.financeMonth === "string" && /^\d{4}-\d{2}$/.test(raw.financeMonth.trim()))
     ? raw.financeMonth.trim()
     : "";
+  const workTrack = VALID_WORK_TRACKS.has(raw.workTrack) ? raw.workTrack : "student";
   const scrollRaw = Math.trunc(Number(raw.scrollY));
   return {
     screen: (screen === "lesson" && !lessonDate) ? "desktop" : screen,
     lessonDate,
+    workTrack,
     isEditingAvatar: screen === "onboarding" ? Boolean(raw.isEditingAvatar) : false,
     modal,
     shopCategory,
@@ -879,4 +882,167 @@ export function evaluateSubmissionMetrics(raw) {
     badgeText,
     summaryHint
   };
+}
+
+/**
+ * Normalize an IELTS text/option response for resilient grading (spacing, dashes, currency, case).
+ */
+export function normalizeIeltsAnswer(raw) {
+  return String(raw || "")
+    .trim()
+    .replace(/[’‘]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-")
+    .replace(/\s*-\s*/g, "-")
+    .replace(/\$\s+/g, "$")
+    .replace(/[.,;:!?]+$/g, "")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function parseMultiLetterTokens(raw) {
+  return [...new Set(
+    String(raw || "")
+      .toUpperCase()
+      .split(/[\s,&]+|\band\b/i)
+      .map(s => s.trim())
+      .filter(s => /^[A-Z0-9]+$/.test(s))
+  )].sort();
+}
+
+/**
+ * Grade an entire IELTS GT Reading attempt with support for:
+ * - multiple accepted variants (`|`)
+ * - unordered pairs via `Order_Group` (prevents double-dipping identical letters)
+ * - two-letter MULTI2 items (`A,B` / `B AND A`)
+ */
+export function gradeIeltsExam(questions = [], userAnswersMap = {}) {
+  const list = Array.isArray(questions) ? questions : [];
+  const answers = (userAnswersMap && typeof userAnswersMap === "object") ? userAnswersMap : {};
+
+  // Pre-seed pools for unordered paired questions (e.g., Q6 & Q7 accepting D or I in either order)
+  const orderGroupPools = new Map();
+  list.forEach((q, idx) => {
+    const grp = String(q?.Order_Group || "").trim();
+    if (!grp || orderGroupPools.has(grp)) return;
+    const pool = String(q?.Answer || "")
+      .split("|")
+      .map(v => normalizeIeltsAnswer(v))
+      .filter(Boolean);
+    orderGroupPools.set(grp, pool);
+  });
+
+  const results = [];
+  let correctCount = 0;
+
+  list.forEach((q, idx) => {
+    const key = String(idx);
+    const rawUser = String(answers[key] || "").trim();
+    const qType = String(q?.Type || "").trim().toUpperCase();
+    const acceptedRawList = String(q?.Answer || "")
+      .split("|")
+      .map(s => s.trim())
+      .filter(Boolean);
+    const primaryAnswer = acceptedRawList[0] || "";
+    const orderGrp = String(q?.Order_Group || "").trim();
+
+    let isCorrect = false;
+    if (rawUser) {
+      if (qType === "MULTI2") {
+        const userTokens = parseMultiLetterTokens(rawUser);
+        isCorrect = acceptedRawList.some(cand => {
+          const expectedTokens = parseMultiLetterTokens(cand);
+          return expectedTokens.length > 0 &&
+            userTokens.length === expectedTokens.length &&
+            userTokens.every((tok, ti) => tok === expectedTokens[ti]);
+        });
+      } else if (orderGrp && orderGroupPools.has(orderGrp)) {
+        const pool = orderGroupPools.get(orderGrp);
+        const normUser = normalizeIeltsAnswer(rawUser);
+        const matchIdx = pool.indexOf(normUser);
+        if (matchIdx !== -1) {
+          pool.splice(matchIdx, 1);
+          isCorrect = true;
+        }
+      } else {
+        const normUser = normalizeIeltsAnswer(rawUser);
+        isCorrect = acceptedRawList.some(cand => normalizeIeltsAnswer(cand) === normUser);
+      }
+    }
+
+    if (isCorrect) correctCount += 1;
+
+    results.push({
+      index: idx,
+      qNum: Number(q?.Q_Num || idx + 1),
+      isCorrect,
+      isAnswered: rawUser.length > 0,
+      userAnswer: rawUser,
+      primaryAnswer,
+      acceptedDisplay: acceptedRawList.join(" / ")
+    });
+  });
+
+  const total = list.length;
+  const accuracyPct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+  return { total, correctCount, accuracyPct, results };
+}
+
+/**
+ * Format a copy-ready Gemini review prompt including passages, question breakdown,
+ * user vs official answers, timing, and score log instructions.
+ */
+export function buildIeltsGeminiReviewPrompt({
+  testMeta = {},
+  questions = [],
+  gradeResult = null,
+  elapsedSec = 0,
+  scoreSheetUrl = "https://docs.google.com/spreadsheets/d/1cfru4X_afjJH15CeG6My7DZbneDbW6jETrMER9P4HH0/edit"
+} = {}) {
+  const result = gradeResult || gradeIeltsExam(questions, {});
+  const durationLabel = formatExamDuration(elapsedSec);
+  const testTitle = testMeta.Title || `IELTS GT Reading Test ${testMeta.Test_Num || ""}`;
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  const lines = [
+    "請幫我擔任雅思（IELTS General Training Reading）專業家教，根據以下我的實戰作答紀錄進行分析與檢討：",
+    "",
+    "### 一、測驗基本紀錄",
+    `- 測驗名稱：${testTitle}`,
+    `- 測驗日期：${todayIso}`,
+    `- 作答得分：${result.correctCount} / ${result.total} 題（正確率 ${result.accuracyPct}%）`,
+    `- 作答耗時：${durationLabel}（${Math.max(0, Math.trunc(elapsedSec))} 秒）`,
+    "",
+    "### 二、每題作答明細（題目 / 我的答案 / 正確答案 / 結果）"
+  ];
+
+  questions.forEach((q, idx) => {
+    const r = result.results[idx] || {};
+    const statusTag = !r.isAnswered ? "[— 未作答]" : r.isCorrect ? "[✓ 正確]" : "[✗ 錯題]";
+    const userDisplay = r.isAnswered ? r.userAnswer : "(空白)";
+    const qText = String(q?.Question || "").replace(/\s+/g, " ").trim();
+    lines.push(
+      `Q${r.qNum || idx + 1} (${q?.Type || "Q"}) ${statusTag} ${qText}\n  - 我的答案：${userDisplay} ｜ 標準答案：${r.acceptedDisplay || r.primaryAnswer}`
+    );
+  });
+
+  lines.push("", "### 三、文章原文（請直接從以下原文擷取證據講解錯題）");
+  [1, 2, 3].forEach(secNum => {
+    const secTitle = testMeta[`Section_${secNum}_Title`];
+    const secBody = testMeta[`Section_${secNum}_Body`];
+    if (secTitle || secBody) {
+      lines.push(`\n[Section ${secNum}] ${secTitle || ""}\n${String(secBody || "").trim()}`);
+    }
+  });
+
+  lines.push(
+    "",
+    "### 四、請你幫我完成以下任務",
+    "1. **Band Score 落點分析**：依 IELTS General Training Reading 官方標準（40題對題換算）估算本次 Band Score，並評估本次作答耗時相對於正式考試 60 分鐘的節奏分配建議。",
+    "2. **錯題深度檢討（詳解）**：針對每一題 `[✗ 錯題]` 與 `[— 未作答]`，引用上方原文關鍵句指出正確解答與思考路徑，並說明我寫錯的原因（例如同義替換沒認出、True/False vs Not Given 混淆、單複數／字數限制等）。",
+    "3. **弱點題型統計與下次調整方向**：點出我這次表現最弱的題型與下次練習重點。",
+    `4. **產生 Google Sheet 紀錄列**：整理一列可直接複製貼上到我個人成績紀錄表（${scoreSheetUrl}）的表格列（包含日期、Test 編號、對題數、耗時、預估 Band、本次錯題重點摘要），並協助／指引寫入該紀錄表。`
+  );
+
+  return lines.join("\n");
 }
