@@ -1,4 +1,4 @@
-import { bi } from "./i18n.js?v=20261124b";
+import { bi } from "./i18n.js?v=20261124c";
 
 /**
  * Wall Art Poster Customizer & Interactive 11:15 Portrait Cropper Controller

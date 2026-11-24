@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261124b";
+} from "./room-scene.js?v=20261124c";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261124b";
+} from "./shop-catalog.js?v=20261124c";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261124b";
+} from "./room-grid.js?v=20261124c";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -98,16 +98,16 @@ import {
   showFeedback,
   clearFeedback,
   translateAuthError
-} from "./app-helpers.js?v=20261124b";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261124b";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124b";
+} from "./app-helpers.js?v=20261124c";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261124c";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261124c";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261124b";
+} from "./i18n.js?v=20261124c";
 
 applyStaticDomTranslations();
 
@@ -209,8 +209,19 @@ async function fetchRawSheetTab(sheetName, extraParams = "") {
     throw new Error(`工作表 ${sheetName} 讀取錯誤：${data.errors.map(e => e.message).join(", ")}`);
   }
 
-  const cols = data.table.cols.map(c => (c.label || "").trim());
-  const rows = data.table.rows || [];
+  let cols = data.table.cols.map(c => (c.label || "").trim());
+  let rows = data.table.rows || [];
+
+  if (cols.every(c => !c) && rows.length > 0) {
+    const headerRow = rows[0]?.c || [];
+    cols = cols.map((_, idx) => {
+      const cell = headerRow[idx];
+      if (!cell) return "";
+      const val = (cell.f !== undefined && cell.f !== null) ? String(cell.f) : (cell.v !== undefined && cell.v !== null ? String(cell.v) : "");
+      return val.trim();
+    });
+    rows = rows.slice(1);
+  }
 
   return rows.map(row => {
     const obj = {};
@@ -228,8 +239,8 @@ async function fetchRawSheetTab(sheetName, extraParams = "") {
 }
 
 async function fetchSheetTab(sheetName) {
-  const rows = await fetchRawSheetTab(sheetName);
-  return rows.filter(item => item.Date);
+  const rows = await fetchRawSheetTab(sheetName, "&headers=1");
+  return rows.filter(item => item.Date && item.Date !== "Date");
 }
 
 async function fetchOptionalSheetTab(sheetName) {
@@ -3652,7 +3663,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261124b`;
+    img.src = `${item.previewImage}?v=20261124c`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
