@@ -376,7 +376,7 @@ const STATIC_DOM_TRANSLATIONS = [
   { selector: "#choose-track-student-btn .track-choice-text strong", zh: "學生英文課程", en: "Student Curriculum" },
   { selector: "#choose-track-student-btn .track-choice-text span", zh: "單元任務、單字與聽讀測驗", en: "Unit quests, vocabulary & quizzes" },
   { selector: "#choose-track-ielts-btn .track-choice-text strong", zh: "IELTS General Reading", en: "IELTS General Reading" },
-  { selector: "#choose-track-ielts-btn .track-choice-text span", zh: "雅思考古閱讀測驗（Test 1–5）", en: "General Training reading mock tests" },
+  { selector: "#choose-track-ielts-btn .track-choice-text span", zh: "雅思考古閱讀測驗", en: "General Training reading mock tests" },
   { selector: "#map-back-room-btn", zh: "🏠 離開電腦回到租屋處", en: "🏠 Leave Desk & Back to Studio" },
   { selector: "#home-xp-banner", ariaLabelZh: "繪師聲望與經驗值進度", ariaLabelEn: "Artist reputation & XP progress" },
   { selector: "#quiz-progress-track", ariaLabelZh: "測驗進度", ariaLabelEn: "Quiz progress" },
