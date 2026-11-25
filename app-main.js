@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261125a";
+} from "./room-scene.js?v=20261125b";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261125a";
+} from "./shop-catalog.js?v=20261125b";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261125a";
+} from "./room-grid.js?v=20261125b";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -103,16 +103,16 @@ import {
   evaluateSubmissionMetrics,
   formatExamDuration,
   gradeIeltsExam
-} from "./app-helpers.js?v=20261125a";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261125a";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261125a";
+} from "./app-helpers.js?v=20261125b";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261125b";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261125b";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261125a";
+} from "./i18n.js?v=20261125b";
 
 applyStaticDomTranslations();
 
@@ -202,7 +202,7 @@ function isIeltsLessonId(id) {
 
 async function getIeltsModule() {
   if (!ieltsModuleCache) {
-    ieltsModuleCache = await import("./ielts-exam.js?v=20261125a");
+    ieltsModuleCache = await import("./ielts-exam.js?v=20261125b");
   }
   return ieltsModuleCache;
 }
@@ -2330,8 +2330,8 @@ function renderHome({ scrollToLatest = false } = {}) {
           unitLabel,
           circleText: numLabel,
           badgeText: `GT-${numLabel}`,
-          title: item.Title || `General Reading Test ${num}`,
-          subtitle: item.Topics || "",
+          title: `IELTS GT Reading Test ${num}`,
+          subtitle: "",
           metaHtml,
           isCompleted,
           isSubmitted,
@@ -2342,11 +2342,10 @@ function renderHome({ scrollToLatest = false } = {}) {
         lastUnlockedStep = step;
         mapEl.appendChild(step);
       } else {
-        const titleHint = item.Title ? ` — ${item.Title}` : "";
         const step = buildLockedQuestStepElement({
           offsetX,
           fadeOpacity: 0.56,
-          labelText: `${unitLabel} · ${bi("待批次匯入", "Batch Pending")}${titleHint}`
+          labelText: `${unitLabel} · ${bi("待批次匯入", "Batch Pending")}`
         });
         mapEl.appendChild(step);
       }
@@ -2992,8 +2991,8 @@ async function renderLesson(dateStr) {
     const lessonView = document.getElementById("lesson-view");
 
     document.getElementById("lesson-date-badge").textContent = `GT TEST ${String(ieltsTest.Test_Num).padStart(2, "0")}`;
-    document.getElementById("lesson-title").textContent = ieltsTest.Title || `General Training Reading Test ${ieltsTest.Test_Num}`;
-    document.getElementById("lesson-grammar").textContent = ieltsTest.Topics || "";
+    document.getElementById("lesson-title").textContent = `IELTS GT Reading Test ${ieltsTest.Test_Num}`;
+    document.getElementById("lesson-grammar").textContent = "";
     document.getElementById("vocab-section")?.classList.add("hidden");
     document.getElementById("vocab-grid").innerHTML = "";
     document.getElementById("reset-quiz-btn")?.classList.add("hidden");
@@ -5085,7 +5084,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261125a`;
+    img.src = `${item.previewImage}?v=20261125b`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);

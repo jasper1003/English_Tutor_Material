@@ -3,9 +3,9 @@ import {
   formatExamDuration,
   gradeIeltsExam,
   buildIeltsGeminiReviewPrompt
-} from "./app-helpers.js?v=20261125a";
-import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125a";
-import { bi } from "./i18n.js?v=20261125a";
+} from "./app-helpers.js?v=20261125b";
+import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125b";
+import { bi } from "./i18n.js?v=20261125b";
 
 export const DEFAULT_IELTS_SHEET_ID = "";
 export const IELTS_SHEET_ID_STORAGE_KEY = "ielts_custom_sheet_id_v1";
@@ -38,7 +38,7 @@ export function setSavedIeltsSheetId(raw) {
 }
 
 export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
-  const mod = await import("./ielts-gt-data.js?v=20261125a");
+  const mod = await import("./ielts-gt-data.js?v=20261125b");
   let tests = Array.isArray(mod.IELTS_TESTS) ? mod.IELTS_TESTS.map(t => ({ ...t })) : [];
   let questions = Array.isArray(mod.IELTS_QUESTIONS) ? mod.IELTS_QUESTIONS.map(q => ({ ...q })) : [];
   let sourceKind = "bundled";
@@ -193,18 +193,10 @@ function renderIeltsQuestionCard({
   }
 
   const qType = String(q.Type || "").toUpperCase();
-  const typeLabelMap = {
-    TFNG: "TRUE / FALSE / NOT GIVEN",
-    YNNG: "YES / NO / NOT GIVEN",
-    MC: "MULTIPLE CHOICE",
-    CHOICE_PILLS: "MATCHING / LETTER",
-    MULTI2: "CHOOSE TWO LETTERS",
-    FILL: "COMPLETION / SHORT ANSWER"
-  };
 
   const badge = document.createElement("div");
   badge.className = "question-type-badge";
-  badge.textContent = `Q${q.Q_Num} · ${typeLabelMap[qType] || qType}`;
+  badge.textContent = `Question ${q.Q_Num}`;
   card.appendChild(badge);
 
   const qText = document.createElement("div");
@@ -500,7 +492,7 @@ export function renderIeltsExamView({
 
     const heading = document.createElement("h3");
     heading.className = "quiz-section-heading";
-    heading.textContent = secTitle;
+    heading.textContent = `Section ${secNum}`;
     secBlock.appendChild(heading);
 
     const split = document.createElement("div");
