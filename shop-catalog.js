@@ -1,4 +1,4 @@
-import { bi, isEn } from "./i18n.js?v=20261124l";
+import { bi, isEn } from "./i18n.js?v=20261125a";
 
 export const SHOP_CATEGORIES = [
   { id: "all", label: "全部商品", labelEn: "All Items" },

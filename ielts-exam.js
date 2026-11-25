@@ -3,9 +3,9 @@ import {
   formatExamDuration,
   gradeIeltsExam,
   buildIeltsGeminiReviewPrompt
-} from "./app-helpers.js?v=20261124l";
-import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261124l";
-import { bi } from "./i18n.js?v=20261124l";
+} from "./app-helpers.js?v=20261125a";
+import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125a";
+import { bi } from "./i18n.js?v=20261125a";
 
 export const DEFAULT_IELTS_SHEET_ID = "";
 export const IELTS_SHEET_ID_STORAGE_KEY = "ielts_custom_sheet_id_v1";
@@ -38,7 +38,7 @@ export function setSavedIeltsSheetId(raw) {
 }
 
 export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
-  const mod = await import("./ielts-gt-data.js?v=20261124l");
+  const mod = await import("./ielts-gt-data.js?v=20261125a");
   let tests = Array.isArray(mod.IELTS_TESTS) ? mod.IELTS_TESTS.map(t => ({ ...t })) : [];
   let questions = Array.isArray(mod.IELTS_QUESTIONS) ? mod.IELTS_QUESTIONS.map(q => ({ ...q })) : [];
   let sourceKind = "bundled";
@@ -368,11 +368,6 @@ function renderIeltsQuestionCard({
       note.textContent = `🛠 ${bi("題目檢視備註：", "Source audit note: ")}${q.Audit_Note}`;
       card.appendChild(note);
     }
-  } else if (q.Audit_Note) {
-    const hint = document.createElement("div");
-    hint.className = "ielts-audit-hint";
-    hint.textContent = `ℹ ${q.Audit_Note}`;
-    card.appendChild(hint);
   }
 
   return card;
