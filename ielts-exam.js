@@ -3,9 +3,9 @@ import {
   formatExamDuration,
   gradeIeltsExam,
   buildIeltsGeminiReviewPrompt
-} from "./app-helpers.js?v=20261125g";
-import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125g";
-import { bi } from "./i18n.js?v=20261125g";
+} from "./app-helpers.js?v=20261125h";
+import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125h";
+import { bi } from "./i18n.js?v=20261125h";
 
 export const DEFAULT_IELTS_SHEET_ID = "";
 export const IELTS_SHEET_ID_STORAGE_KEY = "ielts_custom_sheet_id_v1";
@@ -63,7 +63,7 @@ export function setSavedIeltsSheetId(raw) {
 }
 
 export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
-  const mod = await import("./ielts-gt-data.js?v=20261125g");
+  const mod = await import("./ielts-gt-data.js?v=20261125h");
   let tests = Array.isArray(mod.IELTS_TESTS) ? mod.IELTS_TESTS.map(t => ({ ...t })) : [];
   let questions = Array.isArray(mod.IELTS_QUESTIONS) ? mod.IELTS_QUESTIONS.map(q => ({ ...q })) : [];
   let sourceKind = "bundled";
@@ -564,9 +564,14 @@ export function renderIeltsExamView({
   applyFontPct(currentFontPct, { persist: false });
 
   fontGroup.append(fontLabel, fontDecBtn, fontSlider, fontIncBtn, fontResetBtn);
-  timerControls.append(fontGroup, statusCountEl, toggleTimerBtn, resetTimerBtn);
 
-  timerBar.append(clockEl, timerControls);
+  const stopwatchPanel = document.createElement("div");
+  stopwatchPanel.className = "ielts-timer-panel";
+  stopwatchPanel.id = "ielts-timer-panel";
+  timerControls.append(statusCountEl, toggleTimerBtn, resetTimerBtn);
+  stopwatchPanel.append(clockEl, timerControls);
+
+  timerBar.append(fontGroup, stopwatchPanel);
   sectionedEl.appendChild(timerBar);
 
   // Build Sections 1, 2, 3

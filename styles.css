@@ -4560,11 +4560,19 @@ dialog.track-chooser-dialog {
   top: 76px;
   z-index: 12;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
-  padding: 0.75rem 1.05rem;
+}
+
+.ielts-timer-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-inline-start: auto;
+  padding: 0.58rem 1rem;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -4623,11 +4631,12 @@ dialog.track-chooser-dialog {
 .ielts-font-zoom-group {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 9px;
+  gap: 0.38rem;
+  padding: 0.58rem 0.9rem;
+  border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--surface-subtle);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
 }
 
 .ielts-font-zoom-label {
