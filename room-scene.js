@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { bi, isEn } from "./i18n.js?v=20261125i";
+import { bi, isEn } from "./i18n.js?v=20261125j";
 import {
   DEFAULT_FLOOR_STYLE,
   DEFAULT_DESK_STYLE,
@@ -16,13 +16,13 @@ import {
   resolvePantsStyle,
   SOFA_ITEM_IDS,
   hasOwnedSofa
-} from "./shop-catalog.js?v=20261125i";
+} from "./shop-catalog.js?v=20261125j";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261125i";
+} from "./app-helpers.js?v=20261125j";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -41,8 +41,10 @@ import {
   floorPlacementToWorld,
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
-  getRotatedDims
-} from "./room-grid.js?v=20261125i";
+  getRotatedDims,
+  getFloorWalkBlockers,
+  findShortestWalkPath
+} from "./room-grid.js?v=20261125j";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;
@@ -6755,27 +6757,16 @@ export class FreelancerRoomScene {
     let x = THREE.MathUtils.clamp(rawPt.x, -3.55, 3.55);
     let z = THREE.MathUtils.clamp(rawPt.z, -3.55, 3.55);
 
-    // Fixed bathroom walls/fixtures + dynamic grid blockers for every placed floor furniture item
-    const blockers = [
-      { minX: 1.32, maxX: 1.74, minZ: -3.95, maxZ: -2.28 }, // Bath frosted West partition
-      { minX: 2.38, maxX: 3.95, minZ: -1.72, maxZ: -1.30 }, // Bath frosted South partition
-      { minX: 1.80, maxX: 2.66, minZ: -3.95, maxZ: -3.02 }, // Sink
-      { minX: 2.88, maxX: 3.88, minZ: -3.95, maxZ: -2.84 }  // Toilet
-    ];
-    const eff = this.effectiveLayout || resolveEffectiveLayout(this.ownedItems, this.furnitureLayout, this.pendingParcels);
-    for (const [id, entry] of Object.entries(eff)) {
-      if (entry.surface !== "floor") continue;
-      if (this.editMode && this.editSelectedId === id) continue;
-      const box = getFloorFootprintWorldBox(id, entry);
-      if (!box) continue;
-      const pad = 0.08;
-      blockers.push({
-        minX: box.minX - pad,
-        maxX: box.maxX + pad,
-        minZ: box.minZ - pad,
-        maxZ: box.maxZ + pad
-      });
-    }
+    const blockers = getFloorWalkBlockers(
+      this.ownedItems,
+      this.furnitureLayout,
+      this.pendingParcels,
+      {
+        pad: 0.08,
+        excludeId: this.editMode ? this.editSelectedId : null,
+        effectiveLayout: this.effectiveLayout
+      }
+    );
 
     for (let pass = 0; pass < 2; pass++) {
       for (const b of blockers) {
@@ -6862,38 +6853,27 @@ export class FreelancerRoomScene {
     else if (targetOnBed && !currentlyOnBed) entryPt = this.bedSideAnchor;
     else if (targetOnSofa && !currentlyOnSofa) entryPt = this.sofaFrontAnchor;
 
-    // 2. Route safely around default sofa position (-2.26..-1.25, -1.25..0.55) only when sofa is placed there
-    const startPt = rawWaypoints.length > 0 ? rawWaypoints[rawWaypoints.length - 1] : curPos;
-    const isWestSofaSide = (p) => p.x < -1.9 && p.z > -1.4 && p.z < 0.72;
-    const isEastInterior = (p) => p.x > -1.45 && p.z < 2.6;
-    const sofaBlocking = Boolean(
-      this.sofaGroup?.visible
-      && !this.pendingParcels?.cozy_sofa
-      && this.sofaGroup.position.distanceTo(new THREE.Vector3(-1.78, 0, -0.35)) < 0.75
-    );
-    if (sofaBlocking && isWestSofaSide(startPt) && isEastInterior(entryPt)) {
-      rawWaypoints.push(this.sofaCorridorWest.clone());
-      rawWaypoints.push(this.sofaCorridorEast.clone());
-    } else if (sofaBlocking && isEastInterior(startPt) && isWestSofaSide(entryPt)) {
-      rawWaypoints.push(this.sofaCorridorEast.clone());
-      rawWaypoints.push(this.sofaCorridorWest.clone());
-    }
-
-    // 3. Route across open room hub when crossing long diagonal spans
+    // 2. Compute true shortest obstacle-avoiding floor path (walks straight A -> B whenever unobstructed)
     if (!(currentlyInBath && targetInBath) && !(currentlyOnBed && targetOnBed) && !(currentlyOnSofa && targetOnSofa)) {
       const fromPt = rawWaypoints.length > 0 ? rawWaypoints[rawWaypoints.length - 1] : curPos;
-      if (
-        fromPt.distanceTo(entryPt) > 2.5 &&
-        fromPt.distanceTo(this.centerAnchor) > 0.6 &&
-        entryPt.distanceTo(this.centerAnchor) > 0.6 &&
-        !isWestSofaSide(fromPt) &&
-        !isWestSofaSide(entryPt)
-      ) {
-        rawWaypoints.push(this.centerAnchor.clone());
+      const walkBlockers = getFloorWalkBlockers(
+        this.ownedItems,
+        this.furnitureLayout,
+        this.pendingParcels,
+        {
+          pad: 0.14,
+          wallPad: 0.04,
+          excludeId: this.editMode ? this.editSelectedId : null,
+          effectiveLayout: this.effectiveLayout
+        }
+      );
+      const midPath = findShortestWalkPath(fromPt, entryPt, walkBlockers);
+      for (const pt of midPath) {
+        rawWaypoints.push(new THREE.Vector3(pt.x, 0, pt.z));
       }
     }
 
-    // 4. Enter target zone cleanly
+    // 3. Enter target zone cleanly
     if (targetInBath && !currentlyInBath) {
       rawWaypoints.push(this.bathOutsideAnchor.clone());
       rawWaypoints.push(this.bathInsideAnchor.clone());

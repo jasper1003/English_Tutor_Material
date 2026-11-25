@@ -1,4 +1,4 @@
-import { bi, isEn } from "./i18n.js?v=20261125i";
+import { bi, isEn } from "./i18n.js?v=20261125j";
 
 export const GRID_STEP = 0.5;
 export const GRID_CELLS = 16; // 16 x 16 cells across [-4.0, +4.0] room floor & walls
@@ -739,4 +739,270 @@ export function getFloorFootprintWorldBox(itemId, entry) {
   const minZ = -4.0 + entry.gz * GRID_STEP;
   const maxZ = minZ + d * GRID_STEP;
   return { minX, maxX, minZ, maxZ };
+}
+
+export const FIXED_BATH_BLOCKERS = [
+  { id: "__bath_west", minX: 1.32, maxX: 1.74, minZ: -3.95, maxZ: -2.28, isWall: true },
+  { id: "__bath_south", minX: 2.38, maxX: 3.95, minZ: -1.72, maxZ: -1.30, isWall: true },
+  { id: "__bath_sink", minX: 1.80, maxX: 2.66, minZ: -3.95, maxZ: -3.02, isWall: true },
+  { id: "__bath_toilet", minX: 2.88, maxX: 3.88, minZ: -3.95, maxZ: -2.84, isWall: true }
+];
+
+/**
+ * Build axis-aligned world-space blockers for walking & floor clamping.
+ * Skips flat overlays (such as cozy_rug) so characters walk straight across rugs.
+ */
+export function getFloorWalkBlockers(
+  ownedItems = {},
+  rawLayout = {},
+  rawPendingParcels = {},
+  { pad = 0.08, wallPad = 0, excludeId = null, effectiveLayout = null } = {}
+) {
+  const blockers = FIXED_BATH_BLOCKERS.map(b => ({
+    ...b,
+    minX: b.minX - wallPad,
+    maxX: b.maxX + wallPad,
+    minZ: b.minZ - wallPad,
+    maxZ: b.maxZ + wallPad
+  }));
+
+  const eff = effectiveLayout || resolveEffectiveLayout(ownedItems, rawLayout, rawPendingParcels);
+  for (const [id, entry] of Object.entries(eff)) {
+    if (!entry || entry.surface !== "floor") continue;
+    if (excludeId && id === excludeId) continue;
+    if (PLACEABLE_FURNITURE_META[id]?.isFloorOverlay) continue;
+    const box = getFloorFootprintWorldBox(id, entry);
+    if (!box) continue;
+    blockers.push({
+      id,
+      minX: box.minX - pad,
+      maxX: box.maxX + pad,
+      minZ: box.minZ - pad,
+      maxZ: box.maxZ + pad,
+      isWall: false
+    });
+  }
+  return blockers;
+}
+
+function pointInsideBox(x, z, box, eps = 1e-6) {
+  return x > box.minX + eps && x < box.maxX - eps && z > box.minZ + eps && z < box.maxZ - eps;
+}
+
+function segmentIntersectsBox(ax, az, bx, bz, box, eps = 1e-6) {
+  const dx = bx - ax;
+  const dz = bz - az;
+  let tMin = 0;
+  let tMax = 1;
+
+  if (Math.abs(dx) < 1e-9) {
+    if (ax <= box.minX + eps || ax >= box.maxX - eps) return false;
+  } else {
+    const invD = 1 / dx;
+    let t1 = (box.minX + eps - ax) * invD;
+    let t2 = (box.maxX - eps - ax) * invD;
+    if (t1 > t2) [t1, t2] = [t2, t1];
+    tMin = Math.max(tMin, t1);
+    tMax = Math.min(tMax, t2);
+    if (tMin >= tMax) return false;
+  }
+
+  if (Math.abs(dz) < 1e-9) {
+    if (az <= box.minZ + eps || az >= box.maxZ - eps) return false;
+  } else {
+    const invD = 1 / dz;
+    let t1 = (box.minZ + eps - az) * invD;
+    let t2 = (box.maxZ - eps - az) * invD;
+    if (t1 > t2) [t1, t2] = [t2, t1];
+    tMin = Math.max(tMin, t1);
+    tMax = Math.min(tMax, t2);
+    if (tMin >= tMax) return false;
+  }
+
+  return tMin < tMax;
+}
+
+export function hasWalkLineOfSight(ax, az, bx, bz, blockers = []) {
+  for (const box of blockers) {
+    if (segmentIntersectsBox(ax, az, bx, bz, box)) return false;
+  }
+  return true;
+}
+
+/**
+ * Find the Euclidean shortest smooth walking path from startPt to endPt:
+ * - Walks straight A -> B whenever line-of-sight is clear.
+ * - Otherwise solves 8-directional A* around walls/furniture and string-pulls corners.
+ */
+export function findShortestWalkPath(
+  startPt,
+  endPt,
+  blockers = [],
+  { boundsMin = -3.55, boundsMax = 3.55, step = 0.25 } = {}
+) {
+  const sx = Number(startPt?.x || 0);
+  const sz = Number(startPt?.z || 0);
+  const ex = Number(endPt?.x || 0);
+  const ez = Number(endPt?.z || 0);
+
+  if (Math.hypot(ex - sx, ez - sz) < 0.2) {
+    return [{ x: ex, z: ez }];
+  }
+
+  if (hasWalkLineOfSight(sx, sz, ex, ez, blockers)) {
+    return [{ x: ex, z: ez }];
+  }
+
+  const cols = Math.round((boundsMax - boundsMin) / step) + 1;
+  const total = cols * cols;
+  const blocked = new Uint8Array(total);
+  const toWorld = (idx) => boundsMin + idx * step;
+  const toIdx = (val) => Math.max(0, Math.min(cols - 1, Math.round((val - boundsMin) / step)));
+
+  for (let gz = 0; gz < cols; gz += 1) {
+    const wz = toWorld(gz);
+    for (let gx = 0; gx < cols; gx += 1) {
+      const wx = toWorld(gx);
+      for (const box of blockers) {
+        if (pointInsideBox(wx, wz, box, -0.02)) {
+          blocked[gz * cols + gx] = 1;
+          break;
+        }
+      }
+    }
+  }
+
+  const findNearestFree = (rx, rz) => {
+    const cx = toIdx(rx);
+    const cz = toIdx(rz);
+    if (!blocked[cz * cols + cx]) return { gx: cx, gz: cz };
+    let best = null;
+    let bestD = Infinity;
+    for (let r = 1; r <= 4; r += 1) {
+      for (let dz = -r; dz <= r; dz += 1) {
+        for (let dx = -r; dx <= r; dx += 1) {
+          const nx = cx + dx;
+          const nz = cz + dz;
+          if (nx < 0 || nx >= cols || nz < 0 || nz >= cols) continue;
+          if (blocked[nz * cols + nx]) continue;
+          const d = Math.hypot(toWorld(nx) - rx, toWorld(nz) - rz);
+          if (d < bestD) {
+            bestD = d;
+            best = { gx: nx, gz: nz };
+          }
+        }
+      }
+      if (best) return best;
+    }
+    return { gx: cx, gz: cz };
+  };
+
+  const sNode = findNearestFree(sx, sz);
+  const eNode = findNearestFree(ex, ez);
+  const startId = sNode.gz * cols + sNode.gx;
+  const goalId = eNode.gz * cols + eNode.gx;
+  blocked[startId] = 0;
+  blocked[goalId] = 0;
+
+  const gScore = new Float64Array(total);
+  gScore.fill(Infinity);
+  gScore[startId] = 0;
+  const parent = new Int32Array(total);
+  parent.fill(-1);
+  const closed = new Uint8Array(total);
+  const open = [startId];
+  const inOpen = new Uint8Array(total);
+  inOpen[startId] = 1;
+
+  const dirs = [
+    [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
+    [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]
+  ];
+
+  let found = false;
+  while (open.length > 0) {
+    let bestPos = 0;
+    let bestF = Infinity;
+    for (let i = 0; i < open.length; i += 1) {
+      const id = open[i];
+      const cx = id % cols;
+      const cz = Math.floor(id / cols);
+      const f = gScore[id] + Math.hypot(eNode.gx - cx, eNode.gz - cz);
+      if (f < bestF) {
+        bestF = f;
+        bestPos = i;
+      }
+    }
+    const cur = open.splice(bestPos, 1)[0];
+    inOpen[cur] = 0;
+    if (cur === goalId) {
+      found = true;
+      break;
+    }
+    closed[cur] = 1;
+
+    const cx = cur % cols;
+    const cz = Math.floor(cur / cols);
+    for (const [dx, dz, cost] of dirs) {
+      const nx = cx + dx;
+      const nz = cz + dz;
+      if (nx < 0 || nx >= cols || nz < 0 || nz >= cols) continue;
+      const nId = nz * cols + nx;
+      if (closed[nId] || blocked[nId]) continue;
+      // Disallow cutting across corners of blocked cardinal neighbors
+      if (dx !== 0 && dz !== 0) {
+        if (blocked[cz * cols + (cx + dx)] || blocked[(cz + dz) * cols + cx]) continue;
+      }
+      const nextG = gScore[cur] + cost;
+      if (nextG < gScore[nId]) {
+        gScore[nId] = nextG;
+        parent[nId] = cur;
+        if (!inOpen[nId]) {
+          open.push(nId);
+          inOpen[nId] = 1;
+        }
+      }
+    }
+  }
+
+  if (!found) {
+    return [{ x: ex, z: ez }];
+  }
+
+  const raw = [];
+  let trace = goalId;
+  while (trace !== -1) {
+    raw.push({ x: toWorld(trace % cols), z: toWorld(Math.floor(trace / cols)) });
+    trace = parent[trace];
+  }
+  raw.reverse();
+  raw[0] = { x: sx, z: sz };
+  raw[raw.length - 1] = { x: ex, z: ez };
+
+  // Line-of-sight string-pulling so paths hug obstacle corners smoothly along straight segments
+  const smoothed = [raw[0]];
+  let i = 0;
+  while (i < raw.length - 1) {
+    let farthest = i + 1;
+    for (let j = raw.length - 1; j > i + 1; j -= 1) {
+      if (hasWalkLineOfSight(raw[i].x, raw[i].z, raw[j].x, raw[j].z, blockers)) {
+        farthest = j;
+        break;
+      }
+    }
+    smoothed.push(raw[farthest]);
+    i = farthest;
+  }
+
+  const out = [];
+  let prev = { x: sx, z: sz };
+  for (let k = 1; k < smoothed.length; k += 1) {
+    const pt = smoothed[k];
+    const isLast = k === smoothed.length - 1;
+    if (isLast || Math.hypot(pt.x - prev.x, pt.z - prev.z) >= 0.15) {
+      out.push(pt);
+      prev = pt;
+    }
+  }
+  return out.length > 0 ? out : [{ x: ex, z: ez }];
 }
