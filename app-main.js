@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261125e";
+} from "./room-scene.js?v=20261125f";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261125e";
+} from "./shop-catalog.js?v=20261125f";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261125e";
+} from "./room-grid.js?v=20261125f";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -103,16 +103,16 @@ import {
   evaluateSubmissionMetrics,
   formatExamDuration,
   gradeIeltsExam
-} from "./app-helpers.js?v=20261125e";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261125e";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261125e";
+} from "./app-helpers.js?v=20261125f";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261125f";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261125f";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261125e";
+} from "./i18n.js?v=20261125f";
 
 applyStaticDomTranslations();
 
@@ -202,7 +202,7 @@ function isIeltsLessonId(id) {
 
 async function getIeltsModule() {
   if (!ieltsModuleCache) {
-    ieltsModuleCache = await import("./ielts-exam.js?v=20261125e");
+    ieltsModuleCache = await import("./ielts-exam.js?v=20261125f");
   }
   return ieltsModuleCache;
 }
@@ -2969,7 +2969,28 @@ export function renderListeningSectionCard(sec) {
   return pane;
 }
 
+function resetLessonClearConfirmState() {
+  const clearBtn = document.getElementById("clear-answers-btn");
+  const confirmRow = document.getElementById("clear-answers-confirm-row");
+  clearBtn?.classList.remove("is-armed");
+  clearBtn?.setAttribute("aria-expanded", "false");
+  confirmRow?.classList.add("hidden");
+}
+
+async function clearLessonAnswerRecords(dateStr) {
+  if (!dateStr) return;
+  clearSavedQuizAnswers(dateStr);
+  resetQuizTelemetryForRetry(dateStr);
+  if (isIeltsLessonId(dateStr)) {
+    const ieltsMod = await getIeltsModule();
+    ieltsMod.clearIeltsAttemptState(currentUser?.uid || "anon", dateStr);
+  }
+  resetLessonClearConfirmState();
+  await renderLesson(dateStr);
+}
+
 async function renderLesson(dateStr) {
+  resetLessonClearConfirmState();
   if (isIeltsLessonId(dateStr)) {
     if (!isAdminRole()) {
       activeWorkTrack = "student";
@@ -2995,7 +3016,6 @@ async function renderLesson(dateStr) {
     document.getElementById("lesson-grammar").textContent = "";
     document.getElementById("vocab-section")?.classList.add("hidden");
     document.getElementById("vocab-grid").innerHTML = "";
-    document.getElementById("reset-quiz-btn")?.classList.add("hidden");
 
     const lessonXp = getLessonXp(ieltsLesson);
     const xpBadgeEl = document.getElementById("lesson-xp-badge");
@@ -3090,7 +3110,6 @@ async function renderLesson(dateStr) {
   }
 
   stopIeltsTimerIfLoaded();
-  document.getElementById("reset-quiz-btn")?.classList.remove("hidden");
 
   const lesson = db.lessons.find(l => l.Date === dateStr);
   if (!lesson) return openWorkDesktop();
@@ -3346,11 +3365,10 @@ async function renderLesson(dateStr) {
     }
   });
 
-  document.getElementById("reset-quiz-btn").onclick = () => {
-    clearSavedQuizAnswers(dateStr);
-    resetQuizTelemetryForRetry(dateStr);
-    renderLesson(dateStr);
-  };
+  const resetBtn = document.getElementById("reset-quiz-btn");
+  if (resetBtn) {
+    resetBtn.onclick = () => clearLessonAnswerRecords(dateStr);
+  }
 
   const syncCommissionUI = () => {
     const statusEl = document.getElementById("lesson-complete-status");
@@ -5084,7 +5102,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261125e`;
+    img.src = `${item.previewImage}?v=20261125f`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
@@ -8265,6 +8283,22 @@ document.getElementById("home-btn").addEventListener("click", () => {
     enterRoomView(currentScreen === "desktop" || currentScreen === "lesson");
   }
 });
+document.getElementById("clear-answers-btn")?.addEventListener("click", () => {
+  const clearBtn = document.getElementById("clear-answers-btn");
+  const confirmRow = document.getElementById("clear-answers-confirm-row");
+  if (!clearBtn || !confirmRow) return;
+  const arming = confirmRow.classList.contains("hidden");
+  confirmRow.classList.toggle("hidden", !arming);
+  clearBtn.classList.toggle("is-armed", arming);
+  clearBtn.setAttribute("aria-expanded", arming ? "true" : "false");
+});
+document.getElementById("cancel-clear-answers-btn")?.addEventListener("click", () => {
+  resetLessonClearConfirmState();
+});
+document.getElementById("confirm-clear-answers-btn")?.addEventListener("click", () => {
+  clearLessonAnswerRecords(activeLessonDate);
+});
+
 document.getElementById("back-btn").addEventListener("click", () => openWorkDesktop());
 document.getElementById("back-room-btn").addEventListener("click", () => enterRoomView(true));
 document.getElementById("map-back-room-btn").addEventListener("click", () => enterRoomView(true));

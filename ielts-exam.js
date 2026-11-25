@@ -3,9 +3,9 @@ import {
   formatExamDuration,
   gradeIeltsExam,
   buildIeltsGeminiReviewPrompt
-} from "./app-helpers.js?v=20261125e";
-import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125e";
-import { bi } from "./i18n.js?v=20261125e";
+} from "./app-helpers.js?v=20261125f";
+import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125f";
+import { bi } from "./i18n.js?v=20261125f";
 
 export const DEFAULT_IELTS_SHEET_ID = "";
 export const IELTS_SHEET_ID_STORAGE_KEY = "ielts_custom_sheet_id_v1";
@@ -38,7 +38,7 @@ export function setSavedIeltsSheetId(raw) {
 }
 
 export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
-  const mod = await import("./ielts-gt-data.js?v=20261125e");
+  const mod = await import("./ielts-gt-data.js?v=20261125f");
   let tests = Array.isArray(mod.IELTS_TESTS) ? mod.IELTS_TESTS.map(t => ({ ...t })) : [];
   let questions = Array.isArray(mod.IELTS_QUESTIONS) ? mod.IELTS_QUESTIONS.map(q => ({ ...q })) : [];
   let sourceKind = "bundled";
@@ -161,6 +161,12 @@ export function stopIeltsExamTimer() {
     clearInterval(ieltsStopwatchInterval);
     ieltsStopwatchInterval = null;
   }
+}
+
+export function clearIeltsAttemptState(uid, testId) {
+  stopIeltsExamTimer();
+  saveGradedState(uid, testId, null);
+  saveTimerSnapshot(uid, testId, 0, true);
 }
 
 function flushActiveTimer() {
@@ -382,7 +388,6 @@ export function renderIeltsExamView({
   const sectionedEl = document.getElementById("sectioned-quiz-container");
   const quizContainer = document.getElementById("quiz-container");
   const progressFill = document.getElementById("quiz-progress-fill");
-  const resetQuizBtn = document.getElementById("reset-quiz-btn");
   if (!sectionedEl) return;
 
   splitDefaultEl?.classList.add("hidden");
@@ -641,8 +646,7 @@ export function renderIeltsExamView({
     resetAttemptBtn.textContent = bi("↺ 清空重寫", "↺ Clear Answers");
     resetAttemptBtn.addEventListener("click", () => {
       clearSavedAnswers(testId);
-      saveGradedState(uid, testId, null);
-      saveTimerSnapshot(uid, testId, 0, true);
+      clearIeltsAttemptState(uid, testId);
       onResetTelemetry?.(testId);
       rebuildView();
     });
@@ -710,8 +714,7 @@ export function renderIeltsExamView({
     retakeBtn.textContent = bi("↺ 重新考試", "↺ Retake Test");
     retakeBtn.addEventListener("click", () => {
       clearSavedAnswers(testId);
-      saveGradedState(uid, testId, null);
-      saveTimerSnapshot(uid, testId, 0, true);
+      clearIeltsAttemptState(uid, testId);
       onResetTelemetry?.(testId);
       rebuildView();
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -737,14 +740,4 @@ export function renderIeltsExamView({
 
   sectionedEl.appendChild(footerCard);
   updateProgressBar();
-
-  if (resetQuizBtn) {
-    resetQuizBtn.onclick = () => {
-      clearSavedAnswers(testId);
-      saveGradedState(uid, testId, null);
-      saveTimerSnapshot(uid, testId, 0, true);
-      onResetTelemetry?.(testId);
-      rebuildView();
-    };
-  }
 }

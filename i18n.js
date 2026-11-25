@@ -380,7 +380,10 @@ const STATIC_DOM_TRANSLATIONS = [
   { selector: "#map-back-room-btn", zh: "🏠 離開電腦回到租屋處", en: "🏠 Leave Desk & Back to Studio" },
   { selector: "#home-xp-banner", ariaLabelZh: "繪師聲望與經驗值進度", ariaLabelEn: "Artist reputation & XP progress" },
   { selector: "#quiz-progress-track", ariaLabelZh: "測驗進度", ariaLabelEn: "Quiz progress" },
-  { selector: "#reset-quiz-btn", zh: "重新作答", en: "Reset Quiz" },
+  { selector: "#clear-answers-btn", zh: "🗑 清空作答紀錄", en: "🗑 Clear Answers" },
+  { selector: "#clear-answers-confirm-row", ariaLabelZh: "確認清除作答紀錄", ariaLabelEn: "Confirm clearing answer records" },
+  { selector: "#confirm-clear-answers-btn", zh: "確認要清除作答紀錄嗎？", en: "Confirm clear all answers?" },
+  { selector: "#cancel-clear-answers-btn", zh: "取消", en: "Cancel" },
   { selector: "#toast-region", ariaLabelZh: "通知中心", ariaLabelEn: "Notifications" },
   { selector: "#rankup-toast-close-btn", ariaLabelZh: "關閉升級通知", ariaLabelEn: "Close rank-up notification" },
   { selector: "#reading-vocab-popover", ariaLabelZh: "單字解釋卡片", ariaLabelEn: "Vocabulary card" }

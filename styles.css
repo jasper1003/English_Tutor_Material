@@ -549,6 +549,15 @@ main {
   border-bottom: 1px solid var(--border);
 }
 
+.lesson-header-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.65rem;
+}
+
 .lesson-date-pill {
   display: inline-block;
   font-size: 1rem;
@@ -557,7 +566,36 @@ main {
   background: var(--primary-light);
   padding: 0.3rem 0.8rem;
   border-radius: 6px;
-  margin-bottom: 0.65rem;
+}
+
+.lesson-clear-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.lesson-clear-btn.is-armed {
+  border-color: light-dark(#fca5a5, rgba(248, 113, 113, 0.55));
+  color: light-dark(#b91c1c, #fca5a5);
+}
+
+.lesson-clear-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.lesson-clear-confirm-btn {
+  border-color: light-dark(#dc2626, #ef4444);
+  background: light-dark(#dc2626, rgba(220, 38, 38, 0.88));
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.lesson-clear-confirm-btn:hover {
+  background: light-dark(#b91c1c, #dc2626);
 }
 
 .lesson-header h1 {
