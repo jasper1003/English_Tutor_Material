@@ -1,5 +1,5 @@
-import { escapeHtml, speakWord } from "./app-helpers.js?v=20261125k";
-import { bi } from "./i18n.js?v=20261125k";
+import { escapeHtml, speakWord } from "./app-helpers.js?v=20261125l";
+import { bi } from "./i18n.js?v=20261125l";
 
 const HINTS_PREF_KEY = "reading_vocab_hints_on_v2";
 const VALID_MARK_VALUES = ["yellow", "mint", "blue"];
@@ -162,7 +162,12 @@ export function splitParagraphIntoSentences(paragraphText) {
   return spans.filter(s => s.length > 0);
 }
 
-function loadReadingMarks(storageKey) {
+export function getReadingMarksStorageKey(uid = "guest", dateStr = "default", sectionKey = "") {
+  const cleanSec = sectionKey ? `:${sectionKey}` : "";
+  return `reading_marks:${uid || "guest"}:${dateStr || "default"}${cleanSec}`;
+}
+
+export function loadReadingMarks(storageKey) {
   try {
     const raw = localStorage.getItem(storageKey);
     if (!raw) return {};
@@ -180,9 +185,9 @@ function loadReadingMarks(storageKey) {
   }
 }
 
-function saveReadingMarks(storageKey, marks) {
+export function saveReadingMarks(storageKey, marks) {
   try {
-    const keys = Object.keys(marks);
+    const keys = Object.keys(marks || {});
     if (keys.length === 0) {
       localStorage.removeItem(storageKey);
     } else {
@@ -279,7 +284,8 @@ export function renderInteractiveReadingPassage({
   uid = "guest",
   dateStr = "default",
   sectionKey = "",
-  preserveExisting = false
+  preserveExisting = false,
+  onMarksChange = null
 }) {
   if (!preserveExisting) {
     clearReadingScaffold();
@@ -287,8 +293,7 @@ export function renderInteractiveReadingPassage({
 
   if (!bodyEl) return;
 
-  const cleanSec = sectionKey ? `:${sectionKey}` : "";
-  const storageKey = `reading_marks:${uid || "guest"}:${dateStr || "default"}${cleanSec}`;
+  const storageKey = getReadingMarksStorageKey(uid, dateStr, sectionKey);
   let marks = loadReadingMarks(storageKey);
   let penEnabled = true;
   let hintsEnabled = readHintsEnabledPref();
@@ -532,6 +537,7 @@ export function renderInteractiveReadingPassage({
     clearBtn?.addEventListener("click", () => {
       marks = {};
       saveReadingMarks(storageKey, marks);
+      onMarksChange?.(sectionKey, {});
       bodyEl.querySelectorAll(".reading-sentence[data-mark]").forEach(el => {
         el.removeAttribute("data-mark");
       });
@@ -566,6 +572,7 @@ export function renderInteractiveReadingPassage({
         sentence.dataset.mark = "yellow";
       }
       saveReadingMarks(storageKey, marks);
+      onMarksChange?.(sectionKey, { ...marks });
     }
   };
 

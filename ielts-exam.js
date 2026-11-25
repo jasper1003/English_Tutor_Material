@@ -5,9 +5,14 @@ import {
   calculateIeltsGtBandScore,
   computeIeltsTypeStats,
   buildIeltsGeminiReviewPrompt
-} from "./app-helpers.js?v=20261125k";
-import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125k";
-import { bi } from "./i18n.js?v=20261125k";
+} from "./app-helpers.js?v=20261125l";
+import {
+  renderInteractiveReadingPassage,
+  getReadingMarksStorageKey,
+  loadReadingMarks,
+  saveReadingMarks
+} from "./reading-scaffold.js?v=20261125l";
+import { bi } from "./i18n.js?v=20261125l";
 
 export const DEFAULT_IELTS_SHEET_ID = "";
 export const IELTS_SHEET_ID_STORAGE_KEY = "ielts_custom_sheet_id_v1";
@@ -18,6 +23,7 @@ const IELTS_FONT_SCALE_STEP = 5;
 
 let ieltsStopwatchInterval = null;
 let activeIeltsTimerState = null;
+let activeIeltsSyncHandler = null;
 const ieltsViewStateByKey = new Map();
 
 function getIeltsViewKey(uid, testId) {
@@ -83,7 +89,7 @@ export function setSavedIeltsSheetId(raw) {
 }
 
 export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
-  const mod = await import("./ielts-gt-data.js?v=20261125k");
+  const mod = await import("./ielts-gt-data.js?v=20261125l");
   let tests = Array.isArray(mod.IELTS_TESTS) ? mod.IELTS_TESTS.map(t => ({ ...t })) : [];
   let questions = Array.isArray(mod.IELTS_QUESTIONS) ? mod.IELTS_QUESTIONS.map(q => ({ ...q })) : [];
   let sourceKind = "bundled";
@@ -136,6 +142,285 @@ function getIeltsGradedKey(uid, testId) {
 
 function getIeltsFlagsKey(uid, testId) {
   return `ielts_flags_v1:${uid || "anon"}:${testId}`;
+}
+
+function getIeltsSyncMetaKey(uid, testId) {
+  return `ielts_sync_meta_v1:${uid || "anon"}:${testId}`;
+}
+
+function getQuizAnswersStorageKey(uid, testId) {
+  return `quiz_progress:${uid || "anon"}:${testId}`;
+}
+
+export function loadIeltsSyncTimestamp(uid, testId) {
+  try {
+    const raw = localStorage.getItem(getIeltsSyncMetaKey(uid, testId));
+    const parsed = raw ? JSON.parse(raw) : null;
+    const ts = Math.trunc(Number(parsed?.clientUpdatedAt) || 0);
+    return Math.max(0, Math.min(9999999999999, ts));
+  } catch {
+    return 0;
+  }
+}
+
+export function saveIeltsSyncTimestamp(uid, testId, ts) {
+  const cleanTs = Math.max(0, Math.min(9999999999999, Math.trunc(Number(ts) || 0)));
+  try {
+    localStorage.setItem(getIeltsSyncMetaKey(uid, testId), JSON.stringify({ clientUpdatedAt: cleanTs }));
+  } catch {
+    // Ignore storage unavailability
+  }
+  return cleanTs;
+}
+
+export function touchIeltsSyncTimestamp(uid, testId, ts = Date.now()) {
+  const prev = loadIeltsSyncTimestamp(uid, testId);
+  const next = Math.max(prev + 1, Math.trunc(Number(ts) || Date.now()));
+  return saveIeltsSyncTimestamp(uid, testId, next);
+}
+
+function sanitizeSyncAnswersMap(rawMap) {
+  const clean = {};
+  if (!rawMap || typeof rawMap !== "object" || Array.isArray(rawMap)) return clean;
+  let count = 0;
+  for (const [k, v] of Object.entries(rawMap)) {
+    if (count >= 100) break;
+    const key = String(k || "").trim();
+    if (!/^\d{1,3}$/.test(key)) continue;
+    const val = String(v ?? "").trim().slice(0, 200);
+    if (!val) continue;
+    clean[key] = val;
+    count += 1;
+  }
+  return clean;
+}
+
+function readLocalAnswersRaw(uid, testId) {
+  try {
+    const raw = localStorage.getItem(getQuizAnswersStorageKey(uid, testId));
+    const parsed = raw ? JSON.parse(raw) : null;
+    return sanitizeSyncAnswersMap(parsed);
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalAnswersRaw(uid, testId, answersMap) {
+  const clean = sanitizeSyncAnswersMap(answersMap);
+  try {
+    if (Object.keys(clean).length === 0) {
+      localStorage.removeItem(getQuizAnswersStorageKey(uid, testId));
+    } else {
+      localStorage.setItem(getQuizAnswersStorageKey(uid, testId), JSON.stringify(clean));
+    }
+  } catch {
+    // Ignore storage unavailability
+  }
+}
+
+function flagsSetToFirestoreMap(flagSet) {
+  const out = {};
+  if (!flagSet) return out;
+  const sorted = [...flagSet]
+    .map(n => Math.trunc(Number(n)))
+    .filter(n => Number.isFinite(n) && n >= 0 && n < 100)
+    .sort((a, b) => a - b)
+    .slice(0, 100);
+  for (const n of sorted) {
+    out[String(n)] = true;
+  }
+  return out;
+}
+
+function firestoreFlagsToSet(rawFlags) {
+  const set = new Set();
+  if (Array.isArray(rawFlags)) {
+    rawFlags.forEach(n => {
+      const idx = Math.trunc(Number(n));
+      if (Number.isFinite(idx) && idx >= 0 && idx < 100) set.add(idx);
+    });
+  } else if (rawFlags && typeof rawFlags === "object") {
+    Object.entries(rawFlags).forEach(([k, v]) => {
+      if (v === true && /^\d{1,3}$/.test(k)) {
+        const idx = Math.trunc(Number(k));
+        if (idx >= 0 && idx < 100) set.add(idx);
+      }
+    });
+  }
+  return set;
+}
+
+function buildCompactGradedSummary(gradedObj, fallbackTotal = 40) {
+  if (!gradedObj || typeof gradedObj !== "object" || !gradedObj.graded) return null;
+  const total = Math.max(1, Math.min(100, Math.trunc(Number(gradedObj.total) || fallbackTotal || 40)));
+  const correctCount = Math.max(0, Math.min(total, Math.trunc(Number(gradedObj.correctCount) || 0)));
+  const accuracyPct = Math.max(0, Math.min(100, Math.trunc(
+    Number.isFinite(Number(gradedObj.accuracyPct))
+      ? Number(gradedObj.accuracyPct)
+      : Math.round((correctCount / total) * 100)
+  )));
+  const bandStr = String(
+    gradedObj.band
+    || gradedObj.bandInfo?.band
+    || calculateIeltsGtBandScore(correctCount, total).band
+  ).trim().slice(0, 8) || "0.0";
+  const elapsedSec = Math.max(0, Math.min(86400, Math.trunc(Number(gradedObj.elapsedSec) || 0)));
+  const gradedAt = Math.max(0, Math.min(9999999999999, Math.trunc(Number(gradedObj.gradedAt) || Date.now())));
+  return {
+    graded: true,
+    correctCount,
+    total,
+    accuracyPct,
+    band: bandStr,
+    elapsedSec,
+    gradedAt
+  };
+}
+
+function readAllSectionMarks(uid, testId) {
+  const out = {};
+  ["sec_1", "sec_2", "sec_3"].forEach(secKey => {
+    const sk = getReadingMarksStorageKey(uid, testId, secKey);
+    const m = loadReadingMarks(sk);
+    if (Object.keys(m).length > 0) {
+      out[secKey] = m;
+    }
+  });
+  return out;
+}
+
+export function hasLocalIeltsProgress(uid, testId) {
+  const answers = readLocalAnswersRaw(uid, testId);
+  const flags = loadFlaggedSet(uid, testId);
+  const timer = loadTimerSnapshot(uid, testId);
+  const graded = loadGradedState(uid, testId);
+  const marks = readAllSectionMarks(uid, testId);
+  return Object.keys(answers).length > 0
+    || flags.size > 0
+    || timer.elapsedMs > 0
+    || Boolean(graded)
+    || Object.keys(marks).length > 0
+    || loadIeltsSyncTimestamp(uid, testId) > 0;
+}
+
+/**
+ * Snapshot all local IELTS test state (answers, flags, stopwatch, graded summary, marks)
+ * into a schema-validated Firestore payload matching `users/{uid}/ieltsAttempts/{testId}`.
+ */
+export function readLocalIeltsAttemptPayload(uid, testId, fallbackTotal = 40) {
+  const answers = readLocalAnswersRaw(uid, testId);
+  const flags = flagsSetToFirestoreMap(loadFlaggedSet(uid, testId));
+  const timer = loadTimerSnapshot(uid, testId);
+  const gradedRaw = loadGradedState(uid, testId);
+  const graded = buildCompactGradedSummary(gradedRaw, fallbackTotal);
+  const marks = readAllSectionMarks(uid, testId);
+
+  let clientUpdatedAt = loadIeltsSyncTimestamp(uid, testId);
+  if (clientUpdatedAt === 0) {
+    // Infer timestamp from legacy pre-cloud-sync local records if present
+    let timerUpdatedAt = 0;
+    try {
+      const tParsed = JSON.parse(localStorage.getItem(getIeltsTimerKey(uid, testId)) || "null");
+      timerUpdatedAt = Math.trunc(Number(tParsed?.updatedAt) || 0);
+    } catch {}
+    clientUpdatedAt = Math.max(
+      0,
+      Math.min(9999999999999, Math.trunc(Number(graded?.gradedAt || 0)), timerUpdatedAt)
+    );
+    if (clientUpdatedAt === 0 && hasLocalIeltsProgress(uid, testId)) {
+      clientUpdatedAt = Date.now();
+    }
+    if (clientUpdatedAt > 0) {
+      saveIeltsSyncTimestamp(uid, testId, clientUpdatedAt);
+    }
+  }
+
+  return {
+    testId,
+    answers,
+    flags,
+    elapsedMs: Math.max(0, Math.min(86400000, Math.trunc(timer.elapsedMs || 0))),
+    timerRunning: Boolean(graded ? false : timer.running),
+    graded,
+    marks,
+    clientUpdatedAt
+  };
+}
+
+/**
+ * Hydrate localStorage from a newer Firestore `ieltsAttempts/{testId}` document.
+ * Reconstructs full per-question results via `gradeIeltsExam` when graded is present.
+ * Returns true if local state was updated from cloud.
+ */
+export function hydrateLocalIeltsAttemptPayload(uid, testId, questions, cloudDoc) {
+  if (!cloudDoc || typeof cloudDoc !== "object") return false;
+  const cloudTs = Math.max(0, Math.min(9999999999999, Math.trunc(Number(cloudDoc.clientUpdatedAt) || 0)));
+  const localPayload = readLocalIeltsAttemptPayload(uid, testId, questions?.length || 40);
+  const localTs = localPayload.clientUpdatedAt || 0;
+  const hasLocal = hasLocalIeltsProgress(uid, testId);
+
+  if (hasLocal && cloudTs <= localTs) {
+    return false;
+  }
+
+  const nextAnswers = sanitizeSyncAnswersMap(cloudDoc.answers);
+  writeLocalAnswersRaw(uid, testId, nextAnswers);
+
+  const nextFlags = firestoreFlagsToSet(cloudDoc.flags);
+  saveFlaggedSet(uid, testId, nextFlags);
+
+  const nextElapsedMs = Math.max(0, Math.min(86400000, Math.trunc(Number(cloudDoc.elapsedMs) || 0)));
+  const nextRunning = cloudDoc.graded ? false : Boolean(cloudDoc.timerRunning);
+  saveTimerSnapshot(uid, testId, nextElapsedMs, nextRunning);
+
+  if (cloudDoc.graded && cloudDoc.graded.graded) {
+    const qList = Array.isArray(questions) ? questions : [];
+    const recomputed = gradeIeltsExam(qList, nextAnswers);
+    const compact = buildCompactGradedSummary(cloudDoc.graded, qList.length || 40);
+    saveGradedState(uid, testId, {
+      ...recomputed,
+      graded: true,
+      elapsedSec: compact.elapsedSec,
+      gradedAt: compact.gradedAt,
+      correctCount: qList.length > 0 ? recomputed.correctCount : compact.correctCount,
+      total: qList.length > 0 ? recomputed.total : compact.total,
+      accuracyPct: qList.length > 0 ? recomputed.accuracyPct : compact.accuracyPct
+    });
+  } else {
+    saveGradedState(uid, testId, null);
+  }
+
+  const cloudMarks = (cloudDoc.marks && typeof cloudDoc.marks === "object") ? cloudDoc.marks : {};
+  ["sec_1", "sec_2", "sec_3"].forEach(secKey => {
+    const sk = getReadingMarksStorageKey(uid, testId, secKey);
+    const secMarks = (cloudMarks[secKey] && typeof cloudMarks[secKey] === "object") ? cloudMarks[secKey] : {};
+    const cleanMarks = {};
+    Object.entries(secMarks).forEach(([k, v]) => {
+      if (/^\d+$/.test(k) && v === "yellow") cleanMarks[k] = "yellow";
+    });
+    saveReadingMarks(sk, cleanMarks);
+  });
+
+  saveIeltsSyncTimestamp(uid, testId, cloudTs || Date.now());
+  return true;
+}
+
+export function updateIeltsCloudSyncStatusUI(status = "idle", customLabel = "") {
+  const pill = document.getElementById("ielts-cloud-sync-pill");
+  if (!pill) return;
+  pill.classList.remove("is-synced", "is-syncing", "is-error");
+  if (status === "synced") {
+    pill.classList.add("is-synced");
+    pill.textContent = customLabel || bi("☁ 雲端已同步", "☁ Synced");
+  } else if (status === "syncing") {
+    pill.classList.add("is-syncing");
+    pill.textContent = customLabel || bi("☁ 同步中…", "☁ Syncing…");
+  } else if (status === "error") {
+    pill.classList.add("is-error");
+    pill.textContent = customLabel || bi("☁ 離線暫存", "☁ Cached locally");
+  } else {
+    pill.textContent = customLabel || bi("☁ 本機快取", "☁ Local cache");
+  }
 }
 
 function loadFlaggedSet(uid, testId) {
@@ -219,7 +504,9 @@ function formatClock(totalSec) {
   return hrs > 0 ? `${hrs}:${pad(mins)}:${pad(rem)}` : `${pad(mins)}:${pad(rem)}`;
 }
 
-export function stopIeltsExamTimer() {
+export function stopIeltsExamTimer({ flushSync = true } = {}) {
+  const prevSync = activeIeltsSyncHandler;
+  const prevState = activeIeltsTimerState;
   if (activeIeltsTimerState) {
     flushActiveTimer();
     saveTimerSnapshot(
@@ -230,17 +517,36 @@ export function stopIeltsExamTimer() {
     );
     activeIeltsTimerState = null;
   }
+  activeIeltsSyncHandler = null;
   if (ieltsStopwatchInterval) {
     clearInterval(ieltsStopwatchInterval);
     ieltsStopwatchInterval = null;
   }
+  if (flushSync && prevSync && prevState && prevSync.testId === prevState.testId) {
+    touchIeltsSyncTimestamp(prevState.uid, prevState.testId);
+    prevSync.onStateSync?.(prevState.testId, { immediate: true, reason: "timer_stop" });
+  }
+}
+
+export function flushIeltsCloudSyncOnHide() {
+  if (!activeIeltsTimerState || !activeIeltsSyncHandler) return;
+  flushActiveTimer();
+  saveTimerSnapshot(
+    activeIeltsTimerState.uid,
+    activeIeltsTimerState.testId,
+    activeIeltsTimerState.elapsedMs,
+    activeIeltsTimerState.running
+  );
+  touchIeltsSyncTimestamp(activeIeltsTimerState.uid, activeIeltsTimerState.testId);
+  activeIeltsSyncHandler.onStateSync?.(activeIeltsTimerState.testId, { immediate: true, reason: "page_hide" });
 }
 
 export function clearIeltsAttemptState(uid, testId) {
-  stopIeltsExamTimer();
+  stopIeltsExamTimer({ flushSync: false });
   saveGradedState(uid, testId, null);
   saveFlaggedSet(uid, testId, new Set());
   saveTimerSnapshot(uid, testId, 0, true);
+  touchIeltsSyncTimestamp(uid, testId);
   ieltsViewStateByKey.delete(getIeltsViewKey(uid, testId));
 }
 
@@ -521,6 +827,79 @@ function renderIeltsQuestionCard({
   return card;
 }
 
+function buildIeltsAttemptHistoryDetails(historyList = [], fallbackTotal = 40) {
+  const entries = Array.isArray(historyList) ? historyList : [];
+  if (entries.length === 0) return null;
+
+  const sorted = [...entries].sort((a, b) => (Number(b.gradedAt) || 0) - (Number(a.gradedAt) || 0));
+  let bestBandNum = -1;
+  let bestCorrect = -1;
+  sorted.forEach(item => {
+    const b = parseFloat(item.band) || 0;
+    const c = Number(item.correctCount) || 0;
+    if (b > bestBandNum || (b === bestBandNum && c > bestCorrect)) {
+      bestBandNum = b;
+      bestCorrect = c;
+    }
+  });
+  const bestBandStr = bestBandNum >= 0 ? bestBandNum.toFixed(1) : "0.0";
+  const bestItemTotal = Number(sorted[0]?.total || fallbackTotal || 40);
+
+  const details = document.createElement("details");
+  details.className = "ielts-history-details";
+  details.id = "ielts-history-details";
+
+  const summary = document.createElement("summary");
+  summary.className = "ielts-history-summary";
+  summary.innerHTML = `
+    <span>📜 ${bi(`歷次作答紀錄（共 ${sorted.length} 次）`, `Attempt History (${sorted.length})`)}</span>
+    <span class="ielts-history-summary-meta">${bi(`最佳 Band ${escapeHtml(bestBandStr)}（${bestCorrect}/${bestItemTotal}）`, `Best Band ${escapeHtml(bestBandStr)} (${bestCorrect}/${bestItemTotal})`)}</span>
+  `;
+
+  const wrap = document.createElement("div");
+  wrap.className = "ielts-history-table-wrap";
+
+  const table = document.createElement("table");
+  table.className = "ielts-history-table";
+  table.innerHTML = `
+    <caption class="visually-hidden">${bi("IELTS 歷次練習成績紀錄", "IELTS Past Attempt History")}</caption>
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">${bi("交卷時間", "Submitted")}</th>
+        <th scope="col">${bi("級分", "Band")}</th>
+        <th scope="col">${bi("得分", "Score")}</th>
+        <th scope="col">${bi("正確率", "Accuracy")}</th>
+        <th scope="col">${bi("耗時", "Duration")}</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+  const tbody = table.querySelector("tbody");
+  sorted.forEach((item, i) => {
+    const attemptNo = sorted.length - i;
+    const dt = item.gradedAt ? new Date(item.gradedAt) : null;
+    const dateLabel = dt && !Number.isNaN(dt.getTime())
+      ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")} ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`
+      : "—";
+    const bandLabel = escapeHtml(String(item.band || calculateIeltsGtBandScore(item.correctCount, item.total).band));
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>#${attemptNo}</td>
+      <td>${escapeHtml(dateLabel)}</td>
+      <td><span class="ielts-history-band-badge">Band ${bandLabel}</span></td>
+      <td>${Number(item.correctCount || 0)} / ${Number(item.total || fallbackTotal || 40)}</td>
+      <td>${Number(item.accuracyPct || 0)}%</td>
+      <td>${escapeHtml(formatExamDuration(Number(item.elapsedSec || 0)))}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  wrap.appendChild(table);
+  details.append(summary, wrap);
+  return details;
+}
+
 export function renderIeltsExamView({
   testMeta,
   questions,
@@ -530,9 +909,14 @@ export function renderIeltsExamView({
   clearSavedAnswers,
   onRecordClick,
   onResetTelemetry,
+  onStateSync = null,
+  onAttemptGraded = null,
+  onAttemptCleared = null,
+  getAttemptHistory = null,
+  getCloudSyncStatus = null,
   popoverEl
 }) {
-  stopIeltsExamTimer();
+  stopIeltsExamTimer({ flushSync: false });
 
   const splitDefaultEl = document.getElementById("reading-split-default");
   const sectionedEl = document.getElementById("sectioned-quiz-container");
@@ -594,7 +978,7 @@ export function renderIeltsExamView({
   resetTimerBtn.className = "btn btn-sm";
   resetTimerBtn.textContent = bi("↺ 碼表歸零", "↺ Reset Timer");
 
-  const syncTimerDom = () => {
+  const syncTimerDom = ({ tick = false } = {}) => {
     if (!activeIeltsTimerState) return;
     flushActiveTimer();
     const sec = Math.round(activeIeltsTimerState.elapsedMs / 1000);
@@ -604,7 +988,16 @@ export function renderIeltsExamView({
     toggleTimerBtn.disabled = Boolean(gradedState);
     resetTimerBtn.disabled = Boolean(gradedState);
     saveTimerSnapshot(uid, testId, activeIeltsTimerState.elapsedMs, activeIeltsTimerState.running);
+    if (tick && activeIeltsTimerState.running && activeIeltsSyncHandler) {
+      activeIeltsSyncHandler.ticks += 1;
+      if (activeIeltsSyncHandler.ticks % 15 === 0) {
+        touchIeltsSyncTimestamp(uid, testId);
+        activeIeltsSyncHandler.onStateSync?.(testId, { immediate: false, reason: "timer_tick" });
+      }
+    }
   };
+
+  activeIeltsSyncHandler = { testId, onStateSync, ticks: 0 };
 
   toggleTimerBtn.addEventListener("click", () => {
     if (!activeIeltsTimerState || gradedState) return;
@@ -612,6 +1005,8 @@ export function renderIeltsExamView({
     activeIeltsTimerState.running = !activeIeltsTimerState.running;
     activeIeltsTimerState.lastTickMs = Date.now();
     syncTimerDom();
+    touchIeltsSyncTimestamp(uid, testId);
+    onStateSync?.(testId, { immediate: true, reason: "timer_toggle" });
   });
 
   resetTimerBtn.addEventListener("click", () => {
@@ -619,12 +1014,18 @@ export function renderIeltsExamView({
     activeIeltsTimerState.elapsedMs = 0;
     activeIeltsTimerState.lastTickMs = Date.now();
     syncTimerDom();
+    touchIeltsSyncTimestamp(uid, testId);
+    onStateSync?.(testId, { immediate: true, reason: "timer_reset" });
   });
 
   syncTimerDom();
   if (!gradedState) {
-    ieltsStopwatchInterval = setInterval(syncTimerDom, 1000);
+    ieltsStopwatchInterval = setInterval(() => syncTimerDom({ tick: true }), 1000);
   }
+
+  const syncPillEl = document.createElement("span");
+  syncPillEl.id = "ielts-cloud-sync-pill";
+  syncPillEl.className = "ielts-cloud-sync-pill";
 
   const timerControls = document.createElement("div");
   timerControls.className = "ielts-timer-controls";
@@ -693,11 +1094,12 @@ export function renderIeltsExamView({
   const stopwatchPanel = document.createElement("div");
   stopwatchPanel.className = "ielts-timer-panel";
   stopwatchPanel.id = "ielts-timer-panel";
-  timerControls.append(statusCountEl, toggleTimerBtn, resetTimerBtn);
+  timerControls.append(statusCountEl, toggleTimerBtn, resetTimerBtn, syncPillEl);
   stopwatchPanel.append(clockEl, timerControls);
 
   timerBar.append(fontGroup, stopwatchPanel);
   sectionedEl.appendChild(timerBar);
+  updateIeltsCloudSyncStatusUI(getCloudSyncStatus?.(testId) || "idle");
 
   const flaggedSet = loadFlaggedSet(uid, testId);
   const viewState = getOrCreateViewState(uid, testId);
@@ -874,18 +1276,22 @@ export function renderIeltsExamView({
             flaggedSet.add(qIdx);
           }
           saveFlaggedSet(uid, testId, flaggedSet);
+          touchIeltsSyncTimestamp(uid, testId);
           syncNavAndTabs();
+          onStateSync?.(testId, { immediate: false, reason: "flag" });
           return flaggedSet.has(qIdx);
         },
         onChange: (qIdx, val) => {
           answersMap[String(qIdx)] = val;
           saveAnswer(testId, qIdx, val);
+          touchIeltsSyncTimestamp(uid, testId);
           if (String(val || "").trim().length > 0) {
             onRecordClick?.(testId, qIdx, val);
           }
           updateProgressBar();
           statusCountEl.textContent = bi(`已填答 ${countAnswered()} / ${questions.length} 題`, `Answered ${countAnswered()} / ${questions.length}`);
           syncNavAndTabs();
+          onStateSync?.(testId, { immediate: false, reason: "answer" });
         }
       });
       currentSet.indices.push(idx);
@@ -917,7 +1323,11 @@ export function renderIeltsExamView({
       uid: uid || "guest",
       dateStr: testId,
       sectionKey: `sec_${secNum}`,
-      preserveExisting: true
+      preserveExisting: true,
+      onMarksChange: () => {
+        touchIeltsSyncTimestamp(uid, testId);
+        onStateSync?.(testId, { immediate: false, reason: "marks" });
+      }
     });
   });
 
@@ -1237,6 +1647,11 @@ export function renderIeltsExamView({
       clearSavedAnswers,
       onRecordClick,
       onResetTelemetry,
+      onStateSync,
+      onAttemptGraded,
+      onAttemptCleared,
+      getAttemptHistory,
+      getCloudSyncStatus,
       popoverEl
     });
   };
@@ -1273,14 +1688,23 @@ export function renderIeltsExamView({
       }
       flushActiveTimer();
       const elapsedSec = Math.max(1, Math.round((activeIeltsTimerState?.elapsedMs || 0) / 1000));
-      stopIeltsExamTimer();
+      stopIeltsExamTimer({ flushSync: false });
       const graded = gradeIeltsExam(questions, answersMap);
+      const gradedAt = Date.now();
       saveGradedState(uid, testId, {
         graded: true,
         elapsedSec,
-        gradedAt: Date.now(),
+        gradedAt,
         ...graded
       });
+      touchIeltsSyncTimestamp(uid, testId, gradedAt);
+      const compactSummary = buildCompactGradedSummary({
+        graded: true,
+        elapsedSec,
+        gradedAt,
+        ...graded
+      }, questions.length);
+      onAttemptGraded?.(testId, compactSummary);
       rebuildView();
       document.getElementById("ielts-result-card")?.scrollIntoView({ behavior: preferAutoScroll(), block: "nearest" });
     });
@@ -1293,12 +1717,18 @@ export function renderIeltsExamView({
       clearSavedAnswers(testId);
       clearIeltsAttemptState(uid, testId);
       onResetTelemetry?.(testId);
+      onAttemptCleared?.(testId);
       rebuildView();
     });
 
     btnWrap.append(gradeBtn, resetAttemptBtn);
     row.append(hint, btnWrap);
     footerCard.appendChild(row);
+    const preHistory = buildIeltsAttemptHistoryDetails(getAttemptHistory?.(testId) || [], questions.length);
+    if (preHistory) {
+      preHistory.style.marginTop = "0.85rem";
+      footerCard.appendChild(preHistory);
+    }
   } else {
     const resultCard = document.createElement("div");
     resultCard.className = "ielts-result-card";
@@ -1412,8 +1842,9 @@ export function renderIeltsExamView({
       clearSavedAnswers(testId);
       clearIeltsAttemptState(uid, testId);
       onResetTelemetry?.(testId);
+      onAttemptCleared?.(testId);
       rebuildView();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: preferAutoScroll() });
     });
 
     actionRow.append(copyBtn, retakeBtn);
@@ -1430,7 +1861,12 @@ export function renderIeltsExamView({
     ta.value = promptText;
     detailsEl.append(summaryEl, ta);
 
-    resultCard.append(topStats, breakdownBox, actionRow, detailsEl);
+    const historyEl = buildIeltsAttemptHistoryDetails(getAttemptHistory?.(testId) || [], questions.length);
+    if (historyEl) {
+      resultCard.append(topStats, breakdownBox, actionRow, historyEl, detailsEl);
+    } else {
+      resultCard.append(topStats, breakdownBox, actionRow, detailsEl);
+    }
     footerCard.appendChild(resultCard);
   }
 
