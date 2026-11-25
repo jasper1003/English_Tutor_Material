@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261125b";
+} from "./room-scene.js?v=20261125c";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261125b";
+} from "./shop-catalog.js?v=20261125c";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261125b";
+} from "./room-grid.js?v=20261125c";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -103,16 +103,16 @@ import {
   evaluateSubmissionMetrics,
   formatExamDuration,
   gradeIeltsExam
-} from "./app-helpers.js?v=20261125b";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261125b";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261125b";
+} from "./app-helpers.js?v=20261125c";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261125c";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261125c";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261125b";
+} from "./i18n.js?v=20261125c";
 
 applyStaticDomTranslations();
 
@@ -202,7 +202,7 @@ function isIeltsLessonId(id) {
 
 async function getIeltsModule() {
   if (!ieltsModuleCache) {
-    ieltsModuleCache = await import("./ielts-exam.js?v=20261125b");
+    ieltsModuleCache = await import("./ielts-exam.js?v=20261125c");
   }
   return ieltsModuleCache;
 }
@@ -5084,7 +5084,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261125b`;
+    img.src = `${item.previewImage}?v=20261125c`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
