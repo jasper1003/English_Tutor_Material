@@ -1,5 +1,5 @@
-import { bi, isEn } from "./i18n.js?v=20261125l";
-import { hasOwnedSofa } from "./shop-catalog.js?v=20261125l";
+import { bi, isEn } from "./i18n.js?v=20261126a";
+import { hasOwnedSofa } from "./shop-catalog.js?v=20261126a";
 
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
@@ -1353,4 +1353,184 @@ export function buildIeltsGeminiReviewPrompt({
   );
 
   return lines.join("\n");
+}
+
+function cleanTsvCell(raw) {
+  return String(raw ?? "").replace(/[\t\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Build a minimal token-saving Gemini review prompt containing ONLY wrong/blank items
+ * and ONLY the passages for sections that contain mistakes.
+ */
+export function buildIeltsWrongOnlyGeminiPrompt({
+  testMeta = {},
+  questions = [],
+  gradeResult = null,
+  elapsedSec = 0,
+  scoreSheetUrl = "https://docs.google.com/spreadsheets/d/1cfru4X_afjJH15CeG6My7DZbneDbW6jETrMER9P4HH0/edit"
+} = {}) {
+  const result = gradeResult || gradeIeltsExam(questions, {});
+  const bandInfo = result.bandInfo || calculateIeltsGtBandScore(result.correctCount, result.total);
+  const durationLabel = formatExamDuration(elapsedSec);
+  const testTitle = testMeta.Title || `IELTS GT Reading Test ${testMeta.Test_Num || ""}`;
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  const wrongRows = [];
+  const usedSections = new Set();
+  questions.forEach((q, idx) => {
+    const r = result.results[idx] || {};
+    if (r.isCorrect) return;
+    const sec = Number(q?.Section || 1);
+    usedSections.add(sec);
+    const statusTag = r.isAnswered ? "[✗ 錯題]" : "[— 未作答]";
+    const userDisplay = r.isAnswered ? r.userAnswer : "(空白)";
+    const qText = String(q?.Question || "").replace(/\s+/g, " ").trim();
+    wrongRows.push(
+      `Q${r.qNum || idx + 1} (S${sec} · ${q?.Type || "Q"}) ${statusTag} ${qText}\n  - 我的答案：${userDisplay} ｜ 標準答案：${r.acceptedDisplay || r.primaryAnswer}`
+    );
+  });
+
+  if (wrongRows.length === 0) {
+    return [
+      `測驗：${testTitle}（${todayIso}）`,
+      `得分：${result.correctCount} / ${result.total}（GT Band ${bandInfo.band} · ${durationLabel}）`,
+      "本回全數答對，無錯題！請幫我簡單評估本次作答節奏（相對於 60 分鐘）與產生一列可貼入成績表的摘要。"
+    ].join("\n");
+  }
+
+  const lines = [
+    "請擔任 IELTS General Training Reading 家教，只針對以下「錯題與未答題」進行解析（已略過全對段落以節省篇幅）：",
+    "",
+    "### 一、測驗摘要",
+    `- 測驗：${testTitle}（${todayIso}）`,
+    `- 得分：${result.correctCount} / ${result.total}（${result.accuracyPct}% · GT Band ${bandInfo.band}）｜ 耗時：${durationLabel}`,
+    "",
+    `### 二、錯題與未答題明細（共 ${wrongRows.length} 題）`,
+    ...wrongRows,
+    "",
+    "### 三、相關段落原文"
+  ];
+
+  Array.from(usedSections).sort((a, b) => a - b).forEach(secNum => {
+    const secTitle = testMeta[`Section_${secNum}_Title`];
+    const secBody = testMeta[`Section_${secNum}_Body`];
+    if (secTitle || secBody) {
+      lines.push(`\n[Section ${secNum}] ${secTitle || ""}\n${String(secBody || "").trim()}`);
+    }
+  });
+
+  lines.push(
+    "",
+    "### 四、請提供",
+    "1. 每題錯題的原文證據句與詳細解析（同義替換／True-False vs NG／字數與單複數細節）。",
+    `2. 整理一列可貼回成績紀錄表（${scoreSheetUrl}）的濃縮摘要。`
+  );
+  return lines.join("\n");
+}
+
+/**
+ * Format a single tab-separated row ready for pasting directly into Google Sheets.
+ */
+export function buildIeltsScoreSheetRowTsv({
+  testMeta = {},
+  questions = [],
+  gradeResult = null,
+  elapsedSec = 0,
+  reviewedNote = ""
+} = {}) {
+  const result = gradeResult || gradeIeltsExam(questions, {});
+  const bandInfo = result.bandInfo || calculateIeltsGtBandScore(result.correctCount, result.total);
+  const typeStats = Array.isArray(result.typeStats) && result.typeStats.length > 0
+    ? result.typeStats
+    : computeIeltsTypeStats(questions, result);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const testLabel = `GT Test ${testMeta.Test_Num || ""}`.trim();
+  const weakLabel = typeStats.filter(s => s.isWeakest).map(s => s.typeKey).join("/") || "All 100%";
+  const wrongNums = result.results.filter(r => !r.isCorrect).map(r => `Q${r.qNum}`).join(", ") || "None";
+  const noteText = cleanTsvCell(reviewedNote) || `Accuracy ${result.accuracyPct}%`;
+
+  const cols = [
+    todayIso,
+    testLabel,
+    `${result.correctCount}/${result.total}`,
+    `${result.accuracyPct}%`,
+    `Band ${bandInfo.band}`,
+    formatExamDuration(elapsedSec),
+    weakLabel,
+    wrongNums,
+    noteText
+  ].map(cleanTsvCell);
+
+  return cols.join("\t");
+}
+
+/**
+ * Build a minimal structured payload for either direct Gemini JSON API calls
+ * or the optional automation backend (`/api/ielts/review` & `/api/ielts/log-score`).
+ */
+export function buildIeltsStructuredReviewRequest({
+  testMeta = {},
+  questions = [],
+  gradeResult = null,
+  elapsedSec = 0,
+  autoLogSheet = false
+} = {}) {
+  const result = gradeResult || gradeIeltsExam(questions, {});
+  const bandInfo = result.bandInfo || calculateIeltsGtBandScore(result.correctCount, result.total);
+  const typeStats = Array.isArray(result.typeStats) && result.typeStats.length > 0
+    ? result.typeStats
+    : computeIeltsTypeStats(questions, result);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const durationLabel = formatExamDuration(elapsedSec);
+  const testId = String(testMeta.Test_ID || "");
+  const testLabel = `GT Test ${testMeta.Test_Num || ""}`.trim();
+  const testTitle = testMeta.Title || `IELTS GT Reading Test ${testMeta.Test_Num || ""}`;
+  const gradedAt = Math.trunc(Number(result.gradedAt) || Date.now());
+
+  const wrongItems = [];
+  const usedSections = new Set();
+  questions.forEach((q, idx) => {
+    const r = result.results[idx] || {};
+    if (r.isCorrect) return;
+    const sec = Number(q?.Section || 1);
+    usedSections.add(sec);
+    wrongItems.push({
+      qNum: Number(r.qNum || idx + 1),
+      section: sec,
+      type: String(q?.Type || "Q"),
+      question: String(q?.Question || "").replace(/\s+/g, " ").trim(),
+      userAnswer: r.isAnswered ? String(r.userAnswer || "") : "",
+      acceptedAnswer: String(r.acceptedDisplay || r.primaryAnswer || "")
+    });
+  });
+
+  const sections = {};
+  Array.from(usedSections).sort((a, b) => a - b).forEach(secNum => {
+    const body = String(testMeta[`Section_${secNum}_Body`] || "").trim();
+    if (body) sections[String(secNum)] = body;
+  });
+
+  const weakTypes = typeStats.filter(s => s.isWeakest).map(s => s.typeKey).join("/") || "All 100%";
+  const wrongNums = wrongItems.map(w => `Q${w.qNum}`).join(", ") || "None";
+
+  return {
+    date: todayIso,
+    testId,
+    testLabel,
+    testTitle,
+    correctCount: Number(result.correctCount || 0),
+    total: Number(result.total || questions.length || 0),
+    accuracyPct: Number(result.accuracyPct || 0),
+    band: String(bandInfo.band || "0.0"),
+    elapsedSec: Math.max(0, Math.trunc(Number(elapsedSec) || 0)),
+    durationLabel,
+    gradedAt,
+    attemptKey: `${testId}:${gradedAt}`,
+    weakTypes,
+    wrongNums,
+    autoLogSheet: Boolean(autoLogSheet),
+    wrongItems,
+    sections
+  };
 }

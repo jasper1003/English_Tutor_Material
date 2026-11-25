@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261125l";
+} from "./room-scene.js?v=20261126a";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261125l";
+} from "./shop-catalog.js?v=20261126a";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261125l";
+} from "./room-grid.js?v=20261126a";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -103,16 +103,16 @@ import {
   evaluateSubmissionMetrics,
   formatExamDuration,
   gradeIeltsExam
-} from "./app-helpers.js?v=20261125l";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261125l";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261125l";
+} from "./app-helpers.js?v=20261126a";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261126a";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261126a";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261125l";
+} from "./i18n.js?v=20261126a";
 
 applyStaticDomTranslations();
 
@@ -195,10 +195,37 @@ let ieltsModuleCache = null;
 const ieltsCloudAttemptsByTestId = new Map();
 const ieltsHistoryByTestId = new Map();
 const ieltsSyncStatusByTestId = new Map();
+const ieltsDetailsByTestId = new Map();
 const ieltsCloudUploadTimers = new Map();
 const ieltsCloudUploadInFlight = new Map();
 let ieltsCloudAttemptsLoadedUid = "";
 let ieltsCloudAttemptsPromise = null;
+
+function getIeltsTestQuestions(testId) {
+  const cached = ieltsDetailsByTestId.get(testId);
+  if (cached && Array.isArray(cached.questions)) {
+    return cached.questions;
+  }
+  return Array.isArray(ieltsBank.questions)
+    ? ieltsBank.questions
+      .filter(q => q.Test_ID === testId)
+      .sort((a, b) => Number(a.Q_Num || 0) - Number(b.Q_Num || 0))
+    : [];
+}
+
+async function ensureIeltsTestDetailLoaded(testId, { force = false } = {}) {
+  if (!isAdminRole() || !isIeltsLessonId(testId)) return null;
+  await ensureIeltsBankLoaded();
+  if (!force && ieltsDetailsByTestId.has(testId)) {
+    return ieltsDetailsByTestId.get(testId);
+  }
+  const mod = await getIeltsModule();
+  const detail = await mod.loadIeltsTestDetail(testId, { bank: ieltsBank, force });
+  if (detail && detail.testMeta) {
+    ieltsDetailsByTestId.set(testId, detail);
+  }
+  return detail;
+}
 
 function isAdminRole() {
   return currentRole === "super_admin" || currentRole === "admin";
@@ -221,6 +248,7 @@ function resetIeltsCloudSyncCaches() {
   ieltsCloudAttemptsByTestId.clear();
   ieltsHistoryByTestId.clear();
   ieltsSyncStatusByTestId.clear();
+  ieltsDetailsByTestId.clear();
   ieltsCloudAttemptsLoadedUid = "";
   ieltsCloudAttemptsPromise = null;
 }
@@ -235,7 +263,7 @@ function setIeltsTestSyncStatus(testId, status) {
 
 async function getIeltsModule() {
   if (!ieltsModuleCache) {
-    ieltsModuleCache = await import("./ielts-exam.js?v=20261125l");
+    ieltsModuleCache = await import("./ielts-exam.js?v=20261126a");
   }
   return ieltsModuleCache;
 }
@@ -255,9 +283,7 @@ async function pushIeltsAttemptToFirestore(testId) {
     setIeltsTestSyncStatus(testId, "syncing");
     try {
       const mod = await getIeltsModule();
-      const fallbackTotal = ieltsBank.loaded
-        ? (ieltsBank.questions.filter(q => q.Test_ID === testId).length || 40)
-        : 40;
+      const fallbackTotal = getIeltsTestQuestions(testId).length || 40;
       const payload = mod.readLocalIeltsAttemptPayload(uid, testId, fallbackTotal);
       if (!payload.clientUpdatedAt) {
         payload.clientUpdatedAt = mod.touchIeltsSyncTimestamp(uid, testId);
@@ -349,9 +375,7 @@ async function ensureIeltsCloudAttemptsLoaded({ force = false } = {}) {
         if (!isIeltsLessonId(testId)) return;
         ieltsCloudAttemptsByTestId.set(testId, data);
 
-        const testQs = ieltsBank.questions
-          .filter(q => q.Test_ID === testId)
-          .sort((a, b) => Number(a.Q_Num || 0) - Number(b.Q_Num || 0));
+        const testQs = getIeltsTestQuestions(testId);
         const hydrated = mod.hydrateLocalIeltsAttemptPayload(uid, testId, testQs, data);
         if (hydrated) {
           ieltsSyncStatusByTestId.set(testId, "synced");
@@ -418,7 +442,7 @@ async function loadIeltsTestHistoryFromCloud(testId, { force = false } = {}) {
     // Seed pre-Step-2 local graded result into cloud history once if cloud history is still empty
     if (list.length === 0) {
       const mod = await getIeltsModule();
-      const testQs = ieltsBank.questions.filter(item => item.Test_ID === testId);
+      const testQs = getIeltsTestQuestions(testId);
       const localPayload = mod.readLocalIeltsAttemptPayload(uid, testId, testQs.length || 40);
       if (localPayload.graded && localPayload.graded.graded) {
         await recordIeltsAttemptHistoryToCloud(testId, localPayload.graded);
@@ -438,6 +462,9 @@ async function ensureIeltsBankLoaded({ force = false } = {}) {
   if (!isAdminRole()) return null;
   if (ieltsBank.loaded && !force) return ieltsBank;
   if (ieltsLoadPromise && !force) return ieltsLoadPromise;
+  if (force) {
+    ieltsDetailsByTestId.clear();
+  }
   ieltsLoadPromise = (async () => {
     const mod = await getIeltsModule();
     const res = await mod.loadIeltsBank({
@@ -2854,9 +2881,7 @@ function buildSubmissionMetricSnapshot(dateStr) {
   const telemetry = loadQuizTelemetry(dateStr);
 
   if (isIeltsLessonId(dateStr) && ieltsBank.loaded) {
-    const ieltsQs = ieltsBank.questions
-      .filter(q => q.Test_ID === dateStr)
-      .sort((a, b) => Number(a.Q_Num || 0) - Number(b.Q_Num || 0));
+    const ieltsQs = getIeltsTestQuestions(dateStr);
     const gradedFirst = gradeIeltsExam(ieltsQs, telemetry.firstAnswers || {});
     let ieltsElapsedSec = Math.round(telemetry.elapsedMs / 1000);
     try {
@@ -3251,15 +3276,15 @@ async function renderLesson(dateStr) {
     if (!ieltsTest || String(ieltsTest.Ready || "").toUpperCase() !== "TRUE") {
       return openWorkDesktop({ track: "ielts" });
     }
-    await Promise.allSettled([
-      ensureIeltsCloudAttemptsLoaded(),
-      loadIeltsTestHistoryFromCloud(dateStr)
+    const [detail] = await Promise.all([
+      ensureIeltsTestDetailLoaded(dateStr),
+      ensureIeltsCloudAttemptsLoaded().catch(() => false),
+      loadIeltsTestHistoryFromCloud(dateStr).catch(() => [])
     ]);
     const ieltsMod = await getIeltsModule();
     const ieltsLesson = findLessonAnyTrack(dateStr);
-    const ieltsQs = ieltsBank.questions
-      .filter(q => q.Test_ID === dateStr)
-      .sort((a, b) => Number(a.Q_Num || 0) - Number(b.Q_Num || 0));
+    const activeTestMeta = detail?.testMeta || ieltsTest;
+    const ieltsQs = Array.isArray(detail?.questions) ? detail.questions : getIeltsTestQuestions(dateStr);
 
     document.getElementById("home-view").classList.add("hidden");
     document.getElementById("lesson-actions").style.display = "flex";
@@ -3290,7 +3315,7 @@ async function renderLesson(dateStr) {
     document.getElementById("quiz-container").innerHTML = "";
 
     ieltsMod.renderIeltsExamView({
-      testMeta: ieltsTest,
+      testMeta: activeTestMeta,
       questions: ieltsQs,
       uid: currentUser?.uid || "anon",
       loadSavedAnswers: loadSavedQuizAnswers,
@@ -5362,7 +5387,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261125l`;
+    img.src = `${item.previewImage}?v=20261126a`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);

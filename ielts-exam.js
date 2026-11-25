@@ -4,27 +4,34 @@ import {
   gradeIeltsExam,
   calculateIeltsGtBandScore,
   computeIeltsTypeStats,
-  buildIeltsGeminiReviewPrompt
-} from "./app-helpers.js?v=20261125l";
+  buildIeltsGeminiReviewPrompt,
+  buildIeltsWrongOnlyGeminiPrompt,
+  buildIeltsScoreSheetRowTsv,
+  buildIeltsStructuredReviewRequest
+} from "./app-helpers.js?v=20261126a";
 import {
   renderInteractiveReadingPassage,
   getReadingMarksStorageKey,
   loadReadingMarks,
   saveReadingMarks
-} from "./reading-scaffold.js?v=20261125l";
-import { bi } from "./i18n.js?v=20261125l";
+} from "./reading-scaffold.js?v=20261126a";
+import { bi } from "./i18n.js?v=20261126a";
 
 export const DEFAULT_IELTS_SHEET_ID = "";
 export const IELTS_SHEET_ID_STORAGE_KEY = "ielts_custom_sheet_id_v1";
+const IELTS_DATA_VERSION = "20261126a";
 const IELTS_FONT_SCALE_STORAGE_KEY = "ielts_reading_font_scale_v1";
 const IELTS_FONT_SCALE_MIN = 75;
 const IELTS_FONT_SCALE_MAX = 160;
 const IELTS_FONT_SCALE_STEP = 5;
+const IELTS_AI_CONFIG_STORAGE_KEY = "ielts_ai_config_v1";
 
 let ieltsStopwatchInterval = null;
 let activeIeltsTimerState = null;
 let activeIeltsSyncHandler = null;
 const ieltsViewStateByKey = new Map();
+const ieltsDetailCache = new Map();
+const ieltsDetailPromiseCache = new Map();
 
 function getIeltsViewKey(uid, testId) {
   return `${uid || "anon"}:${testId}`;
@@ -89,10 +96,19 @@ export function setSavedIeltsSheetId(raw) {
 }
 
 export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
-  const mod = await import("./ielts-gt-data.js?v=20261125l");
-  let tests = Array.isArray(mod.IELTS_TESTS) ? mod.IELTS_TESTS.map(t => ({ ...t })) : [];
-  let questions = Array.isArray(mod.IELTS_QUESTIONS) ? mod.IELTS_QUESTIONS.map(q => ({ ...q })) : [];
+  const indexUrl = new URL(`./data/ielts/index.json?v=${IELTS_DATA_VERSION}`, import.meta.url).href;
+  let tests = [];
+  let questions = [];
   let sourceKind = "bundled";
+
+  try {
+    const res = await fetch(indexUrl);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    tests = Array.isArray(data?.tests) ? data.tests.map(t => ({ ...t })) : [];
+  } catch (err) {
+    console.warn("Failed to load bundled IELTS index:", err?.message || err);
+  }
 
   const sheetId = getSavedIeltsSheetId();
   if (sheetId && typeof fetchRawTabFn === "function") {
@@ -122,6 +138,15 @@ export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
           tests = cleanTests;
           questions = cleanQs;
           sourceKind = "google_sheet";
+          ieltsDetailCache.clear();
+          cleanTests.forEach(t => {
+            const tQs = cleanQs
+              .filter(q => q.Test_ID === t.Test_ID)
+              .sort((a, b) => Number(a.Q_Num || 0) - Number(b.Q_Num || 0));
+            if (String(t.Ready).toUpperCase() === "TRUE") {
+              ieltsDetailCache.set(t.Test_ID, { testMeta: t, questions: tQs, sourceKind: "google_sheet" });
+            }
+          });
         }
       }
     } catch (err) {
@@ -130,6 +155,67 @@ export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
   }
 
   return { tests, questions, sourceKind, sheetId };
+}
+
+/**
+ * Load full passages & 40 questions for a single IELTS test on demand,
+ * caching the parsed chunk in memory so opening subsequent screens stays instant.
+ */
+export async function loadIeltsTestDetail(testId, { bank = null, force = false } = {}) {
+  const cleanId = String(testId || "").trim();
+  if (!cleanId) return null;
+
+  if (!force && ieltsDetailCache.has(cleanId)) {
+    return ieltsDetailCache.get(cleanId);
+  }
+  if (!force && ieltsDetailPromiseCache.has(cleanId)) {
+    return ieltsDetailPromiseCache.get(cleanId);
+  }
+
+  if (bank?.sourceKind === "google_sheet" && Array.isArray(bank.tests)) {
+    const meta = bank.tests.find(t => t.Test_ID === cleanId);
+    if (meta) {
+      const qs = (Array.isArray(bank.questions) ? bank.questions : [])
+        .filter(q => q.Test_ID === cleanId)
+        .sort((a, b) => Number(a.Q_Num || 0) - Number(b.Q_Num || 0));
+      const bundle = { testMeta: meta, questions: qs, sourceKind: "google_sheet" };
+      ieltsDetailCache.set(cleanId, bundle);
+      return bundle;
+    }
+  }
+
+  const slug = cleanId.replace(/^ielts:/i, "");
+  if (!/^[a-z0-9_-]+$/i.test(slug)) return null;
+
+  const p = (async () => {
+    const chunkUrl = new URL(`./data/ielts/${slug}.json?v=${IELTS_DATA_VERSION}`, import.meta.url).href;
+    const res = await fetch(chunkUrl);
+    if (!res.ok) {
+      throw new Error(`無法載入試題檔案 (${slug}: HTTP ${res.status})`);
+    }
+    const payload = await res.json();
+    const qs = (Array.isArray(payload?.questions) ? payload.questions : [])
+      .map(q => ({ ...q, Section: Number(q.Section || 1), Q_Num: Number(q.Q_Num || 0) }))
+      .sort((a, b) => a.Q_Num - b.Q_Num);
+    const bundle = {
+      testMeta: payload?.testMeta || null,
+      questions: qs,
+      sourceKind: "bundled"
+    };
+    if (bundle.testMeta) {
+      ieltsDetailCache.set(cleanId, bundle);
+    }
+    return bundle;
+  })();
+
+  ieltsDetailPromiseCache.set(cleanId, p);
+  try {
+    return await p;
+  } finally {
+    if (ieltsDetailPromiseCache.get(cleanId) === p) {
+      ieltsDetailPromiseCache.delete(cleanId);
+    }
+  }
 }
 
 function getIeltsTimerKey(uid, testId) {
@@ -146,6 +232,173 @@ function getIeltsFlagsKey(uid, testId) {
 
 function getIeltsSyncMetaKey(uid, testId) {
   return `ielts_sync_meta_v1:${uid || "anon"}:${testId}`;
+}
+
+function getIeltsAiReviewKey(uid, testId) {
+  return `ielts_ai_review_v1:${uid || "anon"}:${testId}`;
+}
+
+function loadIeltsAiReviewCache(uid, testId) {
+  try {
+    const raw = localStorage.getItem(getIeltsAiReviewKey(uid, testId));
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveIeltsAiReviewCache(uid, testId, data) {
+  try {
+    if (!data) {
+      localStorage.removeItem(getIeltsAiReviewKey(uid, testId));
+    } else {
+      localStorage.setItem(getIeltsAiReviewKey(uid, testId), JSON.stringify(data));
+    }
+  } catch {
+    // Ignore storage unavailability
+  }
+}
+
+function loadIeltsAiConfig() {
+  try {
+    const raw = localStorage.getItem(IELTS_AI_CONFIG_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return {
+      apiKey: String(parsed?.apiKey || "").trim(),
+      model: String(parsed?.model || "gemini-2.5-flash").trim() || "gemini-2.5-flash",
+      backendUrl: String(parsed?.backendUrl || "").trim().replace(/\/+$/, ""),
+      backendToken: String(parsed?.backendToken || "").trim(),
+      autoLogSheet: Boolean(parsed?.autoLogSheet)
+    };
+  } catch {
+    return { apiKey: "", model: "gemini-2.5-flash", backendUrl: "", backendToken: "", autoLogSheet: false };
+  }
+}
+
+function saveIeltsAiConfig(cfg) {
+  try {
+    localStorage.setItem(IELTS_AI_CONFIG_STORAGE_KEY, JSON.stringify({
+      apiKey: String(cfg?.apiKey || "").trim(),
+      model: String(cfg?.model || "gemini-2.5-flash").trim() || "gemini-2.5-flash",
+      backendUrl: String(cfg?.backendUrl || "").trim().replace(/\/+$/, ""),
+      backendToken: String(cfg?.backendToken || "").trim(),
+      autoLogSheet: Boolean(cfg?.autoLogSheet)
+    }));
+  } catch {
+    // Ignore storage unavailability
+  }
+}
+
+async function requestIeltsAiReview(reviewPayload, cfg) {
+  if (cfg.backendUrl) {
+    const headers = { "Content-Type": "application/json" };
+    if (cfg.backendToken) headers.Authorization = `Bearer ${cfg.backendToken}`;
+    const res = await fetch(`${cfg.backendUrl}/api/ielts/review`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ...reviewPayload, autoLogSheet: Boolean(cfg.autoLogSheet) })
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body?.ok) {
+      throw new Error(body?.error || `Backend HTTP ${res.status}`);
+    }
+    return { review: body.review, sheetResult: body.sheetResult || null };
+  }
+
+  if (!cfg.apiKey) {
+    throw new Error(bi("尚未設定 Gemini API Key 或後端 URL。", "No Gemini API Key or backend URL configured."));
+  }
+
+  if (!reviewPayload.wrongItems || reviewPayload.wrongItems.length === 0) {
+    return {
+      review: {
+        overallSummary: bi(`本次 ${reviewPayload.testTitle} 全數答對（Band ${reviewPayload.band}）！`, `Perfect score on ${reviewPayload.testTitle} (Band ${reviewPayload.band})!`),
+        explanations: [],
+        sheetNote: "全對無錯題"
+      },
+      sheetResult: null
+    };
+  }
+
+  const secBlocks = Object.entries(reviewPayload.sections || {})
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([secNum, body]) => `[Section ${secNum}]\n${body}`)
+    .join("\n\n");
+  const qLines = reviewPayload.wrongItems.map(item => (
+    `- Q${item.qNum} (S${item.section}, ${item.type}): ${item.question} | 我的答案=${item.userAnswer || "(未作答)"} | 正解=${item.acceptedAnswer}`
+  ));
+
+  const prompt = [
+    "請擔任 IELTS General Training Reading 專業家教，只針對以下錯題／未答題提供繁體中文詳解。",
+    `測驗：${reviewPayload.testTitle}｜得分：${reviewPayload.correctCount}/${reviewPayload.total}（Band ${reviewPayload.band}）｜耗時：${reviewPayload.durationLabel}`,
+    "",
+    "### 錯題明細",
+    ...qLines,
+    "",
+    "### 對應文章原文",
+    secBlocks,
+    "",
+    "請回傳嚴格 JSON：overallSummary（1-2句繁中總評與作答節奏建議）、explanations（每題含 qNum, evidence 英文原文證據短句, explanation 繁中詳解, mistakeReason 錯因標籤）、sheetNote（單行成績表錯題備註）。"
+  ].join("\n");
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.model || "gemini-2.5-flash")}:generateContent?key=${encodeURIComponent(cfg.apiKey)}`;
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            overallSummary: { type: "STRING" },
+            sheetNote: { type: "STRING" },
+            explanations: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  qNum: { type: "INTEGER" },
+                  evidence: { type: "STRING" },
+                  explanation: { type: "STRING" },
+                  mistakeReason: { type: "STRING" }
+                },
+                required: ["qNum", "evidence", "explanation", "mistakeReason"]
+              }
+            }
+          },
+          required: ["overallSummary", "explanations", "sheetNote"]
+        }
+      }
+    })
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json?.error?.message || `Gemini HTTP ${res.status}`);
+  }
+  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+  return { review: JSON.parse(text), sheetResult: null };
+}
+
+async function requestIeltsBackendScoreLog(reviewPayload, cfg) {
+  if (!cfg.backendUrl) {
+    throw new Error(bi("請先於設定中填入後端 URL（例如 http://127.0.0.1:8787）。", "Configure backend URL first."));
+  }
+  const headers = { "Content-Type": "application/json" };
+  if (cfg.backendToken) headers.Authorization = `Bearer ${cfg.backendToken}`;
+  const res = await fetch(`${cfg.backendUrl}/api/ielts/log-score`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(reviewPayload)
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || !body?.ok) {
+    throw new Error(body?.error || `Backend HTTP ${res.status}`);
+  }
+  return body;
 }
 
 function getQuizAnswersStorageKey(uid, testId) {
@@ -544,6 +797,7 @@ export function flushIeltsCloudSyncOnHide() {
 export function clearIeltsAttemptState(uid, testId) {
   stopIeltsExamTimer({ flushSync: false });
   saveGradedState(uid, testId, null);
+  saveIeltsAiReviewCache(uid, testId, null);
   saveFlaggedSet(uid, testId, new Set());
   saveTimerSnapshot(uid, testId, 0, true);
   touchIeltsSyncTimestamp(uid, testId);
@@ -617,6 +871,7 @@ function renderIeltsQuestionCard({
   idx,
   savedValue,
   gradedInfo,
+  aiExplanation = null,
   isFlagged = false,
   onToggleFlag = null,
   onChange
@@ -822,6 +1077,20 @@ function renderIeltsQuestionCard({
       note.textContent = `🛠 ${bi("題目檢視備註：", "Source audit note: ")}${q.Audit_Note}`;
       card.appendChild(note);
     }
+
+    if (aiExplanation && !gradedInfo.isCorrect) {
+      const aiBox = document.createElement("div");
+      aiBox.className = "ielts-ai-explanation";
+      aiBox.innerHTML = `
+        <div class="ielts-ai-exp-head">
+          <span>✨ ${bi("AI 錯題詳解", "AI Explanation")}</span>
+          ${aiExplanation.mistakeReason ? `<span class="ielts-ai-reason-tag">${escapeHtml(aiExplanation.mistakeReason)}</span>` : ""}
+        </div>
+        ${aiExplanation.evidence ? `<blockquote class="ielts-ai-evidence">${escapeHtml(aiExplanation.evidence)}</blockquote>` : ""}
+        <p class="ielts-ai-exp-body">${escapeHtml(aiExplanation.explanation || "")}</p>
+      `;
+      card.appendChild(aiBox);
+    }
   }
 
   return card;
@@ -933,6 +1202,22 @@ export function renderIeltsExamView({
   const testId = testMeta.Test_ID;
   let answersMap = loadSavedAnswers(testId);
   let gradedState = loadGradedState(uid, testId);
+  if (gradedState && (!Array.isArray(gradedState.results) || gradedState.results.length !== questions.length)) {
+    const recomputed = gradeIeltsExam(questions, answersMap);
+    gradedState = {
+      ...recomputed,
+      ...gradedState,
+      results: recomputed.results,
+      bandInfo: recomputed.bandInfo,
+      typeStats: recomputed.typeStats
+    };
+  }
+  const aiReviewData = gradedState ? loadIeltsAiReviewCache(uid, testId) : null;
+  const aiExpByQNum = new Map();
+  (Array.isArray(aiReviewData?.explanations) ? aiReviewData.explanations : []).forEach(exp => {
+    const qn = Number(exp?.qNum || 0);
+    if (qn > 0) aiExpByQNum.set(qn, exp);
+  });
 
   const countAnswered = () => questions.reduce((acc, _, i) => (
     String(answersMap[String(i)] || "").trim().length > 0 ? acc + 1 : acc
@@ -1268,6 +1553,7 @@ export function renderIeltsExamView({
         idx,
         savedValue: answersMap[String(idx)] || "",
         gradedInfo,
+        aiExplanation: gradedInfo ? (aiExpByQNum.get(Number(q.Q_Num)) || null) : null,
         isFlagged: flaggedSet.has(idx),
         onToggleFlag: (qIdx) => {
           if (flaggedSet.has(qIdx)) {
@@ -1802,13 +2088,13 @@ export function renderIeltsExamView({
     copyBtn.type = "button";
     copyBtn.id = "ielts-copy-gemini-btn";
     copyBtn.className = "btn btn-primary";
-    copyBtn.textContent = bi("📋 一鍵複製給 Gemini 檢討 Prompt", "📋 Copy Gemini Review Prompt");
+    copyBtn.textContent = bi("📋 複製完整 Gemini Prompt", "📋 Copy Full Prompt");
     copyBtn.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(promptText);
-        copyBtn.textContent = bi("✓ 已複製！可直接貼給 Gemini", "✓ Copied to Clipboard!");
+        copyBtn.textContent = bi("✓ 已複製！可直接貼給 Gemini", "✓ Copied!");
         setTimeout(() => {
-          copyBtn.textContent = bi("📋 一鍵複製給 Gemini 檢討 Prompt", "📋 Copy Gemini Review Prompt");
+          copyBtn.textContent = bi("📋 複製完整 Gemini Prompt", "📋 Copy Full Prompt");
         }, 2500);
       } catch {
         const ta = document.querySelector("#ielts-result-card .ielts-prompt-textarea");
@@ -1820,6 +2106,57 @@ export function renderIeltsExamView({
         }
       }
     });
+
+    const wrongOnlyPrompt = buildIeltsWrongOnlyGeminiPrompt({
+      testMeta,
+      questions,
+      gradeResult: gradedState,
+      elapsedSec
+    });
+    const copyWrongPromptBtn = document.createElement("button");
+    copyWrongPromptBtn.type = "button";
+    copyWrongPromptBtn.id = "ielts-copy-wrong-prompt-btn";
+    copyWrongPromptBtn.className = "btn";
+    copyWrongPromptBtn.textContent = bi("🎯 複製錯題精簡 Prompt", "🎯 Copy Wrong-Only Prompt");
+    copyWrongPromptBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(wrongOnlyPrompt);
+        copyWrongPromptBtn.textContent = bi("✓ 已複製錯題 Prompt！", "✓ Copied!");
+        setTimeout(() => {
+          copyWrongPromptBtn.textContent = bi("🎯 複製錯題精簡 Prompt", "🎯 Copy Wrong-Only Prompt");
+        }, 2500);
+      } catch {}
+    });
+
+    const tsvRowText = buildIeltsScoreSheetRowTsv({
+      testMeta,
+      questions,
+      gradeResult: gradedState,
+      elapsedSec,
+      reviewedNote: aiReviewData?.sheetNote || ""
+    });
+    const copyTsvBtn = document.createElement("button");
+    copyTsvBtn.type = "button";
+    copyTsvBtn.id = "ielts-copy-tsv-btn";
+    copyTsvBtn.className = "btn";
+    copyTsvBtn.textContent = bi("📊 複製成績列（貼入 Sheet）", "📊 Copy Sheet Row (TSV)");
+    copyTsvBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(tsvRowText);
+        copyTsvBtn.textContent = bi("✓ 已複製成績列！", "✓ Row Copied!");
+        setTimeout(() => {
+          copyTsvBtn.textContent = bi("📊 複製成績列（貼入 Sheet）", "📊 Copy Sheet Row (TSV)");
+        }, 2500);
+      } catch {}
+    });
+
+    const aiReviewBtn = document.createElement("button");
+    aiReviewBtn.type = "button";
+    aiReviewBtn.id = "ielts-ai-review-btn";
+    aiReviewBtn.className = "btn";
+    aiReviewBtn.textContent = aiReviewData
+      ? bi("✨ 重新生成 AI 錯題詳解", "✨ Refresh AI Explanations")
+      : bi("✨ 一鍵 AI 錯題詳解", "✨ AI Explain Mistakes");
 
     if (wrongOrBlankCount > 0) {
       const reviewWrongBtn = document.createElement("button");
@@ -1847,7 +2184,134 @@ export function renderIeltsExamView({
       window.scrollTo({ top: 0, behavior: preferAutoScroll() });
     });
 
-    actionRow.append(copyBtn, retakeBtn);
+    actionRow.append(aiReviewBtn, copyWrongPromptBtn, copyTsvBtn, copyBtn, retakeBtn);
+
+    let aiOverallCard = null;
+    if (aiReviewData?.overallSummary) {
+      aiOverallCard = document.createElement("div");
+      aiOverallCard.className = "ielts-ai-overall-card";
+      aiOverallCard.id = "ielts-ai-overall-card";
+      aiOverallCard.innerHTML = `
+        <div class="ielts-ai-exp-head"><span>✨ ${bi("AI 檢討總評", "AI Review Summary")}</span></div>
+        <p class="ielts-ai-exp-body">${escapeHtml(aiReviewData.overallSummary)}</p>
+      `;
+    }
+
+    const aiStatusMsg = document.createElement("p");
+    aiStatusMsg.className = "form-hint ielts-ai-status-msg";
+    aiStatusMsg.hidden = true;
+
+    const aiCfg = loadIeltsAiConfig();
+    const aiSettingsDetails = document.createElement("details");
+    aiSettingsDetails.className = "ielts-ai-settings-details";
+    aiSettingsDetails.id = "ielts-ai-settings-details";
+    aiSettingsDetails.innerHTML = `
+      <summary class="ielts-prompt-summary">⚙ ${bi("AI 詳解與試算表自動寫入設定（僅存於本機瀏覽器）", "AI Explanation & Sheet Logging Settings (Local Only)")}</summary>
+      <div class="ielts-ai-settings-body">
+        <label class="ielts-ai-field">
+          <span>${bi("Gemini API Key（直連模式）", "Gemini API Key (Direct Mode)")}</span>
+          <input type="password" id="ielts-ai-key-input" class="form-control" autocomplete="off" placeholder="AIza..." value="${escapeHtml(aiCfg.apiKey)}" />
+        </label>
+        <label class="ielts-ai-field">
+          <span>${bi("選填：後端 API URL（例：http://127.0.0.1:8787）", "Optional: Backend URL (e.g. http://127.0.0.1:8787)")}</span>
+          <input type="url" id="ielts-ai-backend-input" class="form-control" autocomplete="off" placeholder="http://127.0.0.1:8787" value="${escapeHtml(aiCfg.backendUrl)}" />
+        </label>
+        <label class="ielts-ai-field">
+          <span>${bi("選填：後端 Bearer Token", "Optional: Backend Bearer Token")}</span>
+          <input type="password" id="ielts-ai-token-input" class="form-control" autocomplete="off" value="${escapeHtml(aiCfg.backendToken)}" />
+        </label>
+        <label class="ielts-ai-check-row">
+          <input type="checkbox" id="ielts-ai-autolog-input" ${aiCfg.autoLogSheet ? "checked" : ""} />
+          <span>${bi("透過後端產出詳解時同時自動寫入 Google Sheet 成績表", "Also log score row to Google Sheet when using backend")}</span>
+        </label>
+        <div class="ielts-ai-settings-actions">
+          <button type="button" id="ielts-ai-save-cfg-btn" class="btn btn-sm btn-primary">${bi("儲存設定", "Save Settings")}</button>
+          <button type="button" id="ielts-log-sheet-btn" class="btn btn-sm">${bi("📤 透過後端寫入 Sheet", "📤 Log Score to Sheet")}</button>
+        </div>
+      </div>
+    `;
+
+    const readSettingsInputs = () => ({
+      apiKey: aiSettingsDetails.querySelector("#ielts-ai-key-input")?.value || "",
+      backendUrl: aiSettingsDetails.querySelector("#ielts-ai-backend-input")?.value || "",
+      backendToken: aiSettingsDetails.querySelector("#ielts-ai-token-input")?.value || "",
+      autoLogSheet: Boolean(aiSettingsDetails.querySelector("#ielts-ai-autolog-input")?.checked),
+      model: aiCfg.model || "gemini-2.5-flash"
+    });
+
+    aiSettingsDetails.querySelector("#ielts-ai-save-cfg-btn")?.addEventListener("click", () => {
+      const next = readSettingsInputs();
+      saveIeltsAiConfig(next);
+      aiStatusMsg.hidden = false;
+      aiStatusMsg.textContent = bi("✓ AI 與後端設定已儲存至本機。", "✓ Saved locally.");
+    });
+
+    const structuredReqPayload = () => buildIeltsStructuredReviewRequest({
+      testMeta,
+      questions,
+      gradeResult: gradedState,
+      elapsedSec,
+      autoLogSheet: readSettingsInputs().autoLogSheet
+    });
+
+    aiSettingsDetails.querySelector("#ielts-log-sheet-btn")?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      const cfg = readSettingsInputs();
+      saveIeltsAiConfig(cfg);
+      btn.disabled = true;
+      aiStatusMsg.hidden = false;
+      aiStatusMsg.textContent = bi("⏳ 正在透過後端寫入 Google Sheet…", "⏳ Writing score row to Google Sheet…");
+      try {
+        const req = structuredReqPayload();
+        req.sheetNote = aiReviewData?.sheetNote || req.weakTypes;
+        const out = await requestIeltsBackendScoreLog(req, cfg);
+        aiStatusMsg.textContent = out.duplicate
+          ? bi(`✓ 成績表已有此場紀錄（${out.sheetTitle}）。`, `✓ Already logged in ${out.sheetTitle}.`)
+          : bi(`✓ 已成功寫入成績表：${out.sheetTitle} (${out.worksheet})`, `✓ Logged to ${out.sheetTitle} (${out.worksheet})`);
+      } catch (err) {
+        aiStatusMsg.textContent = `⚠ ${err?.message || err}`;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    aiReviewBtn.addEventListener("click", async () => {
+      const cfg = readSettingsInputs();
+      if (!cfg.apiKey && !cfg.backendUrl) {
+        aiSettingsDetails.open = true;
+        aiStatusMsg.hidden = false;
+        aiStatusMsg.textContent = bi(
+          "請先填入個人 Gemini API Key 或後端 URL，再點「✨ 一鍵 AI 錯題詳解」（也可先直接用上方複製錯題精簡 Prompt）。",
+          "Enter a Gemini API Key or backend URL first, or use Copy Wrong-Only Prompt above."
+        );
+        aiSettingsDetails.querySelector("#ielts-ai-key-input")?.focus();
+        return;
+      }
+      saveIeltsAiConfig(cfg);
+      aiReviewBtn.disabled = true;
+      aiReviewBtn.textContent = bi("⏳ 生成詳解中…", "⏳ Generating…");
+      aiStatusMsg.hidden = false;
+      aiStatusMsg.textContent = bi("⏳ 正在分析錯題並比對原文證據…", "⏳ Analyzing mistakes against passages…");
+      try {
+        const { review, sheetResult } = await requestIeltsAiReview(structuredReqPayload(), cfg);
+        saveIeltsAiReviewCache(uid, testId, { ...review, generatedAt: Date.now() });
+        rebuildView();
+        const postMsg = document.querySelector("#ielts-result-card .ielts-ai-status-msg");
+        if (postMsg && sheetResult) {
+          postMsg.hidden = false;
+          postMsg.textContent = sheetResult.logged
+            ? bi(`✓ 詳解已嵌入錯題卡，且成績已自動寫入 ${sheetResult.sheetTitle || "Google Sheet"}！`, "✓ Explanations added & score logged!")
+            : bi(`✓ 詳解已嵌入錯題卡（Sheet 未自動寫入：${sheetResult.error || ""}）`, `✓ Explanations added (Sheet skipped: ${sheetResult.error || ""})`);
+        }
+      } catch (err) {
+        aiStatusMsg.hidden = false;
+        aiStatusMsg.textContent = `⚠ ${err?.message || err}`;
+        aiReviewBtn.disabled = false;
+        aiReviewBtn.textContent = aiReviewData
+          ? bi("✨ 重新生成 AI 錯題詳解", "✨ Refresh AI Explanations")
+          : bi("✨ 一鍵 AI 錯題詳解", "✨ AI Explain Mistakes");
+      }
+    });
 
     const detailsEl = document.createElement("details");
     detailsEl.className = "ielts-prompt-details";
@@ -1862,11 +2326,10 @@ export function renderIeltsExamView({
     detailsEl.append(summaryEl, ta);
 
     const historyEl = buildIeltsAttemptHistoryDetails(getAttemptHistory?.(testId) || [], questions.length);
-    if (historyEl) {
-      resultCard.append(topStats, breakdownBox, actionRow, historyEl, detailsEl);
-    } else {
-      resultCard.append(topStats, breakdownBox, actionRow, detailsEl);
-    }
+    resultCard.append(topStats, breakdownBox, actionRow, aiStatusMsg);
+    if (aiOverallCard) resultCard.appendChild(aiOverallCard);
+    if (historyEl) resultCard.appendChild(historyEl);
+    resultCard.append(aiSettingsDetails, detailsEl);
     footerCard.appendChild(resultCard);
   }
 
