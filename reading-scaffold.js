@@ -1,5 +1,5 @@
-import { escapeHtml, speakWord } from "./app-helpers.js?v=20261125f";
-import { bi } from "./i18n.js?v=20261125f";
+import { escapeHtml, speakWord } from "./app-helpers.js?v=20261125g";
+import { bi } from "./i18n.js?v=20261125g";
 
 const HINTS_PREF_KEY = "reading_vocab_hints_on_v2";
 const VALID_MARK_VALUES = ["yellow", "mint", "blue"];

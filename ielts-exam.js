@@ -3,15 +3,40 @@ import {
   formatExamDuration,
   gradeIeltsExam,
   buildIeltsGeminiReviewPrompt
-} from "./app-helpers.js?v=20261125f";
-import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125f";
-import { bi } from "./i18n.js?v=20261125f";
+} from "./app-helpers.js?v=20261125g";
+import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125g";
+import { bi } from "./i18n.js?v=20261125g";
 
 export const DEFAULT_IELTS_SHEET_ID = "";
 export const IELTS_SHEET_ID_STORAGE_KEY = "ielts_custom_sheet_id_v1";
+const IELTS_FONT_SCALE_STORAGE_KEY = "ielts_reading_font_scale_v1";
+const IELTS_FONT_SCALE_MIN = 75;
+const IELTS_FONT_SCALE_MAX = 160;
+const IELTS_FONT_SCALE_STEP = 5;
 
 let ieltsStopwatchInterval = null;
 let activeIeltsTimerState = null;
+
+function clampIeltsFontPct(raw) {
+  const n = Math.round(Number(raw) || 100);
+  return Math.max(IELTS_FONT_SCALE_MIN, Math.min(IELTS_FONT_SCALE_MAX, n));
+}
+
+function loadSavedIeltsFontPct() {
+  try {
+    return clampIeltsFontPct(localStorage.getItem(IELTS_FONT_SCALE_STORAGE_KEY) || "100");
+  } catch {
+    return 100;
+  }
+}
+
+function saveIeltsFontPct(pct) {
+  try {
+    localStorage.setItem(IELTS_FONT_SCALE_STORAGE_KEY, String(clampIeltsFontPct(pct)));
+  } catch {
+    // Ignore storage unavailability
+  }
+}
 
 export function getSavedIeltsSheetId() {
   try {
@@ -38,7 +63,7 @@ export function setSavedIeltsSheetId(raw) {
 }
 
 export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
-  const mod = await import("./ielts-gt-data.js?v=20261125f");
+  const mod = await import("./ielts-gt-data.js?v=20261125g");
   let tests = Array.isArray(mod.IELTS_TESTS) ? mod.IELTS_TESTS.map(t => ({ ...t })) : [];
   let questions = Array.isArray(mod.IELTS_QUESTIONS) ? mod.IELTS_QUESTIONS.map(q => ({ ...q })) : [];
   let sourceKind = "bundled";
@@ -392,6 +417,7 @@ export function renderIeltsExamView({
 
   splitDefaultEl?.classList.add("hidden");
   sectionedEl.classList.remove("hidden");
+  sectionedEl.classList.add("ielts-sectioned-exam");
   sectionedEl.innerHTML = "";
   if (quizContainer) quizContainer.innerHTML = "";
 
@@ -477,7 +503,68 @@ export function renderIeltsExamView({
 
   const timerControls = document.createElement("div");
   timerControls.className = "ielts-timer-controls";
-  timerControls.append(statusCountEl, toggleTimerBtn, resetTimerBtn);
+
+  // Reading font-size zoom controls (75% - 160%)
+  const fontGroup = document.createElement("div");
+  fontGroup.className = "ielts-font-zoom-group";
+  fontGroup.id = "ielts-font-zoom-group";
+  fontGroup.setAttribute("role", "group");
+  fontGroup.setAttribute("aria-label", bi("閱讀文章字體大小縮放", "Reading passage font size"));
+
+  const fontLabel = document.createElement("span");
+  fontLabel.className = "ielts-font-zoom-label";
+  fontLabel.textContent = bi("閱讀字體", "Text");
+
+  const fontDecBtn = document.createElement("button");
+  fontDecBtn.type = "button";
+  fontDecBtn.id = "ielts-font-dec-btn";
+  fontDecBtn.className = "btn btn-sm ielts-font-step-btn";
+  fontDecBtn.textContent = "A−";
+  fontDecBtn.setAttribute("aria-label", bi("縮小閱讀文章字體", "Decrease reading font size"));
+  fontDecBtn.title = bi("縮小閱讀字體", "Smaller text");
+
+  const fontSlider = document.createElement("input");
+  fontSlider.type = "range";
+  fontSlider.id = "ielts-font-slider";
+  fontSlider.className = "ielts-font-slider";
+  fontSlider.min = String(IELTS_FONT_SCALE_MIN);
+  fontSlider.max = String(IELTS_FONT_SCALE_MAX);
+  fontSlider.step = String(IELTS_FONT_SCALE_STEP);
+  fontSlider.setAttribute("aria-label", bi("閱讀字體縮放比例（%）", "Reading font scale (%)"));
+
+  const fontIncBtn = document.createElement("button");
+  fontIncBtn.type = "button";
+  fontIncBtn.id = "ielts-font-inc-btn";
+  fontIncBtn.className = "btn btn-sm ielts-font-step-btn";
+  fontIncBtn.textContent = "A+";
+  fontIncBtn.setAttribute("aria-label", bi("放大閱讀文章字體", "Increase reading font size"));
+  fontIncBtn.title = bi("放大閱讀字體", "Larger text");
+
+  const fontResetBtn = document.createElement("button");
+  fontResetBtn.type = "button";
+  fontResetBtn.id = "ielts-font-reset-btn";
+  fontResetBtn.className = "btn btn-sm ielts-font-pct-btn";
+  fontResetBtn.title = bi("點擊重設為 100% 預設大小", "Reset to 100%");
+
+  let currentFontPct = loadSavedIeltsFontPct();
+  const applyFontPct = (nextPct, { persist = true } = {}) => {
+    currentFontPct = clampIeltsFontPct(nextPct);
+    sectionedEl.style.setProperty("--ielts-reading-scale", (currentFontPct / 100).toFixed(2));
+    fontSlider.value = String(currentFontPct);
+    fontResetBtn.textContent = `${currentFontPct}%`;
+    fontDecBtn.disabled = currentFontPct <= IELTS_FONT_SCALE_MIN;
+    fontIncBtn.disabled = currentFontPct >= IELTS_FONT_SCALE_MAX;
+    if (persist) saveIeltsFontPct(currentFontPct);
+  };
+
+  fontDecBtn.addEventListener("click", () => applyFontPct(currentFontPct - IELTS_FONT_SCALE_STEP));
+  fontIncBtn.addEventListener("click", () => applyFontPct(currentFontPct + IELTS_FONT_SCALE_STEP));
+  fontResetBtn.addEventListener("click", () => applyFontPct(100));
+  fontSlider.addEventListener("input", () => applyFontPct(fontSlider.value));
+  applyFontPct(currentFontPct, { persist: false });
+
+  fontGroup.append(fontLabel, fontDecBtn, fontSlider, fontIncBtn, fontResetBtn);
+  timerControls.append(fontGroup, statusCountEl, toggleTimerBtn, resetTimerBtn);
 
   timerBar.append(clockEl, timerControls);
   sectionedEl.appendChild(timerBar);

@@ -43,7 +43,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261125f";
+} from "./room-scene.js?v=20261125g";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +68,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261125f";
+} from "./shop-catalog.js?v=20261125g";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +76,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261125f";
+} from "./room-grid.js?v=20261125g";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -103,16 +103,16 @@ import {
   evaluateSubmissionMetrics,
   formatExamDuration,
   gradeIeltsExam
-} from "./app-helpers.js?v=20261125f";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261125f";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261125f";
+} from "./app-helpers.js?v=20261125g";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261125g";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261125g";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261125f";
+} from "./i18n.js?v=20261125g";
 
 applyStaticDomTranslations();
 
@@ -202,7 +202,7 @@ function isIeltsLessonId(id) {
 
 async function getIeltsModule() {
   if (!ieltsModuleCache) {
-    ieltsModuleCache = await import("./ielts-exam.js?v=20261125f");
+    ieltsModuleCache = await import("./ielts-exam.js?v=20261125g");
   }
   return ieltsModuleCache;
 }
@@ -3221,6 +3221,7 @@ async function renderLesson(dateStr) {
 
   stopAllListeningAudio();
   clearReadingScaffold();
+  sectionedEl?.classList.remove("ielts-sectioned-exam");
   quizContainer.innerHTML = "";
   if (sectionedEl) sectionedEl.innerHTML = "";
   if (progressFill) {
@@ -5102,7 +5103,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261125f`;
+    img.src = `${item.previewImage}?v=20261125g`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);

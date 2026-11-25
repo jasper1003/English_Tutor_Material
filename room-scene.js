@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { bi, isEn } from "./i18n.js?v=20261125f";
+import { bi, isEn } from "./i18n.js?v=20261125g";
 import {
   DEFAULT_FLOOR_STYLE,
   DEFAULT_DESK_STYLE,
@@ -16,13 +16,13 @@ import {
   resolvePantsStyle,
   SOFA_ITEM_IDS,
   hasOwnedSofa
-} from "./shop-catalog.js?v=20261125f";
+} from "./shop-catalog.js?v=20261125g";
 import {
   sampleDayNightCycle,
   buildCharacterPersona,
   pickPersonaWeightedActivity,
   createSeededRng
-} from "./app-helpers.js?v=20261125f";
+} from "./app-helpers.js?v=20261125g";
 import {
   GRID_STEP,
   GRID_CELLS,
@@ -42,7 +42,7 @@ import {
   wallPlacementToLocal,
   getFloorFootprintWorldBox,
   getRotatedDims
-} from "./room-grid.js?v=20261125f";
+} from "./room-grid.js?v=20261125g";
 
 const DAY_CYCLE_MS = 30 * 60 * 1000; // Real 30 minutes = 24 game hours (15 min day + 15 min night)
 const POST_WORK_COOLDOWN_SEC = 13;

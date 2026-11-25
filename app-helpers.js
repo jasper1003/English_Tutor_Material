@@ -1,5 +1,5 @@
-import { bi, isEn } from "./i18n.js?v=20261125f";
-import { hasOwnedSofa } from "./shop-catalog.js?v=20261125f";
+import { bi, isEn } from "./i18n.js?v=20261125g";
+import { hasOwnedSofa } from "./shop-catalog.js?v=20261125g";
 
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
