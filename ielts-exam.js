@@ -3,9 +3,9 @@ import {
   formatExamDuration,
   gradeIeltsExam,
   buildIeltsGeminiReviewPrompt
-} from "./app-helpers.js?v=20261125d";
-import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125d";
-import { bi } from "./i18n.js?v=20261125d";
+} from "./app-helpers.js?v=20261125e";
+import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125e";
+import { bi } from "./i18n.js?v=20261125e";
 
 export const DEFAULT_IELTS_SHEET_ID = "";
 export const IELTS_SHEET_ID_STORAGE_KEY = "ielts_custom_sheet_id_v1";
@@ -38,7 +38,7 @@ export function setSavedIeltsSheetId(raw) {
 }
 
 export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
-  const mod = await import("./ielts-gt-data.js?v=20261125d");
+  const mod = await import("./ielts-gt-data.js?v=20261125e");
   let tests = Array.isArray(mod.IELTS_TESTS) ? mod.IELTS_TESTS.map(t => ({ ...t })) : [];
   let questions = Array.isArray(mod.IELTS_QUESTIONS) ? mod.IELTS_QUESTIONS.map(q => ({ ...q })) : [];
   let sourceKind = "bundled";

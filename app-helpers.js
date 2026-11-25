@@ -1,5 +1,5 @@
-import { bi, isEn } from "./i18n.js?v=20261125d";
-import { hasOwnedSofa } from "./shop-catalog.js?v=20261125d";
+import { bi, isEn } from "./i18n.js?v=20261125e";
+import { hasOwnedSofa } from "./shop-catalog.js?v=20261125e";
 
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
@@ -884,20 +884,209 @@ export function evaluateSubmissionMetrics(raw) {
   };
 }
 
+const IELTS_UK_TO_US_MAP = {
+  aluminium: "aluminum",
+  analyse: "analyze",
+  analysed: "analyzed",
+  apologise: "apologize",
+  apologised: "apologized",
+  behaviour: "behavior",
+  behaviours: "behaviors",
+  cancelled: "canceled",
+  catalogue: "catalog",
+  catalogues: "catalogs",
+  centre: "center",
+  centres: "centers",
+  cheque: "check",
+  cheques: "checks",
+  colour: "color",
+  colours: "colors",
+  defence: "defense",
+  dialogue: "dialog",
+  dialogues: "dialogs",
+  favour: "favor",
+  favourite: "favorite",
+  favourites: "favorites",
+  fibre: "fiber",
+  fibres: "fibers",
+  grey: "gray",
+  honour: "honor",
+  humour: "humor",
+  jewellery: "jewelry",
+  kilometre: "kilometer",
+  kilometres: "kilometers",
+  labour: "labor",
+  licence: "license",
+  litre: "liter",
+  litres: "liters",
+  metre: "meter",
+  metres: "meters",
+  neighbour: "neighbor",
+  neighbours: "neighbors",
+  organisation: "organization",
+  organisations: "organizations",
+  organise: "organize",
+  organised: "organized",
+  practise: "practice",
+  practised: "practiced",
+  programme: "program",
+  programmes: "programs",
+  pyjamas: "pajamas",
+  recognise: "recognize",
+  recognised: "recognized",
+  rumour: "rumor",
+  theatre: "theater",
+  theatres: "theaters",
+  travelled: "traveled",
+  travelling: "traveling"
+};
+
+const IELTS_SMALL_NUM_WORDS = [
+  "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+  "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"
+];
+const IELTS_TENS_WORDS = {
+  20: "twenty", 30: "thirty", 40: "forty", 50: "fifty",
+  60: "sixty", 70: "seventy", 80: "eighty", 90: "ninety"
+};
+
+function intToSimpleIeltsWords(n) {
+  if (!Number.isInteger(n) || n < 0 || n > 999000) return null;
+  if (n < 20) return IELTS_SMALL_NUM_WORDS[n];
+  if (n < 100) {
+    const tens = Math.floor(n / 10) * 10;
+    const rem = n % 10;
+    return rem === 0 ? IELTS_TENS_WORDS[tens] : `${IELTS_TENS_WORDS[tens]} ${IELTS_SMALL_NUM_WORDS[rem]}`;
+  }
+  if (n < 1000 && n % 100 === 0) {
+    return `${IELTS_SMALL_NUM_WORDS[n / 100]} hundred`;
+  }
+  if (n >= 1000 && n % 1000 === 0) {
+    const k = n / 1000;
+    const prefix = intToSimpleIeltsWords(k);
+    return prefix ? `${prefix} thousand` : null;
+  }
+  return null;
+}
+
+const IELTS_WORDS_TO_INT = new Map();
+for (let i = 0; i <= 99; i += 1) {
+  const w = intToSimpleIeltsWords(i);
+  if (w) IELTS_WORDS_TO_INT.set(w, i);
+}
+for (let k = 1; k <= 999; k += 1) {
+  const n = k * 1000;
+  const w = intToSimpleIeltsWords(n);
+  if (w) IELTS_WORDS_TO_INT.set(w, n);
+}
+
+const IELTS_CURRENCY_UNITS = {
+  $: { singular: "dollar", plural: "dollars" },
+  "£": { singular: "pound", plural: "pounds" },
+  "€": { singular: "euro", plural: "euros" }
+};
+
 /**
- * Normalize an IELTS text/option response for resilient grading (spacing, dashes, currency, case).
+ * Normalize an IELTS text/option response per official IELTS marking conventions
+ * (case-insensitive, standard thousands commas stripped while rejecting "." separators,
+ * leading currency symbol spacing, UK/US spelling unification).
  */
 export function normalizeIeltsAnswer(raw) {
-  return String(raw || "")
+  let out = String(raw || "")
     .trim()
     .replace(/[’‘]/g, "'")
     .replace(/[“”]/g, '"')
     .replace(/[–—]/g, "-")
     .replace(/\s*-\s*/g, "-")
-    .replace(/\$\s+/g, "$")
+    .replace(/([$£€])\s+/g, "$1")
     .replace(/[.,;:!?]+$/g, "")
     .replace(/\s+/g, " ")
     .toLowerCase();
+
+  // Official IELTS accepts standard English thousands commas (50,000 === 50000),
+  // whereas European period separators (50.000) remain distinct and wrong.
+  let prev;
+  do {
+    prev = out;
+    out = out.replace(/(\d),(\d{3})(?!\d)/g, "$1$2");
+  } while (out !== prev);
+
+  // Unify UK and US standard spellings (IELTS accepts both)
+  out = out.replace(/\b[a-z]+\b/g, w => IELTS_UK_TO_US_MAP[w] || w);
+  return out;
+}
+
+/**
+ * Expand a canonical IELTS answer candidate with equivalent official IELTS formats:
+ * - Leading currency symbol <-> number + dollar(s)/pound(s)/euro(s)
+ * - Simple whole-number digits <-> English number words (e.g. 5 <-> five, 50000 <-> fifty thousand)
+ */
+function expandIeltsAcceptedVariants(rawCandidate) {
+  const norm = normalizeIeltsAnswer(rawCandidate);
+  if (!norm) return [];
+  const variants = new Set([norm]);
+
+  // 1. Symbol currency -> word currency (e.g. "$50,000" -> "50000 dollars", "fifty thousand dollars")
+  const curSymMatch = norm.match(/^([$£€])(\d+(?:\.\d+)?)$/);
+  if (curSymMatch) {
+    const sym = curSymMatch[1];
+    const numStr = curSymMatch[2];
+    const unitMeta = IELTS_CURRENCY_UNITS[sym];
+    if (unitMeta) {
+      const unitWord = Number(numStr) === 1 ? unitMeta.singular : unitMeta.plural;
+      variants.add(`${numStr} ${unitWord}`);
+      if (/^\d+$/.test(numStr)) {
+        const asWords = intToSimpleIeltsWords(Number(numStr));
+        if (asWords) variants.add(`${asWords} ${unitWord}`);
+      }
+    }
+  }
+
+  // 2. Word currency -> symbol & word/digit forms (e.g. "50000 dollars" <-> "$50000" <-> "fifty thousand dollars")
+  const curWordMatch = norm.match(/^(.+?)\s+(dollars?|pounds?|euros?)$/);
+  if (curWordMatch) {
+    const qtyRaw = curWordMatch[1].trim();
+    const unitTok = curWordMatch[2];
+    const sym = unitTok.startsWith("dollar") ? "$" : unitTok.startsWith("pound") ? "£" : "€";
+    const unitMeta = IELTS_CURRENCY_UNITS[sym];
+    if (/^\d+(?:\.\d+)?$/.test(qtyRaw)) {
+      variants.add(`${sym}${qtyRaw}`);
+      if (/^\d+$/.test(qtyRaw)) {
+        const asWords = intToSimpleIeltsWords(Number(qtyRaw));
+        const unitWord = Number(qtyRaw) === 1 ? unitMeta.singular : unitMeta.plural;
+        if (asWords) variants.add(`${asWords} ${unitWord}`);
+      }
+    } else if (IELTS_WORDS_TO_INT.has(qtyRaw.replace(/-/g, " "))) {
+      const n = IELTS_WORDS_TO_INT.get(qtyRaw.replace(/-/g, " "));
+      const unitWord = n === 1 ? unitMeta.singular : unitMeta.plural;
+      variants.add(`${sym}${n}`);
+      variants.add(`${n} ${unitWord}`);
+    }
+  }
+
+  // 3. Standalone small/round numbers or short phrases starting/ending with simple numerals (e.g. "4 weeks" <-> "four weeks")
+  const normNoNumHyphen = norm.replace(/-/g, " ");
+  if (/^\d+$/.test(norm)) {
+    const w = intToSimpleIeltsWords(Number(norm));
+    if (w) variants.add(w);
+  } else if (IELTS_WORDS_TO_INT.has(normNoNumHyphen)) {
+    variants.add(String(IELTS_WORDS_TO_INT.get(normNoNumHyphen)));
+  } else {
+    const leadNum = norm.match(/^(\d+)\s+(.+)$/);
+    if (leadNum) {
+      const w = intToSimpleIeltsWords(Number(leadNum[1]));
+      if (w) variants.add(`${w} ${leadNum[2]}`);
+    } else {
+      for (const [wordForm, intVal] of IELTS_WORDS_TO_INT.entries()) {
+        if (normNoNumHyphen.startsWith(`${wordForm} `)) {
+          variants.add(`${intVal} ${normNoNumHyphen.slice(wordForm.length + 1)}`);
+          break;
+        }
+      }
+    }
+  }
+
+  return Array.from(variants);
 }
 
 function parseMultiLetterTokens(raw) {
@@ -966,7 +1155,7 @@ export function gradeIeltsExam(questions = [], userAnswersMap = {}) {
         }
       } else {
         const normUser = normalizeIeltsAnswer(rawUser);
-        isCorrect = acceptedRawList.some(cand => normalizeIeltsAnswer(cand) === normUser);
+        isCorrect = acceptedRawList.some(cand => expandIeltsAcceptedVariants(cand).includes(normUser));
       }
     }
 

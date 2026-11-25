@@ -4295,7 +4295,7 @@ export const IELTS_QUESTIONS = [
     "Group_Prompt": "",
     "Question": "9. What is the maximum reward Fancy Foods is offering for information about who contaminated their product?",
     "Options": "",
-    "Answer": "$50,000|$50000|50,000|50000",
+    "Answer": "$50,000|50,000|50,000 dollars|fifty thousand dollars",
     "Order_Group": "",
     "Audit_Note": ""
   },
