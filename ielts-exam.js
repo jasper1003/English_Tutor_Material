@@ -2,10 +2,12 @@ import {
   escapeHtml,
   formatExamDuration,
   gradeIeltsExam,
+  calculateIeltsGtBandScore,
+  computeIeltsTypeStats,
   buildIeltsGeminiReviewPrompt
-} from "./app-helpers.js?v=20261125j";
-import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125j";
-import { bi } from "./i18n.js?v=20261125j";
+} from "./app-helpers.js?v=20261125k";
+import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125k";
+import { bi } from "./i18n.js?v=20261125k";
 
 export const DEFAULT_IELTS_SHEET_ID = "";
 export const IELTS_SHEET_ID_STORAGE_KEY = "ielts_custom_sheet_id_v1";
@@ -16,6 +18,24 @@ const IELTS_FONT_SCALE_STEP = 5;
 
 let ieltsStopwatchInterval = null;
 let activeIeltsTimerState = null;
+const ieltsViewStateByKey = new Map();
+
+function getIeltsViewKey(uid, testId) {
+  return `${uid || "anon"}:${testId}`;
+}
+
+function getOrCreateViewState(uid, testId) {
+  const key = getIeltsViewKey(uid, testId);
+  if (!ieltsViewStateByKey.has(key)) {
+    ieltsViewStateByKey.set(key, {
+      activeSection: 1,
+      wrongOnly: false,
+      navCollapsed: false,
+      activeQIdx: 0
+    });
+  }
+  return ieltsViewStateByKey.get(key);
+}
 
 function clampIeltsFontPct(raw) {
   const n = Math.round(Number(raw) || 100);
@@ -63,7 +83,7 @@ export function setSavedIeltsSheetId(raw) {
 }
 
 export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
-  const mod = await import("./ielts-gt-data.js?v=20261125j");
+  const mod = await import("./ielts-gt-data.js?v=20261125k");
   let tests = Array.isArray(mod.IELTS_TESTS) ? mod.IELTS_TESTS.map(t => ({ ...t })) : [];
   let questions = Array.isArray(mod.IELTS_QUESTIONS) ? mod.IELTS_QUESTIONS.map(q => ({ ...q })) : [];
   let sourceKind = "bundled";
@@ -112,6 +132,34 @@ function getIeltsTimerKey(uid, testId) {
 
 function getIeltsGradedKey(uid, testId) {
   return `ielts_graded_v1:${uid || "anon"}:${testId}`;
+}
+
+function getIeltsFlagsKey(uid, testId) {
+  return `ielts_flags_v1:${uid || "anon"}:${testId}`;
+}
+
+function loadFlaggedSet(uid, testId) {
+  try {
+    const raw = localStorage.getItem(getIeltsFlagsKey(uid, testId));
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.map(n => Math.trunc(Number(n))).filter(n => Number.isFinite(n) && n >= 0));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveFlaggedSet(uid, testId, flagSet) {
+  try {
+    const arr = [...flagSet].sort((a, b) => a - b);
+    if (arr.length === 0) {
+      localStorage.removeItem(getIeltsFlagsKey(uid, testId));
+    } else {
+      localStorage.setItem(getIeltsFlagsKey(uid, testId), JSON.stringify(arr));
+    }
+  } catch {
+    // Ignore storage unavailability
+  }
 }
 
 function loadTimerSnapshot(uid, testId) {
@@ -191,7 +239,9 @@ export function stopIeltsExamTimer() {
 export function clearIeltsAttemptState(uid, testId) {
   stopIeltsExamTimer();
   saveGradedState(uid, testId, null);
+  saveFlaggedSet(uid, testId, new Set());
   saveTimerSnapshot(uid, testId, 0, true);
+  ieltsViewStateByKey.delete(getIeltsViewKey(uid, testId));
 }
 
 function flushActiveTimer() {
@@ -261,24 +311,49 @@ function renderIeltsQuestionCard({
   idx,
   savedValue,
   gradedInfo,
+  isFlagged = false,
+  onToggleFlag = null,
   onChange
 }) {
   const card = document.createElement("div");
   card.className = "question-card ielts-question-card";
   card.dataset.index = String(idx);
+  card.tabIndex = -1;
 
   if (gradedInfo) {
     card.classList.add(gradedInfo.isCorrect ? "correct" : "incorrect");
-  } else if (savedValue) {
+  } else if (String(savedValue || "").trim().length > 0) {
     card.classList.add("has-draft");
   }
 
   const qType = String(q.Type || "").toUpperCase();
 
+  const topRow = document.createElement("div");
+  topRow.className = "ielts-card-top";
+
   const badge = document.createElement("div");
   badge.className = "question-type-badge";
   badge.textContent = `Question ${q.Q_Num}`;
-  card.appendChild(badge);
+
+  const flagBtn = document.createElement("button");
+  flagBtn.type = "button";
+  flagBtn.className = "ielts-flag-btn";
+  flagBtn.dataset.index = String(idx);
+  flagBtn.setAttribute("aria-label", bi(`標記第 ${q.Q_Num} 題稍後檢查`, `Flag Question ${q.Q_Num} for review`));
+  const syncFlagBtn = (flagged) => {
+    flagBtn.setAttribute("aria-pressed", String(Boolean(flagged)));
+    flagBtn.classList.toggle("is-flagged", Boolean(flagged));
+    card.classList.toggle("is-flagged", Boolean(flagged));
+    flagBtn.innerHTML = `<span aria-hidden="true">🚩</span><span>${flagged ? bi("已標記", "Flagged") : bi("標記", "Flag")}</span>`;
+  };
+  syncFlagBtn(isFlagged);
+  flagBtn.addEventListener("click", () => {
+    const nextFlag = Boolean(onToggleFlag?.(idx));
+    syncFlagBtn(nextFlag);
+  });
+
+  topRow.append(badge, flagBtn);
+  card.appendChild(topRow);
 
   const qText = document.createElement("div");
   qText.className = "question-text";
@@ -624,18 +699,110 @@ export function renderIeltsExamView({
   timerBar.append(fontGroup, stopwatchPanel);
   sectionedEl.appendChild(timerBar);
 
-  // Build Sections 1, 2, 3
-  [1, 2, 3].forEach(secNum => {
+  const flaggedSet = loadFlaggedSet(uid, testId);
+  const viewState = getOrCreateViewState(uid, testId);
+  if (!gradedState) {
+    viewState.wrongOnly = false;
+  }
+
+  const sectionData = [1, 2, 3].map(secNum => {
     const secQs = questions
       .map((q, idx) => ({ q, idx }))
       .filter(({ q }) => Number(q.Section) === secNum);
     const secTitle = testMeta[`Section_${secNum}_Title`] || `Section ${secNum}`;
     const secBody = testMeta[`Section_${secNum}_Body`] || "";
     const secImg = testMeta[`Section_${secNum}_Image`] || "";
-    if (!secBody && secQs.length === 0) return;
+    if (!secBody && secQs.length === 0) return null;
+    return { secNum, secQs, secTitle, secBody, secImg };
+  }).filter(Boolean);
 
-    const secBlock = document.createElement("section");
-    secBlock.className = "quiz-section-block";
+  const availableSections = sectionData.map(s => s.secNum);
+  if (!availableSections.includes(viewState.activeSection)) {
+    viewState.activeSection = availableSections[0] || 1;
+  }
+
+  const wrongIndices = gradedState
+    ? questions.map((_, i) => i).filter(i => !gradedState.results?.[i]?.isCorrect)
+    : [];
+  const wrongOrBlankCount = wrongIndices.length;
+
+  // Section Tabs + Post-Grade Review Filter Toolbar
+  const toolbarEl = document.createElement("div");
+  toolbarEl.className = "ielts-section-toolbar";
+  toolbarEl.id = "ielts-section-toolbar";
+
+  const tablistEl = document.createElement("div");
+  tablistEl.className = "ielts-section-tabs";
+  tablistEl.id = "ielts-section-tablist";
+  tablistEl.setAttribute("role", "tablist");
+  tablistEl.setAttribute("aria-label", bi("IELTS 測驗分區切換", "IELTS Exam Sections"));
+  toolbarEl.appendChild(tablistEl);
+
+  let filterAllBtn = null;
+  let filterWrongBtn = null;
+  if (gradedState) {
+    const filterGroup = document.createElement("div");
+    filterGroup.className = "ielts-review-filter";
+    filterGroup.id = "ielts-review-filter";
+    filterGroup.setAttribute("role", "group");
+    filterGroup.setAttribute("aria-label", bi("錯題篩選", "Question filter"));
+
+    filterAllBtn = document.createElement("button");
+    filterAllBtn.type = "button";
+    filterAllBtn.id = "ielts-filter-all-btn";
+    filterAllBtn.className = "btn btn-sm ielts-filter-btn";
+    filterAllBtn.textContent = bi(`全部 (${questions.length})`, `All (${questions.length})`);
+
+    filterWrongBtn = document.createElement("button");
+    filterWrongBtn.type = "button";
+    filterWrongBtn.id = "ielts-filter-wrong-btn";
+    filterWrongBtn.className = "btn btn-sm ielts-filter-btn is-wrong-filter";
+    filterWrongBtn.textContent = bi(`只看錯題 / 未答 (${wrongOrBlankCount})`, `Wrong / Blank (${wrongOrBlankCount})`);
+
+    filterGroup.append(filterAllBtn, filterWrongBtn);
+    toolbarEl.appendChild(filterGroup);
+  }
+  sectionedEl.appendChild(toolbarEl);
+
+  const panelsWrap = document.createElement("div");
+  panelsWrap.className = "ielts-section-panels";
+  panelsWrap.id = "ielts-section-panels";
+  sectionedEl.appendChild(panelsWrap);
+
+  const sectionUiMap = new Map();
+  const questionUiMap = new Map();
+  const navPillMap = new Map();
+
+  // Build Sections 1, 2, 3 Tabpanels
+  sectionData.forEach(({ secNum, secQs, secTitle, secBody, secImg }) => {
+    const tabBtn = document.createElement("button");
+    tabBtn.type = "button";
+    tabBtn.role = "tab";
+    tabBtn.className = "ielts-section-tab";
+    tabBtn.id = `ielts-tab-sec-${secNum}`;
+    const isInitialActive = secNum === viewState.activeSection;
+    tabBtn.setAttribute("aria-selected", String(isInitialActive));
+    tabBtn.tabIndex = isInitialActive ? 0 : -1;
+
+    const tabLabelSpan = document.createElement("span");
+    tabLabelSpan.className = "ielts-tab-label";
+    tabLabelSpan.textContent = `Section ${secNum}`;
+    const tabCountSpan = document.createElement("span");
+    tabCountSpan.className = "ielts-tab-count";
+    tabBtn.append(tabLabelSpan, tabCountSpan);
+    tablistEl.appendChild(tabBtn);
+
+    // Tabpanel carries zero padding/margin/border so hidden="until-found" leaves no phantom strip
+    const panelEl = document.createElement("section");
+    panelEl.className = "ielts-section-panel";
+    panelEl.id = `ielts-panel-sec-${secNum}`;
+    panelEl.setAttribute("role", "tabpanel");
+    panelEl.setAttribute("aria-labelledby", tabBtn.id);
+    panelEl.dataset.section = String(secNum);
+    panelEl.hidden = isInitialActive ? false : "until-found";
+
+    const secBlock = document.createElement("div");
+    secBlock.className = "ielts-section-panel-inner quiz-section-block";
 
     const heading = document.createElement("h3");
     heading.className = "quiz-section-heading";
@@ -676,12 +843,20 @@ export function renderIeltsExamView({
     const quizPane = document.createElement("div");
     quizPane.className = "quiz-pane ielts-quiz-pane";
 
+    const emptyFilterNotice = document.createElement("div");
+    emptyFilterNotice.className = "ielts-empty-filter-notice";
+    emptyFilterNotice.hidden = true;
+    quizPane.appendChild(emptyFilterNotice);
+
+    const secSets = [];
     let currentSet = null;
     secQs.forEach(({ q, idx }) => {
       if (q.Group_Prompt || !currentSet) {
         currentSet = createIeltsQuestionSetBlock(
           q.Group_Prompt || `Questions ${q.Q_Num}`
         );
+        currentSet.indices = [];
+        secSets.push(currentSet);
         quizPane.appendChild(currentSet.setEl);
       }
 
@@ -691,6 +866,17 @@ export function renderIeltsExamView({
         idx,
         savedValue: answersMap[String(idx)] || "",
         gradedInfo,
+        isFlagged: flaggedSet.has(idx),
+        onToggleFlag: (qIdx) => {
+          if (flaggedSet.has(qIdx)) {
+            flaggedSet.delete(qIdx);
+          } else {
+            flaggedSet.add(qIdx);
+          }
+          saveFlaggedSet(uid, testId, flaggedSet);
+          syncNavAndTabs();
+          return flaggedSet.has(qIdx);
+        },
         onChange: (qIdx, val) => {
           answersMap[String(qIdx)] = val;
           saveAnswer(testId, qIdx, val);
@@ -699,14 +885,28 @@ export function renderIeltsExamView({
           }
           updateProgressBar();
           statusCountEl.textContent = bi(`已填答 ${countAnswered()} / ${questions.length} 題`, `Answered ${countAnswered()} / ${questions.length}`);
+          syncNavAndTabs();
         }
       });
+      currentSet.indices.push(idx);
       currentSet.itemsEl.appendChild(card);
+      questionUiMap.set(idx, { card, secNum, q, setObj: currentSet });
     });
 
     split.append(readingPane, quizPane);
     secBlock.appendChild(split);
-    sectionedEl.appendChild(secBlock);
+    panelEl.appendChild(secBlock);
+    panelsWrap.appendChild(panelEl);
+
+    sectionUiMap.set(secNum, {
+      secNum,
+      secQs,
+      tabBtn,
+      tabCountSpan,
+      panelEl,
+      secSets,
+      emptyFilterNotice
+    });
 
     renderInteractiveReadingPassage({
       bodyEl,
@@ -720,6 +920,308 @@ export function renderIeltsExamView({
       preserveExisting: true
     });
   });
+
+  // Sticky Bottom Question Navigator (1-40 + Prev/Next + Flag / Status indicators)
+  const navBar = document.createElement("nav");
+  navBar.className = "ielts-question-nav-bar";
+  navBar.id = "ielts-question-nav-bar";
+  navBar.setAttribute("aria-label", bi("題號導覽與作答狀態", "IELTS Question Navigator"));
+
+  const navHead = document.createElement("div");
+  navHead.className = "ielts-nav-head";
+
+  const navMeta = document.createElement("div");
+  navMeta.className = "ielts-nav-meta";
+  const navTitle = document.createElement("span");
+  navTitle.className = "ielts-nav-title";
+  navTitle.textContent = bi("題號導覽", "Questions");
+
+  const navLegend = document.createElement("span");
+  navLegend.className = "ielts-nav-legend";
+  navLegend.innerHTML = gradedState
+    ? `<span class="ielts-legend-chip is-correct"><span aria-hidden="true">✓</span> ${bi("答對", "Correct")}</span><span class="ielts-legend-chip is-wrong"><span aria-hidden="true">✗</span> ${bi("錯題 / 未答", "Wrong / Blank")}</span><span class="ielts-legend-chip is-flag"><span aria-hidden="true">🚩</span> ${bi("標記", "Flag")}</span>`
+    : `<span class="ielts-legend-chip is-done"><span aria-hidden="true">●</span> ${bi("已答", "Answered")}</span><span class="ielts-legend-chip is-flag"><span aria-hidden="true">🚩</span> ${bi("標記複查", "Flagged")}</span>`;
+  navMeta.append(navTitle, navLegend);
+
+  const navControls = document.createElement("div");
+  navControls.className = "ielts-nav-actions";
+
+  const navPrevBtn = document.createElement("button");
+  navPrevBtn.type = "button";
+  navPrevBtn.id = "ielts-nav-prev-btn";
+  navPrevBtn.className = "btn btn-sm ielts-nav-step-btn";
+  navPrevBtn.textContent = bi("‹ 上一題", "‹ Prev");
+
+  const navNextBtn = document.createElement("button");
+  navNextBtn.type = "button";
+  navNextBtn.id = "ielts-nav-next-btn";
+  navNextBtn.className = "btn btn-sm ielts-nav-step-btn";
+  navNextBtn.textContent = bi("下一題 ›", "Next ›");
+
+  const navToggleBtn = document.createElement("button");
+  navToggleBtn.type = "button";
+  navToggleBtn.id = "ielts-nav-toggle-btn";
+  navToggleBtn.className = "btn btn-sm ielts-nav-collapse-btn";
+
+  navControls.append(navPrevBtn, navNextBtn, navToggleBtn);
+  navHead.append(navMeta, navControls);
+
+  const navPillsWrap = document.createElement("div");
+  navPillsWrap.className = "ielts-nav-pills";
+  navPillsWrap.id = "ielts-nav-pills";
+
+  sectionData.forEach(({ secNum, secQs }) => {
+    const groupEl = document.createElement("div");
+    groupEl.className = "ielts-nav-sec-group";
+    groupEl.dataset.section = String(secNum);
+
+    const secTag = document.createElement("span");
+    secTag.className = "ielts-nav-sec-tag";
+    secTag.setAttribute("aria-hidden", "true");
+    secTag.textContent = `S${secNum}`;
+    groupEl.appendChild(secTag);
+
+    secQs.forEach(({ q, idx }) => {
+      const pill = document.createElement("button");
+      pill.type = "button";
+      pill.className = "ielts-nav-pill";
+      pill.id = `ielts-nav-pill-${idx}`;
+      pill.dataset.index = String(idx);
+      pill.dataset.section = String(secNum);
+
+      const numSpan = document.createElement("span");
+      numSpan.className = "ielts-nav-pill-num";
+      numSpan.textContent = String(q.Q_Num);
+
+      const markSpan = document.createElement("span");
+      markSpan.className = "ielts-nav-pill-mark";
+      markSpan.setAttribute("aria-hidden", "true");
+
+      pill.append(numSpan, markSpan);
+      pill.addEventListener("click", () => jumpToQuestion(idx));
+      groupEl.appendChild(pill);
+      navPillMap.set(idx, { pill, markSpan, secNum, q });
+    });
+    navPillsWrap.appendChild(groupEl);
+  });
+
+  navBar.append(navHead, navPillsWrap);
+
+  const syncNavCollapse = () => {
+    const collapsed = Boolean(viewState.navCollapsed);
+    navPillsWrap.hidden = collapsed;
+    navBar.classList.toggle("is-collapsed", collapsed);
+    navToggleBtn.setAttribute("aria-expanded", String(!collapsed));
+    navToggleBtn.textContent = collapsed ? bi("展開題號 ▴", "Expand ▴") : bi("收合 ▾", "Collapse ▾");
+  };
+  syncNavCollapse();
+  navToggleBtn.addEventListener("click", () => {
+    viewState.navCollapsed = !viewState.navCollapsed;
+    syncNavCollapse();
+  });
+
+  const syncNavAndTabs = () => {
+    sectionUiMap.forEach((secObj) => {
+      const { secNum, secQs, tabBtn, tabCountSpan } = secObj;
+      const flagCount = secQs.reduce((n, { idx }) => n + (flaggedSet.has(idx) ? 1 : 0), 0);
+      tabCountSpan.className = "ielts-tab-count";
+      if (gradedState) {
+        const rightCount = secQs.reduce((n, { idx }) => n + (gradedState.results?.[idx]?.isCorrect ? 1 : 0), 0);
+        const perfect = rightCount === secQs.length;
+        tabCountSpan.textContent = `${rightCount}/${secQs.length}`;
+        tabCountSpan.classList.add(perfect ? "is-perfect" : "has-mistakes");
+      } else {
+        const ansCount = secQs.reduce((n, { idx }) => (
+          String(answersMap[String(idx)] || "").trim().length > 0 ? n + 1 : n
+        ), 0);
+        tabCountSpan.textContent = flagCount > 0 ? `${ansCount}/${secQs.length} · 🚩${flagCount}` : `${ansCount}/${secQs.length}`;
+      }
+      tabBtn.setAttribute("aria-selected", String(secNum === viewState.activeSection));
+      tabBtn.tabIndex = secNum === viewState.activeSection ? 0 : -1;
+    });
+
+    navPillMap.forEach((entry, idx) => {
+      const { pill, markSpan, secNum, q } = entry;
+      const isAnswered = String(answersMap[String(idx)] || "").trim().length > 0;
+      const isFlagged = flaggedSet.has(idx);
+      const gradedInfo = gradedState?.results?.[idx] || null;
+
+      pill.classList.toggle("is-active-sec", secNum === viewState.activeSection);
+      pill.classList.toggle("is-current", idx === viewState.activeQIdx);
+      pill.classList.toggle("is-flagged", isFlagged);
+      pill.classList.toggle("is-answered", !gradedInfo && isAnswered);
+      pill.classList.toggle("is-correct", Boolean(gradedInfo && gradedInfo.isCorrect));
+      pill.classList.toggle("is-wrong", Boolean(gradedInfo && !gradedInfo.isCorrect));
+
+      const statusParts = [`Question ${q.Q_Num}`];
+      let glyph = "";
+      if (gradedInfo) {
+        glyph = gradedInfo.isCorrect ? "✓" : "✗";
+        statusParts.push(gradedInfo.isCorrect ? bi("答對", "Correct") : (gradedInfo.isAnswered ? bi("答錯", "Incorrect") : bi("未作答", "Blank")));
+      } else if (isAnswered) {
+        statusParts.push(bi("已填答", "Answered"));
+      } else {
+        statusParts.push(bi("未填答", "Unanswered"));
+      }
+      if (isFlagged) {
+        glyph = `🚩${glyph}`;
+        statusParts.push(bi("已標記", "Flagged"));
+      }
+      markSpan.textContent = glyph;
+      pill.setAttribute("aria-label", statusParts.join(" · "));
+    });
+  };
+
+  const preferAutoScroll = () => (
+    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth"
+  );
+
+  const switchToSection = (secNum, { focusTab = false, scrollTop = false } = {}) => {
+    if (!availableSections.includes(secNum)) return;
+    viewState.activeSection = secNum;
+
+    sectionUiMap.forEach((secObj) => {
+      const isSelected = secObj.secNum === secNum;
+      secObj.panelEl.hidden = isSelected ? false : "until-found";
+      secObj.tabBtn.setAttribute("aria-selected", String(isSelected));
+      secObj.tabBtn.tabIndex = isSelected ? 0 : -1;
+      if (isSelected) {
+        secObj.tabBtn.scrollIntoView({ block: "nearest", inline: "nearest" });
+        if (focusTab) secObj.tabBtn.focus({ preventScroll: true });
+      }
+    });
+
+    syncNavAndTabs();
+    if (scrollTop) {
+      sectionUiMap.get(secNum)?.panelEl?.scrollIntoView({ behavior: preferAutoScroll(), block: "start" });
+    }
+  };
+
+  const applyWrongOnlyFilter = (nextWrongOnly = viewState.wrongOnly) => {
+    viewState.wrongOnly = Boolean(gradedState && nextWrongOnly);
+    if (filterAllBtn) filterAllBtn.setAttribute("aria-pressed", String(!viewState.wrongOnly));
+    if (filterWrongBtn) filterWrongBtn.setAttribute("aria-pressed", String(viewState.wrongOnly));
+    filterAllBtn?.classList.toggle("is-active", !viewState.wrongOnly);
+    filterWrongBtn?.classList.toggle("is-active", viewState.wrongOnly);
+
+    sectionUiMap.forEach((secObj) => {
+      let visibleInSec = 0;
+      secObj.secSets.forEach((setObj) => {
+        let visibleInSet = 0;
+        setObj.indices.forEach((idx) => {
+          const ui = questionUiMap.get(idx);
+          const isCorrect = Boolean(gradedState?.results?.[idx]?.isCorrect);
+          const shouldHide = Boolean(viewState.wrongOnly && isCorrect);
+          if (ui?.card) ui.card.hidden = shouldHide;
+          if (!shouldHide) {
+            visibleInSet += 1;
+            visibleInSec += 1;
+          }
+        });
+        setObj.setEl.hidden = viewState.wrongOnly && visibleInSet === 0;
+      });
+
+      const notice = secObj.emptyFilterNotice;
+      if (viewState.wrongOnly && visibleInSec === 0) {
+        notice.hidden = false;
+        notice.innerHTML = "";
+        const msg = document.createElement("span");
+        if (wrongOrBlankCount === 0) {
+          msg.textContent = bi("🎉 恭喜！本回全數答對，沒有任何錯題。", "🎉 Perfect score! No mistakes or blanks in this test.");
+          notice.appendChild(msg);
+        } else {
+          const firstOtherMistakeSec = availableSections.find(s =>
+            s !== secObj.secNum && sectionUiMap.get(s)?.secQs.some(({ idx }) => !gradedState?.results?.[idx]?.isCorrect)
+          );
+          msg.textContent = bi(`✓ Section ${secObj.secNum} 題目已全數答對。`, `✓ All questions in Section ${secObj.secNum} are correct.`);
+          notice.appendChild(msg);
+          if (firstOtherMistakeSec) {
+            const jumpSecBtn = document.createElement("button");
+            jumpSecBtn.type = "button";
+            jumpSecBtn.className = "btn btn-sm btn-primary";
+            jumpSecBtn.textContent = bi(`前往有錯題的 Section ${firstOtherMistakeSec}`, `Go to Section ${firstOtherMistakeSec} mistakes`);
+            jumpSecBtn.addEventListener("click", () => switchToSection(firstOtherMistakeSec, { scrollTop: true }));
+            notice.appendChild(jumpSecBtn);
+          }
+        }
+      } else {
+        notice.hidden = true;
+      }
+    });
+  };
+
+  const jumpToQuestion = (idx) => {
+    const ui = questionUiMap.get(idx);
+    if (!ui) return;
+    viewState.activeQIdx = idx;
+    if (gradedState && viewState.wrongOnly && gradedState.results?.[idx]?.isCorrect) {
+      applyWrongOnlyFilter(false);
+    }
+    if (viewState.activeSection !== ui.secNum) {
+      switchToSection(ui.secNum, { focusTab: false, scrollTop: false });
+    } else {
+      syncNavAndTabs();
+    }
+    requestAnimationFrame(() => {
+      ui.card.scrollIntoView({ behavior: preferAutoScroll(), block: "center" });
+      ui.card.focus({ preventScroll: true });
+      ui.card.classList.add("is-nav-target");
+      setTimeout(() => ui.card.classList.remove("is-nav-target"), 1100);
+    });
+  };
+
+  const stepQuestion = (delta) => {
+    const pool = (gradedState && viewState.wrongOnly && wrongIndices.length > 0)
+      ? wrongIndices
+      : questions.map((_, i) => i);
+    if (pool.length === 0) return;
+    const curPos = pool.indexOf(viewState.activeQIdx);
+    const nextPos = curPos === -1
+      ? (delta > 0 ? 0 : pool.length - 1)
+      : (curPos + delta + pool.length) % pool.length;
+    jumpToQuestion(pool[nextPos]);
+  };
+
+  navPrevBtn.addEventListener("click", () => stepQuestion(-1));
+  navNextBtn.addEventListener("click", () => stepQuestion(1));
+
+  // Wire section tabs (click + roving tabindex arrow-key navigation per ARIA tabs pattern)
+  sectionUiMap.forEach(({ secNum, tabBtn }) => {
+    tabBtn.addEventListener("click", () => switchToSection(secNum, { focusTab: false, scrollTop: false }));
+  });
+
+  tablistEl.addEventListener("keydown", (e) => {
+    const tabs = availableSections.map(s => sectionUiMap.get(s).tabBtn);
+    const curIdx = tabs.indexOf(document.activeElement);
+    if (curIdx === -1) return;
+    let nextPos = null;
+    if (e.key === "ArrowRight") nextPos = (curIdx + 1) % tabs.length;
+    else if (e.key === "ArrowLeft") nextPos = (curIdx - 1 + tabs.length) % tabs.length;
+    else if (e.key === "Home") nextPos = 0;
+    else if (e.key === "End") nextPos = tabs.length - 1;
+    if (nextPos !== null) {
+      e.preventDefault();
+      switchToSection(availableSections[nextPos], { focusTab: true, scrollTop: false });
+    }
+  });
+
+  // Sync tab selection if browser Find-in-Page reveals a match in a hidden section panel
+  panelsWrap.addEventListener("beforematch", (e) => {
+    const matchedPanel = e.target?.closest?.(".ielts-section-panel");
+    const matchedSec = Number(matchedPanel?.dataset?.section || 0);
+    if (matchedSec && availableSections.includes(matchedSec)) {
+      switchToSection(matchedSec, { focusTab: false, scrollTop: false });
+    }
+  });
+
+  if (filterAllBtn && filterWrongBtn) {
+    filterAllBtn.addEventListener("click", () => applyWrongOnlyFilter(false));
+    filterWrongBtn.addEventListener("click", () => applyWrongOnlyFilter(true));
+    applyWrongOnlyFilter(viewState.wrongOnly);
+  }
+
+  syncNavAndTabs();
+  sectionedEl.appendChild(navBar);
 
   // Bottom Exam Submit / Graded Summary & Gemini Review Prompt Panel
   const footerCard = document.createElement("section");
@@ -746,8 +1248,8 @@ export function renderIeltsExamView({
     const hint = document.createElement("p");
     hint.className = "form-hint";
     hint.textContent = bi(
-      "作答過程中不會顯示對錯；按下交卷批改後即會鎖定碼表、公佈全部正解並產生 Gemini 檢討 Prompt。",
-      "Answers stay hidden while solving. Submit to stop timer, view answers, and generate your Gemini review prompt."
+      "作答過程中不會顯示對錯；按下交卷批改後即會鎖定碼表、換算官方 GT Band 級分、統計各題型表現並產生 Gemini 檢討 Prompt。",
+      "Answers stay hidden while solving. Submit to stop timer, estimate GT Band score, analyze question types, and generate your Gemini prompt."
     );
 
     const btnWrap = document.createElement("div");
@@ -780,7 +1282,7 @@ export function renderIeltsExamView({
         ...graded
       });
       rebuildView();
-      footerCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      document.getElementById("ielts-result-card")?.scrollIntoView({ behavior: preferAutoScroll(), block: "nearest" });
     });
 
     const resetAttemptBtn = document.createElement("button");
@@ -803,6 +1305,10 @@ export function renderIeltsExamView({
     resultCard.id = "ielts-result-card";
 
     const elapsedSec = gradedState.elapsedSec || 0;
+    const bandInfo = gradedState.bandInfo || calculateIeltsGtBandScore(gradedState.correctCount, gradedState.total);
+    const typeStats = Array.isArray(gradedState.typeStats) && gradedState.typeStats.length > 0
+      ? gradedState.typeStats
+      : computeIeltsTypeStats(questions, gradedState);
     const promptText = buildIeltsGeminiReviewPrompt({
       testMeta,
       questions,
@@ -813,6 +1319,11 @@ export function renderIeltsExamView({
     const topStats = document.createElement("div");
     topStats.className = "ielts-result-stats";
     topStats.innerHTML = `
+      <div class="ielts-stat-box is-band-box">
+        <span class="ielts-stat-label">${bi("預估級分 (GT Reading)", "Estimated GT Band")}</span>
+        <strong class="ielts-stat-value ielts-band-value" id="ielts-band-score-val">Band ${escapeHtml(bandInfo.band)}</strong>
+        <span class="ielts-stat-sub">${escapeHtml(bi(bandInfo.labelZh, bandInfo.labelEn))}${bandInfo.isScaled ? ` · ${bandInfo.scaledOutOf40}/40` : ""}</span>
+      </div>
       <div class="ielts-stat-box">
         <span class="ielts-stat-label">${bi("本次得分", "Score")}</span>
         <strong class="ielts-stat-value">${gradedState.correctCount} / ${gradedState.total}</strong>
@@ -824,6 +1335,35 @@ export function renderIeltsExamView({
         <span class="ielts-stat-sub">${bi("已自動停止計時", "Stopwatch stopped")}</span>
       </div>
     `;
+
+    // Question-Type Accuracy Breakdown Panel
+    const breakdownBox = document.createElement("div");
+    breakdownBox.className = "ielts-type-breakdown";
+    breakdownBox.id = "ielts-type-breakdown";
+
+    const bdTitle = document.createElement("div");
+    bdTitle.className = "ielts-breakdown-title";
+    bdTitle.textContent = bi("📊 各題型正確率分析", "📊 Accuracy by Question Type");
+    breakdownBox.appendChild(bdTitle);
+
+    const bdGrid = document.createElement("div");
+    bdGrid.className = "ielts-breakdown-grid";
+    typeStats.forEach((stat) => {
+      const tierCls = stat.accuracyPct >= 80 ? "is-strong" : stat.accuracyPct >= 60 ? "is-mid" : "is-weak";
+      const row = document.createElement("div");
+      row.className = `ielts-type-row ${tierCls}${stat.isWeakest ? " is-weakest" : ""}`;
+      row.innerHTML = `
+        <div class="ielts-type-row-head">
+          <span class="ielts-type-name">${escapeHtml(bi(stat.labelZh, stat.labelEn))}${stat.isWeakest ? `<span class="ielts-weak-pill">${bi("弱項複習", "Focus")}</span>` : ""}</span>
+          <span class="ielts-type-score">${stat.correct} / ${stat.total} (${stat.accuracyPct}%)</span>
+        </div>
+        <div class="ielts-type-bar-track" aria-hidden="true">
+          <div class="ielts-type-bar-fill" style="width: ${stat.accuracyPct}%"></div>
+        </div>
+      `;
+      bdGrid.appendChild(row);
+    });
+    breakdownBox.appendChild(bdGrid);
 
     const actionRow = document.createElement("div");
     actionRow.className = "ielts-result-actions";
@@ -841,15 +1381,28 @@ export function renderIeltsExamView({
           copyBtn.textContent = bi("📋 一鍵複製給 Gemini 檢討 Prompt", "📋 Copy Gemini Review Prompt");
         }, 2500);
       } catch {
-        const ta = footerCard.querySelector(".ielts-prompt-textarea");
+        const ta = document.querySelector("#ielts-result-card .ielts-prompt-textarea");
         if (ta) {
-          footerCard.querySelector(".ielts-prompt-details")?.setAttribute("open", "");
+          document.querySelector("#ielts-result-card .ielts-prompt-details")?.setAttribute("open", "");
           ta.select();
           document.execCommand("copy");
           copyBtn.textContent = bi("✓ 已複製！可直接貼給 Gemini", "✓ Copied!");
         }
       }
     });
+
+    if (wrongOrBlankCount > 0) {
+      const reviewWrongBtn = document.createElement("button");
+      reviewWrongBtn.type = "button";
+      reviewWrongBtn.id = "ielts-jump-wrong-btn";
+      reviewWrongBtn.className = "btn";
+      reviewWrongBtn.textContent = bi(`🔍 只看 ${wrongOrBlankCount} 題錯題 / 未答`, `🔍 Review ${wrongOrBlankCount} Mistakes`);
+      reviewWrongBtn.addEventListener("click", () => {
+        applyWrongOnlyFilter(true);
+        jumpToQuestion(wrongIndices[0]);
+      });
+      actionRow.appendChild(reviewWrongBtn);
+    }
 
     const retakeBtn = document.createElement("button");
     retakeBtn.type = "button";
@@ -877,7 +1430,7 @@ export function renderIeltsExamView({
     ta.value = promptText;
     detailsEl.append(summaryEl, ta);
 
-    resultCard.append(topStats, actionRow, detailsEl);
+    resultCard.append(topStats, breakdownBox, actionRow, detailsEl);
     footerCard.appendChild(resultCard);
   }
 

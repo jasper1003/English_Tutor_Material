@@ -1,5 +1,5 @@
-import { bi, isEn } from "./i18n.js?v=20261125j";
-import { hasOwnedSofa } from "./shop-catalog.js?v=20261125j";
+import { bi, isEn } from "./i18n.js?v=20261125k";
+import { hasOwnedSofa } from "./shop-catalog.js?v=20261125k";
 
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
@@ -1099,6 +1099,119 @@ function parseMultiLetterTokens(raw) {
   )].sort();
 }
 
+const IELTS_GT_BAND_THRESHOLDS = [
+  { min: 40, band: "9.0", bandNum: 9.0, labelZh: "專家級（Expert）", labelEn: "Expert User" },
+  { min: 39, band: "8.5", bandNum: 8.5, labelZh: "極優秀（Very Good+）", labelEn: "Very Good User+" },
+  { min: 37, band: "8.0", bandNum: 8.0, labelZh: "極優秀（Very Good）", labelEn: "Very Good User" },
+  { min: 36, band: "7.5", bandNum: 7.5, labelZh: "優秀＋（Good+）", labelEn: "Good User+" },
+  { min: 34, band: "7.0", bandNum: 7.0, labelZh: "優秀（Good）", labelEn: "Good User" },
+  { min: 32, band: "6.5", bandNum: 6.5, labelZh: "熟練＋（Competent+）", labelEn: "Competent User+" },
+  { min: 30, band: "6.0", bandNum: 6.0, labelZh: "熟練（Competent）", labelEn: "Competent User" },
+  { min: 27, band: "5.5", bandNum: 5.5, labelZh: "中等＋（Modest+）", labelEn: "Modest User+" },
+  { min: 23, band: "5.0", bandNum: 5.0, labelZh: "中等（Modest）", labelEn: "Modest User" },
+  { min: 19, band: "4.5", bandNum: 4.5, labelZh: "有限＋（Limited+）", labelEn: "Limited User+" },
+  { min: 15, band: "4.0", bandNum: 4.0, labelZh: "有限（Limited）", labelEn: "Limited User" },
+  { min: 12, band: "3.5", bandNum: 3.5, labelZh: "基礎＋（Extremely Limited+）", labelEn: "Extremely Limited+" },
+  { min: 9, band: "3.0", bandNum: 3.0, labelZh: "基礎（Extremely Limited）", labelEn: "Extremely Limited" },
+  { min: 6, band: "2.5", bandNum: 2.5, labelZh: "入門（Intermittent）", labelEn: "Intermittent User" },
+  { min: 4, band: "2.0", bandNum: 2.0, labelZh: "初學（Intermittent）", labelEn: "Intermittent User" },
+  { min: 3, band: "1.5", bandNum: 1.5, labelZh: "初探（Non User+）", labelEn: "Non User+" },
+  { min: 1, band: "1.0", bandNum: 1.0, labelZh: "極初階（Non User）", labelEn: "Non User" }
+];
+
+/**
+ * Convert an IELTS General Training Reading raw score to an estimated Band Score (0.0-9.0)
+ * using the official 40-item GT Reading conversion thresholds (proportionally scaled if total != 40).
+ */
+export function calculateIeltsGtBandScore(correctCount, totalCount = 40) {
+  const safeTotal = Math.max(0, Math.trunc(Number(totalCount) || 0));
+  const safeCorrect = Math.max(0, Math.min(safeTotal || 40, Math.trunc(Number(correctCount) || 0)));
+  if (safeTotal === 0 || safeCorrect === 0) {
+    return {
+      band: "0.0",
+      bandNum: 0,
+      scaledOutOf40: 0,
+      isScaled: safeTotal > 0 && safeTotal !== 40,
+      labelZh: "未得分",
+      labelEn: "Did not attempt / 0"
+    };
+  }
+  const scaledOutOf40 = safeTotal === 40
+    ? safeCorrect
+    : Math.max(1, Math.min(40, Math.round((safeCorrect / safeTotal) * 40)));
+  const hit = IELTS_GT_BAND_THRESHOLDS.find(t => scaledOutOf40 >= t.min)
+    || IELTS_GT_BAND_THRESHOLDS[IELTS_GT_BAND_THRESHOLDS.length - 1];
+  return {
+    band: hit.band,
+    bandNum: hit.bandNum,
+    scaledOutOf40,
+    isScaled: safeTotal !== 40,
+    labelZh: hit.labelZh,
+    labelEn: hit.labelEn
+  };
+}
+
+const IELTS_TYPE_LABELS = {
+  TFNG: { labelZh: "TRUE / FALSE / NOT GIVEN", labelEn: "TRUE / FALSE / NOT GIVEN" },
+  YNNG: { labelZh: "YES / NO / NOT GIVEN", labelEn: "YES / NO / NOT GIVEN" },
+  MC: { labelZh: "單選題 (Multiple Choice)", labelEn: "Multiple Choice" },
+  MULTI2: { labelZh: "多選二 (Two-Letter Pick)", labelEn: "Two-Letter Pick" },
+  CHOICE_PILLS: { labelZh: "選配題 (Matching / Headings)", labelEn: "Matching / Headings" },
+  FILL: { labelZh: "填空題 (Completion)", labelEn: "Completion" },
+  SHORT: { labelZh: "簡答題 (Short Answer)", labelEn: "Short Answer" }
+};
+
+/**
+ * Summarize per-question-type accuracy across a graded IELTS Reading attempt.
+ */
+export function computeIeltsTypeStats(questions = [], gradeResult = null) {
+  const list = Array.isArray(questions) ? questions : [];
+  const results = Array.isArray(gradeResult?.results) ? gradeResult.results : [];
+  const groups = new Map();
+
+  list.forEach((q, idx) => {
+    const rawType = String(q?.Type || "FILL").trim().toUpperCase();
+    const typeKey = rawType === "SHORT" ? "FILL" : (rawType || "FILL");
+    if (!groups.has(typeKey)) {
+      const meta = IELTS_TYPE_LABELS[typeKey] || { labelZh: typeKey, labelEn: typeKey };
+      groups.set(typeKey, {
+        typeKey,
+        labelZh: meta.labelZh,
+        labelEn: meta.labelEn,
+        total: 0,
+        correct: 0,
+        wrong: 0,
+        blank: 0,
+        accuracyPct: 0,
+        isWeakest: false
+      });
+    }
+    const g = groups.get(typeKey);
+    const r = results[idx];
+    g.total += 1;
+    if (r?.isCorrect) {
+      g.correct += 1;
+    } else if (r?.isAnswered) {
+      g.wrong += 1;
+    } else {
+      g.blank += 1;
+    }
+  });
+
+  const stats = Array.from(groups.values());
+  let minAcc = 100;
+  for (const g of stats) {
+    g.accuracyPct = g.total > 0 ? Math.round((g.correct / g.total) * 100) : 0;
+    if (g.accuracyPct < minAcc) minAcc = g.accuracyPct;
+  }
+  if (minAcc < 100) {
+    for (const g of stats) {
+      g.isWeakest = g.accuracyPct === minAcc;
+    }
+  }
+  return stats;
+}
+
 /**
  * Grade an entire IELTS GT Reading attempt with support for:
  * - multiple accepted variants (`|`)
@@ -1164,6 +1277,8 @@ export function gradeIeltsExam(questions = [], userAnswersMap = {}) {
     results.push({
       index: idx,
       qNum: Number(q?.Q_Num || idx + 1),
+      qType: qType || "Q",
+      section: Number(q?.Section || 1),
       isCorrect,
       isAnswered: rawUser.length > 0,
       userAnswer: rawUser,
@@ -1174,7 +1289,9 @@ export function gradeIeltsExam(questions = [], userAnswersMap = {}) {
 
   const total = list.length;
   const accuracyPct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-  return { total, correctCount, accuracyPct, results };
+  const bandInfo = calculateIeltsGtBandScore(correctCount, total);
+  const typeStats = computeIeltsTypeStats(list, { results });
+  return { total, correctCount, accuracyPct, bandInfo, typeStats, results };
 }
 
 /**
@@ -1189,6 +1306,7 @@ export function buildIeltsGeminiReviewPrompt({
   scoreSheetUrl = "https://docs.google.com/spreadsheets/d/1cfru4X_afjJH15CeG6My7DZbneDbW6jETrMER9P4HH0/edit"
 } = {}) {
   const result = gradeResult || gradeIeltsExam(questions, {});
+  const bandInfo = result.bandInfo || calculateIeltsGtBandScore(result.correctCount, result.total);
   const durationLabel = formatExamDuration(elapsedSec);
   const testTitle = testMeta.Title || `IELTS GT Reading Test ${testMeta.Test_Num || ""}`;
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -1200,6 +1318,7 @@ export function buildIeltsGeminiReviewPrompt({
     `- 測驗名稱：${testTitle}`,
     `- 測驗日期：${todayIso}`,
     `- 作答得分：${result.correctCount} / ${result.total} 題（正確率 ${result.accuracyPct}%）`,
+    `- 預估級分：GT Reading Band ${bandInfo.band}`,
     `- 作答耗時：${durationLabel}（${Math.max(0, Math.trunc(elapsedSec))} 秒）`,
     "",
     "### 二、每題作答明細（題目 / 我的答案 / 正確答案 / 結果）"
