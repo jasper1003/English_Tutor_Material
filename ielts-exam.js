@@ -3,9 +3,9 @@ import {
   formatExamDuration,
   gradeIeltsExam,
   buildIeltsGeminiReviewPrompt
-} from "./app-helpers.js?v=20261125h";
-import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125h";
-import { bi } from "./i18n.js?v=20261125h";
+} from "./app-helpers.js?v=20261125i";
+import { renderInteractiveReadingPassage } from "./reading-scaffold.js?v=20261125i";
+import { bi } from "./i18n.js?v=20261125i";
 
 export const DEFAULT_IELTS_SHEET_ID = "";
 export const IELTS_SHEET_ID_STORAGE_KEY = "ielts_custom_sheet_id_v1";
@@ -63,7 +63,7 @@ export function setSavedIeltsSheetId(raw) {
 }
 
 export async function loadIeltsBank({ fetchRawTabFn = null } = {}) {
-  const mod = await import("./ielts-gt-data.js?v=20261125h");
+  const mod = await import("./ielts-gt-data.js?v=20261125i");
   let tests = Array.isArray(mod.IELTS_TESTS) ? mod.IELTS_TESTS.map(t => ({ ...t })) : [];
   let questions = Array.isArray(mod.IELTS_QUESTIONS) ? mod.IELTS_QUESTIONS.map(q => ({ ...q })) : [];
   let sourceKind = "bundled";
@@ -204,6 +204,56 @@ function flushActiveTimer() {
   const delta = Math.max(0, Math.min(5000, now - activeIeltsTimerState.lastTickMs));
   activeIeltsTimerState.elapsedMs += delta;
   activeIeltsTimerState.lastTickMs = now;
+}
+
+function formatIeltsRubricHtml(rawPrompt) {
+  const escaped = escapeHtml(String(rawPrompt || "").trim());
+  const directives = [
+    "NO MORE THAN THREE WORDS AND/OR A NUMBER",
+    "NO MORE THAN TWO WORDS AND/OR A NUMBER",
+    "NO MORE THAN THREE WORDS",
+    "NO MORE THAN TWO WORDS",
+    "ONE WORD ONLY AND/OR A NUMBER",
+    "ONE WORD ONLY",
+    "ONE OR TWO WORDS",
+    "TRUE, FALSE, or NOT GIVEN",
+    "TRUE / FALSE / NOT GIVEN",
+    "YES, NO, or NOT GIVEN",
+    "YES / NO / NOT GIVEN",
+    "TWO letters"
+  ];
+  let formatted = escaped;
+  for (const phrase of directives) {
+    const safePhrase = escapeHtml(phrase);
+    formatted = formatted.replaceAll(safePhrase, `<strong>${safePhrase}</strong>`);
+  }
+  return formatted;
+}
+
+function createIeltsQuestionSetBlock(groupPrompt) {
+  const setEl = document.createElement("div");
+  setEl.className = "ielts-question-set";
+
+  const headerEl = document.createElement("div");
+  headerEl.className = "ielts-set-header";
+
+  const text = String(groupPrompt || "").trim();
+  const colonIdx = text.indexOf(":");
+  if (colonIdx > 0 && colonIdx < 30) {
+    const titlePart = text.slice(0, colonIdx).trim();
+    const instrPart = text.slice(colonIdx + 1).trim();
+    headerEl.innerHTML = `
+      <div class="ielts-set-title">${escapeHtml(titlePart)}</div>
+      ${instrPart ? `<p class="ielts-set-instruction">${formatIeltsRubricHtml(instrPart)}</p>` : ""}
+    `;
+  } else {
+    headerEl.innerHTML = `<p class="ielts-set-instruction">${formatIeltsRubricHtml(text)}</p>`;
+  }
+
+  const itemsEl = document.createElement("div");
+  itemsEl.className = "ielts-set-items";
+  setEl.append(headerEl, itemsEl);
+  return { setEl, itemsEl };
 }
 
 function renderIeltsQuestionCard({
@@ -624,14 +674,15 @@ export function renderIeltsExamView({
     readingPane.appendChild(bodyEl);
 
     const quizPane = document.createElement("div");
-    quizPane.className = "quiz-pane";
+    quizPane.className = "quiz-pane ielts-quiz-pane";
 
+    let currentSet = null;
     secQs.forEach(({ q, idx }) => {
-      if (q.Group_Prompt) {
-        const grpBanner = document.createElement("div");
-        grpBanner.className = "ielts-group-prompt";
-        grpBanner.textContent = q.Group_Prompt;
-        quizPane.appendChild(grpBanner);
+      if (q.Group_Prompt || !currentSet) {
+        currentSet = createIeltsQuestionSetBlock(
+          q.Group_Prompt || `Questions ${q.Q_Num}`
+        );
+        quizPane.appendChild(currentSet.setEl);
       }
 
       const gradedInfo = gradedState?.results?.[idx] || null;
@@ -650,7 +701,7 @@ export function renderIeltsExamView({
           statusCountEl.textContent = bi(`已填答 ${countAnswered()} / ${questions.length} 題`, `Answered ${countAnswered()} / ${questions.length}`);
         }
       });
-      quizPane.appendChild(card);
+      currentSet.itemsEl.appendChild(card);
     });
 
     split.append(readingPane, quizPane);

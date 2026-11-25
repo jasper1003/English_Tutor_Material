@@ -1,5 +1,5 @@
-import { escapeHtml, speakWord } from "./app-helpers.js?v=20261125h";
-import { bi } from "./i18n.js?v=20261125h";
+import { escapeHtml, speakWord } from "./app-helpers.js?v=20261125i";
+import { bi } from "./i18n.js?v=20261125i";
 
 const HINTS_PREF_KEY = "reading_vocab_hints_on_v2";
 const VALID_MARK_VALUES = ["yellow", "mint", "blue"];
@@ -308,8 +308,18 @@ export function renderInteractiveReadingPassage({
 
   let sentenceCounter = 0;
   paragraphs.forEach(paraText => {
+    if (/^-{3,}$/.test(paraText)) {
+      const hrEl = document.createElement("hr");
+      hrEl.className = "reading-part-divider";
+      hrEl.setAttribute("aria-hidden", "true");
+      bodyEl.appendChild(hrEl);
+      return;
+    }
+
+    const isPartHeading = /^(?:Part\s+\d+\s*:|Section\s+[A-Z0-9]+(?:\s|$))/.test(paraText)
+      || /^(?:List of (?:Headings|People|Book Titles)|Possible Endings|Summaries)\b/i.test(paraText);
     const pEl = document.createElement("p");
-    pEl.className = "reading-paragraph";
+    pEl.className = isPartHeading ? "reading-paragraph reading-part-heading" : "reading-paragraph";
     const sentences = splitParagraphIntoSentences(paraText);
 
     sentences.forEach(sentenceStr => {
