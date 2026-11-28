@@ -18,6 +18,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 import {
   getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   doc,
   getDoc,
   setDoc,
@@ -38,15 +41,13 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 import {
-  FreelancerRoomScene,
-  AvatarPreviewScene,
   SKIN_TONES,
   BODY_BUILDS,
   HAIR_STYLES,
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261128a";
+} from "./avatar-presets.js?v=20261128b";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -71,7 +72,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261128a";
+} from "./shop-catalog.js?v=20261128b";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -79,7 +80,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261128a";
+} from "./room-grid.js?v=20261128b";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -111,16 +112,16 @@ import {
   normalizeEmailSearchPrefix,
   mergeStudentRecordsByUid,
   buildMergedPendingReviewItems
-} from "./app-helpers.js?v=20261128a";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261128a";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261128a";
+} from "./app-helpers.js?v=20261128b";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261128b";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261128b";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261128a";
+} from "./i18n.js?v=20261128b";
 
 applyStaticDomTranslations();
 
@@ -151,9 +152,48 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
-const firestoreDb = getFirestore(firebaseApp);
+let firestoreDb;
+try {
+  firestoreDb = initializeFirestore(firebaseApp, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  });
+} catch {
+  firestoreDb = getFirestore(firebaseApp);
+}
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
+
+let roomSceneModuleCache = null;
+let roomSceneModulePromise = null;
+
+async function getRoomSceneModule() {
+  if (roomSceneModuleCache) return roomSceneModuleCache;
+  if (roomSceneModulePromise) return roomSceneModulePromise;
+  roomSceneModulePromise = import("./room-scene.js?v=20261128b")
+    .then(mod => {
+      roomSceneModuleCache = mod;
+      return mod;
+    })
+    .catch(err => {
+      roomSceneModulePromise = null;
+      throw err;
+    });
+  return roomSceneModulePromise;
+}
+
+function scheduleRoomScenePrefetch() {
+  if (roomSceneModuleCache || roomSceneModulePromise) return;
+  const trigger = () => {
+    if (currentUser && !roomSceneModuleCache && !roomSceneModulePromise) {
+      getRoomSceneModule().catch(() => {});
+    }
+  };
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(trigger, { timeout: 2500 });
+  } else {
+    setTimeout(trigger, 1400);
+  }
+}
 
 const SUPER_ADMIN_EMAIL = "jasper931003@gmail.com";
 const SPREADSHEET_ID = "1DrKwyy-L9g_nHFBFJ0joLfsDE64vBb1ymjtKiaNQJ5U";
@@ -187,7 +227,7 @@ let authSessionNonce = 0;
 
 const LIVE_SHEETS_MODE_STORAGE_KEY = "studio_admin_live_sheets_v1";
 let curriculumSourceKind = "cdn"; // "cdn" | "live_sheets"
-let curriculumManifestHash = "20261128a";
+let curriculumManifestHash = "20261128b";
 const studentLessonDetailCache = new Map();
 const studentLessonDetailPromiseCache = new Map();
 
@@ -286,7 +326,7 @@ function setIeltsTestSyncStatus(testId, status) {
 
 async function getIeltsModule() {
   if (!ieltsModuleCache) {
-    ieltsModuleCache = await import("./ielts-exam.js?v=20261128a");
+    ieltsModuleCache = await import("./ielts-exam.js?v=20261128b");
   }
   return ieltsModuleCache;
 }
@@ -389,7 +429,7 @@ async function ensureIeltsCloudAttemptsLoaded({ force = false } = {}) {
   ieltsCloudAttemptsPromise = (async () => {
     try {
       const [mod] = await Promise.all([getIeltsModule(), ensureIeltsBankLoaded()]);
-      const snap = await getDocs(collection(firestoreDb, "users", uid, "ieltsAttempts"));
+      const snap = await getDocs(query(collection(firestoreDb, "users", uid, "ieltsAttempts"), limit(200)));
       if (!canSyncIeltsCloud() || currentUser.uid !== uid) return false;
 
       snap.forEach(docSnap => {
@@ -1287,25 +1327,33 @@ function hideAllPrimaryScreens() {
 }
 
 function showOnboardingScreen(isEditing = false) {
+  const reqNonce = authSessionNonce;
   isEditingAvatarFromRoom = isEditing;
   currentScreen = "onboarding";
   hideAllPrimaryScreens();
   populateOnboardingForm(currentUserProfile?.avatar || null, isEditing);
   document.getElementById("onboarding-view").classList.remove("hidden");
 
-  const stageEl = document.getElementById("avatar-preview-stage");
-  const baseValues = readAvatarFormValues();
-  const currentValues = {
-    ...baseValues,
-    shirtStyle: isEditing ? (currentUserProfile?.roomState?.shirtStyle || DEFAULT_SHIRT_STYLE) : DEFAULT_SHIRT_STYLE,
-    pantsStyle: isEditing ? (currentUserProfile?.roomState?.pantsStyle || DEFAULT_PANTS_STYLE) : DEFAULT_PANTS_STYLE
-  };
-  if (!avatarPreviewScene) {
-    avatarPreviewScene = new AvatarPreviewScene(stageEl, currentValues);
-  } else {
-    avatarPreviewScene.updateAvatar(currentValues);
-  }
-  sync3dSceneLifecycle();
+  getRoomSceneModule()
+    .then(({ AvatarPreviewScene }) => {
+      if (reqNonce !== authSessionNonce || currentScreen !== "onboarding") return;
+      const stageEl = document.getElementById("avatar-preview-stage");
+      if (!stageEl) return;
+      const latestValues = {
+        ...readAvatarFormValues(),
+        shirtStyle: isEditing ? (currentUserProfile?.roomState?.shirtStyle || DEFAULT_SHIRT_STYLE) : DEFAULT_SHIRT_STYLE,
+        pantsStyle: isEditing ? (currentUserProfile?.roomState?.pantsStyle || DEFAULT_PANTS_STYLE) : DEFAULT_PANTS_STYLE
+      };
+      if (!avatarPreviewScene) {
+        avatarPreviewScene = new AvatarPreviewScene(stageEl, latestValues);
+      } else {
+        avatarPreviewScene.updateAvatar(latestValues);
+      }
+      sync3dSceneLifecycle();
+    })
+    .catch(err => {
+      console.warn("Failed to load AvatarPreviewScene:", err?.message || err);
+    });
   if (isEditing) saveNavState();
 }
 
@@ -1604,7 +1652,7 @@ function syncRoomHUD() {
   }
 }
 
-const ROOM_STATE_FLUSH_DELAY_MS = 380;
+const ROOM_STATE_FLUSH_DELAY_MS = 1200;
 let pendingRoomStatePatch = null;
 let roomStateFlushTimer = null;
 let roomStateWriteChain = Promise.resolve(true);
@@ -1667,14 +1715,30 @@ function persistRoomState(patch, { immediate = false } = {}) {
   return Promise.resolve(true);
 }
 
-window.addEventListener("beforeunload", () => {
+const flushRoomStateOnLifecycleEnd = () => {
   if (pendingRoomStatePatch) {
     flushPendingRoomState();
   }
+};
+window.addEventListener("beforeunload", flushRoomStateOnLifecycleEnd);
+window.addEventListener("pagehide", flushRoomStateOnLifecycleEnd);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    flushRoomStateOnLifecycleEnd();
+  }
 });
 
-function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCamera = false } = {}) {
+async function applyProfileToRoomScene(profile, { fromWorkDesktop = false, preserveCamera = false } = {}) {
+  const reqNonce = authSessionNonce;
+  const expectedScreen = currentScreen;
+  const expectedSpectateUid = spectatingStudentUid;
+  const { FreelancerRoomScene } = await getRoomSceneModule();
+  if (reqNonce !== authSessionNonce || currentScreen !== expectedScreen || expectedSpectateUid !== spectatingStudentUid) {
+    return false;
+  }
+
   const wrap = document.getElementById("room-canvas-wrap");
+  if (!wrap) return false;
   const rs = profile?.roomState || {};
   const owned = normalizeOwnedItems(profile?.ownedItems);
   const avatarCfg = profile?.avatar || {
@@ -1855,7 +1919,9 @@ function spectateStudentRoom(targetUid, { preserveCamera = false } = {}) {
   hideAllPrimaryScreens();
   document.getElementById("room-view").classList.remove("hidden");
 
-  applyProfileToRoomScene(targetStu, { preserveCamera });
+  applyProfileToRoomScene(targetStu, { preserveCamera }).then((mounted) => {
+    if (mounted) sync3dSceneLifecycle();
+  });
   populateSpectateStudentSelect(targetStu.uid);
   sync3dSceneLifecycle();
   syncRoomHUD();
@@ -1887,6 +1953,7 @@ function enterRoomView(fromWorkDesktop = false) {
   stopAllListeningAudio();
   stopIeltsTimerIfLoaded();
   flushLessonActiveElapsedTime({ pause: true });
+  flushPendingRoomState();
   currentScreen = "room";
   activeLessonDate = null;
   activeLessonSyncCommission = null;
@@ -1894,7 +1961,9 @@ function enterRoomView(fromWorkDesktop = false) {
   const roomView = document.getElementById("room-view");
   roomView.classList.remove("hidden");
 
-  applyProfileToRoomScene(currentUserProfile, { fromWorkDesktop });
+  applyProfileToRoomScene(currentUserProfile, { fromWorkDesktop }).then((mounted) => {
+    if (mounted) sync3dSceneLifecycle();
+  });
 
   sync3dSceneLifecycle();
   syncRoomHUD();
@@ -1963,6 +2032,7 @@ async function openWorkDesktop({ restoreScrollY = null, track = null } = {}) {
   stopAllListeningAudio();
   stopIeltsTimerIfLoaded();
   flushLessonActiveElapsedTime({ pause: true });
+  flushPendingRoomState();
   currentScreen = "desktop";
   activeLessonDate = null;
   activeLessonSyncCommission = null;
@@ -2043,6 +2113,7 @@ function restoreOpenModalFromNav(saved) {
     if (!shopDialog.open) shopDialog.showModal();
   } else if (modal === "finance") {
     clearFeedback("finance-feedback");
+    ensureFinanceTransactionsListening();
     renderFinanceDialog();
     if (!financeDialog.open) financeDialog.showModal();
     updateRentCountdownUI();
@@ -2337,7 +2408,7 @@ function updateLiveSheetsToggleButton() {
 
 function applyCurriculumManifest(manifestData) {
   const rawLessons = Array.isArray(manifestData?.lessons) ? manifestData.lessons : [];
-  curriculumManifestHash = String(manifestData?.hash || "20261128a");
+  curriculumManifestHash = String(manifestData?.hash || "20261128b");
   db.lessons = [...rawLessons].sort((a, b) => String(a.Date || "").localeCompare(String(b.Date || "")));
 }
 
@@ -2383,7 +2454,7 @@ export async function ensureStudentLessonDetailLoaded(dateStr, { force = false }
   }
 
   const unitMeta = db.lessons.find(l => l.Date === cleanDate);
-  const unitHash = String(unitMeta?.hash || curriculumManifestHash || "20261128a");
+  const unitHash = String(unitMeta?.hash || curriculumManifestHash || "20261128b");
   const p = (async () => {
     const unitUrl = new URL(
       `./data/curriculum/units/${encodeURIComponent(cleanDate)}.json?v=${encodeURIComponent(unitHash)}`,
@@ -3315,7 +3386,7 @@ export function buildSectionedExamBlocks(passageText, lessonQuiz) {
   };
 }
 
-export function renderListeningSectionCard(sec) {
+export function renderListeningSectionCard(sec, { lazy = true } = {}) {
   const pane = document.createElement("article");
   pane.className = "listening-pane";
 
@@ -3335,9 +3406,36 @@ export function renderListeningSectionCard(sec) {
   const audioEl = document.createElement("audio");
   audioEl.className = "listening-audio-el";
   audioEl.controls = true;
-  audioEl.preload = "metadata";
+  if (lazy) {
+    audioEl.loading = "lazy";
+  }
   if (sec.audioSrc) {
     audioEl.src = sec.audioSrc;
+    if (!lazy || Object.hasOwn(HTMLMediaElement.prototype, "loading")) {
+      audioEl.preload = "metadata";
+    } else {
+      // Feature-detected IntersectionObserver fallback: defer metadata range probes until near viewport
+      audioEl.preload = "none";
+      const activateAudioMetadata = () => {
+        if (audioEl.preload !== "metadata" && audioEl.preload !== "auto") {
+          audioEl.preload = "metadata";
+        }
+      };
+      audioEl.addEventListener("focusin", activateAudioMetadata, { once: true });
+      audioEl.addEventListener("pointerenter", activateAudioMetadata, { once: true });
+      if (typeof IntersectionObserver === "function") {
+        const mediaObs = new IntersectionObserver((entries, observer) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            activateAudioMetadata();
+            observer.unobserve(audioEl);
+          }
+        }, { rootMargin: "250px 0px" });
+        requestAnimationFrame(() => {
+          if (audioEl.isConnected) mediaObs.observe(audioEl);
+        });
+      }
+    }
   }
 
   let activeRate = 1;
@@ -3706,7 +3804,7 @@ async function renderLesson(dateStr) {
     clearReadingScaffold();
 
     // 0. Listening sections FIRST at the very top (audio + speed controls + collapsed transcript paired with its MCQs)
-    (sectionedExam.listeningSections || []).forEach(sec => {
+    (sectionedExam.listeningSections || []).forEach((sec, secIdx) => {
       const secBlock = document.createElement("section");
       secBlock.className = "quiz-section-block quiz-listening-block";
 
@@ -3718,7 +3816,7 @@ async function renderLesson(dateStr) {
       const split = document.createElement("div");
       split.className = "ielts-split";
 
-      const listeningPane = renderListeningSectionCard(sec);
+      const listeningPane = renderListeningSectionCard(sec, { lazy: secIdx > 0 });
 
       const quizPane = document.createElement("div");
       quizPane.className = "quiz-pane";
@@ -4196,7 +4294,7 @@ async function loadAdminsList() {
   const listEl = document.getElementById("admin-list");
   listEl.innerHTML = `<li class="form-hint">${bi("正在載入管理員清單...", "Loading admins list...")}</li>`;
   try {
-    const snap = await getDocs(query(collection(firestoreDb, "admins"), orderBy("email")));
+    const snap = await getDocs(query(collection(firestoreDb, "admins"), orderBy("email"), limit(100)));
     listEl.innerHTML = "";
     if (snap.empty) {
       listEl.innerHTML = `<li class="form-hint">${bi("目前尚未新增其他管理員。", "No additional admins added yet.")}</li>`;
@@ -4445,6 +4543,7 @@ setupModalDialogFallbacks(
   [document.getElementById("close-finance-btn"), document.getElementById("footer-close-finance-btn")],
   () => {
     clearFeedback("finance-feedback");
+    stopTransactionsRealtimeListener();
   }
 );
 
@@ -4581,6 +4680,7 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
   btn.disabled = true;
   try {
     if (settingsDialog.open) settingsDialog.close();
+    await flushPendingRoomState();
     clearSavedNavState(currentUser?.uid);
     await signOut(auth);
   } finally {
@@ -5572,9 +5672,13 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261128a`;
+    img.src = `${item.previewImage}?v=20261128b`;
     img.alt = getShopItemName(item);
+    img.width = 240;
+    img.height = 180;
     img.loading = "lazy";
+    img.decoding = "async";
+    img.fetchPriority = "low";
     previewBox.appendChild(img);
   } else if (item.wallColor) {
     previewBox.innerHTML = `
@@ -6910,7 +7014,10 @@ document.getElementById("room-shop-btn").addEventListener("click", () => {
 
 // Simple Monthly Financial Report & Rent Countdown Controller
 const financeDialog = document.getElementById("finance-dialog");
+const FINANCE_TX_PAGE_SIZE = 50;
 let cachedTransactions = [];
+let financeTxLimit = FINANCE_TX_PAGE_SIZE;
+let transactionsHasMore = false;
 let unsubscribeTransactionsRealtime = null;
 let activeFinanceFilter = "all"; // "all" | "expense" | "income"
 let activeFinanceMonth = getMonthKey();
@@ -7284,6 +7391,12 @@ function renderFinanceDialog() {
     });
   }
 
+  const loadMoreBtn = document.getElementById("finance-load-more-btn");
+  if (loadMoreBtn) {
+    loadMoreBtn.classList.toggle("hidden", !transactionsHasMore);
+    loadMoreBtn.disabled = false;
+  }
+
   updateRentCountdownUI();
 }
 
@@ -7377,21 +7490,27 @@ async function maybeCollectMonthlyRent() {
   }
 }
 
-function startTransactionsRealtimeListener(uid, nonce) {
+function stopTransactionsRealtimeListener() {
   if (unsubscribeTransactionsRealtime) {
     unsubscribeTransactionsRealtime();
     unsubscribeTransactionsRealtime = null;
   }
+}
+
+function startTransactionsRealtimeListener(uid, nonce, txLimit = financeTxLimit) {
+  stopTransactionsRealtimeListener();
+  const safeLimit = Math.max(FINANCE_TX_PAGE_SIZE, Math.min(500, Math.trunc(Number(txLimit) || FINANCE_TX_PAGE_SIZE)));
   const q = query(
     collection(firestoreDb, "users", uid, "transactions"),
     orderBy("createdAt", "desc"),
-    limit(100)
+    limit(safeLimit + 1)
   );
   unsubscribeTransactionsRealtime = onSnapshot(q, (snap) => {
     if (nonce !== authSessionNonce) return;
-    const rows = [];
-    snap.forEach(d => rows.push({ id: d.id, ...(d.data() || {}) }));
-    cachedTransactions = rows;
+    const allRows = [];
+    snap.forEach(d => allRows.push({ id: d.id, ...(d.data() || {}) }));
+    transactionsHasMore = allRows.length > safeLimit;
+    cachedTransactions = transactionsHasMore ? allRows.slice(0, safeLimit) : allRows;
     if (financeDialog.open) {
       renderFinanceDialog();
     }
@@ -7400,13 +7519,31 @@ function startTransactionsRealtimeListener(uid, nonce) {
   });
 }
 
+function ensureFinanceTransactionsListening({ expandPage = false } = {}) {
+  if (!currentUser?.uid) return;
+  if (expandPage) {
+    financeTxLimit = Math.min(500, financeTxLimit + FINANCE_TX_PAGE_SIZE);
+    startTransactionsRealtimeListener(currentUser.uid, authSessionNonce, financeTxLimit);
+    return;
+  }
+  if (!unsubscribeTransactionsRealtime) {
+    startTransactionsRealtimeListener(currentUser.uid, authSessionNonce, financeTxLimit);
+  }
+}
+
 document.getElementById("room-finance-btn").addEventListener("click", () => {
   if (spectatingStudentUid) return;
   if (roomScene?.editMode) roomScene.exitFurnitureEditMode({ commit: true });
   clearFeedback("finance-feedback");
+  ensureFinanceTransactionsListening();
   renderFinanceDialog();
   if (!financeDialog.open) financeDialog.showModal();
   updateRentCountdownUI();
+});
+document.getElementById("finance-load-more-btn")?.addEventListener("click", (e) => {
+  if (!currentUser?.uid || !transactionsHasMore) return;
+  e.currentTarget.disabled = true;
+  ensureFinanceTransactionsListening({ expandPage: true });
 });
 document.getElementById("finance-month-select").addEventListener("change", (e) => {
   activeFinanceMonth = e.currentTarget.value;
@@ -7602,6 +7739,8 @@ function stopRealtimeListeners() {
   adminUsersSearchTerm = "";
   adminUsersLoading = false;
   cachedTransactions = [];
+  financeTxLimit = FINANCE_TX_PAGE_SIZE;
+  transactionsHasMore = false;
   lastAdminPendingTotal = -1;
   lastAdminReviewSig = "";
   lastSpectatedVisualSig = "";
@@ -8041,7 +8180,11 @@ function startUserRealtimeListener(uid, nonce) {
   }
   unsubscribeUserRealtime = onSnapshot(doc(firestoreDb, "users", uid), (snap) => {
     if (nonce !== authSessionNonce || !snap.exists()) return;
-    const data = snap.data() || {};
+    const rawData = snap.data() || {};
+    const mergedRoomState = pendingRoomStatePatch
+      ? buildMergedRoomState(rawData.roomState, pendingRoomStatePatch)
+      : rawData.roomState;
+    const data = pendingRoomStatePatch ? { ...rawData, roomState: mergedRoomState } : rawData;
     const prevApproved = { ...userApprovedLessons };
     const nextApproved = sanitizeBoolMap(data.approvedLessons);
     const newlyApproved = Object.keys(nextApproved).some(k => nextApproved[k] && !prevApproved[k]);
@@ -8783,37 +8926,50 @@ document.getElementById("admin-reset-all-lessons-btn")?.addEventListener("click"
   btn.textContent = bi("歸零處理中…", "Resetting…");
   clearFeedback("admin-review-feedback");
   try {
-    const snap = await getDocs(collection(firestoreDb, "users"));
-    const targets = snap.docs.filter(docSnap => {
-      const d = docSnap.data() || {};
-      return (
-        Object.keys(d.approvedLessons || {}).length > 0
-        || Object.keys(d.submittedLessons || {}).length > 0
-        || Object.keys(d.completionOverrides || {}).length > 0
-        || Object.keys(d.xpAwardedLessons || {}).length > 0
-        || Object.keys(d.submissionMetrics || {}).length > 0
-      );
-    });
-    for (let i = 0; i < targets.length; i += 400) {
-      const batch = writeBatch(firestoreDb);
-      targets.slice(i, i + 400).forEach(docSnap => {
-        batch.update(docSnap.ref, {
-          approvedLessons: {},
-          submittedLessons: {},
-          completionOverrides: {},
-          xpAwardedLessons: {},
-          submissionMetrics: {},
-          updatedAt: serverTimestamp()
-        });
+    let resetUserCount = 0;
+    let cursorDoc = null;
+    while (true) {
+      const constraints = [orderBy("__name__"), limit(200)];
+      if (cursorDoc) constraints.push(startAfter(cursorDoc));
+      const snap = await getDocs(query(collection(firestoreDb, "users"), ...constraints));
+      if (snap.empty) break;
+
+      const targets = snap.docs.filter(docSnap => {
+        const d = docSnap.data() || {};
+        return (
+          Object.keys(d.approvedLessons || {}).length > 0
+          || Object.keys(d.submittedLessons || {}).length > 0
+          || Object.keys(d.completionOverrides || {}).length > 0
+          || Object.keys(d.xpAwardedLessons || {}).length > 0
+          || Object.keys(d.submissionMetrics || {}).length > 0
+        );
       });
-      await batch.commit();
+      if (targets.length > 0) {
+        const batch = writeBatch(firestoreDb);
+        targets.forEach(docSnap => {
+          batch.update(docSnap.ref, {
+            approvedLessons: {},
+            submittedLessons: {},
+            completionOverrides: {},
+            xpAwardedLessons: {},
+            submissionMetrics: {},
+            updatedAt: serverTimestamp()
+          });
+        });
+        await batch.commit();
+        resetUserCount += targets.length;
+      }
+      if (snap.docs.length < 200) break;
+      cursorDoc = snap.docs[snap.docs.length - 1];
     }
     try {
-      const qSnap = await getDocs(query(collection(firestoreDb, "reviewQueue"), limit(500)));
-      for (let i = 0; i < qSnap.docs.length; i += 400) {
+      while (true) {
+        const qSnap = await getDocs(query(collection(firestoreDb, "reviewQueue"), limit(200)));
+        if (qSnap.empty) break;
         const qBatch = writeBatch(firestoreDb);
-        qSnap.docs.slice(i, i + 400).forEach(qDoc => qBatch.delete(qDoc.ref));
+        qSnap.docs.forEach(qDoc => qBatch.delete(qDoc.ref));
         await qBatch.commit();
+        if (qSnap.docs.length < 200) break;
       }
       pendingReviewQueue = [];
     } catch (qErr) {
@@ -8836,10 +8992,10 @@ document.getElementById("admin-reset-all-lessons-btn")?.addEventListener("click"
     showFeedback(
       "admin-review-feedback",
       "success",
-      targets.length > 0
+      resetUserCount > 0
         ? bi(
-            `已將 ${targets.length} 位玩家的所有關卡完成狀態歸零！重新完成單元一樣可領取英蚌與 XP。`,
-            `Reset quest progress for ${targets.length} player(s)! Quests can now be replayed.`
+            `已將 ${resetUserCount} 位玩家的所有關卡完成狀態歸零！重新完成單元一樣可領取英蚌與 XP。`,
+            `Reset quest progress for ${resetUserCount} player(s)! Quests can now be replayed.`
           )
         : bi("所有玩家的關卡完成狀態原本就都已歸零囉！", "All players' quest progress is already at zero!")
     );
@@ -9032,9 +9188,11 @@ onAuthStateChanged(auth, async (user) => {
     const displayName = formatDisplayName(user, profileResult.data);
     updateHeaderAccountUI(user, role, displayName, profileResult.data?.clams ?? STARTER_CLAMS);
     startUserRealtimeListener(user.uid, nonce);
-    startTransactionsRealtimeListener(user.uid, nonce);
     updateRentCountdownUI();
     maybeCollectMonthlyRent();
+    if (profileResult.data?.avatar) {
+      scheduleRoomScenePrefetch();
+    }
     if (role === "super_admin" || role === "admin") {
       startAdminQueueRealtimeListener(nonce);
       ensureIeltsCloudAttemptsLoaded();
@@ -9059,3 +9217,16 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 loadSheets();
+
+if ("serviceWorker" in navigator && window.location.protocol.startsWith("http")) {
+  const registerSw = () => {
+    navigator.serviceWorker.register("./sw.js?v=20261128b").catch(err => {
+      console.warn("Service worker registration skipped:", err?.message || err);
+    });
+  };
+  if (document.readyState === "complete") {
+    registerSw();
+  } else {
+    window.addEventListener("load", registerSw, { once: true });
+  }
+}

@@ -292,6 +292,7 @@ const STATIC_DOM_TRANSLATIONS = [
   { selector: "#finance-type-tabs", ariaLabelZh: "收支篩選", ariaLabelEn: "Filter transactions" },
   { selector: "#finance-month-select", ariaLabelZh: "篩選月份", ariaLabelEn: "Filter month" },
   { selector: "#footer-close-finance-btn", zh: "看完了", en: "Close" },
+  { selector: "#finance-load-more-btn", zh: "載入更早明細 (+50)", en: "Load Older (+50)" },
 
   // Onboarding
   {

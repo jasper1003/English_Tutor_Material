@@ -2375,6 +2375,7 @@ dialog.settings-dialog::backdrop {
 }
 
 .shop-item-card {
+  contain: layout style paint;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface-alt);
@@ -2918,6 +2919,12 @@ dialog.settings-dialog::backdrop {
   gap: 0.5rem;
 }
 
+.finance-pagination-row {
+  display: flex;
+  justify-content: center;
+  margin-block-start: 0.35rem;
+}
+
 .finance-tx-row {
   display: flex;
   align-items: center;
@@ -3199,6 +3206,7 @@ dialog.settings-dialog.review-dialog {
 }
 
 .admin-review-row {
+  contain: layout style paint;
   display: flex;
   flex-direction: column;
   gap: 0;

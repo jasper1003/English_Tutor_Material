@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="text-scale" content="scale" />
   <meta name="color-scheme" content="light dark" />
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin />
   <script>
     try {
       const savedScheme = localStorage.getItem("color-scheme");
@@ -28,7 +32,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261128a" />
+  <link rel="stylesheet" href="./styles.css?v=20261128b" />
 </head>
 <body>
 
@@ -737,6 +741,9 @@
           </div>
 
           <div class="finance-tx-list" id="finance-tx-list"></div>
+          <div class="finance-pagination-row">
+            <button type="button" class="btn btn-sm hidden" id="finance-load-more-btn">載入更早明細 (+50)</button>
+          </div>
         </div>
         <div class="dialog-footer">
           <span class="form-hint" id="finance-footer-note" style="margin-inline-end: auto;">只租不買提醒：每月 1 號結算一次房租（100 英蚌）</span>
@@ -1112,6 +1119,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261128a"></script>
+  <script type="module" src="./app-main.js?v=20261128b"></script>
 </body>
 </html>
