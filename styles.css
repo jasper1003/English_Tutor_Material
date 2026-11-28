@@ -3795,6 +3795,26 @@ dialog.settings-dialog.review-dialog {
   outline-offset: 2px;
 }
 
+.network-toast[popover] {
+  top: 128px;
+  border-color: light-dark(#f59e0b, rgba(245, 158, 11, 0.55));
+  background: light-dark(rgba(255, 251, 235, 0.96), rgba(30, 41, 59, 0.96));
+  max-width: min(460px, calc(100vw - 24px));
+}
+
+.network-toast.is-online[popover] {
+  border-color: light-dark(#10b981, rgba(52, 211, 153, 0.55));
+  background: light-dark(rgba(236, 253, 245, 0.96), rgba(6, 78, 59, 0.96));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rankup-toast[popover],
+  .network-toast[popover] {
+    transition: none;
+    transform: translate(-50%, 0);
+  }
+}
+
 /* Landlord Drama Note inside Finance Dialog */
 .finance-landlord-note {
   padding: 0.82rem 1rem;

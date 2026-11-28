@@ -936,6 +936,97 @@ function flushPendingRankUpToast() {
   showRankUpToast(prevProgress, nextProgress);
 }
 
+let networkStatusMonitorWired = false;
+let networkToastTimer = null;
+
+function dismissNetworkToast() {
+  clearTimeout(networkToastTimer);
+  const toastEl = document.getElementById("network-toast");
+  if (!toastEl) return;
+  if (typeof toastEl.hidePopover === "function") {
+    try {
+      if (toastEl.matches(":popover-open")) toastEl.hidePopover();
+    } catch {
+      toastEl.classList.remove("is-open");
+    }
+  } else {
+    toastEl.classList.remove("is-open");
+  }
+}
+
+function showNetworkStatusToast(isOnline) {
+  const toastEl = document.getElementById("network-toast");
+  const bodyEl = document.getElementById("network-toast-body");
+  const liveEl = document.getElementById("toast-live-announcer");
+  if (!toastEl || !bodyEl) return;
+
+  clearTimeout(networkToastTimer);
+  toastEl.classList.toggle("is-online", Boolean(isOnline));
+
+  const title = isOnline
+    ? bi("🟢 網路已恢復連線", "🟢 Connection Restored")
+    : bi("📡 目前處於離線狀態", "📡 You Are Currently Offline");
+  const subtitle = isOnline
+    ? bi("已自動恢復雲端同步與交易功能。", "Cloud sync and transactions are back online.")
+    : bi("已快取的教材與房間可繼續檢視；交稿與商店功能需連網使用。", "Cached lessons and room remain accessible; submissions and shop need internet.");
+
+  bodyEl.innerHTML = `<div><strong>${escapeHtml(title)}</strong></div><div>${escapeHtml(subtitle)}</div>`;
+  const spokenText = `${title} ${subtitle}`;
+  if (typeof navigator.ariaNotify === "function") {
+    navigator.ariaNotify(spokenText);
+  } else if (liveEl) {
+    liveEl.textContent = spokenText;
+  }
+
+  // Defer top-layer toast overlay while a modal dialog makes outside DOM inert
+  if (document.querySelector("dialog[open]")) {
+    return;
+  }
+  if (typeof toastEl.showPopover === "function") {
+    try {
+      if (!toastEl.matches(":popover-open")) toastEl.showPopover();
+    } catch {
+      toastEl.classList.add("is-open");
+    }
+  } else {
+    toastEl.classList.add("is-open");
+  }
+
+  if (isOnline) {
+    networkToastTimer = setTimeout(() => {
+      if (!toastEl.contains(document.activeElement) && !toastEl.matches(":hover")) {
+        dismissNetworkToast();
+      }
+    }, 3600);
+  }
+}
+
+function initNetworkStatusMonitor() {
+  if (networkStatusMonitorWired) return;
+  networkStatusMonitorWired = true;
+  const toastEl = document.getElementById("network-toast");
+  if (toastEl) {
+    toastEl.addEventListener("toggle", e => {
+      if (e.newState === "closed") {
+        clearTimeout(networkToastTimer);
+        toastEl.classList.remove("is-open");
+      }
+    });
+  }
+  window.addEventListener("offline", () => {
+    showNetworkStatusToast(false);
+  });
+  window.addEventListener("online", () => {
+    showNetworkStatusToast(true);
+    if (pendingRoomStatePatch) {
+      flushPendingRoomState();
+    }
+  });
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    showNetworkStatusToast(false);
+  }
+}
+
 function syncXpProgressUI({ allowCelebrate = false, overrideXp = null } = {}) {
   initRankUpToastEvents();
   const isSpectatingPreview = overrideXp !== null;
@@ -1034,8 +1125,17 @@ function sanitizeSubmissionMetricsMap(rawMap) {
   return out;
 }
 
+function assertOnlineForTransaction() {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    const err = new Error(translateAuthError({ code: "client-offline" }));
+    err.code = "client-offline";
+    throw err;
+  }
+}
+
 async function setLessonSubmitted(dateStr, nextSubmitted) {
   if (!currentUser || isLessonCompleted(dateStr)) return { submitted: false, xpGranted: 0 };
+  assertOnlineForTransaction();
   const targetSubmitted = Boolean(nextSubmitted);
   if (targetSubmitted && !isIeltsLessonId(dateStr)) {
     await ensureStudentLessonDetailLoaded(dateStr);
@@ -2427,6 +2527,33 @@ function applyConfigJson(configData) {
   }
 }
 
+function cleanupLegacySheetsCache() {
+  try {
+    localStorage.removeItem(SHEETS_CACHE_KEY);
+  } catch {
+    // Ignore storage access failures
+  }
+}
+
+async function fetchWithTransientRetry(url, fetchOptions = undefined, retries = 1) {
+  let lastErr = null;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const res = await fetch(url, fetchOptions);
+      if (res.ok || (res.status >= 400 && res.status < 500)) {
+        return res;
+      }
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      lastErr = err;
+    }
+    if (attempt < retries) {
+      await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
+    }
+  }
+  throw lastErr || new Error("Network fetch failed");
+}
+
 export async function ensureStudentLessonDetailLoaded(dateStr, { force = false } = {}) {
   const cleanDate = String(dateStr || "").trim();
   if (!cleanDate || isIeltsLessonId(cleanDate)) return null;
@@ -2460,7 +2587,7 @@ export async function ensureStudentLessonDetailLoaded(dateStr, { force = false }
       `./data/curriculum/units/${encodeURIComponent(cleanDate)}.json?v=${encodeURIComponent(unitHash)}`,
       import.meta.url
     ).href;
-    const res = await fetch(unitUrl);
+    const res = await fetchWithTransientRetry(unitUrl);
     if (!res.ok) {
       throw new Error(`HTTP ${res.status} (${cleanDate})`);
     }
@@ -2547,8 +2674,8 @@ async function loadSheets({ preferLiveSheets = false } = {}) {
 
   try {
     const [indexRes, configRes] = await Promise.all([
-      fetch(new URL("./data/curriculum/index.json", import.meta.url).href, { cache: "no-cache" }),
-      fetch(new URL("./data/config/app-config.json", import.meta.url).href, { cache: "no-cache" }).catch(() => null)
+      fetchWithTransientRetry(new URL("./data/curriculum/index.json", import.meta.url).href, { cache: "no-cache" }),
+      fetchWithTransientRetry(new URL("./data/config/app-config.json", import.meta.url).href, { cache: "no-cache" }).catch(() => null)
     ]);
 
     if (!indexRes.ok) {
@@ -2563,6 +2690,7 @@ async function loadSheets({ preferLiveSheets = false } = {}) {
     curriculumSourceKind = "cdn";
     applyCurriculumManifest(manifestData);
     applyConfigJson(configData);
+    cleanupLegacySheetsCache();
     sheetsLoaded = true;
     sheetsDetailsLoaded = true;
     sheetsStage2Promise = Promise.resolve();
@@ -3708,10 +3836,10 @@ async function renderLesson(dateStr) {
       card.setAttribute("aria-pressed", "false");
 
       const frontImgHtml = hasImage
-        ? `<img class="flashcard-img" src="${escapeHtml(imgUrl)}" alt="${escapeHtml(v.Word)}" width="320" height="200" loading="lazy" />`
+        ? `<img class="flashcard-img" src="${escapeHtml(imgUrl)}" alt="${escapeHtml(v.Word)}" width="320" height="200" loading="lazy" decoding="async" />`
         : "";
       const backImgHtml = hasImage
-        ? `<img class="flashcard-img" src="${escapeHtml(imgUrl)}" alt="" width="320" height="160" loading="lazy" fetchpriority="low" />`
+        ? `<img class="flashcard-img" src="${escapeHtml(imgUrl)}" alt="" width="320" height="160" loading="lazy" decoding="async" fetchpriority="low" />`
         : "";
 
       card.innerHTML = `
@@ -6061,6 +6189,7 @@ async function purchaseShopItem(itemId, triggerBtn = null) {
   }
   const localizedItemName = getShopItemName(item);
   try {
+    assertOnlineForTransaction();
     const userRef = doc(firestoreDb, "users", currentUser.uid);
     const result = await runTransaction(firestoreDb, async (tx) => {
       const snap = await tx.get(userRef);
@@ -6321,6 +6450,7 @@ async function sellShopItem(itemId, triggerBtn = null) {
   }
   const localizedSellName = getShopItemName(item);
   try {
+    assertOnlineForTransaction();
     const userRef = doc(firestoreDb, "users", currentUser.uid);
     const result = await runTransaction(firestoreDb, async (tx) => {
       const snap = await tx.get(userRef);
@@ -7409,6 +7539,7 @@ async function payMonthlyRent({ isTestDemo = false } = {}) {
   clearFeedback("finance-feedback");
   updateRentCountdownUI();
   try {
+    assertOnlineForTransaction();
     const userRef = doc(firestoreDb, "users", currentUser.uid);
     const monthStr = getMonthKey();
     const result = await runTransaction(firestoreDb, async (tx) => {
@@ -8414,6 +8545,7 @@ async function loadStudentsForReview(preserveUid = null, options = {}) {
 }
 
 async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount) {
+  assertOnlineForTransaction();
   const safeReward = Math.max(0, Math.min(100000, Math.trunc(Number(rewardAmount) || 0)));
   let lessonMeta = findLessonAnyTrack(dateStr);
   if (!lessonMeta && isIeltsLessonId(dateStr) && isAdminRole()) {
@@ -8524,6 +8656,7 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount)
 }
 
 async function rejectStudentSubmission(studentUid, dateStr) {
+  assertOnlineForTransaction();
   const stuRef = doc(firestoreDb, "users", studentUid);
   const queueId = toReviewQueueDocId(studentUid, dateStr);
   const queueRef = queueId ? doc(firestoreDb, "reviewQueue", queueId) : null;
@@ -8545,6 +8678,7 @@ async function rejectStudentSubmission(studentUid, dateStr) {
 }
 
 async function grantManualBonus(studentUid, bonusAmount) {
+  assertOnlineForTransaction();
   const parsed = Math.trunc(Number(bonusAmount) || 0);
   const clampedDelta = Math.max(-50000, Math.min(100000, parsed));
   if (clampedDelta === 0) throw new Error(bi("請輸入非零的英蚌數量。", "Please enter a non-zero Clam amount."));
@@ -9217,6 +9351,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 loadSheets();
+initNetworkStatusMonitor();
 
 if ("serviceWorker" in navigator && window.location.protocol.startsWith("http")) {
   const registerSw = () => {

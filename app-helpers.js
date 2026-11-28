@@ -370,6 +370,16 @@ export function translateAuthError(err) {
       return bi("為了帳號安全，請先重新驗證或重新登入後再變更密碼。", "Please sign in again before changing your password.");
     case "auth/network-request-failed":
       return bi("網路連線異常，請檢查網路狀態後重試。", "Network error. Please check your connection and try again.");
+    case "client-offline":
+    case "unavailable":
+    case "failed-precondition":
+      return bi("目前處於離線或連線不穩狀態，無法完成雲端寫入，請恢復連線後重試。", "Currently offline or connection unstable; please reconnect and retry.");
+    case "deadline-exceeded":
+      return bi("伺服器回應逾時，請稍後重試。", "Request timed out. Please try again.");
+    case "aborted":
+      return bi("雲端資料剛好有同時寫入衝突，請再試一次。", "Concurrent update conflict occurred; please try again.");
+    case "resource-exhausted":
+      return bi("目前線上流量較高或暫達配額限制，請稍候再試。", "High traffic or temporary quota limit reached; please wait a moment and retry.");
     case "permission-denied":
       return bi("權限不足，無法存取該資料。", "Permission denied.");
     default:
@@ -1604,7 +1614,7 @@ export function buildMergedPendingReviewItems(queueItems = [], loadedStudents = 
     if (!uid || !lessonDate) return;
     const stu = studentByUid.get(uid) || null;
     if (stu) {
-      const completed = isLessonCompletedFromMaps(lessonDate, stu.completionOverrides, stu.approvedLessons);
+      const completed = isLessonCompletedFromMaps(stu.approvedLessons, stu.completionOverrides, lessonDate);
       const stillSubmitted = Boolean(stu.submittedLessons?.[lessonDate]);
       if (completed || !stillSubmitted) return;
     }
@@ -1630,7 +1640,7 @@ export function buildMergedPendingReviewItems(queueItems = [], loadedStudents = 
       const submittedMap = stu.submittedLessons || {};
       Object.entries(submittedMap).forEach(([lessonDate, isSubmitted]) => {
         if (!isSubmitted) return;
-        if (isLessonCompletedFromMaps(lessonDate, stu.completionOverrides, stu.approvedLessons)) return;
+        if (isLessonCompletedFromMaps(stu.approvedLessons, stu.completionOverrides, lessonDate)) return;
         const dedupeKey = `${stu.uid}::${lessonDate}`;
         if (seenKeys.has(dedupeKey)) return;
         seenKeys.add(dedupeKey);

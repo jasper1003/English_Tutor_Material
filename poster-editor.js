@@ -12,6 +12,7 @@ export function createPosterCustomizer({
 }) {
   const POSTER_CANON_W = 330;
   const POSTER_CANON_H = 450;
+  const POSTER_WEBP_TARGET_LEN = 58000;
   const POSTER_MAX_DATA_URL_LEN = 120000;
 
   const posterDialog = document.getElementById("poster-dialog");
@@ -247,13 +248,29 @@ export function createPosterCustomizer({
     exportCanvas.height = POSTER_CANON_H;
     const ctx = exportCanvas.getContext("2d");
     renderCropToCtx(ctx, POSTER_CANON_W, POSTER_CANON_H, false);
-    const qualities = [0.86, 0.74, 0.62, 0.5];
-    let out = "";
-    for (const q of qualities) {
-      out = exportCanvas.toDataURL("image/jpeg", q);
-      if (out.length <= POSTER_MAX_DATA_URL_LEN) return out;
+
+    // Prefer compact WebP (~55% smaller Firestore payload) when supported by browser canvas
+    const webpQualities = [0.84, 0.72, 0.6, 0.48];
+    let bestOut = "";
+    for (const q of webpQualities) {
+      const candidate = exportCanvas.toDataURL("image/webp", q);
+      if (candidate.startsWith("data:image/webp")) {
+        bestOut = candidate;
+        if (candidate.length <= POSTER_WEBP_TARGET_LEN) return candidate;
+      } else {
+        break;
+      }
     }
-    if (out.length <= 145000) return out;
+    if (bestOut && bestOut.length <= POSTER_MAX_DATA_URL_LEN) {
+      return bestOut;
+    }
+
+    const jpegQualities = [0.86, 0.74, 0.62, 0.5];
+    for (const q of jpegQualities) {
+      bestOut = exportCanvas.toDataURL("image/jpeg", q);
+      if (bestOut.length <= POSTER_MAX_DATA_URL_LEN) return bestOut;
+    }
+    if (bestOut.length <= 145000) return bestOut;
     throw new Error(bi(
       "裁切後照片體積過大，請換一張照片或稍微縮小再試。",
       "Cropped image is too large. Please pick another image or zoom slightly."
