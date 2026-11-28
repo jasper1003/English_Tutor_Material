@@ -1,0 +1,160 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "1a759d3dcf",
+  "date": "2026-08-18",
+  "lesson": {
+    "Date": "2026-08-18",
+    "Title": "國家與文化東歐篇",
+    "Grammar_Focus": "東歐國家文化詞彙（斯洛伐克、匈牙利、烏克蘭、羅馬尼亞、保加利亞）及現在進行式／過去進行式綜合時態演練",
+    "Reading_Title": "Riding the Morning Train Through Eastern Europe",
+    "Reading_Passage": "Early last Friday morning, a group of high school students set off on a scenic train trip across Eastern Europe. Their first stop was Slovakia, where ancient kings once built grand stone castles on high green hills to protect their land from enemies. While the excited students were taking photos of a mountain tower, their tour guide explained local legends.<br><br>Next, the train rolled quietly into Hungary along the wide blue river. Inside Budapest, the travelers stopped to take a look at the grand parliament building shining in the evening light and enjoyed warm Hungarian soup for dinner. The following morning, they learned about Ukraine, a large nation famous for its wide farmland and churches topped with bright golden domes.<br><br>Before finishing the route, the group visited Romania and Bulgaria. Romania is known for dark pine forests and mysterious old mountain castles where visitors love to discover hidden stories. Finally, in Bulgaria, workers were loading fresh yogurt and sweet rose oil onto market trucks as the sun rose. Even when the train returned home, everyone felt excited to explore more of Eastern Europe's rich history.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-08-18",
+      "Word": "Slovakia",
+      "POS": "n.",
+      "Meaning": "斯洛伐克",
+      "Example": "Deep green valleys and tall stone castles cover the northern hills of Slovakia.",
+      "Image_URL": "images/vocab/2026-08-18/slovakia.webp"
+    },
+    {
+      "Date": "2026-08-18",
+      "Word": "Hungary",
+      "POS": "n.",
+      "Meaning": "匈牙利",
+      "Example": "Tourists relax in warm outdoor thermal baths when they visit Hungary in winter.",
+      "Image_URL": "images/vocab/2026-08-18/hungary.webp"
+    },
+    {
+      "Date": "2026-08-18",
+      "Word": "Ukraine",
+      "POS": "n.",
+      "Meaning": "烏克蘭",
+      "Example": "Wide golden wheat fields stretch across the countryside of Ukraine in summer.",
+      "Image_URL": "images/vocab/2026-08-18/ukraine.webp"
+    },
+    {
+      "Date": "2026-08-18",
+      "Word": "Romania",
+      "POS": "n.",
+      "Meaning": "羅馬尼亞",
+      "Example": "Misty mountain roads wind through tall pine forests in Romania.",
+      "Image_URL": "images/vocab/2026-08-18/romania.webp"
+    },
+    {
+      "Date": "2026-08-18",
+      "Word": "Bulgaria",
+      "POS": "n.",
+      "Meaning": "保加利亞",
+      "Example": "Sweet roses bloom every spring in a famous valley in Bulgaria.",
+      "Image_URL": "images/vocab/2026-08-18/bulgaria.webp"
+    },
+    {
+      "Date": "2026-08-18",
+      "Word": "protect",
+      "POS": "v.",
+      "Meaning": "保護；保衛",
+      "Example": "Thick sunglasses help protect your eyes from strong sunlight at the beach.",
+      "Image_URL": "images/vocab/2026-08-18/protect.webp"
+    },
+    {
+      "Date": "2026-08-18",
+      "Word": "discover",
+      "POS": "v.",
+      "Meaning": "發現；發掘",
+      "Example": "Walk down small side streets and you might discover a cozy old bookstore.",
+      "Image_URL": "images/vocab/2026-08-18/discover.webp"
+    },
+    {
+      "Date": "2026-08-18",
+      "Word": "grand",
+      "POS": "adj.",
+      "Meaning": "雄偉的；壯麗的",
+      "Example": "The grand concert hall has golden balconies and crystal lights from the ceiling.",
+      "Image_URL": "images/vocab/2026-08-18/grand.webp"
+    },
+    {
+      "Date": "2026-08-18",
+      "Word": "mysterious",
+      "POS": "adj.",
+      "Meaning": "神秘的",
+      "Example": "Thick morning fog made the quiet forest path look mysterious.",
+      "Image_URL": "images/vocab/2026-08-18/mysterious.webp"
+    },
+    {
+      "Date": "2026-08-18",
+      "Word": "set off",
+      "POS": "phr.",
+      "Meaning": "出發；動身啟程",
+      "Example": "Our family will set off at six in the morning to avoid weekend highway traffic.",
+      "Image_URL": "images/vocab/2026-08-18/set_off.webp"
+    },
+    {
+      "Date": "2026-08-18",
+      "Word": "take a look at",
+      "POS": "phr.",
+      "Meaning": "看一看……；瞧瞧……",
+      "Example": "Let's take a look at the school bulletin board to check the sports schedule.",
+      "Image_URL": "images/vocab/2026-08-18/take_a_look_at.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-08-18",
+      "Type": "MC",
+      "Question": "Why did ancient kings in Slovakia build grand stone castles on high hills?",
+      "Option_A": "To grow wheat across wide farmland.",
+      "Option_B": "To protect their land from enemies.",
+      "Option_C": "To load yogurt and rose oil onto trucks.",
+      "Option_D": "To watch evening boat lights in Budapest.",
+      "Answer": "B",
+      "Explanation": "第一段第二句明確說明：ancient kings once built grand stone castles on high hills to protect their land from enemies。"
+    },
+    {
+      "Date": "2026-08-18",
+      "Type": "MC",
+      "Question": "What were workers doing in Bulgaria when the sun rose?",
+      "Option_A": "Painting golden church domes.",
+      "Option_B": "Cooking warm soup for dinner.",
+      "Option_C": "Loading fresh yogurt and sweet rose oil onto market trucks.",
+      "Option_D": "Checking passenger train tickets at the border.",
+      "Answer": "C",
+      "Explanation": "第三段第三句寫道：in Bulgaria, workers were loading fresh yogurt and sweet rose oil onto market trucks as the sun rose。"
+    },
+    {
+      "Date": "2026-08-18",
+      "Type": "TFNG",
+      "Question": "In Budapest, the travelers saw the grand parliament building in the evening light.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段第二句寫道：the travelers stopped to take a look at the grand parliament building shining in the evening light，與題幹一致，故為 TRUE。"
+    },
+    {
+      "Date": "2026-08-18",
+      "Type": "TFNG",
+      "Question": "The students traveled across Eastern Europe by airplane.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第一段第一句與各段皆明確指出他們搭乘火車（a scenic train trip / the train rolled into Hungary），與題幹「by airplane」矛盾，故為 FALSE。"
+    },
+    {
+      "Date": "2026-08-18",
+      "Type": "TFNG",
+      "Question": "The group bought three bottles of Bulgarian rose oil as gifts for their parents.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章只提到在保加利亞看到工人把玫瑰油與優格搬上卡車，並未提及學生是否購買玫瑰油送給父母，故為 NOT GIVEN。"
+    }
+  ]
+}

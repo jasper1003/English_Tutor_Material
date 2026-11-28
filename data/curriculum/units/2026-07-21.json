@@ -1,0 +1,184 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "1b4b6f6065",
+  "date": "2026-07-21",
+  "lesson": {
+    "Date": "2026-07-21",
+    "Title": "職業與生活",
+    "Grammar_Focus": "未來式 will / be going to 綜合應用，以及求職相關片語（work as / look for a job / be in charge of / apply for）",
+    "Reading_Title": "Exploring Future Careers at School",
+    "Reading_Passage": "Yesterday, Oakwood Junior High held its annual Career Day in the gym. Five alumni came back to share what their daily jobs are really like. First, Hannah explained how she works as a software engineer. She said her team is in charge of testing new mobile apps before they go online. Nearby, David spoke about his life as a lawyer who helps workers understand fair office rules.<br><br>At another table, a TV reporter and a climate scientist showed students real tools from their jobs. The reporter held up a small microphone and explained how she checks facts quickly before posting breaking news. Meanwhile, a friendly police officer talked about keeping neighborhood streets safe and reminded students to stay alert near busy roads.<br><br>After the talks, a company manager and her secretary hosted a resume clinic. They showed ninth graders how an employee writes a clear resume when they plan to look for a job. Several students felt inspired and said they will apply for summer volunteer programs next month. One student smiled and told her friend she is going to design useful apps in the future.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-07-21",
+      "Word": "engineer",
+      "POS": "n.",
+      "Meaning": "工程師",
+      "Example": "My older sister is an engineer who designs green bridges for high-speed trains.",
+      "Image_URL": "images/vocab/2026-07-21/engineer.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "lawyer",
+      "POS": "n.",
+      "Meaning": "律師",
+      "Example": "A careful lawyer reads every line of a contract before signing it.",
+      "Image_URL": "images/vocab/2026-07-21/lawyer.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "reporter",
+      "POS": "n.",
+      "Meaning": "記者",
+      "Example": "The sports reporter interviewed the winning basketball captain right after the game.",
+      "Image_URL": "images/vocab/2026-07-21/reporter.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "scientist",
+      "POS": "n.",
+      "Meaning": "科學家",
+      "Example": "A marine scientist studies ocean water to protect coral reefs near the coast.",
+      "Image_URL": "images/vocab/2026-07-21/scientist.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "police officer",
+      "POS": "n.",
+      "Meaning": "警察",
+      "Example": "A kind police officer helped the lost child find his parents at the night market.",
+      "Image_URL": "images/vocab/2026-07-21/police_officer.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "worker",
+      "POS": "n.",
+      "Meaning": "工人；員工",
+      "Example": "Every factory worker wears a safety helmet inside the building.",
+      "Image_URL": "images/vocab/2026-07-21/worker.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "secretary",
+      "POS": "n.",
+      "Meaning": "秘書",
+      "Example": "The school secretary organized all the parent meeting schedules for this week.",
+      "Image_URL": "images/vocab/2026-07-21/secretary.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "manager",
+      "POS": "n.",
+      "Meaning": "經理",
+      "Example": "Our bookstore manager orders popular English novels for teenagers every month.",
+      "Image_URL": "images/vocab/2026-07-21/manager.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "resume",
+      "POS": "n.",
+      "Meaning": "履歷",
+      "Example": "Include your club experience and computer skills when you write your first resume.",
+      "Image_URL": "images/vocab/2026-07-21/resume.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "employee",
+      "POS": "n.",
+      "Meaning": "員工",
+      "Example": "Every new employee receives two weeks of training before starting the project.",
+      "Image_URL": "images/vocab/2026-07-21/employee.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "work as",
+      "POS": "phr.",
+      "Meaning": "擔任……工作",
+      "Example": "My uncle loves animals and wants to work as a zoo vet.",
+      "Image_URL": "images/vocab/2026-07-21/work_as.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "look for a job",
+      "POS": "phr.",
+      "Meaning": "找工作",
+      "Example": "Graduates often update their profiles online when they start to look for a job.",
+      "Image_URL": "images/vocab/2026-07-21/look_for_a_job.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "be in charge of",
+      "POS": "phr.",
+      "Meaning": "負責……",
+      "Example": "Jason will be in charge of taking photos during the school sports day.",
+      "Image_URL": "images/vocab/2026-07-21/be_in_charge_of.webp"
+    },
+    {
+      "Date": "2026-07-21",
+      "Word": "apply for",
+      "POS": "phr.",
+      "Meaning": "申請；應徵……",
+      "Example": "You can apply for the summer science camp on the school website before Friday.",
+      "Image_URL": "images/vocab/2026-07-21/apply_for.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-07-21",
+      "Type": "MC",
+      "Question": "What is Hannah's team responsible for in her job?",
+      "Option_A": "Helping workers understand office rules.",
+      "Option_B": "Checking facts before posting breaking news.",
+      "Option_C": "Testing new mobile apps before they go online.",
+      "Option_D": "Keeping neighborhood streets safe at night.",
+      "Answer": "C",
+      "Explanation": "第一段第四句明確指出：She said her team is in charge of testing new mobile apps before they go online。"
+    },
+    {
+      "Date": "2026-07-21",
+      "Type": "MC",
+      "Question": "What did the company manager and her secretary do at Career Day?",
+      "Option_A": "They showed students real microphones and cameras.",
+      "Option_B": "They hosted a clinic to teach students how to write a clear resume.",
+      "Option_C": "They hired ninth graders for full-time office jobs immediately.",
+      "Option_D": "They tested new mobile apps with the school alumni.",
+      "Answer": "B",
+      "Explanation": "第三段第一、二句提到 a company manager and her secretary hosted a resume clinic，教導九年級學生如何寫清晰的履歷。"
+    },
+    {
+      "Date": "2026-07-21",
+      "Type": "TFNG",
+      "Question": "Oakwood Junior High holds its Career Day every year.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第一段第一句寫道 Oakwood Junior High held its annual Career Day（annual 即每年一次的），與題幹相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-07-21",
+      "Type": "TFNG",
+      "Question": "David works as a climate scientist who studies ocean weather.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第一段最後一句明確指出 David spoke about his life as a lawyer，而非氣候科學家，故為 FALSE。"
+    },
+    {
+      "Date": "2026-07-21",
+      "Type": "TFNG",
+      "Question": "All five alumni who visited Career Day graduated from the same university.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章僅說明五位校友（Oakwood 國中校友）回校分享職業經驗，並未提及他們是否畢業於同一所大學，故為 NOT GIVEN。"
+    }
+  ]
+}

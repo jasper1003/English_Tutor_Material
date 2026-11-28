@@ -1,0 +1,2690 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "totalLessons": 28,
+  "totalVocab": 351,
+  "lessons": [
+    {
+      "date": "2026-06-30",
+      "title": "自然災害與應變",
+      "grammar": "過去進行式（was/were + V-ing）與 when / while 連接詞用法：when 後接過去簡單式（突發動作），while 後接過去進行式（持續動作）",
+      "readingTitle": "A Sudden Night on Green Mountain",
+      "words": [
+        "typhoon",
+        "earthquake",
+        "rescue",
+        "suddenly",
+        "happen",
+        "shake",
+        "ground",
+        "destroy",
+        "terrible",
+        "dangerous"
+      ]
+    },
+    {
+      "date": "2026-07-08",
+      "title": "糧食與全球分配",
+      "grammar": "故事脈絡下的過去式與過去進行式整合（when / while），以及因果連接詞 because / so 的句型應用",
+      "readingTitle": "Food Drives and Fair Sharing",
+      "words": [
+        "population",
+        "waste",
+        "share",
+        "produce",
+        "plenty",
+        "hunger",
+        "transport",
+        "fair",
+        "deal with",
+        "depend on"
+      ]
+    },
+    {
+      "date": "2026-07-14",
+      "title": "數位時代與網路安全",
+      "grammar": "未來簡單式 will（預測或臨時決定）與 be going to（既定計畫或眼前跡象）的區分，以及字尾 -ment 名詞化（require → requirement）",
+      "readingTitle": "Smart Habits for a Safer Digital Campus",
+      "words": [
+        "require",
+        "download",
+        "post",
+        "steal",
+        "screen",
+        "message",
+        "app",
+        "security",
+        "digital",
+        "cyber",
+        "online",
+        "data",
+        "turn off",
+        "log in"
+      ]
+    },
+    {
+      "date": "2026-07-21",
+      "title": "職業與生活",
+      "grammar": "未來式 will / be going to 綜合應用，以及求職相關片語（work as / look for a job / be in charge of / apply for）",
+      "readingTitle": "Exploring Future Careers at School",
+      "words": [
+        "engineer",
+        "lawyer",
+        "reporter",
+        "scientist",
+        "police officer",
+        "worker",
+        "secretary",
+        "manager",
+        "resume",
+        "employee",
+        "work as",
+        "look for a job",
+        "be in charge of",
+        "apply for"
+      ]
+    },
+    {
+      "date": "2026-07-23",
+      "title": "單字與文法總複習",
+      "grammar": "綜合複習過去進行式（was/were + V-ing + when/while）與未來簡單式（will / be going to）之情境判斷、否定與疑問句改寫",
+      "readingTitle": "Behind the Scenes of the School News Team",
+      "words": [
+        "hacker",
+        "urgent",
+        "article",
+        "platform",
+        "interview",
+        "predict",
+        "crash",
+        "system",
+        "password",
+        "attention"
+      ]
+    },
+    {
+      "date": "2026-07-28",
+      "title": "職業與生活進階",
+      "grammar": "進階職業單字辨識（會計師、建築師、飛行員等）與過去進行式／未來式綜合句型練習",
+      "readingTitle": "Busy Morning on River Street",
+      "words": [
+        "accountant",
+        "photographer",
+        "musician",
+        "dentist",
+        "pilot",
+        "flight attendant",
+        "postman",
+        "hairdresser",
+        "firefighter",
+        "janitor",
+        "mechanic",
+        "architect"
+      ]
+    },
+    {
+      "date": "2026-07-30",
+      "title": "比較級文法精講",
+      "grammar": "形容詞比較級規則變化（-er / -r / 去y+ier / 重複字尾+er / more + 多音節）、不規則變化（better / worse / more / less）與程度修飾語（much / even / far / a lot + 比較級）",
+      "readingTitle": "A Smarter Way to Review Vocabulary",
+      "words": [
+        "safe",
+        "busy",
+        "easy",
+        "smart",
+        "exciting",
+        "important",
+        "better",
+        "worse",
+        "less",
+        "unique",
+        "regularly"
+      ]
+    },
+    {
+      "date": "2026-08-04",
+      "title": "國家與文化亞洲篇",
+      "grammar": "七大洲與亞洲主要國家地理詞彙，並運用形容詞比較級比較各國氣候、人口與城市特色",
+      "readingTitle": "Across Seven Continents in My Notebook",
+      "words": [
+        "Asia",
+        "Europe",
+        "Africa",
+        "North America",
+        "South America",
+        "Antarctica",
+        "Oceania",
+        "Australia",
+        "Japan",
+        "Thailand",
+        "India",
+        "Vietnam",
+        "South Korea",
+        "Singapore"
+      ]
+    },
+    {
+      "date": "2026-08-06",
+      "title": "國家與文化非洲篇",
+      "grammar": "非洲國家與經濟文化詞彙，搭配比較級與實用片語（be full of / play a role in）對比各國特色與歷史",
+      "readingTitle": "From Ancient Pyramids to Modern African Cities",
+      "words": [
+        "Egypt",
+        "pyramid",
+        "Nigeria",
+        "South Africa",
+        "finance",
+        "financial",
+        "incredible",
+        "ancient",
+        "be full of",
+        "play a role in"
+      ]
+    },
+    {
+      "date": "2026-08-11",
+      "title": "國家與文化西歐與中歐篇",
+      "grammar": "形容詞最高級三大規則（the + -est / the most + adj. / 不規則 best, worst, most）及西歐、中歐國家城市詞彙",
+      "readingTitle": "Ten Days Across Western and Central Europe",
+      "words": [
+        "The UK",
+        "London",
+        "France",
+        "Paris",
+        "Germany",
+        "The Netherlands",
+        "Belgium",
+        "Switzerland",
+        "Austria",
+        "Czech Republic",
+        "Poland",
+        "explore",
+        "crowded",
+        "peaceful"
+      ]
+    },
+    {
+      "date": "2026-08-13",
+      "title": "國家與文化南歐篇",
+      "grammar": "「one of the + 最高級 + 複數名詞」（最……的……之一）句型規則與主詞單複數動詞一致性，結合南歐文化詞彙",
+      "readingTitle": "Sunlight and History Along the Mediterranean",
+      "words": [
+        "Italy",
+        "Rome",
+        "Spain",
+        "Madrid",
+        "Greece",
+        "Athens",
+        "Portugal",
+        "Italian",
+        "bright",
+        "historic",
+        "taste",
+        "introduce"
+      ]
+    },
+    {
+      "date": "2026-08-18",
+      "title": "國家與文化東歐篇",
+      "grammar": "東歐國家文化詞彙（斯洛伐克、匈牙利、烏克蘭、羅馬尼亞、保加利亞）及現在進行式／過去進行式綜合時態演練",
+      "readingTitle": "Riding the Morning Train Through Eastern Europe",
+      "words": [
+        "Slovakia",
+        "Hungary",
+        "Ukraine",
+        "Romania",
+        "Bulgaria",
+        "protect",
+        "discover",
+        "grand",
+        "mysterious",
+        "set off",
+        "take a look at"
+      ]
+    },
+    {
+      "date": "2026-08-20",
+      "title": "國家與文化北歐篇",
+      "grammar": "比較級與最高級綜合複習（one of the + 最高級 + 複數名詞 / 比較級修飾），搭配北歐五國地理、設計與氣候詞彙",
+      "readingTitle": "Warm Lights and Simple Design in Northern Europe",
+      "words": [
+        "Denmark",
+        "Sweden",
+        "Norway",
+        "Finland",
+        "Iceland",
+        "assemble",
+        "admire",
+        "simple",
+        "freezing"
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "title": "國家與文化北美篇",
+      "grammar": "同級比較句型（A + be/V + as + 原級 + as + B / not as + 原級 + as），注意不可加 -er/more 且比較對象須對稱（that of）",
+      "readingTitle": "From Cold Montreal to Busy American Cities",
+      "words": [
+        "Canada",
+        "Montreal",
+        "Washington, D.C.",
+        "New York City",
+        "Los Angeles",
+        "Chicago",
+        "San Francisco",
+        "Boston",
+        "state",
+        "county",
+        "lead",
+        "unite",
+        "brave",
+        "powerful"
+      ]
+    },
+    {
+      "date": "2026-08-27",
+      "title": "國家與文化南美篇",
+      "grammar": "同級比較改寫練習與轉折／因果副詞辨析（however「然而」表轉折；therefore「因此」表結果），搭配拉丁美洲地理詞彙",
+      "readingTitle": "Crossing Mountains and Rivers in Latin America",
+      "words": [
+        "Mexico",
+        "Colombia",
+        "Peru",
+        "Brazil",
+        "Chile",
+        "Argentina",
+        "flow",
+        "cross",
+        "therefore",
+        "however"
+      ]
+    },
+    {
+      "date": "2026-09-01",
+      "title": "實用英語慣用語",
+      "grammar": "透過前後文語境推測六大常用英文慣用語（in the same boat / on the same page / a piece of cake / under the weather / cost an arm and a leg / when pigs fly）",
+      "readingTitle": "Teamwork Before the Science Fair",
+      "words": [
+        "in the same boat",
+        "on the same page",
+        "a piece of cake",
+        "under the weather",
+        "cost an arm and a leg",
+        "when pigs fly"
+      ]
+    },
+    {
+      "date": "2026-09-03",
+      "title": "實用英語慣用語進階",
+      "grammar": "透過語境推斷七大常用英文慣用語（speak one's language / give someone a hand / break a leg / spill the beans / get cold feet / call it a day / judge a book by its cover）",
+      "readingTitle": "Rehearsal Night at the School Theater",
+      "words": [
+        "speak one's language",
+        "give someone a hand",
+        "break a leg",
+        "spill the beans",
+        "get cold feet",
+        "call it a day",
+        "judge a book by its cover"
+      ]
+    },
+    {
+      "date": "2026-09-08",
+      "title": "天氣描述與授與動詞",
+      "grammar": "天氣四種描述句型（How is / What is...like / It is+adj. / There is+N / We have+N）及授與動詞（to 型 vs for 型，物為代名詞必用介系詞）",
+      "readingTitle": "A Breezy Autumn Trip to the Coast",
+      "words": [
+        "vacation",
+        "season",
+        "spring",
+        "autumn",
+        "cloudy",
+        "windy",
+        "cool",
+        "postcard",
+        "borrow",
+        "lend",
+        "glove",
+        "jacket",
+        "nervous",
+        "order"
+      ]
+    },
+    {
+      "date": "2026-09-16",
+      "title": "澳洲俚語與不定代名詞",
+      "grammar": "Another（三者以上未指定另一個 + 單數）vs The other（兩者中另一個 / 其餘全部），結合實用片語（in fact / just like / come right up / be mad at）",
+      "readingTitle": "Funny Words During Our Week in Sydney",
+      "words": [
+        "another",
+        "the other",
+        "in fact",
+        "just like",
+        "come right up",
+        "be mad at",
+        "clerk",
+        "Australian"
+      ]
+    },
+    {
+      "date": "2026-09-23",
+      "title": "社團生活與所有格代名詞",
+      "grammar": "時間從屬連接詞（after / before / when）時態一致與分詞化簡，以及所有格代名詞（mine / yours / his / hers / theirs）避免重複",
+      "readingTitle": "Choosing the Right Club for a Busy Semester",
+      "words": [
+        "club",
+        "subject",
+        "math",
+        "soccer",
+        "robot",
+        "festival",
+        "choice",
+        "poor",
+        "whose",
+        "own",
+        "make up one's mind",
+        "pull one's leg",
+        "hold on"
+      ]
+    },
+    {
+      "date": "2026-09-30",
+      "title": "生活片語與學科單字",
+      "grammar": "電話英文與對話辨析（This is... speaking / I know vs. I see），搭配生活片語（at the end of / not... at all / miss out on）及國中各學科名詞",
+      "readingTitle": "Choosing Electives for the New School Term",
+      "words": [
+        "at the end of",
+        "not... at all",
+        "miss out on",
+        "I see",
+        "Biology",
+        "Chemistry",
+        "Physics",
+        "Earth Science",
+        "Geography",
+        "Civics",
+        "Literature",
+        "Information Technology"
+      ]
+    },
+    {
+      "date": "2026-10-07",
+      "title": "價值觀與感官科學",
+      "grammar": "核心字彙字義與搭配（worth / value / condition / antique / still / mine / run out / gene / sense / detect / control）與多主題科普閱讀",
+      "readingTitle": "Hidden Treasures in Science and History",
+      "words": [
+        "worth",
+        "value",
+        "condition",
+        "antique",
+        "project",
+        "still",
+        "activity",
+        "experience",
+        "mine",
+        "run out",
+        "gene",
+        "sense",
+        "chemical",
+        "bitterness",
+        "detect",
+        "childhood",
+        "soap",
+        "control"
+      ]
+    },
+    {
+      "date": "2026-10-13",
+      "title": "段考複習與一字多義",
+      "grammar": "段考易混淆一字多義辨析（mine 採礦/我的；still 靜止的/仍然；poor 貧窮的/不佳的；condition 狀況/條件；sense 察覺/道理）與授與動詞／不定代名詞複習",
+      "readingTitle": "Weekend Study Camp Before Midterms",
+      "words": [
+        "mine",
+        "still",
+        "poor",
+        "condition",
+        "sense",
+        "tunnel",
+        "auction",
+        "goggles",
+        "compass",
+        "luggage"
+      ]
+    },
+    {
+      "date": "2026-10-21",
+      "title": "日常家務與時間表達",
+      "grammar": "英文時間順讀法與逆讀法（past / after 表過幾分；to 表差幾分；a quarter 與 half past，注意絕無 half to），搭配居家家務與生活動詞",
+      "readingTitle": "Saturday Morning Chores by the Clock",
+      "words": [
+        "do the dishes",
+        "half",
+        "quarter",
+        "past",
+        "leave",
+        "remember",
+        "take it easy",
+        "cool down",
+        "feed",
+        "sweep",
+        "floor",
+        "fix",
+        "drawer",
+        "mop",
+        "wipe",
+        "hang",
+        "sleepwalk"
+      ]
+    },
+    {
+      "date": "2026-10-28",
+      "title": "新單字和閱讀理解",
+      "grammar": "連接詞配對 (however / therefore / in fact / when / while / before / after) 與 save...from... 時態應用",
+      "readingTitle": "Lucas's Midnight Mystery",
+      "words": [
+        "save ... from ...",
+        "however"
+      ]
+    },
+    {
+      "date": "2026-11-04",
+      "title": "新單字和閱讀理解",
+      "grammar": "動詞後接不定詞 (to V) 與動名詞 (V-ing) 的用法與語意差異 (stop / remember / forget / try)",
+      "readingTitle": "A Difficult Career Choice (Grammar & Vocabulary Focus)",
+      "words": [
+        "salesman",
+        "boss",
+        "soldier",
+        "farmer",
+        "fisherman",
+        "relative",
+        "factory",
+        "truck driver",
+        "believe",
+        "act",
+        "give up",
+        "make fun of",
+        "career",
+        "audition",
+        "deliver"
+      ]
+    },
+    {
+      "date": "2026-11-11",
+      "title": "複習段考內容",
+      "grammar": "綜合閱讀理解與 True / False / Not Given 邏輯推論",
+      "readingTitle": "IU's Story & Digital Age Reflections",
+      "words": [
+        "make a video",
+        "fight for one's rights",
+        "get butterflies in one's stomach",
+        "(a) good idea",
+        "stranger",
+        "comment",
+        "conversation",
+        "common",
+        "compare",
+        "whole"
+      ]
+    },
+    {
+      "date": "2026-11-24",
+      "title": "10/21–11/11 總複習模擬測驗（聽力・單字・文法・克漏字・閱讀）",
+      "grammar": "時間順逆讀法（past / half past / to）、連接詞（however / therefore / while）、不定詞 to V 與動名詞 V-ing（stop / remember / forget / decide / give up）、besides + V-ing 與 10/21–11/11 核心字彙",
+      "readingTitle": "綜合模擬測驗：聽力・克漏字與三篇閱讀",
+      "words": [
+        "do the dishes",
+        "half",
+        "quarter",
+        "past",
+        "leave",
+        "remember",
+        "take it easy",
+        "cool down",
+        "feed",
+        "sweep",
+        "floor",
+        "fix",
+        "drawer",
+        "mop",
+        "wipe",
+        "hang",
+        "sleepwalk",
+        "save ... from ...",
+        "however",
+        "salesman",
+        "boss",
+        "soldier",
+        "farmer",
+        "fisherman",
+        "relative",
+        "factory",
+        "truck driver",
+        "believe",
+        "act",
+        "give up",
+        "make fun of",
+        "career",
+        "audition",
+        "deliver",
+        "make a video",
+        "fight for one's rights",
+        "get butterflies in one's stomach",
+        "(a) good idea",
+        "stranger",
+        "comment",
+        "conversation",
+        "common",
+        "compare",
+        "whole"
+      ]
+    }
+  ],
+  "vocabulary": [
+    {
+      "word": "typhoon",
+      "pos": "n.",
+      "meaning": "颱風",
+      "date": "2026-06-30"
+    },
+    {
+      "word": "earthquake",
+      "pos": "n.",
+      "meaning": "地震",
+      "date": "2026-06-30"
+    },
+    {
+      "word": "rescue",
+      "pos": "v./n.",
+      "meaning": "救援；營救",
+      "date": "2026-06-30"
+    },
+    {
+      "word": "suddenly",
+      "pos": "adv.",
+      "meaning": "突然地",
+      "date": "2026-06-30"
+    },
+    {
+      "word": "happen",
+      "pos": "v.",
+      "meaning": "發生",
+      "date": "2026-06-30"
+    },
+    {
+      "word": "shake",
+      "pos": "v.",
+      "meaning": "搖晃；震動",
+      "date": "2026-06-30"
+    },
+    {
+      "word": "ground",
+      "pos": "n.",
+      "meaning": "地面；土地",
+      "date": "2026-06-30"
+    },
+    {
+      "word": "destroy",
+      "pos": "v.",
+      "meaning": "破壞；摧毀",
+      "date": "2026-06-30"
+    },
+    {
+      "word": "terrible",
+      "pos": "adj.",
+      "meaning": "可怕的；糟糕的",
+      "date": "2026-06-30"
+    },
+    {
+      "word": "dangerous",
+      "pos": "adj.",
+      "meaning": "危險的",
+      "date": "2026-06-30"
+    },
+    {
+      "word": "population",
+      "pos": "n.",
+      "meaning": "人口",
+      "date": "2026-07-08"
+    },
+    {
+      "word": "waste",
+      "pos": "v./n.",
+      "meaning": "浪費；廢棄物",
+      "date": "2026-07-08"
+    },
+    {
+      "word": "share",
+      "pos": "v./n.",
+      "meaning": "分享；分配；一份",
+      "date": "2026-07-08"
+    },
+    {
+      "word": "produce",
+      "pos": "v.",
+      "meaning": "生產；製造",
+      "date": "2026-07-08"
+    },
+    {
+      "word": "plenty",
+      "pos": "pron./n.",
+      "meaning": "豐富；充足",
+      "date": "2026-07-08"
+    },
+    {
+      "word": "hunger",
+      "pos": "n.",
+      "meaning": "飢餓",
+      "date": "2026-07-08"
+    },
+    {
+      "word": "transport",
+      "pos": "v.",
+      "meaning": "運輸；運送",
+      "date": "2026-07-08"
+    },
+    {
+      "word": "fair",
+      "pos": "adj.",
+      "meaning": "公平的",
+      "date": "2026-07-08"
+    },
+    {
+      "word": "deal with",
+      "pos": "phr.",
+      "meaning": "處理；應對",
+      "date": "2026-07-08"
+    },
+    {
+      "word": "depend on",
+      "pos": "phr.",
+      "meaning": "取決於；依靠",
+      "date": "2026-07-08"
+    },
+    {
+      "word": "require",
+      "pos": "v.",
+      "meaning": "需要；需求",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "download",
+      "pos": "v.",
+      "meaning": "下載",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "post",
+      "pos": "v.",
+      "meaning": "貼文；發布",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "steal",
+      "pos": "v.",
+      "meaning": "偷竊",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "screen",
+      "pos": "n.",
+      "meaning": "螢幕",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "message",
+      "pos": "n.",
+      "meaning": "訊息",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "app",
+      "pos": "n.",
+      "meaning": "應用程式",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "security",
+      "pos": "n.",
+      "meaning": "安全；保安",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "digital",
+      "pos": "adj.",
+      "meaning": "數位的",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "cyber",
+      "pos": "adj.",
+      "meaning": "網路的；虛擬空間的",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "online",
+      "pos": "adv.",
+      "meaning": "在線上；網路上",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "data",
+      "pos": "n.",
+      "meaning": "資料；數據",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "turn off",
+      "pos": "phr.",
+      "meaning": "關掉（電源或設定）",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "log in",
+      "pos": "phr.",
+      "meaning": "登入（帳號系統）",
+      "date": "2026-07-14"
+    },
+    {
+      "word": "engineer",
+      "pos": "n.",
+      "meaning": "工程師",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "lawyer",
+      "pos": "n.",
+      "meaning": "律師",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "reporter",
+      "pos": "n.",
+      "meaning": "記者",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "scientist",
+      "pos": "n.",
+      "meaning": "科學家",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "police officer",
+      "pos": "n.",
+      "meaning": "警察",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "worker",
+      "pos": "n.",
+      "meaning": "工人；員工",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "secretary",
+      "pos": "n.",
+      "meaning": "秘書",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "manager",
+      "pos": "n.",
+      "meaning": "經理",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "resume",
+      "pos": "n.",
+      "meaning": "履歷",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "employee",
+      "pos": "n.",
+      "meaning": "員工",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "work as",
+      "pos": "phr.",
+      "meaning": "擔任……工作",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "look for a job",
+      "pos": "phr.",
+      "meaning": "找工作",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "be in charge of",
+      "pos": "phr.",
+      "meaning": "負責……",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "apply for",
+      "pos": "phr.",
+      "meaning": "申請；應徵……",
+      "date": "2026-07-21"
+    },
+    {
+      "word": "hacker",
+      "pos": "n.",
+      "meaning": "駭客",
+      "date": "2026-07-23"
+    },
+    {
+      "word": "urgent",
+      "pos": "adj.",
+      "meaning": "緊急的",
+      "date": "2026-07-23"
+    },
+    {
+      "word": "article",
+      "pos": "n.",
+      "meaning": "文章；報導",
+      "date": "2026-07-23"
+    },
+    {
+      "word": "platform",
+      "pos": "n.",
+      "meaning": "平台",
+      "date": "2026-07-23"
+    },
+    {
+      "word": "interview",
+      "pos": "v./n.",
+      "meaning": "採訪；面試",
+      "date": "2026-07-23"
+    },
+    {
+      "word": "predict",
+      "pos": "v.",
+      "meaning": "預測",
+      "date": "2026-07-23"
+    },
+    {
+      "word": "crash",
+      "pos": "v./n.",
+      "meaning": "當機；墜毀",
+      "date": "2026-07-23"
+    },
+    {
+      "word": "system",
+      "pos": "n.",
+      "meaning": "系統",
+      "date": "2026-07-23"
+    },
+    {
+      "word": "password",
+      "pos": "n.",
+      "meaning": "密碼",
+      "date": "2026-07-23"
+    },
+    {
+      "word": "attention",
+      "pos": "n.",
+      "meaning": "注意力；關注",
+      "date": "2026-07-23"
+    },
+    {
+      "word": "accountant",
+      "pos": "n.",
+      "meaning": "會計師",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "photographer",
+      "pos": "n.",
+      "meaning": "攝影師",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "musician",
+      "pos": "n.",
+      "meaning": "音樂家；樂手",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "dentist",
+      "pos": "n.",
+      "meaning": "牙醫",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "pilot",
+      "pos": "n.",
+      "meaning": "飛行員",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "flight attendant",
+      "pos": "n.",
+      "meaning": "空服員",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "postman",
+      "pos": "n.",
+      "meaning": "郵差",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "hairdresser",
+      "pos": "n.",
+      "meaning": "美髮師；理髮師",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "firefighter",
+      "pos": "n.",
+      "meaning": "消防員",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "janitor",
+      "pos": "n.",
+      "meaning": "清潔管理員；工友",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "mechanic",
+      "pos": "n.",
+      "meaning": "技師；技工",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "architect",
+      "pos": "n.",
+      "meaning": "建築師",
+      "date": "2026-07-28"
+    },
+    {
+      "word": "safe",
+      "pos": "adj.",
+      "meaning": "安全的",
+      "date": "2026-07-30"
+    },
+    {
+      "word": "busy",
+      "pos": "adj.",
+      "meaning": "忙碌的",
+      "date": "2026-07-30"
+    },
+    {
+      "word": "easy",
+      "pos": "adj.",
+      "meaning": "容易的；簡單的",
+      "date": "2026-07-30"
+    },
+    {
+      "word": "smart",
+      "pos": "adj.",
+      "meaning": "聰明的；明智的",
+      "date": "2026-07-30"
+    },
+    {
+      "word": "exciting",
+      "pos": "adj.",
+      "meaning": "令人興奮的",
+      "date": "2026-07-30"
+    },
+    {
+      "word": "important",
+      "pos": "adj.",
+      "meaning": "重要的",
+      "date": "2026-07-30"
+    },
+    {
+      "word": "better",
+      "pos": "adj./adv.",
+      "meaning": "更好的（good/well 比較級）",
+      "date": "2026-07-30"
+    },
+    {
+      "word": "worse",
+      "pos": "adj./adv.",
+      "meaning": "更糟的（bad/badly 比較級）",
+      "date": "2026-07-30"
+    },
+    {
+      "word": "less",
+      "pos": "adj./adv.",
+      "meaning": "更少的（little 比較級）",
+      "date": "2026-07-30"
+    },
+    {
+      "word": "unique",
+      "pos": "adj.",
+      "meaning": "獨特的",
+      "date": "2026-07-30"
+    },
+    {
+      "word": "regularly",
+      "pos": "adv.",
+      "meaning": "規律地；定期地",
+      "date": "2026-07-30"
+    },
+    {
+      "word": "Asia",
+      "pos": "n.",
+      "meaning": "亞洲",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "Europe",
+      "pos": "n.",
+      "meaning": "歐洲",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "Africa",
+      "pos": "n.",
+      "meaning": "非洲",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "North America",
+      "pos": "n.",
+      "meaning": "北美洲",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "South America",
+      "pos": "n.",
+      "meaning": "南美洲",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "Antarctica",
+      "pos": "n.",
+      "meaning": "南極洲",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "Oceania",
+      "pos": "n.",
+      "meaning": "大洋洲",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "Australia",
+      "pos": "n.",
+      "meaning": "澳洲",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "Japan",
+      "pos": "n.",
+      "meaning": "日本",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "Thailand",
+      "pos": "n.",
+      "meaning": "泰國",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "India",
+      "pos": "n.",
+      "meaning": "印度",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "Vietnam",
+      "pos": "n.",
+      "meaning": "越南",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "South Korea",
+      "pos": "n.",
+      "meaning": "南韓",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "Singapore",
+      "pos": "n.",
+      "meaning": "新加坡",
+      "date": "2026-08-04"
+    },
+    {
+      "word": "Egypt",
+      "pos": "n.",
+      "meaning": "埃及",
+      "date": "2026-08-06"
+    },
+    {
+      "word": "pyramid",
+      "pos": "n.",
+      "meaning": "金字塔",
+      "date": "2026-08-06"
+    },
+    {
+      "word": "Nigeria",
+      "pos": "n.",
+      "meaning": "奈及利亞",
+      "date": "2026-08-06"
+    },
+    {
+      "word": "South Africa",
+      "pos": "n.",
+      "meaning": "南非",
+      "date": "2026-08-06"
+    },
+    {
+      "word": "finance",
+      "pos": "n.",
+      "meaning": "金融；財務",
+      "date": "2026-08-06"
+    },
+    {
+      "word": "financial",
+      "pos": "adj.",
+      "meaning": "金融的；財務的",
+      "date": "2026-08-06"
+    },
+    {
+      "word": "incredible",
+      "pos": "adj.",
+      "meaning": "難以置信的；驚人的",
+      "date": "2026-08-06"
+    },
+    {
+      "word": "ancient",
+      "pos": "adj.",
+      "meaning": "古老的；遠古的",
+      "date": "2026-08-06"
+    },
+    {
+      "word": "be full of",
+      "pos": "phr.",
+      "meaning": "充滿著……",
+      "date": "2026-08-06"
+    },
+    {
+      "word": "play a role in",
+      "pos": "phr.",
+      "meaning": "在……中扮演角色",
+      "date": "2026-08-06"
+    },
+    {
+      "word": "The UK",
+      "pos": "n.",
+      "meaning": "英國",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "London",
+      "pos": "n.",
+      "meaning": "倫敦",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "France",
+      "pos": "n.",
+      "meaning": "法國",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "Paris",
+      "pos": "n.",
+      "meaning": "巴黎",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "Germany",
+      "pos": "n.",
+      "meaning": "德國",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "The Netherlands",
+      "pos": "n.",
+      "meaning": "荷蘭",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "Belgium",
+      "pos": "n.",
+      "meaning": "比利時",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "Switzerland",
+      "pos": "n.",
+      "meaning": "瑞士",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "Austria",
+      "pos": "n.",
+      "meaning": "奧地利",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "Czech Republic",
+      "pos": "n.",
+      "meaning": "捷克共和國",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "Poland",
+      "pos": "n.",
+      "meaning": "波蘭",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "explore",
+      "pos": "v.",
+      "meaning": "探索；探險",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "crowded",
+      "pos": "adj.",
+      "meaning": "擁擠的",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "peaceful",
+      "pos": "adj.",
+      "meaning": "平靜的；安靜祥和的",
+      "date": "2026-08-11"
+    },
+    {
+      "word": "Italy",
+      "pos": "n.",
+      "meaning": "義大利",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "Rome",
+      "pos": "n.",
+      "meaning": "羅馬",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "Spain",
+      "pos": "n.",
+      "meaning": "西班牙",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "Madrid",
+      "pos": "n.",
+      "meaning": "馬德里",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "Greece",
+      "pos": "n.",
+      "meaning": "希臘",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "Athens",
+      "pos": "n.",
+      "meaning": "雅典",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "Portugal",
+      "pos": "n.",
+      "meaning": "葡萄牙",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "Italian",
+      "pos": "adj./n.",
+      "meaning": "義大利的；義大利人／文",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "bright",
+      "pos": "adj.",
+      "meaning": "明亮的；陽光燦爛的",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "historic",
+      "pos": "adj.",
+      "meaning": "歷史悠久的；具歷史意義的",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "taste",
+      "pos": "v./n.",
+      "meaning": "品嚐；味道",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "introduce",
+      "pos": "v.",
+      "meaning": "介紹；引進",
+      "date": "2026-08-13"
+    },
+    {
+      "word": "Slovakia",
+      "pos": "n.",
+      "meaning": "斯洛伐克",
+      "date": "2026-08-18"
+    },
+    {
+      "word": "Hungary",
+      "pos": "n.",
+      "meaning": "匈牙利",
+      "date": "2026-08-18"
+    },
+    {
+      "word": "Ukraine",
+      "pos": "n.",
+      "meaning": "烏克蘭",
+      "date": "2026-08-18"
+    },
+    {
+      "word": "Romania",
+      "pos": "n.",
+      "meaning": "羅馬尼亞",
+      "date": "2026-08-18"
+    },
+    {
+      "word": "Bulgaria",
+      "pos": "n.",
+      "meaning": "保加利亞",
+      "date": "2026-08-18"
+    },
+    {
+      "word": "protect",
+      "pos": "v.",
+      "meaning": "保護；保衛",
+      "date": "2026-08-18"
+    },
+    {
+      "word": "discover",
+      "pos": "v.",
+      "meaning": "發現；發掘",
+      "date": "2026-08-18"
+    },
+    {
+      "word": "grand",
+      "pos": "adj.",
+      "meaning": "雄偉的；壯麗的",
+      "date": "2026-08-18"
+    },
+    {
+      "word": "mysterious",
+      "pos": "adj.",
+      "meaning": "神秘的",
+      "date": "2026-08-18"
+    },
+    {
+      "word": "set off",
+      "pos": "phr.",
+      "meaning": "出發；動身啟程",
+      "date": "2026-08-18"
+    },
+    {
+      "word": "take a look at",
+      "pos": "phr.",
+      "meaning": "看一看……；瞧瞧……",
+      "date": "2026-08-18"
+    },
+    {
+      "word": "Denmark",
+      "pos": "n.",
+      "meaning": "丹麥",
+      "date": "2026-08-20"
+    },
+    {
+      "word": "Sweden",
+      "pos": "n.",
+      "meaning": "瑞典",
+      "date": "2026-08-20"
+    },
+    {
+      "word": "Norway",
+      "pos": "n.",
+      "meaning": "挪威",
+      "date": "2026-08-20"
+    },
+    {
+      "word": "Finland",
+      "pos": "n.",
+      "meaning": "芬蘭",
+      "date": "2026-08-20"
+    },
+    {
+      "word": "Iceland",
+      "pos": "n.",
+      "meaning": "冰島",
+      "date": "2026-08-20"
+    },
+    {
+      "word": "assemble",
+      "pos": "v.",
+      "meaning": "組裝；裝配",
+      "date": "2026-08-20"
+    },
+    {
+      "word": "admire",
+      "pos": "v.",
+      "meaning": "欣賞；讚賞",
+      "date": "2026-08-20"
+    },
+    {
+      "word": "simple",
+      "pos": "adj.",
+      "meaning": "簡約的；簡單的",
+      "date": "2026-08-20"
+    },
+    {
+      "word": "freezing",
+      "pos": "adj.",
+      "meaning": "極冷的；冰凍的",
+      "date": "2026-08-20"
+    },
+    {
+      "word": "Canada",
+      "pos": "n.",
+      "meaning": "加拿大",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "Montreal",
+      "pos": "n.",
+      "meaning": "蒙特婁",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "Washington, D.C.",
+      "pos": "n.",
+      "meaning": "華盛頓特區",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "New York City",
+      "pos": "n.",
+      "meaning": "紐約市",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "Los Angeles",
+      "pos": "n.",
+      "meaning": "洛杉磯",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "Chicago",
+      "pos": "n.",
+      "meaning": "芝加哥",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "San Francisco",
+      "pos": "n.",
+      "meaning": "舊金山",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "Boston",
+      "pos": "n.",
+      "meaning": "波士頓",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "state",
+      "pos": "n.",
+      "meaning": "州；國家",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "county",
+      "pos": "n.",
+      "meaning": "郡；縣",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "lead",
+      "pos": "v.",
+      "meaning": "帶領；領導（過去式 led）",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "unite",
+      "pos": "v.",
+      "meaning": "團結；聯合",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "brave",
+      "pos": "adj.",
+      "meaning": "勇敢的",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "powerful",
+      "pos": "adj.",
+      "meaning": "強大的",
+      "date": "2026-08-25"
+    },
+    {
+      "word": "Mexico",
+      "pos": "n.",
+      "meaning": "墨西哥",
+      "date": "2026-08-27"
+    },
+    {
+      "word": "Colombia",
+      "pos": "n.",
+      "meaning": "哥倫比亞",
+      "date": "2026-08-27"
+    },
+    {
+      "word": "Peru",
+      "pos": "n.",
+      "meaning": "秘魯",
+      "date": "2026-08-27"
+    },
+    {
+      "word": "Brazil",
+      "pos": "n.",
+      "meaning": "巴西",
+      "date": "2026-08-27"
+    },
+    {
+      "word": "Chile",
+      "pos": "n.",
+      "meaning": "智利",
+      "date": "2026-08-27"
+    },
+    {
+      "word": "Argentina",
+      "pos": "n.",
+      "meaning": "阿根廷",
+      "date": "2026-08-27"
+    },
+    {
+      "word": "flow",
+      "pos": "v.",
+      "meaning": "流動；流經",
+      "date": "2026-08-27"
+    },
+    {
+      "word": "cross",
+      "pos": "v.",
+      "meaning": "橫越；穿過",
+      "date": "2026-08-27"
+    },
+    {
+      "word": "therefore",
+      "pos": "adv.",
+      "meaning": "因此；所以",
+      "date": "2026-08-27"
+    },
+    {
+      "word": "however",
+      "pos": "adv.",
+      "meaning": "然而；不過",
+      "date": "2026-08-27"
+    },
+    {
+      "word": "in the same boat",
+      "pos": "phr.",
+      "meaning": "處境相同；面臨同樣困難",
+      "date": "2026-09-01"
+    },
+    {
+      "word": "on the same page",
+      "pos": "phr.",
+      "meaning": "達成共識；想法一致",
+      "date": "2026-09-01"
+    },
+    {
+      "word": "a piece of cake",
+      "pos": "phr.",
+      "meaning": "輕而易舉；小菜一碟",
+      "date": "2026-09-01"
+    },
+    {
+      "word": "under the weather",
+      "pos": "phr.",
+      "meaning": "身體不舒服；微恙",
+      "date": "2026-09-01"
+    },
+    {
+      "word": "cost an arm and a leg",
+      "pos": "phr.",
+      "meaning": "代價極高；非常昂貴",
+      "date": "2026-09-01"
+    },
+    {
+      "word": "when pigs fly",
+      "pos": "phr.",
+      "meaning": "絕不可能；太陽打西邊出來",
+      "date": "2026-09-01"
+    },
+    {
+      "word": "speak one's language",
+      "pos": "phr.",
+      "meaning": "說中某人的心聲；想法完全投契",
+      "date": "2026-09-03"
+    },
+    {
+      "word": "give someone a hand",
+      "pos": "phr.",
+      "meaning": "伸出援手幫某人一把",
+      "date": "2026-09-03"
+    },
+    {
+      "word": "break a leg",
+      "pos": "phr.",
+      "meaning": "祝你好運；演出順利",
+      "date": "2026-09-03"
+    },
+    {
+      "word": "spill the beans",
+      "pos": "phr.",
+      "meaning": "洩漏秘密；說溜嘴",
+      "date": "2026-09-03"
+    },
+    {
+      "word": "get cold feet",
+      "pos": "phr.",
+      "meaning": "臨陣退縮；突然害怕膽怯",
+      "date": "2026-09-03"
+    },
+    {
+      "word": "call it a day",
+      "pos": "phr.",
+      "meaning": "今天就到此為止；收工",
+      "date": "2026-09-03"
+    },
+    {
+      "word": "judge a book by its cover",
+      "pos": "phr.",
+      "meaning": "以貌取人；單看外表評斷",
+      "date": "2026-09-03"
+    },
+    {
+      "word": "vacation",
+      "pos": "n.",
+      "meaning": "假期",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "season",
+      "pos": "n.",
+      "meaning": "季節；賽季",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "spring",
+      "pos": "n.",
+      "meaning": "春天",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "autumn",
+      "pos": "n.",
+      "meaning": "秋天",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "cloudy",
+      "pos": "adj.",
+      "meaning": "多雲的；陰天的",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "windy",
+      "pos": "adj.",
+      "meaning": "風大的",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "cool",
+      "pos": "adj.",
+      "meaning": "涼爽的；酷的",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "postcard",
+      "pos": "n.",
+      "meaning": "明信片",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "borrow",
+      "pos": "v.",
+      "meaning": "借入",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "lend",
+      "pos": "v.",
+      "meaning": "借出",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "glove",
+      "pos": "n.",
+      "meaning": "手套",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "jacket",
+      "pos": "n.",
+      "meaning": "外套；夾克",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "nervous",
+      "pos": "adj.",
+      "meaning": "緊張的；擔憂的",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "order",
+      "pos": "v./n.",
+      "meaning": "點餐；訂購；餐點",
+      "date": "2026-09-08"
+    },
+    {
+      "word": "another",
+      "pos": "pron./adj.",
+      "meaning": "另一個（三者以上未指定；再一個）",
+      "date": "2026-09-16"
+    },
+    {
+      "word": "the other",
+      "pos": "pron./adj.",
+      "meaning": "另一個（兩者中剩下的那一個）",
+      "date": "2026-09-16"
+    },
+    {
+      "word": "in fact",
+      "pos": "phr.",
+      "meaning": "事實上；其實",
+      "date": "2026-09-16"
+    },
+    {
+      "word": "just like",
+      "pos": "phr.",
+      "meaning": "就像……一樣",
+      "date": "2026-09-16"
+    },
+    {
+      "word": "come right up",
+      "pos": "phr.",
+      "meaning": "馬上就來；準備好了",
+      "date": "2026-09-16"
+    },
+    {
+      "word": "be mad at",
+      "pos": "phr.",
+      "meaning": "對……生氣",
+      "date": "2026-09-16"
+    },
+    {
+      "word": "clerk",
+      "pos": "n.",
+      "meaning": "店員；辦事員",
+      "date": "2026-09-16"
+    },
+    {
+      "word": "Australian",
+      "pos": "adj./n.",
+      "meaning": "澳洲的；澳洲人",
+      "date": "2026-09-16"
+    },
+    {
+      "word": "club",
+      "pos": "n.",
+      "meaning": "社團",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "subject",
+      "pos": "n.",
+      "meaning": "學科；主題",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "math",
+      "pos": "n.",
+      "meaning": "數學",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "soccer",
+      "pos": "n.",
+      "meaning": "足球",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "robot",
+      "pos": "n.",
+      "meaning": "機器人",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "festival",
+      "pos": "n.",
+      "meaning": "節慶；嘉年華",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "choice",
+      "pos": "n.",
+      "meaning": "選擇",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "poor",
+      "pos": "adj.",
+      "meaning": "不佳的；貧窮的",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "whose",
+      "pos": "pron./adj.",
+      "meaning": "誰的（東西）",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "own",
+      "pos": "adj./v.",
+      "meaning": "自己的；擁有",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "make up one's mind",
+      "pos": "phr.",
+      "meaning": "下定決心",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "pull one's leg",
+      "pos": "phr.",
+      "meaning": "開玩笑；捉弄某人",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "hold on",
+      "pos": "phr.",
+      "meaning": "稍候；等一下",
+      "date": "2026-09-23"
+    },
+    {
+      "word": "at the end of",
+      "pos": "phr.",
+      "meaning": "在……的最後；盡頭",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "not... at all",
+      "pos": "phr.",
+      "meaning": "一點也不……",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "miss out on",
+      "pos": "phr.",
+      "meaning": "錯失良機",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "I see",
+      "pos": "phr.",
+      "meaning": "我了解了；原來如此",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "Biology",
+      "pos": "n.",
+      "meaning": "生物學",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "Chemistry",
+      "pos": "n.",
+      "meaning": "化學",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "Physics",
+      "pos": "n.",
+      "meaning": "物理學",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "Earth Science",
+      "pos": "n.",
+      "meaning": "地球科學",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "Geography",
+      "pos": "n.",
+      "meaning": "地理學",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "Civics",
+      "pos": "n.",
+      "meaning": "公民與社會",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "Literature",
+      "pos": "n.",
+      "meaning": "文學",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "Information Technology",
+      "pos": "n.",
+      "meaning": "資訊科技",
+      "date": "2026-09-30"
+    },
+    {
+      "word": "worth",
+      "pos": "adj.",
+      "meaning": "有……價值的；值得",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "value",
+      "pos": "n.",
+      "meaning": "價值；價格",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "condition",
+      "pos": "n.",
+      "meaning": "狀況；條件",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "antique",
+      "pos": "n./adj.",
+      "meaning": "古董；古老的",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "project",
+      "pos": "n.",
+      "meaning": "專案計畫；專題",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "still",
+      "pos": "adj.",
+      "meaning": "平靜的；靜止的",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "activity",
+      "pos": "n.",
+      "meaning": "活動",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "experience",
+      "pos": "n./v.",
+      "meaning": "體驗；經驗",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "mine",
+      "pos": "v./n.",
+      "meaning": "開採；礦坑",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "run out",
+      "pos": "phr.",
+      "meaning": "用盡；耗盡",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "gene",
+      "pos": "n.",
+      "meaning": "基因",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "sense",
+      "pos": "v./n.",
+      "meaning": "感知；察覺",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "chemical",
+      "pos": "n./adj.",
+      "meaning": "化學物質；化學的",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "bitterness",
+      "pos": "n.",
+      "meaning": "苦味",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "detect",
+      "pos": "v.",
+      "meaning": "偵測；察覺",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "childhood",
+      "pos": "n.",
+      "meaning": "童年時期",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "soap",
+      "pos": "n.",
+      "meaning": "肥皂",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "control",
+      "pos": "v./n.",
+      "meaning": "控制；掌控",
+      "date": "2026-10-07"
+    },
+    {
+      "word": "mine",
+      "pos": "v./pron.",
+      "meaning": "開採（動詞）；我的（所有格代名詞）",
+      "date": "2026-10-13"
+    },
+    {
+      "word": "still",
+      "pos": "adj./adv.",
+      "meaning": "靜止的（形容詞）；仍然（副詞）",
+      "date": "2026-10-13"
+    },
+    {
+      "word": "poor",
+      "pos": "adj.",
+      "meaning": "貧窮的；不佳的；不擅長的",
+      "date": "2026-10-13"
+    },
+    {
+      "word": "condition",
+      "pos": "n.",
+      "meaning": "狀況；條件",
+      "date": "2026-10-13"
+    },
+    {
+      "word": "sense",
+      "pos": "v./n.",
+      "meaning": "察覺；道理；意義",
+      "date": "2026-10-13"
+    },
+    {
+      "word": "tunnel",
+      "pos": "n.",
+      "meaning": "隧道；坑道",
+      "date": "2026-10-13"
+    },
+    {
+      "word": "auction",
+      "pos": "n.",
+      "meaning": "拍賣會",
+      "date": "2026-10-13"
+    },
+    {
+      "word": "goggles",
+      "pos": "n.",
+      "meaning": "蛙鏡；護目鏡",
+      "date": "2026-10-13"
+    },
+    {
+      "word": "compass",
+      "pos": "n.",
+      "meaning": "指南針；羅盤",
+      "date": "2026-10-13"
+    },
+    {
+      "word": "luggage",
+      "pos": "n.",
+      "meaning": "行李（不可數名詞）",
+      "date": "2026-10-13"
+    },
+    {
+      "word": "do the dishes",
+      "pos": "phr.",
+      "meaning": "洗碗盤",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "half",
+      "pos": "n.",
+      "meaning": "一半；二分之一（搭配 half past）",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "quarter",
+      "pos": "n.",
+      "meaning": "十五分鐘；四分之一",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "past",
+      "pos": "prep.",
+      "meaning": "過（幾點鐘幾分）；經過",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "leave",
+      "pos": "v.",
+      "meaning": "離開；出發",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "remember",
+      "pos": "v.",
+      "meaning": "記得",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "take it easy",
+      "pos": "phr.",
+      "meaning": "放輕鬆；別緊張",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "cool down",
+      "pos": "phr.",
+      "meaning": "冷靜一下；降溫",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "feed",
+      "pos": "v.",
+      "meaning": "餵養",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "sweep",
+      "pos": "v.",
+      "meaning": "打掃；掃地",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "floor",
+      "pos": "n.",
+      "meaning": "地板；樓層",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "fix",
+      "pos": "v.",
+      "meaning": "修理；解決",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "drawer",
+      "pos": "n.",
+      "meaning": "抽屜",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "mop",
+      "pos": "v./n.",
+      "meaning": "拖地；拖把",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "wipe",
+      "pos": "v.",
+      "meaning": "擦拭",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "hang",
+      "pos": "v.",
+      "meaning": "吊；掛",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "sleepwalk",
+      "pos": "v.",
+      "meaning": "夢遊",
+      "date": "2026-10-21"
+    },
+    {
+      "word": "save ... from ...",
+      "pos": "phr.",
+      "meaning": "將……從……拯救出來",
+      "date": "2026-10-28"
+    },
+    {
+      "word": "however",
+      "pos": "adv.",
+      "meaning": "然而；不過",
+      "date": "2026-10-28"
+    },
+    {
+      "word": "salesman",
+      "pos": "n.",
+      "meaning": "業務員",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "boss",
+      "pos": "n.",
+      "meaning": "老闆",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "soldier",
+      "pos": "n.",
+      "meaning": "士兵",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "farmer",
+      "pos": "n.",
+      "meaning": "農夫",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "fisherman",
+      "pos": "n.",
+      "meaning": "漁夫",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "relative",
+      "pos": "n.",
+      "meaning": "親戚",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "factory",
+      "pos": "n.",
+      "meaning": "工廠",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "truck driver",
+      "pos": "n.",
+      "meaning": "卡車司機",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "believe",
+      "pos": "v.",
+      "meaning": "相信",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "act",
+      "pos": "v.",
+      "meaning": "表演；行動",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "give up",
+      "pos": "phr.",
+      "meaning": "放棄",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "make fun of",
+      "pos": "phr.",
+      "meaning": "取笑；嘲弄",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "career",
+      "pos": "n.",
+      "meaning": "職業生涯；事業",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "audition",
+      "pos": "n.",
+      "meaning": "試鏡；試音",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "deliver",
+      "pos": "v.",
+      "meaning": "投遞；運送",
+      "date": "2026-11-04"
+    },
+    {
+      "word": "make a video",
+      "pos": "phr.",
+      "meaning": "製作/拍攝影片",
+      "date": "2026-11-11"
+    },
+    {
+      "word": "fight for one's rights",
+      "pos": "phr.",
+      "meaning": "為……爭取權益",
+      "date": "2026-11-11"
+    },
+    {
+      "word": "get butterflies in one's stomach",
+      "pos": "phr.",
+      "meaning": "感到心神不寧；非常緊張",
+      "date": "2026-11-11"
+    },
+    {
+      "word": "(a) good idea",
+      "pos": "phr.",
+      "meaning": "好主意；好辦法",
+      "date": "2026-11-11"
+    },
+    {
+      "word": "stranger",
+      "pos": "n.",
+      "meaning": "陌生人",
+      "date": "2026-11-11"
+    },
+    {
+      "word": "comment",
+      "pos": "n.",
+      "meaning": "意見；評論",
+      "date": "2026-11-11"
+    },
+    {
+      "word": "conversation",
+      "pos": "n.",
+      "meaning": "交談",
+      "date": "2026-11-11"
+    },
+    {
+      "word": "common",
+      "pos": "adj.",
+      "meaning": "常見的",
+      "date": "2026-11-11"
+    },
+    {
+      "word": "compare",
+      "pos": "v.",
+      "meaning": "比較",
+      "date": "2026-11-11"
+    },
+    {
+      "word": "whole",
+      "pos": "adj.",
+      "meaning": "全部的；整體的",
+      "date": "2026-11-11"
+    },
+    {
+      "word": "do the dishes",
+      "pos": "phr.",
+      "meaning": "洗碗盤",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "half",
+      "pos": "n.",
+      "meaning": "一半；二分之一（搭配 half past）",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "quarter",
+      "pos": "n.",
+      "meaning": "十五分鐘；四分之一",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "past",
+      "pos": "prep.",
+      "meaning": "過（幾點鐘幾分）；經過",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "leave",
+      "pos": "v.",
+      "meaning": "離開；出發",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "remember",
+      "pos": "v.",
+      "meaning": "記得",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "take it easy",
+      "pos": "phr.",
+      "meaning": "放輕鬆；別緊張",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "cool down",
+      "pos": "phr.",
+      "meaning": "冷靜一下；降溫",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "feed",
+      "pos": "v.",
+      "meaning": "餵養",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "sweep",
+      "pos": "v.",
+      "meaning": "打掃；掃地",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "floor",
+      "pos": "n.",
+      "meaning": "地板；樓層",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "fix",
+      "pos": "v.",
+      "meaning": "修理；解決",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "drawer",
+      "pos": "n.",
+      "meaning": "抽屜",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "mop",
+      "pos": "v./n.",
+      "meaning": "拖地；拖把",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "wipe",
+      "pos": "v.",
+      "meaning": "擦拭",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "hang",
+      "pos": "v.",
+      "meaning": "吊；掛",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "sleepwalk",
+      "pos": "v.",
+      "meaning": "夢遊",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "save ... from ...",
+      "pos": "phr.",
+      "meaning": "將……從……拯救出來",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "however",
+      "pos": "adv.",
+      "meaning": "然而；不過",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "salesman",
+      "pos": "n.",
+      "meaning": "業務員",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "boss",
+      "pos": "n.",
+      "meaning": "老闆",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "soldier",
+      "pos": "n.",
+      "meaning": "士兵",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "farmer",
+      "pos": "n.",
+      "meaning": "農夫",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "fisherman",
+      "pos": "n.",
+      "meaning": "漁夫",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "relative",
+      "pos": "n.",
+      "meaning": "親戚",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "factory",
+      "pos": "n.",
+      "meaning": "工廠",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "truck driver",
+      "pos": "n.",
+      "meaning": "卡車司機",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "believe",
+      "pos": "v.",
+      "meaning": "相信",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "act",
+      "pos": "v.",
+      "meaning": "表演；行動",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "give up",
+      "pos": "phr.",
+      "meaning": "放棄",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "make fun of",
+      "pos": "phr.",
+      "meaning": "取笑；嘲弄",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "career",
+      "pos": "n.",
+      "meaning": "職業生涯；事業",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "audition",
+      "pos": "n.",
+      "meaning": "試鏡；試音",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "deliver",
+      "pos": "v.",
+      "meaning": "投遞；運送",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "make a video",
+      "pos": "phr.",
+      "meaning": "製作/拍攝影片",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "fight for one's rights",
+      "pos": "phr.",
+      "meaning": "為……爭取權益",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "get butterflies in one's stomach",
+      "pos": "phr.",
+      "meaning": "感到心神不寧；非常緊張",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "(a) good idea",
+      "pos": "phr.",
+      "meaning": "好主意；好辦法",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "stranger",
+      "pos": "n.",
+      "meaning": "陌生人",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "comment",
+      "pos": "n.",
+      "meaning": "意見；評論",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "conversation",
+      "pos": "n.",
+      "meaning": "交談",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "common",
+      "pos": "adj.",
+      "meaning": "常見的",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "compare",
+      "pos": "v.",
+      "meaning": "比較",
+      "date": "2026-11-24"
+    },
+    {
+      "word": "whole",
+      "pos": "adj.",
+      "meaning": "全部的；整體的",
+      "date": "2026-11-24"
+    }
+  ]
+}

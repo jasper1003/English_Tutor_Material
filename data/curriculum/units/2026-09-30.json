@@ -1,0 +1,168 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "f7866cc693",
+  "date": "2026-09-30",
+  "lesson": {
+    "Date": "2026-09-30",
+    "Title": "生活片語與學科單字",
+    "Grammar_Focus": "電話英文與對話辨析（This is... speaking / I know vs. I see），搭配生活片語（at the end of / not... at all / miss out on）及國中各學科名詞",
+    "Reading_Title": "Choosing Electives for the New School Term",
+    "Reading_Passage": "At the end of September, Northwood Junior High held a busy open house for extra elective courses. On Thursday evening, Maya called her friend Sam to compare class schedules. \"Hello, this is Maya speaking,\" she said politely. \"I still cannot decide between Biology and Chemistry. Do you know if the lab work is hard?\" Sam answered cheerfully that the science classes were not boring at all because students tested safe water samples every week.<br><br>\"Oh, I see!\" Maya smiled, feeling much more relaxed about her choices. Sam added that he planned to sign up for Earth Science and Geography to learn how typhoons form and how climate zones shape cities around the world. Meanwhile, their classmate Owen loved reading classic poetry in Literature and discussing fair community rules in Civics.<br><br>Before hanging up the phone, Sam reminded Maya that registration closed at four o'clock on Friday afternoon. \"Don't wait too long, or you will miss out on the Information Technology coding workshop,\" he warned. Maya thanked Sam, wrote down Physics as her backup choice, and quickly finished her online form before dinner.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-09-30",
+      "Word": "at the end of",
+      "POS": "phr.",
+      "Meaning": "在……的最後；盡頭",
+      "Example": "Our class always takes a group photo on the playground at the end of June.",
+      "Image_URL": "images/vocab/2026-09-30/at_the_end_of.webp"
+    },
+    {
+      "Date": "2026-09-30",
+      "Word": "not... at all",
+      "POS": "phr.",
+      "Meaning": "一點也不……",
+      "Example": "Once you understand the grammar chart, these ten questions are not hard at all.",
+      "Image_URL": "images/vocab/2026-09-30/not_at_all.webp"
+    },
+    {
+      "Date": "2026-09-30",
+      "Word": "miss out on",
+      "POS": "phr.",
+      "Meaning": "錯失良機",
+      "Example": "Sign up for the field trip today so you do not miss out on the museum tour.",
+      "Image_URL": "images/vocab/2026-09-30/miss_out_on.webp"
+    },
+    {
+      "Date": "2026-09-30",
+      "Word": "I see",
+      "POS": "phr.",
+      "Meaning": "我了解了；原來如此",
+      "Example": "\"Oh, I see!\" nodded Ben after his tutor explained why the verb stays singular.",
+      "Image_URL": "images/vocab/2026-09-30/i_see.webp"
+    },
+    {
+      "Date": "2026-09-30",
+      "Word": "Biology",
+      "POS": "n.",
+      "Meaning": "生物學",
+      "Example": "In Biology, we looked through microscopes to watch tiny green leaf cells.",
+      "Image_URL": "images/vocab/2026-09-30/biology.webp"
+    },
+    {
+      "Date": "2026-09-30",
+      "Word": "Chemistry",
+      "POS": "n.",
+      "Meaning": "化學",
+      "Example": "Students wear goggles in Chemistry when mixing harmless liquids in glass tubes.",
+      "Image_URL": "images/vocab/2026-09-30/chemistry.webp"
+    },
+    {
+      "Date": "2026-09-30",
+      "Word": "Physics",
+      "POS": "n.",
+      "Meaning": "物理學",
+      "Example": "Physics helps us understand how magnets, electricity, and roller coasters work.",
+      "Image_URL": "images/vocab/2026-09-30/physics.webp"
+    },
+    {
+      "Date": "2026-09-30",
+      "Word": "Earth Science",
+      "POS": "n.",
+      "Meaning": "地球科學",
+      "Example": "During Earth Science, we studied volcano rocks and ocean currents on a globe.",
+      "Image_URL": "images/vocab/2026-09-30/earth_science.webp"
+    },
+    {
+      "Date": "2026-09-30",
+      "Word": "Geography",
+      "POS": "n.",
+      "Meaning": "地理學",
+      "Example": "Reading world atlases in Geography makes planning family trips much easier.",
+      "Image_URL": "images/vocab/2026-09-30/geography.webp"
+    },
+    {
+      "Date": "2026-09-30",
+      "Word": "Civics",
+      "POS": "n.",
+      "Meaning": "公民與社會",
+      "Example": "In Civics class, our team debated fair ways to protect neighborhood parks.",
+      "Image_URL": "images/vocab/2026-09-30/civics.webp"
+    },
+    {
+      "Date": "2026-09-30",
+      "Word": "Literature",
+      "POS": "n.",
+      "Meaning": "文學",
+      "Example": "Our Literature teacher read an exciting adventure poem aloud before lunch.",
+      "Image_URL": "images/vocab/2026-09-30/literature.webp"
+    },
+    {
+      "Date": "2026-09-30",
+      "Word": "Information Technology",
+      "POS": "n.",
+      "Meaning": "資訊科技",
+      "Example": "In Information Technology, ninth graders build simple web pages and practice coding.",
+      "Image_URL": "images/vocab/2026-09-30/information_technology.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-09-30",
+      "Type": "MC",
+      "Question": "Why did Sam say the Biology and Chemistry classes were not boring at all?",
+      "Option_A": "Because students get free drawing tablets at the end of class.",
+      "Option_B": "Because students test safe water samples every week.",
+      "Option_C": "Because there are no quizzes in either course.",
+      "Option_D": "Because the teacher reads adventure stories every morning.",
+      "Answer": "B",
+      "Explanation": "第一段最後一句明確說明：the classes were not boring at all because students tested safe water samples every week。"
+    },
+    {
+      "Date": "2026-09-30",
+      "Type": "MC",
+      "Question": "What did Sam warn Maya she might miss out on if she waited too long?",
+      "Option_A": "The Literature poetry contest.",
+      "Option_B": "The Information Technology coding workshop.",
+      "Option_C": "The Geography map competition.",
+      "Option_D": "The Civics debate club.",
+      "Answer": "B",
+      "Explanation": "第三段第二句指出：or you will miss out on the Information Technology coding workshop。"
+    },
+    {
+      "Date": "2026-09-30",
+      "Type": "TFNG",
+      "Question": "Sam planned to take Earth Science and Geography to learn about typhoons and climate zones.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段第二句寫道：Sam added that he planned to sign up for Earth Science and Geography to learn how typhoons form and how climate zones shape cities，與題幹完全相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-09-30",
+      "Type": "TFNG",
+      "Question": "Registration for the elective courses closed on Thursday night.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第三段第一句提到 registration closed at four o'clock on Friday afternoon（週五下午四點截止），與題幹「Thursday night」相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-09-30",
+      "Type": "TFNG",
+      "Question": "Owen hopes to become a famous poet after finishing high school.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "第二段只說 Owen 喜歡在文學課讀詩，並未提及他高中畢業後是否想成為知名詩人，故為 NOT GIVEN。"
+    }
+  ]
+}

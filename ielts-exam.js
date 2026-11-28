@@ -8,18 +8,18 @@ import {
   buildIeltsWrongOnlyGeminiPrompt,
   buildIeltsScoreSheetRowTsv,
   buildIeltsStructuredReviewRequest
-} from "./app-helpers.js?v=20261126a";
+} from "./app-helpers.js?v=20261128a";
 import {
   renderInteractiveReadingPassage,
   getReadingMarksStorageKey,
   loadReadingMarks,
   saveReadingMarks
-} from "./reading-scaffold.js?v=20261126a";
-import { bi } from "./i18n.js?v=20261126a";
+} from "./reading-scaffold.js?v=20261128a";
+import { bi } from "./i18n.js?v=20261128a";
 
 export const DEFAULT_IELTS_SHEET_ID = "";
 export const IELTS_SHEET_ID_STORAGE_KEY = "ielts_custom_sheet_id_v1";
-const IELTS_DATA_VERSION = "20261126a";
+const IELTS_DATA_VERSION = "20261128a";
 const IELTS_FONT_SCALE_STORAGE_KEY = "ielts_reading_font_scale_v1";
 const IELTS_FONT_SCALE_MIN = 75;
 const IELTS_FONT_SCALE_MAX = 160;

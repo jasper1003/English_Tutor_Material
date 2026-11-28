@@ -1,0 +1,152 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "a7bc21737a",
+  "date": "2026-10-13",
+  "lesson": {
+    "Date": "2026-10-13",
+    "Title": "段考複習與一字多義",
+    "Grammar_Focus": "段考易混淆一字多義辨析（mine 採礦/我的；still 靜止的/仍然；poor 貧窮的/不佳的；condition 狀況/條件；sense 察覺/道理）與授與動詞／不定代名詞複習",
+    "Reading_Title": "Weekend Study Camp Before Midterms",
+    "Reading_Passage": "Two weeks before midterm exams, Mia and Cody joined a weekend study camp near a quiet mountain town. On Saturday morning, they walked past an old tunnel where workers used to mine coal decades ago. Cody pointed to his pocket notebook and joked, \"Those study tips inside are all mine!\" Before entering the study hall, their teacher reminded everyone to stay calm and keep their focus steady.<br><br>During the afternoon review, the class practiced tricky words that have more than one meaning. For example, lake water looks still on a windless morning, yet a hardworking student is still reviewing flashcards at dusk. Similarly, someone can grow up in a poor family or get a poor score if they rush through reading questions. Understanding context helps students make sense of every sentence without guessing blindly.<br><br>By Sunday evening, Mia checked the weather outside and saw dark clouds gathering. Because the road condition looked slippery, the camp leader agreed to finish early on one condition: everyone must review their grammar handouts on the bus home. Both students felt confident, knowing that careful preparation makes every exam far easier.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-10-13",
+      "Word": "mine",
+      "POS": "v./pron.",
+      "Meaning": "開採（動詞）；我的（所有格代名詞）",
+      "Example": "Your blue backpack looks just like mine, except mine has a yellow star keychain.",
+      "Image_URL": "images/vocab/2026-10-13/mine.webp"
+    },
+    {
+      "Date": "2026-10-13",
+      "Word": "still",
+      "POS": "adj./adv.",
+      "Meaning": "靜止的（形容詞）；仍然（副詞）",
+      "Example": "It is already nine at night, yet Leo is still reviewing his science notes.",
+      "Image_URL": "images/vocab/2026-10-13/still.webp"
+    },
+    {
+      "Date": "2026-10-13",
+      "Word": "poor",
+      "POS": "adj.",
+      "Meaning": "貧窮的；不佳的；不擅長的",
+      "Example": "Even a poor swimmer can become fast and confident with regular practice.",
+      "Image_URL": "images/vocab/2026-10-13/poor.webp"
+    },
+    {
+      "Date": "2026-10-13",
+      "Word": "condition",
+      "POS": "n.",
+      "Meaning": "狀況；條件",
+      "Example": "Dad agreed to buy me a new bike on one condition: I must wear a helmet every ride.",
+      "Image_URL": "images/vocab/2026-10-13/condition.webp"
+    },
+    {
+      "Date": "2026-10-13",
+      "Word": "sense",
+      "POS": "v./n.",
+      "Meaning": "察覺；道理；意義",
+      "Example": "Reading that paragraph twice finally made the tricky idiom make sense to me.",
+      "Image_URL": "images/vocab/2026-10-13/sense.webp"
+    },
+    {
+      "Date": "2026-10-13",
+      "Word": "tunnel",
+      "POS": "n.",
+      "Meaning": "隧道；坑道",
+      "Example": "The train went through a long dark mountain tunnel before reaching the coast.",
+      "Image_URL": "images/vocab/2026-10-13/tunnel.webp"
+    },
+    {
+      "Date": "2026-10-13",
+      "Word": "auction",
+      "POS": "n.",
+      "Meaning": "拍賣會",
+      "Example": "A rare vintage violin sold for a high price at the charity auction yesterday.",
+      "Image_URL": "images/vocab/2026-10-13/auction.webp"
+    },
+    {
+      "Date": "2026-10-13",
+      "Word": "goggles",
+      "POS": "n.",
+      "Meaning": "蛙鏡；護目鏡",
+      "Example": "Always pack clean swimming goggles so chlorine water does not hurt your eyes.",
+      "Image_URL": "images/vocab/2026-10-13/goggles.webp"
+    },
+    {
+      "Date": "2026-10-13",
+      "Word": "compass",
+      "POS": "n.",
+      "Meaning": "指南針；羅盤",
+      "Example": "Hikers check a brass compass and paper map when phone signals disappear in the forest.",
+      "Image_URL": "images/vocab/2026-10-13/compass.webp"
+    },
+    {
+      "Date": "2026-10-13",
+      "Word": "luggage",
+      "POS": "n.",
+      "Meaning": "行李（不可數名詞）",
+      "Example": "Put a bright tag on your luggage so you can spot it easily at the airport.",
+      "Image_URL": "images/vocab/2026-10-13/luggage.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-10-13",
+      "Type": "MC",
+      "Question": "How can students make sense of tricky words with multiple meanings according to the passage?",
+      "Option_A": "By guessing blindly during exams.",
+      "Option_B": "By understanding the surrounding context.",
+      "Option_C": "By visiting an old coal tunnel.",
+      "Option_D": "By skipping difficult reading questions.",
+      "Answer": "B",
+      "Explanation": "第二段最後一句指出：Understanding context helps students make sense of every sentence without guessing blindly。"
+    },
+    {
+      "Date": "2026-10-13",
+      "Type": "MC",
+      "Question": "Under what condition did the camp leader agree to finish early on Sunday evening?",
+      "Option_A": "Students had to walk home in the rain.",
+      "Option_B": "Everyone had to review their grammar handouts on the bus home.",
+      "Option_C": "Mia and Cody had to write fifty new flashcards.",
+      "Option_D": "The bus driver had to check all student notebooks.",
+      "Answer": "B",
+      "Explanation": "第三段第二句寫道：the camp leader agreed to finish early on one condition: everyone must review their grammar handouts on the bus home。"
+    },
+    {
+      "Date": "2026-10-13",
+      "Type": "TFNG",
+      "Question": "Workers still mine coal inside the old mountain tunnel near the camp today.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第一段第二句說明 workers used to mine coal decades ago（數十年前曾在那採煤，used to 表過去習慣而今已非），故與「still mine... today」相反，為 FALSE。"
+    },
+    {
+      "Date": "2026-10-13",
+      "Type": "TFNG",
+      "Question": "Dark clouds were gathering outside on Sunday evening.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第三段第一句提到 Mia checked the weather outside and saw dark clouds gathering，與題幹相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-10-13",
+      "Type": "TFNG",
+      "Question": "Mia scored higher than Cody on the midterm exam two weeks later.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章只寫到考前兩週參加複習營並對考試有信心，並未交代兩週後的實際段考分數比較，故為 NOT GIVEN。"
+    }
+  ]
+}

@@ -1,0 +1,287 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "292f6915d1",
+  "lessonCount": 28,
+  "lessons": [
+    {
+      "Date": "2026-06-30",
+      "Title": "自然災害與應變",
+      "Grammar_Focus": "過去進行式（was/were + V-ing）與 when / while 連接詞用法：when 後接過去簡單式（突發動作），while 後接過去進行式（持續動作）",
+      "Reading_Title": "A Sudden Night on Green Mountain",
+      "XP": "40",
+      "vocabCount": 10,
+      "quizCount": 5,
+      "hash": "426e6798c1"
+    },
+    {
+      "Date": "2026-07-08",
+      "Title": "糧食與全球分配",
+      "Grammar_Focus": "故事脈絡下的過去式與過去進行式整合（when / while），以及因果連接詞 because / so 的句型應用",
+      "Reading_Title": "Food Drives and Fair Sharing",
+      "XP": "40",
+      "vocabCount": 10,
+      "quizCount": 5,
+      "hash": "2b86859f80"
+    },
+    {
+      "Date": "2026-07-14",
+      "Title": "數位時代與網路安全",
+      "Grammar_Focus": "未來簡單式 will（預測或臨時決定）與 be going to（既定計畫或眼前跡象）的區分，以及字尾 -ment 名詞化（require → requirement）",
+      "Reading_Title": "Smart Habits for a Safer Digital Campus",
+      "XP": "40",
+      "vocabCount": 14,
+      "quizCount": 5,
+      "hash": "8b31395064"
+    },
+    {
+      "Date": "2026-07-21",
+      "Title": "職業與生活",
+      "Grammar_Focus": "未來式 will / be going to 綜合應用，以及求職相關片語（work as / look for a job / be in charge of / apply for）",
+      "Reading_Title": "Exploring Future Careers at School",
+      "XP": "40",
+      "vocabCount": 14,
+      "quizCount": 5,
+      "hash": "1b4b6f6065"
+    },
+    {
+      "Date": "2026-07-23",
+      "Title": "單字與文法總複習",
+      "Grammar_Focus": "綜合複習過去進行式（was/were + V-ing + when/while）與未來簡單式（will / be going to）之情境判斷、否定與疑問句改寫",
+      "Reading_Title": "Behind the Scenes of the School News Team",
+      "XP": "40",
+      "vocabCount": 10,
+      "quizCount": 5,
+      "hash": "35ac84705c"
+    },
+    {
+      "Date": "2026-07-28",
+      "Title": "職業與生活進階",
+      "Grammar_Focus": "進階職業單字辨識（會計師、建築師、飛行員等）與過去進行式／未來式綜合句型練習",
+      "Reading_Title": "Busy Morning on River Street",
+      "XP": "40",
+      "vocabCount": 12,
+      "quizCount": 5,
+      "hash": "d0b1d84c7c"
+    },
+    {
+      "Date": "2026-07-30",
+      "Title": "比較級文法精講",
+      "Grammar_Focus": "形容詞比較級規則變化（-er / -r / 去y+ier / 重複字尾+er / more + 多音節）、不規則變化（better / worse / more / less）與程度修飾語（much / even / far / a lot + 比較級）",
+      "Reading_Title": "A Smarter Way to Review Vocabulary",
+      "XP": "40",
+      "vocabCount": 11,
+      "quizCount": 5,
+      "hash": "a0938a5f8e"
+    },
+    {
+      "Date": "2026-08-04",
+      "Title": "國家與文化亞洲篇",
+      "Grammar_Focus": "七大洲與亞洲主要國家地理詞彙，並運用形容詞比較級比較各國氣候、人口與城市特色",
+      "Reading_Title": "Across Seven Continents in My Notebook",
+      "XP": "40",
+      "vocabCount": 14,
+      "quizCount": 5,
+      "hash": "081d928660"
+    },
+    {
+      "Date": "2026-08-06",
+      "Title": "國家與文化非洲篇",
+      "Grammar_Focus": "非洲國家與經濟文化詞彙，搭配比較級與實用片語（be full of / play a role in）對比各國特色與歷史",
+      "Reading_Title": "From Ancient Pyramids to Modern African Cities",
+      "XP": "40",
+      "vocabCount": 10,
+      "quizCount": 5,
+      "hash": "32c4ec95fc"
+    },
+    {
+      "Date": "2026-08-11",
+      "Title": "國家與文化西歐與中歐篇",
+      "Grammar_Focus": "形容詞最高級三大規則（the + -est / the most + adj. / 不規則 best, worst, most）及西歐、中歐國家城市詞彙",
+      "Reading_Title": "Ten Days Across Western and Central Europe",
+      "XP": "40",
+      "vocabCount": 14,
+      "quizCount": 5,
+      "hash": "c1fa6ee4f8"
+    },
+    {
+      "Date": "2026-08-13",
+      "Title": "國家與文化南歐篇",
+      "Grammar_Focus": "「one of the + 最高級 + 複數名詞」（最……的……之一）句型規則與主詞單複數動詞一致性，結合南歐文化詞彙",
+      "Reading_Title": "Sunlight and History Along the Mediterranean",
+      "XP": "40",
+      "vocabCount": 12,
+      "quizCount": 5,
+      "hash": "f3844ed4ba"
+    },
+    {
+      "Date": "2026-08-18",
+      "Title": "國家與文化東歐篇",
+      "Grammar_Focus": "東歐國家文化詞彙（斯洛伐克、匈牙利、烏克蘭、羅馬尼亞、保加利亞）及現在進行式／過去進行式綜合時態演練",
+      "Reading_Title": "Riding the Morning Train Through Eastern Europe",
+      "XP": "40",
+      "vocabCount": 11,
+      "quizCount": 5,
+      "hash": "1a759d3dcf"
+    },
+    {
+      "Date": "2026-08-20",
+      "Title": "國家與文化北歐篇",
+      "Grammar_Focus": "比較級與最高級綜合複習（one of the + 最高級 + 複數名詞 / 比較級修飾），搭配北歐五國地理、設計與氣候詞彙",
+      "Reading_Title": "Warm Lights and Simple Design in Northern Europe",
+      "XP": "40",
+      "vocabCount": 9,
+      "quizCount": 5,
+      "hash": "47c207b2d6"
+    },
+    {
+      "Date": "2026-08-25",
+      "Title": "國家與文化北美篇",
+      "Grammar_Focus": "同級比較句型（A + be/V + as + 原級 + as + B / not as + 原級 + as），注意不可加 -er/more 且比較對象須對稱（that of）",
+      "Reading_Title": "From Cold Montreal to Busy American Cities",
+      "XP": "40",
+      "vocabCount": 14,
+      "quizCount": 5,
+      "hash": "b6ab43e809"
+    },
+    {
+      "Date": "2026-08-27",
+      "Title": "國家與文化南美篇",
+      "Grammar_Focus": "同級比較改寫練習與轉折／因果副詞辨析（however「然而」表轉折；therefore「因此」表結果），搭配拉丁美洲地理詞彙",
+      "Reading_Title": "Crossing Mountains and Rivers in Latin America",
+      "XP": "40",
+      "vocabCount": 10,
+      "quizCount": 5,
+      "hash": "19b0c52f39"
+    },
+    {
+      "Date": "2026-09-01",
+      "Title": "實用英語慣用語",
+      "Grammar_Focus": "透過前後文語境推測六大常用英文慣用語（in the same boat / on the same page / a piece of cake / under the weather / cost an arm and a leg / when pigs fly）",
+      "Reading_Title": "Teamwork Before the Science Fair",
+      "XP": "40",
+      "vocabCount": 6,
+      "quizCount": 5,
+      "hash": "4d08a8162b"
+    },
+    {
+      "Date": "2026-09-03",
+      "Title": "實用英語慣用語進階",
+      "Grammar_Focus": "透過語境推斷七大常用英文慣用語（speak one's language / give someone a hand / break a leg / spill the beans / get cold feet / call it a day / judge a book by its cover）",
+      "Reading_Title": "Rehearsal Night at the School Theater",
+      "XP": "40",
+      "vocabCount": 7,
+      "quizCount": 5,
+      "hash": "963841bb17"
+    },
+    {
+      "Date": "2026-09-08",
+      "Title": "天氣描述與授與動詞",
+      "Grammar_Focus": "天氣四種描述句型（How is / What is...like / It is+adj. / There is+N / We have+N）及授與動詞（to 型 vs for 型，物為代名詞必用介系詞）",
+      "Reading_Title": "A Breezy Autumn Trip to the Coast",
+      "XP": "40",
+      "vocabCount": 14,
+      "quizCount": 5,
+      "hash": "70824513b2"
+    },
+    {
+      "Date": "2026-09-16",
+      "Title": "澳洲俚語與不定代名詞",
+      "Grammar_Focus": "Another（三者以上未指定另一個 + 單數）vs The other（兩者中另一個 / 其餘全部），結合實用片語（in fact / just like / come right up / be mad at）",
+      "Reading_Title": "Funny Words During Our Week in Sydney",
+      "XP": "40",
+      "vocabCount": 8,
+      "quizCount": 5,
+      "hash": "14dd720725"
+    },
+    {
+      "Date": "2026-09-23",
+      "Title": "社團生活與所有格代名詞",
+      "Grammar_Focus": "時間從屬連接詞（after / before / when）時態一致與分詞化簡，以及所有格代名詞（mine / yours / his / hers / theirs）避免重複",
+      "Reading_Title": "Choosing the Right Club for a Busy Semester",
+      "XP": "40",
+      "vocabCount": 13,
+      "quizCount": 5,
+      "hash": "cc29e53496"
+    },
+    {
+      "Date": "2026-09-30",
+      "Title": "生活片語與學科單字",
+      "Grammar_Focus": "電話英文與對話辨析（This is... speaking / I know vs. I see），搭配生活片語（at the end of / not... at all / miss out on）及國中各學科名詞",
+      "Reading_Title": "Choosing Electives for the New School Term",
+      "XP": "40",
+      "vocabCount": 12,
+      "quizCount": 5,
+      "hash": "f7866cc693"
+    },
+    {
+      "Date": "2026-10-07",
+      "Title": "價值觀與感官科學",
+      "Grammar_Focus": "核心字彙字義與搭配（worth / value / condition / antique / still / mine / run out / gene / sense / detect / control）與多主題科普閱讀",
+      "Reading_Title": "Hidden Treasures in Science and History",
+      "XP": "40",
+      "vocabCount": 18,
+      "quizCount": 5,
+      "hash": "bf8a713ada"
+    },
+    {
+      "Date": "2026-10-13",
+      "Title": "段考複習與一字多義",
+      "Grammar_Focus": "段考易混淆一字多義辨析（mine 採礦/我的；still 靜止的/仍然；poor 貧窮的/不佳的；condition 狀況/條件；sense 察覺/道理）與授與動詞／不定代名詞複習",
+      "Reading_Title": "Weekend Study Camp Before Midterms",
+      "XP": "40",
+      "vocabCount": 10,
+      "quizCount": 5,
+      "hash": "a7bc21737a"
+    },
+    {
+      "Date": "2026-10-21",
+      "Title": "日常家務與時間表達",
+      "Grammar_Focus": "英文時間順讀法與逆讀法（past / after 表過幾分；to 表差幾分；a quarter 與 half past，注意絕無 half to），搭配居家家務與生活動詞",
+      "Reading_Title": "Saturday Morning Chores by the Clock",
+      "XP": "40",
+      "vocabCount": 17,
+      "quizCount": 5,
+      "hash": "323a86ecec"
+    },
+    {
+      "Date": "2026-10-28",
+      "Title": "新單字和閱讀理解",
+      "Grammar_Focus": "連接詞配對 (however / therefore / in fact / when / while / before / after) 與 save...from... 時態應用",
+      "Reading_Title": "Lucas's Midnight Mystery",
+      "XP": "40",
+      "vocabCount": 2,
+      "quizCount": 3,
+      "hash": "fd26947c4e"
+    },
+    {
+      "Date": "2026-11-04",
+      "Title": "新單字和閱讀理解",
+      "Grammar_Focus": "動詞後接不定詞 (to V) 與動名詞 (V-ing) 的用法與語意差異 (stop / remember / forget / try)",
+      "Reading_Title": "A Difficult Career Choice (Grammar & Vocabulary Focus)",
+      "XP": "40",
+      "vocabCount": 15,
+      "quizCount": 5,
+      "hash": "dd962f4b64"
+    },
+    {
+      "Date": "2026-11-11",
+      "Title": "複習段考內容",
+      "Grammar_Focus": "綜合閱讀理解與 True / False / Not Given 邏輯推論",
+      "Reading_Title": "IU's Story & Digital Age Reflections",
+      "XP": "40",
+      "vocabCount": 10,
+      "quizCount": 7,
+      "hash": "e3921134f4"
+    },
+    {
+      "Date": "2026-11-24",
+      "Title": "10/21–11/11 總複習模擬測驗（聽力・單字・文法・克漏字・閱讀）",
+      "Grammar_Focus": "時間順逆讀法（past / half past / to）、連接詞（however / therefore / while）、不定詞 to V 與動名詞 V-ing（stop / remember / forget / decide / give up）、besides + V-ing 與 10/21–11/11 核心字彙",
+      "Reading_Title": "綜合模擬測驗：聽力・克漏字與三篇閱讀",
+      "XP": "60",
+      "vocabCount": 44,
+      "quizCount": 48,
+      "hash": "03b5d6e2ae"
+    }
+  ]
+}

@@ -28,7 +28,7 @@
     }
   </script>
   <title>English Tutor Material — Vic</title>
-  <link rel="stylesheet" href="./styles.css?v=20261126a" />
+  <link rel="stylesheet" href="./styles.css?v=20261128a" />
 </head>
 <body>
 
@@ -418,6 +418,28 @@
           <div class="admin-section-title" id="admin-pending-heading">🔔 待驗收發款佇列（學生點擊「完成任務」會即時出現在這裡）</div>
           <div id="review-pending-queue" style="display: flex; flex-direction: column; gap: 0.55rem;"></div>
           <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.35rem 0;" />
+          <search class="admin-student-search">
+            <form id="admin-student-search-form" class="admin-search-form" method="GET" aria-labelledby="admin-search-label">
+              <label for="review-student-search" id="admin-search-label">依 Email 搜尋繪師（輸入開頭即可）</label>
+              <div class="inline-form-row">
+                <input
+                  type="search"
+                  id="review-student-search"
+                  name="studentEmail"
+                  class="form-control"
+                  style="flex: 1;"
+                  autocomplete="email"
+                  autocorrect="off"
+                  autocapitalize="none"
+                  spellcheck="false"
+                  enterkeyhint="search"
+                  aria-describedby="review-student-list-status"
+                />
+                <button type="submit" class="btn btn-sm" id="admin-search-student-btn">搜尋</button>
+                <button type="button" class="btn btn-sm" id="admin-clear-search-btn">重設</button>
+              </div>
+            </form>
+          </search>
           <div class="form-group" style="margin-block-end: 0;">
             <label for="review-student-select" id="admin-select-student-label">選擇指定繪師（直接發錢／調整餘額、悄悄參觀房間或檢視課程）</label>
             <div class="inline-form-row">
@@ -429,12 +451,17 @@
                 title="悄悄參觀該玩家的租屋處佈置（唯讀模式，對方不會察覺）"
               >👀 參觀房間</button>
             </div>
+            <div class="admin-pagination-row">
+              <span id="review-student-list-status" class="form-hint" role="status" aria-live="polite"></span>
+              <button type="button" class="btn btn-sm hidden" id="admin-load-more-students-btn">載入更多 (+25)</button>
+            </div>
           </div>
           <div id="review-student-summary" class="form-hint">請選擇一位學生檢視接案狀態。</div>
           <div id="review-lessons-list" style="display: flex; flex-direction: column; gap: 0.65rem;"></div>
         </div>
         <div class="dialog-footer" style="flex-wrap: wrap;">
           <button type="button" class="btn" id="refresh-review-btn">重新整理名單</button>
+          <button type="button" class="btn" id="admin-toggle-live-sheets-btn" title="切換教材來源：預設使用靜態 CDN（無連線上限）；老師剛修改 Google 試算表時可暫時切換即時預覽">🌐 教材來源：靜態 CDN</button>
           <button type="button" class="btn" id="admin-preview-story-btn" title="在自己房間立即重播視覺小說開場故事橫幅（不更動帳號已讀狀態）">🎬 測試開場故事</button>
           <button type="button" class="btn" id="admin-reset-my-story-btn" title="將目前管理員帳號重置為「尚未看過開場故事」，可實測創帳後只顯示一次與重整不再出現">🔁 重置自身開場狀態</button>
           <button type="button" class="btn tv-power-off-btn" id="admin-reset-all-lessons-btn">🔄 全部玩家關卡歸零</button>
@@ -1085,6 +1112,6 @@
   </div>
   <div id="reading-vocab-popover" class="reading-vocab-popover" popover="auto" role="dialog" aria-label="單字解釋卡片"></div>
 
-  <script type="module" src="./app-main.js?v=20261126a"></script>
+  <script type="module" src="./app-main.js?v=20261128a"></script>
 </body>
 </html>

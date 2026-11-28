@@ -1,0 +1,120 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "4d08a8162b",
+  "date": "2026-09-01",
+  "lesson": {
+    "Date": "2026-09-01",
+    "Title": "實用英語慣用語",
+    "Grammar_Focus": "透過前後文語境推測六大常用英文慣用語（in the same boat / on the same page / a piece of cake / under the weather / cost an arm and a leg / when pigs fly）",
+    "Reading_Title": "Teamwork Before the Science Fair",
+    "Reading_Passage": "Last Tuesday, Mia and Leo had only three days left to finish their school science fair robot. To make things harder, Mia woke up feeling under the weather with a sore throat and stayed home to rest. When Leo tested their robot alone after class, one small wheel broke off. He sighed and texted Mia, saying they were truly in the same boat because both of them needed extra help before Friday.<br><br>At first, Leo thought fixing the robot arm would cost an arm and a leg if they bought shiny metal parts from a big store. However, his older sister showed him how to build a light wooden arm using simple craft sticks. Once Mia felt better on Thursday morning, the two partners met in the library so they could get on the same page about every slide in their presentation.<br><br>After practicing their speech three times, explaining the robot design in English felt like a piece of cake. Their classmate Tom joked that their messy desk would stay clean only when pigs fly, yet both partners laughed happily. On Friday afternoon, their smooth teamwork earned warm applause from every judge.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-09-01",
+      "Word": "in the same boat",
+      "POS": "phr.",
+      "Meaning": "處境相同；面臨同樣困難",
+      "Example": "Neither group finished the math worksheet yet, so we are all in the same boat.",
+      "Image_URL": "images/vocab/2026-09-01/in_the_same_boat.webp"
+    },
+    {
+      "Date": "2026-09-01",
+      "Word": "on the same page",
+      "POS": "phr.",
+      "Meaning": "達成共識；想法一致",
+      "Example": "Let's check the camping checklist tonight so everyone is on the same page before Saturday.",
+      "Image_URL": "images/vocab/2026-09-01/on_the_same_page.webp"
+    },
+    {
+      "Date": "2026-09-01",
+      "Word": "a piece of cake",
+      "POS": "phr.",
+      "Meaning": "輕而易舉；小菜一碟",
+      "Example": "Because Sam practiced the dialogue ten times, the speaking quiz was a piece of cake.",
+      "Image_URL": "images/vocab/2026-09-01/a_piece_of_cake.webp"
+    },
+    {
+      "Date": "2026-09-01",
+      "Word": "under the weather",
+      "POS": "phr.",
+      "Meaning": "身體不舒服；微恙",
+      "Example": "Grace stayed in bed drinking warm lemon water because she felt under the weather.",
+      "Image_URL": "images/vocab/2026-09-01/under_the_weather.webp"
+    },
+    {
+      "Date": "2026-09-01",
+      "Word": "cost an arm and a leg",
+      "POS": "phr.",
+      "Meaning": "代價極高；非常昂貴",
+      "Example": "Front-row concert tickets for that famous pop band can cost an arm and a leg.",
+      "Image_URL": "images/vocab/2026-09-01/cost_an_arm_and_a_leg.webp"
+    },
+    {
+      "Date": "2026-09-01",
+      "Word": "when pigs fly",
+      "POS": "phr.",
+      "Meaning": "絕不可能；太陽打西邊出來",
+      "Example": "My lazy cat will wake up early to jog with me only when pigs fly.",
+      "Image_URL": "images/vocab/2026-09-01/when_pigs_fly.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-09-01",
+      "Type": "MC",
+      "Question": "Why did Mia stay home last Tuesday?",
+      "Option_A": "She wanted to buy shiny metal parts at a big store.",
+      "Option_B": "She felt under the weather with a sore throat.",
+      "Option_C": "She forgot when the science fair was going to happen.",
+      "Option_D": "She was practicing her English speech with Tom.",
+      "Answer": "B",
+      "Explanation": "第一段第二句提到 Mia woke up feeling under the weather with a sore throat and stayed home to rest。"
+    },
+    {
+      "Date": "2026-09-01",
+      "Type": "MC",
+      "Question": "How did Leo avoid spending too much money on the robot arm?",
+      "Option_A": "He borrowed a shiny metal robot from the library.",
+      "Option_B": "His older sister showed him how to build one with craft sticks.",
+      "Option_C": "He asked the judges to cancel the presentation.",
+      "Option_D": "He took a wheel off Tom's science project.",
+      "Answer": "B",
+      "Explanation": "第二段第二句寫道：his older sister showed him how to build a light wooden arm using simple craft sticks，因此不用花大錢買金屬零件。"
+    },
+    {
+      "Date": "2026-09-01",
+      "Type": "TFNG",
+      "Question": "Mia and Leo met in the library on Thursday morning to agree on their presentation slides.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段最後一句指出：Once Mia felt better on Thursday morning, the two partners met in the library so they could get on the same page about every slide in their presentation，與題幹相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-09-01",
+      "Type": "TFNG",
+      "Question": "Explaining the robot design in English remained extremely difficult for Mia and Leo after practicing three times.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第三段第一句指出 After practicing their speech three times, explaining the robot design in English felt like a piece of cake（變得輕而易舉），與題幹相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-09-01",
+      "Type": "TFNG",
+      "Question": "Mia and Leo won first place and received a cash prize at the science fair.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "第三段最後一句只提到他們的表現贏得評審熱烈掌聲，並未提及是否拿到第一名或現金獎金，故為 NOT GIVEN。"
+    }
+  ]
+}

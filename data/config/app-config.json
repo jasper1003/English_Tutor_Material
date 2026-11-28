@@ -1,0 +1,1787 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "5a51434934",
+  "shopRows": [
+    {
+      "id": "wall_oat",
+      "name": "燕麥奶油牆面",
+      "category": "paint",
+      "price": "80",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "#f3eadc",
+      "icon": "🎨",
+      "previewImage": "",
+      "desc": "溫暖奶油白油漆與粉刷工錢，每次換色皆需重新付費施作。",
+      "nameEn": "Oat Cream Wall Paint",
+      "descEn": "Warm cream paint & repaint labor (charged per repaint)."
+    },
+    {
+      "id": "wall_sage",
+      "name": "鼠尾草淺綠牆面",
+      "category": "paint",
+      "price": "100",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "#cdd9ce",
+      "icon": "🌿",
+      "previewImage": "",
+      "desc": "莫蘭迪淺綠油漆與粉刷工錢，每次重新粉刷皆需再次購買。",
+      "nameEn": "Sage Green Wall Paint",
+      "descEn": "Soft Morandi sage paint & labor (charged per repaint)."
+    },
+    {
+      "id": "wall_mist",
+      "name": "晨霧微藍牆面",
+      "category": "paint",
+      "price": "100",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "#d4dfea",
+      "icon": "☁️",
+      "previewImage": "",
+      "desc": "霧面藍灰油漆與粉刷工錢，每次重新粉刷皆需再次購買。",
+      "nameEn": "Morning Mist Blue Paint",
+      "descEn": "Matte blue-gray wall paint & labor (charged per repaint)."
+    },
+    {
+      "id": "wall_blush",
+      "name": "暖陶藕粉牆面",
+      "category": "paint",
+      "price": "120",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "#ead6d2",
+      "icon": "🌷",
+      "previewImage": "",
+      "desc": "奶油藕粉油漆與粉刷工錢，每次重新粉刷皆需再次購買。",
+      "nameEn": "Terracotta Blush Paint",
+      "descEn": "Creamy blush terracotta paint & labor (charged per repaint)."
+    },
+    {
+      "id": "wall_lavender",
+      "name": "靜謐灰紫牆面",
+      "category": "paint",
+      "price": "120",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "#ddd6e8",
+      "icon": "🪻",
+      "previewImage": "",
+      "desc": "淡雅薰衣灰紫油漆與粉刷工錢，每次重新粉刷皆需再次購買。",
+      "nameEn": "Dusk Lavender Paint",
+      "descEn": "Calming dusty lavender wall paint & labor (charged per repaint)."
+    },
+    {
+      "id": "sheet_terracotta",
+      "name": "焦糖暖橘純棉床組",
+      "category": "textile",
+      "price": "90",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "bedSheet",
+      "wallColor": "",
+      "icon": "🛏️",
+      "previewImage": "",
+      "desc": "水洗暖橘被套搭配奶油床包，購買後可永久免費隨時換洗。",
+      "nameEn": "Warm Terracotta Bedding",
+      "descEn": "Washed terracotta duvet with cream sheets. Free to swap anytime."
+    },
+    {
+      "id": "sheet_sage",
+      "name": "鼠尾草森綠床組",
+      "category": "textile",
+      "price": "90",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "bedSheet",
+      "wallColor": "",
+      "icon": "🌿",
+      "previewImage": "",
+      "desc": "清新自然森林綠棉被與淺綠枕套，睡起來格外放鬆安心。",
+      "nameEn": "Forest Sage Bedding",
+      "descEn": "Fresh sage cotton quilt with soft green pillowcases for restful sleep."
+    },
+    {
+      "id": "sheet_sakura",
+      "name": "柔霧櫻花粉床組",
+      "category": "textile",
+      "price": "100",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "bedSheet",
+      "wallColor": "",
+      "icon": "🌸",
+      "previewImage": "",
+      "desc": "溫柔低飽和玫瑰櫻花粉床單，讓臥室角落瞬間柔和可愛。",
+      "nameEn": "Blush Sakura Bedding",
+      "descEn": "Gentle sakura pink cotton bedding with airy cloud pillows."
+    },
+    {
+      "id": "sheet_midnight",
+      "name": "星空深海藍床組",
+      "category": "textile",
+      "price": "110",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "bedSheet",
+      "wallColor": "",
+      "icon": "🌌",
+      "previewImage": "",
+      "desc": "沉穩耐看的午夜海藍絲絨被組，夜晚休息更有質感氛圍。",
+      "nameEn": "Midnight Starlight Bedding",
+      "descEn": "Deep indigo-navy bedding with subtle crescent embroidery."
+    },
+    {
+      "id": "rug_nordic",
+      "name": "北歐菱格米灰地毯",
+      "category": "textile",
+      "price": "110",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "rugStyle",
+      "wallColor": "",
+      "icon": "🧶",
+      "previewImage": "",
+      "desc": "簡約幾何線條編織短絨毯，踩起來清爽俐落，購入後可自由替換。",
+      "nameEn": "Nordic Diamond Woven Rug",
+      "descEn": "Scandinavian oatmeal-gray geometric area rug with cozy texture."
+    },
+    {
+      "id": "rug_terracotta",
+      "name": "波希米亞編織流蘇毯",
+      "category": "textile",
+      "price": "130",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "rugStyle",
+      "wallColor": "",
+      "icon": "🏜️",
+      "previewImage": "",
+      "desc": "暖陶紅橘搭配奶白滾邊與小流蘇，替房間增添異國溫馨氣息。",
+      "nameEn": "Boho Tassel Loom Rug",
+      "descEn": "Warm terracotta flatweave rug with braided fringe edges."
+    },
+    {
+      "id": "rug_moss",
+      "name": "森系圓形軟絨地毯",
+      "category": "textile",
+      "price": "140",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "rugStyle",
+      "wallColor": "",
+      "icon": "🟢",
+      "previewImage": "",
+      "desc": "厚實軟綿的草地綠圓形毛毯，做運動或坐在地上伸展最舒適。",
+      "nameEn": "Moss Green Plush Round Rug",
+      "descEn": "Fluffy moss-green circular rug that softens studio acoustics."
+    },
+    {
+      "id": "rug_checkered",
+      "name": "復古奶咖棋盤格地毯",
+      "category": "textile",
+      "price": "150",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "rugStyle",
+      "wallColor": "",
+      "icon": "🏁",
+      "previewImage": "",
+      "desc": "經典奶霜×焦糖可可格紋設計毯，咖啡廳感瞬間拉滿。",
+      "nameEn": "Retro Mocha Checker Rug",
+      "descEn": "Espresso & cream woven checkerboard rug for a vintage vibe."
+    },
+    {
+      "id": "desk_plant",
+      "name": "桌上小盆栽",
+      "category": "decor",
+      "price": "120",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🪴",
+      "previewImage": "./assets/shop/desk_plant.jpg",
+      "desc": "擺在書桌右上角的龜背芋陶土小盆栽，增添生氣。",
+      "nameEn": "Monstera Desk Plant",
+      "descEn": "Cute terracotta Monstera pot for the corner of your work desk."
+    },
+    {
+      "id": "wall_poster",
+      "name": "插畫海報掛畫",
+      "category": "decor",
+      "price": "150",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🖼️",
+      "previewImage": "./assets/shop/wall_poster.jpg",
+      "desc": "木框裱褙的暖日風景掛畫，裝飾北側空白牆面。",
+      "nameEn": "Framed Wall Poster",
+      "descEn": "Wooden-framed landscape artwork (supports custom cropped photos!)."
+    },
+    {
+      "id": "coat_rack",
+      "name": "門旁直立式掛衣架",
+      "category": "decor",
+      "price": "160",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🧥",
+      "previewImage": "./assets/shop/coat_rack.jpg",
+      "desc": "擺在玄關大門旁的原木直立掛衣架，可掛帆布袋、圍巾與帽子。",
+      "nameEn": "Standing Coat Rack",
+      "descEn": "Solid oak coat tree by the door for tote bags, scarves & caps."
+    },
+    {
+      "id": "bed_lamp",
+      "name": "床邊暖光小夜燈",
+      "category": "decor",
+      "price": "180",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🛏️",
+      "previewImage": "./assets/shop/bed_lamp.jpg",
+      "desc": "附小床頭櫃的圓潤小夜燈，放在房間裡可直接點擊開關。",
+      "nameEn": "Warm Bedside Lamp",
+      "descEn": "Glowing bedside lamp & mini nightstand; click to toggle."
+    },
+    {
+      "id": "floor_plant",
+      "name": "琴葉榕編織落地盆栽",
+      "category": "decor",
+      "price": "190",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🌿",
+      "previewImage": "./assets/shop/floor_plant.jpg",
+      "desc": "擺在浴室與床尾之間的藤編籃大型琴葉榕，房間綠意滿分。",
+      "nameEn": "Fiddle-Leaf Fig Planter",
+      "descEn": "Woven-basket indoor fig tree bringing fresh greenery to your room."
+    },
+    {
+      "id": "cool_keyboard",
+      "name": "炫彩機械鍵盤",
+      "category": "gear",
+      "price": "240",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "⌨️",
+      "previewImage": "./assets/shop/cool_keyboard.jpg",
+      "desc": "替書桌換上發光 RGB 客製機械鍵盤，接案手感更順。",
+      "nameEn": "RGB Mechanical Keyboard",
+      "descEn": "Upgrade your desk setup with a glowing mechanical keyboard."
+    },
+    {
+      "id": "coffee_bar",
+      "name": "文青手沖咖啡吧台",
+      "category": "decor",
+      "price": "240",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "☕",
+      "previewImage": "./assets/shop/coffee_bar.jpg",
+      "desc": "靠西北牆角的小巧木質咖啡吧台與手沖壺，隨時泡杯熱美式提神。",
+      "nameEn": "Pour-Over Coffee Bar",
+      "descEn": "Compact wooden brew station with gooseneck kettle for fresh fuel."
+    },
+    {
+      "id": "ergo_chair",
+      "name": "雲感人體工學繪師椅",
+      "category": "gear",
+      "price": "250",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "💺",
+      "previewImage": "./assets/shop/ergo_chair.jpg",
+      "desc": "將書桌椅升級成透氣護腰高背工學椅，久坐畫圖與寫作更舒適。",
+      "nameEn": "Ergonomic Studio Chair",
+      "descEn": "High-back breathable lumbar chair built for marathon commissions."
+    },
+    {
+      "id": "vinyl_player",
+      "name": "復古黑膠唱片音響櫃",
+      "category": "decor",
+      "price": "260",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🎵",
+      "previewImage": "./assets/shop/vinyl_player.jpg",
+      "desc": "靠南牆的胡桃木音響矮櫃與黑膠唱盤，點擊可切換旋轉聽音樂。",
+      "nameEn": "Retro Vinyl Console",
+      "descEn": "Walnut turntable cabinet along the wall; click to spin records."
+    },
+    {
+      "id": "cozy_sofa",
+      "name": "雙人布藝沙發",
+      "category": "decor",
+      "price": "280",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🛋️",
+      "previewImage": "./assets/shop/cozy_sofa.jpg",
+      "desc": "面向大門旁牆面的柔軟雙人沙發，累了隨時可以喘口氣。",
+      "nameEn": "Cozy Fabric Sofa",
+      "descEn": "Plush two-seater fabric couch perfect for relaxing or watching TV."
+    },
+    {
+      "id": "smart_toilet",
+      "name": "全自動免治馬桶",
+      "category": "decor",
+      "price": "320",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🚽",
+      "previewImage": "./assets/shop/smart_toilet.jpg",
+      "desc": "把浴室馬桶升級成日式恆溫免治座墊＋夜燈款，如廁體驗大進化。",
+      "nameEn": "Smart Heated Bidet Toilet",
+      "descEn": "Upgrades the bathroom fixture with warm seat & subtle nightlight."
+    },
+    {
+      "id": "dual_monitor",
+      "name": "色彩校準副螢幕工作站",
+      "category": "gear",
+      "price": "340",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🖥️",
+      "previewImage": "./assets/shop/dual_monitor.jpg",
+      "desc": "在 iMac 旁加裝直立色彩參考副螢幕，接案繪圖看參考圖更專業。",
+      "nameEn": "Color-Calibrated Dual Display",
+      "descEn": "Adds a vertical color-reference display next to your iMac."
+    },
+    {
+      "id": "wall_tv",
+      "name": "壁掛平面小電視",
+      "category": "decor",
+      "price": "360",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "📺",
+      "previewImage": "./assets/shop/wall_tv.jpg",
+      "desc": "掛在玄關大門右側牆上，正好對著沙發的纖薄小電視。",
+      "nameEn": "Wall-Mounted Smart TV",
+      "descEn": "Slim smart TV on your wall—click anytime to watch YouTube."
+    },
+    {
+      "id": "orange_cat",
+      "name": "橘貓室友「阿橘」與貓窩",
+      "category": "decor",
+      "price": "420",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🐈",
+      "previewImage": "./assets/shop/orange_cat.jpg",
+      "desc": "領養一隻會搖尾巴的可愛肥橘貓住在暖烘烘貓窩裡，可走去摸摸牠！",
+      "nameEn": "Ginger Cat & Pet Bed",
+      "descEn": "Adopt an adorable orange tabby roommate who lounges in his own bed."
+    },
+    {
+      "id": "dolby_atmos",
+      "name": "Dolby Atmos 環繞音響組",
+      "category": "decor",
+      "price": "480",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🔊",
+      "previewImage": "./assets/shop/dolby_atmos.jpg",
+      "desc": "購齊小電視與雙人沙發解鎖！含電視下 Soundbar、重低音與沙發後環繞音箱，打造全景聲劇院。",
+      "nameEn": "Dolby Atmos Surround System",
+      "descEn": "Unlocked with TV + Sofa! Includes a movable front soundbar/sub and rear towers."
+    },
+    {
+      "id": "floor_honey_oak",
+      "name": "經典蜂蜜橡木地板",
+      "category": "floor",
+      "price": "100",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🍯",
+      "previewImage": "",
+      "desc": "溫潤經典的原始蜂蜜橡木地板與鋪設工錢，每次換鋪或復原皆需重新購買。",
+      "nameEn": "Classic Honey Oak Floor",
+      "descEn": "Warm signature honey oak planks & re-laying labor (charged per re-lay)."
+    },
+    {
+      "id": "floor_ash_nordic",
+      "name": "北歐白蠟淺木紋地板",
+      "category": "floor",
+      "price": "140",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🪵",
+      "previewImage": "",
+      "desc": "明亮清爽的淺色北歐白蠟實木拼接，讓採光更顯柔和寬敞，每次重鋪皆需重新付費施作。",
+      "nameEn": "Nordic Pale Ash Wood",
+      "descEn": "Airy Scandinavian bleached ash planks with delicate grain (charged per re-lay)."
+    },
+    {
+      "id": "floor_walnut_herringbone",
+      "name": "深胡桃木人字拼地板",
+      "category": "floor",
+      "price": "160",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🤎",
+      "previewImage": "",
+      "desc": "溫潤典雅的深胡桃實木搭配經典人字拼紋理，工作室質感瞬間升級，每次重鋪皆需重新付費施作。",
+      "nameEn": "Dark Walnut Herringbone",
+      "descEn": "Rich walnut parquet laid in classic herringbone zigzag (charged per re-lay)."
+    },
+    {
+      "id": "floor_bamboo_tatami",
+      "name": "和風編織竹木／榻榻米席紋",
+      "category": "floor",
+      "price": "170",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🎋",
+      "previewImage": "",
+      "desc": "細緻草蓆編織感搭配深森綠緣邊框線，營造靜謐日式創作空間，每次重鋪皆需重新付費施作。",
+      "nameEn": "Woven Bamboo Tatami",
+      "descEn": "Calm Japanese tatami & hinoki bordered weave for serene focus (charged per re-lay)."
+    },
+    {
+      "id": "floor_carrara_marble",
+      "name": "卡拉拉白雪花大理石",
+      "category": "floor",
+      "price": "220",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🏛️",
+      "previewImage": "",
+      "desc": "潔白溫潤石材表面流動自然淡灰脈絡，映出微光倒影，每次重鋪皆需重新付費施作。",
+      "nameEn": "Carrara White Marble",
+      "descEn": "Polished white marble slabs with natural soft gray veining (charged per re-lay)."
+    },
+    {
+      "id": "floor_terrazzo_warm",
+      "name": "義大利暖彩水磨石",
+      "category": "floor",
+      "price": "190",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🪨",
+      "previewImage": "",
+      "desc": "奶油石底鑲嵌赤陶、鼠尾草與金黃天然碎石紋樣，活潑又耐看，每次重鋪皆需重新付費施作。",
+      "nameEn": "Italian Warm Terrazzo",
+      "descEn": "Cream stone studded with terracotta, sage, and ochre flecks (charged per re-lay)."
+    },
+    {
+      "id": "floor_dark_slate",
+      "name": "曜石深灰板岩磚",
+      "category": "floor",
+      "price": "180",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🌑",
+      "previewImage": "",
+      "desc": "沉穩內斂的霧面深炭黑板岩石磚，極簡工業與深夜接案首選，每次重鋪皆需重新付費施作。",
+      "nameEn": "Charcoal Basalt Slate",
+      "descEn": "Architectural matte dark stone tiles with rugged mineral texture (charged per re-lay)."
+    },
+    {
+      "id": "floor_checker_retro",
+      "name": "復古奶油可可棋盤磚",
+      "category": "floor",
+      "price": "160",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🏁",
+      "previewImage": "",
+      "desc": "懷舊歐風咖啡館經典奶油與深焙可可方格拼貼磚，復古感滿分，每次重鋪皆需重新付費施作。",
+      "nameEn": "Retro Cream & Cocoa Checker",
+      "descEn": "Mid-century checkered ceramic tiles with crisp espresso contrast (charged per re-lay)."
+    },
+    {
+      "id": "floor_hex_terracotta",
+      "name": "地中海六角赤陶磚",
+      "category": "floor",
+      "price": "180",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🧱",
+      "previewImage": "",
+      "desc": "暖陽窯燒赤陶六角花磚配上米白填縫，充滿南歐手作暖意，每次重鋪皆需重新付費施作。",
+      "nameEn": "Mediterranean Hex Terracotta",
+      "descEn": "Sun-baked clay hexagon tiles framed in creamy ivory mortar (charged per re-lay)."
+    },
+    {
+      "id": "floor_moroccan_star",
+      "name": "摩洛哥青花幾何花磚",
+      "category": "floor",
+      "price": "200",
+      "enabled": "TRUE",
+      "consumable": "TRUE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "💠",
+      "previewImage": "",
+      "desc": "象牙白底勾勒靛青星芒菱紋藝術花磚，打造獨樹一格的視覺亮點，每次重鋪皆需重新付費施作。",
+      "nameEn": "Moroccan Geometric Tile",
+      "descEn": "Handcrafted cobalt blue and ivory star-motif artisan tiles (charged per re-lay)."
+    },
+    {
+      "id": "desk_ash_white",
+      "name": "北歐白蠟木×純白桌腳",
+      "category": "desk",
+      "price": "120",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "deskStyle",
+      "wallColor": "",
+      "icon": "🪵",
+      "previewImage": "",
+      "desc": "保留相同極簡書桌尺寸，換成清爽淺白蠟木桌面與霧白桌腳，購買後可免費隨時切換。",
+      "nameEn": "Nordic Ash & Crisp White Desk",
+      "descEn": "Airy bleached ash tabletop on matte white cylindrical legs; swap anytime for free."
+    },
+    {
+      "id": "desk_walnut_brass",
+      "name": "黑胡桃實木×香檳金腳",
+      "category": "desk",
+      "price": "140",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "deskStyle",
+      "wallColor": "",
+      "icon": "🤎",
+      "previewImage": "",
+      "desc": "保留相同極簡書桌尺寸，換成深沉胡桃木紋桌面搭配香檳金柱腳，購買後可免費隨時切換。",
+      "nameEn": "Dark Walnut & Brushed Brass Desk",
+      "descEn": "Rich walnut grain tabletop paired with champagne brass legs; swap anytime for free."
+    },
+    {
+      "id": "desk_sakura_pastel",
+      "name": "莫蘭迪櫻粉烤漆×奶油金腳",
+      "category": "desk",
+      "price": "140",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "deskStyle",
+      "wallColor": "",
+      "icon": "🌸",
+      "previewImage": "",
+      "desc": "保留相同極簡書桌尺寸，柔霧櫻粉緞面桌面配奶油香檳金桌腳，購買後可免費隨時切換。",
+      "nameEn": "Morandi Rose & Champagne Desk",
+      "descEn": "Soft satin blush-rose lacquer tabletop with light champagne legs; swap anytime."
+    },
+    {
+      "id": "desk_matte_obsidian",
+      "name": "極簡曜石霧黑×鈦灰腳",
+      "category": "desk",
+      "price": "150",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "deskStyle",
+      "wallColor": "",
+      "icon": "🖤",
+      "previewImage": "",
+      "desc": "保留相同極簡書桌尺寸，耐看霧黑桌面搭配深鈦灰圓柱腳，購買後可免費隨時切換。",
+      "nameEn": "Matte Obsidian & Titanium Desk",
+      "descEn": "Sleek matte charcoal laminate top with dark titanium legs; swap anytime for free."
+    },
+    {
+      "id": "desk_terrazzo_mint",
+      "name": "薄荷水磨石×奶白桌腳",
+      "category": "desk",
+      "price": "170",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "deskStyle",
+      "wallColor": "",
+      "icon": "🪨",
+      "previewImage": "",
+      "desc": "保留相同極簡書桌尺寸，鼠尾草薄荷水磨石質感桌面配奶白桌腳，購買後可免費隨時切換。",
+      "nameEn": "Mint Terrazzo & Cream Desk",
+      "descEn": "Speckled sage-terrazzo tabletop paired with warm cream metal legs; swap anytime."
+    },
+    {
+      "id": "desk_brushed_alu",
+      "name": "航太拉絲銀鋁×鐵灰腳",
+      "category": "desk",
+      "price": "180",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "deskStyle",
+      "wallColor": "",
+      "icon": "🪩",
+      "previewImage": "",
+      "desc": "保留相同極簡書桌尺寸，金屬拉絲銀鋁工作檯面配鐵灰金屬腳，購買後可免費隨時切換。",
+      "nameEn": "Brushed Aluminum Studio Desk",
+      "descEn": "Anodized brushed silver aluminum tabletop with slate-silver legs; swap anytime."
+    },
+    {
+      "id": "desk_carrara_marble",
+      "name": "雪花大理石×霧金桌腳",
+      "category": "desk",
+      "price": "200",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "deskStyle",
+      "wallColor": "",
+      "icon": "🏛️",
+      "previewImage": "",
+      "desc": "保留相同極簡書桌尺寸，亮澤卡拉拉白雪花大理石桌面配霧金桌腳，購買後可免費隨時切換。",
+      "nameEn": "Carrara Marble & Gold Desk",
+      "descEn": "Smooth Carrara marble tabletop with subtle grey veins & satin gold legs; swap anytime."
+    },
+    {
+      "id": "shirt_linen_oat",
+      "name": "亞麻燕麥襯衫",
+      "category": "shirt",
+      "price": "85",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "shirtStyle",
+      "wallColor": "",
+      "icon": "👕",
+      "previewImage": "",
+      "desc": "透氣亞麻燕麥色日常襯衫，附小胸袋點綴，輕鬆穿出自然文青感。",
+      "nameEn": "Oatmeal Linen Shirt",
+      "descEn": "Breathable natural oat linen button-down with a crisp white collar."
+    },
+    {
+      "id": "shirt_sage_tee",
+      "name": "鼠尾草棉質寬T",
+      "category": "shirt",
+      "price": "75",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "shirtStyle",
+      "wallColor": "",
+      "icon": "🌿",
+      "previewImage": "",
+      "desc": "柔霧鼠尾草綠重磅純棉短T，領口微露奶油白內搭，耐看又清爽。",
+      "nameEn": "Sage Relaxed Cotton Tee",
+      "descEn": "Oversized washed sage tee over a crisp cream base layer."
+    },
+    {
+      "id": "shirt_chambray_blue",
+      "name": "水洗丹寧襯衫",
+      "category": "shirt",
+      "price": "95",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "shirtStyle",
+      "wallColor": "",
+      "icon": "🩵",
+      "previewImage": "",
+      "desc": "水洗淺靛青丹寧布襯衫，寬鬆自在又帶一點率性工作室氣息。",
+      "nameEn": "Washed Chambray Shirt",
+      "descEn": "Relaxed indigo-washed denim shirt with an easy studio feel."
+    },
+    {
+      "id": "shirt_sand_cardigan",
+      "name": "暖沙針織開襟衫",
+      "category": "shirt",
+      "price": "120",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "shirtStyle",
+      "wallColor": "",
+      "icon": "🧶",
+      "previewImage": "",
+      "desc": "溫潤燕麥沙色毛線開襟外套內搭米白上衣，畫畫久坐也溫暖。",
+      "nameEn": "Warm Sand Knit Cardigan",
+      "descEn": "Cozy oat cardigan layered over a cream tee for long drawing sessions."
+    },
+    {
+      "id": "shirt_moss_raglan",
+      "name": "森霧拼色七分袖",
+      "category": "shirt",
+      "price": "90",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "shirtStyle",
+      "wallColor": "",
+      "icon": "🌲",
+      "previewImage": "",
+      "desc": "米白衣身搭配森林墨綠插肩袖與滾邊領口，自然又帶點美式休閒。",
+      "nameEn": "Forest Raglan 3/4 Sleeve",
+      "descEn": "Off-white body with deep forest green raglan sleeves & trim."
+    },
+    {
+      "id": "shirt_terracotta_knit",
+      "name": "赤陶條紋針織衫",
+      "category": "shirt",
+      "price": "105",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "shirtStyle",
+      "wallColor": "",
+      "icon": "🍂",
+      "previewImage": "",
+      "desc": "溫暖赤陶橘紅搭一條奶霜橫紋，低調柔和卻非常顯氣色。",
+      "nameEn": "Terracotta Striped Knit",
+      "descEn": "Warm terracotta knit sweater accented with a cream chest stripe."
+    },
+    {
+      "id": "shirt_mist_hoodie",
+      "name": "晨霧棉柔連帽T",
+      "category": "shirt",
+      "price": "115",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "shirtStyle",
+      "wallColor": "",
+      "icon": "☁️",
+      "previewImage": "",
+      "desc": "輕柔霧藍灰連帽衛衣配雙抽繩，在家追劇或深夜趕稿最舒服。",
+      "nameEn": "Misty Blue Pullover Hoodie",
+      "descEn": "Soft blue-gray cotton hoodie made for late-night sketching."
+    },
+    {
+      "id": "shirt_olive_chore",
+      "name": "橄欖綠工裝夾克",
+      "category": "shirt",
+      "price": "130",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "shirtStyle",
+      "wallColor": "",
+      "icon": "🧥",
+      "previewImage": "",
+      "desc": "自然橄欖綠斜紋工裝外套內搭米色打底，簡約俐落很有職人味。",
+      "nameEn": "Olive Twill Chore Jacket",
+      "descEn": "Structured olive canvas jacket paired with a clean beige tee."
+    },
+    {
+      "id": "shirt_espresso_waffle",
+      "name": "深焙可可華夫格長袖",
+      "category": "shirt",
+      "price": "100",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "shirtStyle",
+      "wallColor": "",
+      "icon": "☕",
+      "previewImage": "",
+      "desc": "濃厚咖啡可可色格紋棉衫配淺杏圓領邊，溫暖沉穩不單調。",
+      "nameEn": "Cocoa Waffle Long-Sleeve",
+      "descEn": "Rich espresso waffle-knit top with a warm almond crew neck."
+    },
+    {
+      "id": "shirt_blush_linen",
+      "name": "煙粉柔棉亞麻衫",
+      "category": "shirt",
+      "price": "95",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "shirtStyle",
+      "wallColor": "",
+      "icon": "🌷",
+      "previewImage": "",
+      "desc": "低飽和煙燻乾燥玫瑰粉純棉上衣，柔和親膚、越洗越有質感。",
+      "nameEn": "Dusty Rose Linen Top",
+      "descEn": "Muted rose pure-cotton linen shirt that drapes softly."
+    },
+    {
+      "id": "pants_raw_denim",
+      "name": "原色丹寧直筒褲",
+      "category": "pants",
+      "price": "80",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "pantsStyle",
+      "wallColor": "",
+      "icon": "👖",
+      "previewImage": "",
+      "desc": "經典深藍原色赤耳牛仔褲，褲腳微捲露出一圈淺色反折超百搭。",
+      "nameEn": "Raw Selvedge Denim",
+      "descEn": "Classic dark-indigo jeans with clean cuffed hems."
+    },
+    {
+      "id": "pants_washed_denim",
+      "name": "淺藍水洗牛仔褲",
+      "category": "pants",
+      "price": "85",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "pantsStyle",
+      "wallColor": "",
+      "icon": "🩵",
+      "previewImage": "",
+      "desc": "清爽水洗天藍丹寧直筒褲，配任何大地色上衣都自然好看。",
+      "nameEn": "Sky Washed Jeans",
+      "descEn": "Light indigo straight-fit denim that matches any earth-tone top."
+    },
+    {
+      "id": "pants_khaki_chino",
+      "name": "卡其斜紋休閒褲",
+      "category": "pants",
+      "price": "75",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "pantsStyle",
+      "wallColor": "",
+      "icon": "🌾",
+      "previewImage": "",
+      "desc": "自然卡其棉斜紋長褲搭配深棕細皮帶，日常出門或見客戶都合適。",
+      "nameEn": "Khaki Twill Chinos",
+      "descEn": "Tailored cotton chinos paired with a slim dark-brown belt."
+    },
+    {
+      "id": "pants_olive_cargo",
+      "name": "軍綠棉質寬版工作褲",
+      "category": "pants",
+      "price": "95",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "pantsStyle",
+      "wallColor": "",
+      "icon": "🪖",
+      "previewImage": "",
+      "desc": "寬鬆自在的軍綠水洗工裝褲，自然垂墜感讓站姿與走動更隨性。",
+      "nameEn": "Olive Relaxed Cargo Pants",
+      "descEn": "Easygoing olive utility trousers built for studio comfort."
+    },
+    {
+      "id": "pants_oat_linen",
+      "name": "米白亞麻寬褲",
+      "category": "pants",
+      "price": "90",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "pantsStyle",
+      "wallColor": "",
+      "icon": "🐚",
+      "previewImage": "",
+      "desc": "天然原胚米白亞麻抽繩寬褲，輕盈涼爽又有日系雜誌休閒感。",
+      "nameEn": "Oatmeal Linen Wide Trousers",
+      "descEn": "Breezy drawstring linen pants with relaxed magazine flair."
+    },
+    {
+      "id": "pants_mocha_corduroy",
+      "name": "摩卡燈芯絨長褲",
+      "category": "pants",
+      "price": "105",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "pantsStyle",
+      "wallColor": "",
+      "icon": "🌰",
+      "previewImage": "",
+      "desc": "溫暖摩卡棕細條燈芯絨長褲，秋冬午後在工作室穿起來格外溫馨。",
+      "nameEn": "Mocha Corduroy Trousers",
+      "descEn": "Fine-wale mocha corduroy pants that feel cozy all afternoon."
+    },
+    {
+      "id": "pants_slate_sweatpants",
+      "name": "霧灰棉柔居家縮口褲",
+      "category": "pants",
+      "price": "70",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "pantsStyle",
+      "wallColor": "",
+      "icon": "☁️",
+      "previewImage": "",
+      "desc": "花紗淺灰純棉運動縮口褲，沙發追劇或做伏地挺身零束縛。",
+      "nameEn": "Heathered Slate Joggers",
+      "descEn": "Soft athletic cotton joggers made for stretching or sofa lounging."
+    },
+    {
+      "id": "pants_charcoal_pleated",
+      "name": "曜石灰西裝寬褲",
+      "category": "pants",
+      "price": "110",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "pantsStyle",
+      "wallColor": "",
+      "icon": "🖤",
+      "previewImage": "",
+      "desc": "垂墜流暢的木炭深灰打摺寬褲，低調俐落又帶有都會鬆弛感。",
+      "nameEn": "Charcoal Pleated Slacks",
+      "descEn": "Draped charcoal tailored trousers with effortless urban polish."
+    },
+    {
+      "id": "pants_sand_shorts",
+      "name": "亞麻沙色五分短褲",
+      "category": "pants",
+      "price": "70",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "pantsStyle",
+      "wallColor": "",
+      "icon": "🏖️",
+      "previewImage": "",
+      "desc": "輕便舒爽的沙色亞麻及膝短褲，夏天泡手沖或出門買麵包超輕鬆。",
+      "nameEn": "Sand Linen Knee Shorts",
+      "descEn": "Breezy knee-length linen shorts for coffee breaks and errands."
+    },
+    {
+      "id": "pants_forest_shorts",
+      "name": "松柏綠戶外休閒短褲",
+      "category": "pants",
+      "price": "75",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "pantsStyle",
+      "wallColor": "",
+      "icon": "🌲",
+      "previewImage": "",
+      "desc": "沈穩松柏綠尼龍棉質及膝短褲配米色抽繩，活潑透氣好活動。",
+      "nameEn": "Pine Outdoor Utility Shorts",
+      "descEn": "Breathable pine-green shorts with cream drawstring ties."
+    },
+    {
+      "id": "arc_lamp_brass",
+      "name": "黃銅穹頂釣魚落地燈",
+      "category": "decor",
+      "price": "230",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "💡",
+      "previewImage": "./assets/shop/arc_lamp_brass.jpg",
+      "desc": "深灰圓石底座搭細長拉絲黃銅弧形燈桿與半圓金屬穹頂燈罩，可自由擺放並點擊開關暖光。",
+      "nameEn": "Brass Dome Arc Floor Lamp",
+      "descEn": "Dark marble base with slender brushed-brass arch & dome shade; click to toggle warm light."
+    },
+    {
+      "id": "arc_lamp_black",
+      "name": "極簡霧黑釣魚落地燈",
+      "category": "decor",
+      "price": "250",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "💡",
+      "previewImage": "./assets/shop/arc_lamp_black.jpg",
+      "desc": "簡約霧黑寬圓盤底座配高挑弧線燈桿與錐形深黑燈罩，擺在沙發或工作區旁質感滿分，可點擊開關照明。",
+      "nameEn": "Matte Black Drum Arc Floor Lamp",
+      "descEn": "Wide matte-black disc base, tall sweeping arch & drum shade; click to toggle glow."
+    },
+    {
+      "id": "hamster_cage",
+      "name": "布丁倉鼠「麻糬」與小抽屜桌",
+      "category": "decor",
+      "price": "380",
+      "enabled": "TRUE",
+      "consumable": "FALSE",
+      "textileKind": "",
+      "wallColor": "",
+      "icon": "🐹",
+      "previewImage": "./assets/shop/hamster_cage.jpg",
+      "desc": "購買後會在書桌左邊擺上專屬雙抽屜小邊桌，並把透明鼠籠穩穩放在桌面上！可愛倉鼠「麻糬」整天在滾輪上奔跑。",
+      "nameEn": "Mochi the Hamster & Side Table",
+      "descEn": "Adds a two-drawer side table beside your desk with Mochi running happily in his wheel!"
+    }
+  ],
+  "settingRows": [
+    {
+      "key": "unit_reward_clams",
+      "value": "200",
+      "description": "每完成一個單元驗收／教師核准接案的獎勵英蚌"
+    },
+    {
+      "key": "starter_clams",
+      "value": "100",
+      "description": "新學生帳號初始英蚌餘額（規則上限 0~1000）"
+    },
+    {
+      "key": "monthly_rent_clams",
+      "value": "100",
+      "description": "每月固定房租金額與財務報表每月預算基準"
+    },
+    {
+      "key": "default_lesson_xp",
+      "value": "40",
+      "description": "Lessons 分頁未填寫 XP 欄時的預設單元經驗值"
+    },
+    {
+      "key": "xp_per_level",
+      "value": "100",
+      "description": "繪師聲望等級每升一級所需經驗值 XP 門檻"
+    }
+  ],
+  "tvRows": [
+    {
+      "id": "n61ULEU7CO0",
+      "title": "Best of lofi hip hop — beats to relax / study to",
+      "author": "Lofi Girl",
+      "enabled": "TRUE"
+    },
+    {
+      "id": "5qap5aO4i9A",
+      "title": "lofi hip hop radio — beats to relax / study to",
+      "author": "Lofi Girl",
+      "enabled": "TRUE"
+    },
+    {
+      "id": "MBRqu0YOH14",
+      "title": "Optimistic Nihilism",
+      "author": "Kurzgesagt – In a Nutshell",
+      "enabled": "TRUE"
+    },
+    {
+      "id": "dGiQaabX3_o",
+      "title": "What Happened Before History? Human Origins",
+      "author": "Kurzgesagt – In a Nutshell",
+      "enabled": "TRUE"
+    },
+    {
+      "id": "UjtOGPJ0URM",
+      "title": "Why Alien Life Would be our Doom",
+      "author": "Kurzgesagt – In a Nutshell",
+      "enabled": "TRUE"
+    },
+    {
+      "id": "Hu4Yvq-g7_Y",
+      "title": "How to Get Your Brain to Focus",
+      "author": "TEDx Talks",
+      "enabled": "TRUE"
+    },
+    {
+      "id": "HAnw168huqA",
+      "title": "Think Fast, Talk Smart: Communication Techniques",
+      "author": "Stanford GSB",
+      "enabled": "TRUE"
+    },
+    {
+      "id": "LXb3EKWsInQ",
+      "title": "Costa Rica in 4K 60fps HDR",
+      "author": "Jacob + Katie Schwarz",
+      "enabled": "TRUE"
+    },
+    {
+      "id": "BHACKCNDMW8",
+      "title": "3 Hours of Amazing Nature Scenery & Music",
+      "author": "Cat Trumpet",
+      "enabled": "TRUE"
+    },
+    {
+      "id": "6v2L2UGZJAM",
+      "title": "Planet Earth: Amazing Nature Scenery",
+      "author": "Robert Revol",
+      "enabled": "TRUE"
+    }
+  ],
+  "thoughtRows": [
+    {
+      "activity": "phone",
+      "text": "This page is so cool!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "phone",
+      "text": "I want to buy a TV...",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "phone",
+      "text": "Look! That new app is easy to use.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "phone",
+      "text": "Ooh, a new message from my boss!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "phone",
+      "text": "Let's take a look at this fun video.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "phone",
+      "text": "Whoa, that jacket costs an arm and a leg!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "phone",
+      "text": "What a nice comment on my post!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "phone",
+      "text": "Should I order ramen? I can't make up my mind.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "exercise",
+      "text": "One, two, three... never give up!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "exercise",
+      "text": "Exercising regularly makes me feel better.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "exercise",
+      "text": "This is an important daily activity!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "exercise",
+      "text": "Take it easy—two more on the floor!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "exercise",
+      "text": "Whew! Time to cool down for a second.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "exercise",
+      "text": "Ten push-ups? A piece of cake!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "exercise",
+      "text": "It's not hard at all when I stay calm.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "read",
+      "text": "I love this simple and unique art style.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "read",
+      "text": "I see! That makes total sense now.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "read",
+      "text": "I really admire those bright colors.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "read",
+      "text": "What an interesting article to explore!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "read",
+      "text": "Reading at home feels so peaceful.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "read",
+      "text": "Don't judge a book by its cover!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "read",
+      "text": "Every page helps me discover a good idea.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "eat",
+      "text": "Mmm! This tastes so good!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "eat",
+      "text": "I'm glad I didn't miss out on dinner.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "eat",
+      "text": "Wait... remember to do the dishes later!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "eat",
+      "text": "Warm food is worth every penny.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "eat",
+      "text": "In fact, cooking at home saves money.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "eat",
+      "text": "It's still hot—let it cool down a bit.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "eat",
+      "text": "Dinner is ready! Plenty of energy now.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "gaming",
+      "text": "This block game is so exciting!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "gaming",
+      "text": "Let's assemble a simple house here.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "gaming",
+      "text": "Wait, did I just run out of wood?",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "gaming",
+      "text": "Easy! Fixing this wall is a piece of cake.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "gaming",
+      "text": "Time to explore that mysterious cave!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "gaming",
+      "text": "Good choice! That was a smart move.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "gaming",
+      "text": "Okay, almost time to turn off the screen.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sleep",
+      "text": "Time to call it a day... zzz...",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sleep",
+      "text": "So peaceful and quiet tonight...",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sleep",
+      "text": "Rest well today, work better tomorrow...",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sleep",
+      "text": "Hope I don't sleepwalk tonight...",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sleep",
+      "text": "Zzz... dreaming of a warm vacation...",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sleep",
+      "text": "Take it easy... five more minutes...",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sleep",
+      "text": "Zzz... good night, whole world...",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "wash",
+      "text": "Wash with soap—clean and safe!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "wash",
+      "text": "Cool water helps me wake right up.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "wash",
+      "text": "Time to wipe my hands dry.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "wash",
+      "text": "Washing hands regularly is so important!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "wash",
+      "text": "Phew, my hands feel fresh again.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "wash",
+      "text": "Soap, water, dry—good to go!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "toilet",
+      "text": "Just a quiet moment to take it easy.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "toilet",
+      "text": "Wait... remember to sweep the floor later.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "toilet",
+      "text": "Should I mop the floor before dinner?",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "toilet",
+      "text": "Let's hold on and take a quick break.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "toilet",
+      "text": "Maybe paint the wall light green? Good idea!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "toilet",
+      "text": "Okay, back to my room soon.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "work",
+      "text": "Almost ready to deliver this project!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "work",
+      "text": "Hope my boss and I are on the same page.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "work",
+      "text": "Let me compare these two bright colors.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "work",
+      "text": "Pay attention to the little details!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "work",
+      "text": "In fact, I really enjoy this career.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "work",
+      "text": "Just one more touch—looking better!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "work",
+      "text": "Done! Time to share my work.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_read",
+      "text": "This soft sofa is the best choice I made!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_read",
+      "text": "Reading on the sofa feels so peaceful.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_read",
+      "text": "Let me take it easy with a good book.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_read",
+      "text": "Such a simple and relaxing afternoon.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_read",
+      "text": "I really admire the story in this book!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_read",
+      "text": "Time flies when I explore a new story.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "watch_tv",
+      "text": "Ooh, what is on this channel right now?",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "watch_tv",
+      "text": "Buying this TV was worth every penny!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "watch_tv",
+      "text": "This video is so bright and interesting!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "watch_tv",
+      "text": "Wait, let me take a closer look at that!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "watch_tv",
+      "text": "Next goal: save up for a soft sofa too!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "watch_tv",
+      "text": "Fun shows help me cool down after work.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_tv",
+      "text": "TV plus a soft sofa? Best combo ever!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_tv",
+      "text": "Time to take it easy and enjoy a video!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_tv",
+      "text": "This show is actually pretty exciting.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_tv",
+      "text": "Lying back after finishing a project feels great!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_tv",
+      "text": "Nothing beats relaxing right here at home.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "sofa_tv",
+      "text": "Let's discover something cool to watch next.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_plant",
+      "text": "Grow strong and green, little plant!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_plant",
+      "text": "Remember to water my desk plant regularly.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_plant",
+      "text": "Plants always make my desk look bright!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_plant",
+      "text": "A little water goes a long way.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_plant",
+      "text": "Look! Fresh green leaves make me smile.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_plant",
+      "text": "Taking care of green things feels peaceful.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "admire_poster",
+      "text": "I really admire the warm colors here!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "admire_poster",
+      "text": "That art print makes the whole wall better.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "admire_poster",
+      "text": "Great framing—it gives me a good idea!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "admire_poster",
+      "text": "Art on the wall feels just like a gallery.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "admire_poster",
+      "text": "Simple shapes, yet so unique and bright!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "admire_poster",
+      "text": "Okay, I feel inspired to draw again!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "check_coat",
+      "text": "Gotta grab my tote bag before going out.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "check_coat",
+      "text": "This knit scarf feels super soft today.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "check_coat",
+      "text": "Where did I put my favorite cap? Oh, right here!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "check_coat",
+      "text": "Everything by the door is neat and ready.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "check_coat",
+      "text": "Maybe I'll take a short walk outside later.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "check_coat",
+      "text": "A tidy coat rack saves so much time!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "coffee_break",
+      "text": "Nothing beats fresh pour-over coffee!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "coffee_break",
+      "text": "Ooh, that dark roast aroma is heavenly.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "coffee_break",
+      "text": "One warm cup of coffee wakes up my creativity.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "coffee_break",
+      "text": "I'll take it easy and sip slowly first.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "coffee_break",
+      "text": "Careful, the gooseneck kettle is still hot!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "coffee_break",
+      "text": "Coffee time means fresh ideas are coming!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "listen_vinyl",
+      "text": "This warm vinyl crackle sounds amazing!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "listen_vinyl",
+      "text": "Nothing like classic jazz while taking a break.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "listen_vinyl",
+      "text": "Music always puts me in a better mood.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "listen_vinyl",
+      "text": "Should I flip this record to side B next?",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "listen_vinyl",
+      "text": "Warm bass and lo-fi beats fill the studio!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "listen_vinyl",
+      "text": "Listening to records helps me slow down.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "pet_cat",
+      "text": "Aww, such a fluffy orange purr machine!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "pet_cat",
+      "text": "Who's the sweetest studio assistant? You are!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "pet_cat",
+      "text": "Look at those tiny paws—my heart is melting!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "pet_cat",
+      "text": "Giving chin scratches makes me so happy.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "pet_cat",
+      "text": "Taking a break to pet the cat is essential.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "pet_cat",
+      "text": "Purring right next to me is pure magic!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_floor_plant",
+      "text": "Big shiny leaves make the room feel alive!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_floor_plant",
+      "text": "Let's wipe the dust off these green leaves.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_floor_plant",
+      "text": "Growing taller every week, little fiddle fig!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_floor_plant",
+      "text": "Plants really brighten up this bedroom corner.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_floor_plant",
+      "text": "A sip of water and plenty of sunlight for you.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "water_floor_plant",
+      "text": "Caring for indoor plants feels so peaceful.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "smart_toilet",
+      "text": "Whoa, a heated toilet seat feels like heaven!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "smart_toilet",
+      "text": "This smart bidet was worth every single clam!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "smart_toilet",
+      "text": "Warm water and cozy seat—so high-tech!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "smart_toilet",
+      "text": "That glowing nightlight inside the bath is neat!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "smart_toilet",
+      "text": "Upgrade complete: total five-star comfort!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "smart_toilet",
+      "text": "Clean, warm, and surprisingly relaxing!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "floor_stand",
+      "text": "Nice angle to look around my studio!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "floor_stand",
+      "text": "I really like how cozy this room feels.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "floor_stand",
+      "text": "Hmm, what should I upgrade in this corner next?",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "floor_stand",
+      "text": "Taking a short stroll helps refresh my mind!",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "floor_stand",
+      "text": "Plenty of open floor space right here.",
+      "enabled": "TRUE"
+    },
+    {
+      "activity": "floor_stand",
+      "text": "Walking around the room gives me fresh ideas!",
+      "enabled": "TRUE"
+    }
+  ]
+}

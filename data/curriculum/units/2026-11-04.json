@@ -1,0 +1,192 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "dd962f4b64",
+  "date": "2026-11-04",
+  "lesson": {
+    "Date": "2026-11-04",
+    "Title": "新單字和閱讀理解",
+    "Grammar_Focus": "動詞後接不定詞 (to V) 與動名詞 (V-ing) 的用法與語意差異 (stop / remember / forget / try)",
+    "Reading_Title": "A Difficult Career Choice (Grammar & Vocabulary Focus)",
+    "Reading_Passage": "In a complete English sentence, a main clause generally has only one main verb. When expressing a second action, we transform the verb into an infinitive (to V) or a gerund (V-ing). Verbs like want, plan, decide, hope, need, and refuse take \"to V\" for future intentions (e.g., The strict boss refused to hire workers who gave up easily).<br><br>Conversely, verbs like enjoy, practice, finish, keep, and give up take \"V-ing\" to show ongoing experiences (e.g., Kevin enjoys visiting his distant relatives in Canada during vacation).<br><br>Finally, four core verbs—stop, remember, forget, and try—change their meanings completely depending on whether they are followed by \"to V\" or \"V-ing\". For example, \"stop to V\" means pausing one action to do another, while \"stop V-ing\" means quitting an ongoing action altogether.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-11-04",
+      "Word": "salesman",
+      "POS": "n.",
+      "Meaning": "業務員",
+      "Example": "The hardworking salesman plans to meet the branch manager before noon to show the new digital products.",
+      "Image_URL": "images/vocab/2026-11-04/salesman.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "boss",
+      "POS": "n.",
+      "Meaning": "老闆",
+      "Example": "The tech company boss told the software engineer not to turn off the main system during office hours.",
+      "Image_URL": "images/vocab/2026-11-04/boss.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "soldier",
+      "POS": "n.",
+      "Meaning": "士兵",
+      "Example": "After crossing the broken bridge, the brave soldiers stopped to rescue the scared travelers from the falling rocks.",
+      "Image_URL": "images/vocab/2026-11-04/soldier.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "farmer",
+      "POS": "n.",
+      "Meaning": "農夫",
+      "Example": "The Colombian coffee farmer hopes to harvest all the crops before the heavy rainy season arrives.",
+      "Image_URL": "images/vocab/2026-11-04/farmer.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "fisherman",
+      "POS": "n.",
+      "Meaning": "漁夫",
+      "Example": "When the weather screen showed a warning, the experienced fisherman decided not to sail into the dangerous storm.",
+      "Image_URL": "images/vocab/2026-11-04/fisherman.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "relative",
+      "POS": "n.",
+      "Meaning": "親戚",
+      "Example": "During his summer vacation in Canada, Kevin enjoyed visiting his distant relatives in Montreal.",
+      "Image_URL": "images/vocab/2026-11-04/relative.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "factory",
+      "POS": "n.",
+      "Meaning": "工廠",
+      "Example": "The skilled mechanic finished inspecting every machine in the car factory before the workers went home.",
+      "Image_URL": "images/vocab/2026-11-04/factory.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "truck driver",
+      "POS": "n.",
+      "Meaning": "卡車司機",
+      "Example": "It is very exhausting for the truck driver to transport fresh food across the high mountains all night.",
+      "Image_URL": "images/vocab/2026-11-04/truck_driver.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "believe",
+      "POS": "v.",
+      "Meaning": "相信",
+      "Example": "Some leaders refused to believe the climate report until the scientists showed the rising temperature data.",
+      "Image_URL": "images/vocab/2026-11-04/believe.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "act",
+      "POS": "v.",
+      "Meaning": "表演；行動",
+      "Example": "Although the young actor was nervous, he remembered to speak clearly after his teacher whispered, \"Break a leg!\"",
+      "Image_URL": "images/vocab/2026-11-04/act.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "give up",
+      "POS": "phr.",
+      "Meaning": "放棄",
+      "Example": "Zac made up his mind not to give up learning computer programming even though the subject was tough.",
+      "Image_URL": "images/vocab/2026-11-04/give_up.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "make fun of",
+      "POS": "phr.",
+      "Meaning": "取笑；嘲弄",
+      "Example": "It is not kind of you to make fun of Lucas just because he feels nervous on stage.",
+      "Image_URL": "images/vocab/2026-11-04/make_fun_of.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "career",
+      "POS": "n.",
+      "Meaning": "職業生涯；事業",
+      "Example": "After updating his resume, Charles decided to start a new career in digital media.",
+      "Image_URL": "images/vocab/2026-11-04/career.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "audition",
+      "POS": "n.",
+      "Meaning": "試鏡；試音",
+      "Example": "The young musician kept practicing the violin pieces all night to prepare for tomorrow's big audition.",
+      "Image_URL": "images/vocab/2026-11-04/audition.webp"
+    },
+    {
+      "Date": "2026-11-04",
+      "Word": "deliver",
+      "POS": "v.",
+      "Meaning": "投遞；運送",
+      "Example": "The delivery man stopped to check the fragile antique box to make sure it was still in good condition.",
+      "Image_URL": "images/vocab/2026-11-04/deliver.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-11-04",
+      "Type": "MC",
+      "Question": "After driving for five long hours in heavy rain, the delivery driver stopped ______ a short break at the gas station.",
+      "Option_A": "taking",
+      "Option_B": "to take",
+      "Option_C": "took",
+      "Option_D": "takes",
+      "Answer": "B",
+      "Explanation": "stop to V 表示「停下原本開車的動作，轉而去做另一件事（休息一下）」。"
+    },
+    {
+      "Date": "2026-11-04",
+      "Type": "MC",
+      "Question": "Don't worry! I clearly remember ______ the company's financial report to the manager's email yesterday afternoon.",
+      "Option_A": "send",
+      "Option_B": "to send",
+      "Option_C": "sending",
+      "Option_D": "sent",
+      "Answer": "C",
+      "Explanation": "remember V-ing 表示「記得曾經做過某事（昨天下午已經寄出報告）」。"
+    },
+    {
+      "Date": "2026-11-04",
+      "Type": "MC",
+      "Question": "The clever hacker tried ______ into the school system, but our new firewall successfully stopped him.",
+      "Option_A": "break",
+      "Option_B": "to break",
+      "Option_C": "breaking",
+      "Option_D": "broken",
+      "Answer": "B",
+      "Explanation": "try to V 表示「設法、努力嘗試達成某個具難度的目標（試圖駭入系統）」。"
+    },
+    {
+      "Date": "2026-11-04",
+      "Type": "MC",
+      "Question": "When the emergency earthquake alarm blinked on the screen, all employees decided ______ inside the building.",
+      "Option_A": "to not stay",
+      "Option_B": "not staying",
+      "Option_C": "not to stay",
+      "Option_D": "not stay",
+      "Answer": "C",
+      "Explanation": "decide 後接不定詞 to V，其否定形式必須將 not 放在 to 的正前方，即 decide not to stay。"
+    },
+    {
+      "Date": "2026-11-04",
+      "Type": "MC",
+      "Question": "Chloe has poor math grades; therefore, she gave up ______ soccer after school and spent more time studying.",
+      "Option_A": "playing",
+      "Option_B": "to play",
+      "Option_C": "play",
+      "Option_D": "played",
+      "Answer": "A",
+      "Explanation": "give up 為必接動名詞（V-ing）的片語動詞，故選 playing。"
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "323a86ecec",
+  "date": "2026-10-21",
+  "lesson": {
+    "Date": "2026-10-21",
+    "Title": "日常家務與時間表達",
+    "Grammar_Focus": "英文時間順讀法與逆讀法（past / after 表過幾分；to 表差幾分；a quarter 與 half past，注意絕無 half to），搭配居家家務與生活動詞",
+    "Reading_Title": "Saturday Morning Chores by the Clock",
+    "Reading_Passage": "Every Saturday morning, the Chen family follows a clear chore schedule so everyone finishes before lunch. At a quarter past eight, Dad walks into the kitchen to feed their hungry dog and wipe the wooden dining table. Meanwhile, Leo wakes up slowly and stretches in bed, though he knows he cannot sleepwalk through his tasks for long.<br><br>At half past eight, Leo grabs a broom to sweep the living room floor and cleans the hallway stairs carefully. His younger sister Emma checks the messy desk drawer for stray pencils and helps Mom hang dry jackets in the closet. When Emma accidentally drops a plastic bowl on the tiles, Mom smiles calmly and says, \"Take it easy! Let's mop the spilled milk first and cool down before fixing anything.\"<br><br>By ten to eleven, the whole house shines cleanly from top to bottom. Dad finishes helping fix a loose cabinet door, and Emma volunteers to do the dishes after brunch. At half past eleven, almost an hour before noon, the family leaves the house together to ride bicycles along the sunny river park, proud of finishing every chore right on time.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-10-21",
+      "Word": "do the dishes",
+      "POS": "phr.",
+      "Meaning": "洗碗盤",
+      "Example": "My sister and I take turns helping Mom do the dishes right after dinner.",
+      "Image_URL": "images/vocab/2026-10-21/do_the_dishes.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "half",
+      "POS": "n.",
+      "Meaning": "一半；二分之一（搭配 half past）",
+      "Example": "Our soccer practice ends at half past five, so I will be home by six.",
+      "Image_URL": "images/vocab/2026-10-21/half.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "quarter",
+      "POS": "n.",
+      "Meaning": "十五分鐘；四分之一",
+      "Example": "The school bus leaves the corner stop at a quarter to seven every morning.",
+      "Image_URL": "images/vocab/2026-10-21/quarter.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "past",
+      "POS": "prep.",
+      "Meaning": "過（幾點鐘幾分）；經過",
+      "Example": "It is already ten past nine, so let's hurry into the science classroom.",
+      "Image_URL": "images/vocab/2026-10-21/past.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "leave",
+      "POS": "v.",
+      "Meaning": "離開；出發",
+      "Example": "Check that you packed your student ID card before you leave the house.",
+      "Image_URL": "images/vocab/2026-10-21/leave.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "remember",
+      "POS": "v.",
+      "Meaning": "記得",
+      "Example": "Please remember to lock the balcony window before going to sleep tonight.",
+      "Image_URL": "images/vocab/2026-10-21/remember.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "take it easy",
+      "POS": "phr.",
+      "Meaning": "放輕鬆；別緊張",
+      "Example": "Take it easy and read each test question slowly before choosing your answer.",
+      "Image_URL": "images/vocab/2026-10-21/take_it_easy.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "cool down",
+      "POS": "phr.",
+      "Meaning": "冷靜一下；降溫",
+      "Example": "Drink a glass of water and cool down for five minutes after running laps.",
+      "Image_URL": "images/vocab/2026-10-21/cool_down.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "feed",
+      "POS": "v.",
+      "Meaning": "餵養",
+      "Example": "Every morning at seven, Kevin fills the metal bowl to feed his golden retriever.",
+      "Image_URL": "images/vocab/2026-10-21/feed.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "sweep",
+      "POS": "v.",
+      "Meaning": "打掃；掃地",
+      "Example": "Two students stay after school to sweep dry leaves off the classroom balcony.",
+      "Image_URL": "images/vocab/2026-10-21/sweep.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "floor",
+      "POS": "n.",
+      "Meaning": "地板；樓層",
+      "Example": "Our school library sits on the third floor right beside the computer lab.",
+      "Image_URL": "images/vocab/2026-10-21/floor.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "fix",
+      "POS": "v.",
+      "Meaning": "修理；解決",
+      "Example": "My uncle used a screwdriver to fix the loose leg on our kitchen chair.",
+      "Image_URL": "images/vocab/2026-10-21/fix.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "drawer",
+      "POS": "n.",
+      "Meaning": "抽屜",
+      "Example": "Keep spare batteries and scissors neatly inside the top desk drawer.",
+      "Image_URL": "images/vocab/2026-10-21/drawer.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "mop",
+      "POS": "v./n.",
+      "Meaning": "拖地；拖把",
+      "Example": "After rainy sports day, everyone grabbed a mop to dry the wet hallway.",
+      "Image_URL": "images/vocab/2026-10-21/mop.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "wipe",
+      "POS": "v.",
+      "Meaning": "擦拭",
+      "Example": "Use a clean damp cloth to wipe dust off your computer keyboard once a week.",
+      "Image_URL": "images/vocab/2026-10-21/wipe.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "hang",
+      "POS": "v.",
+      "Meaning": "吊；掛",
+      "Example": "Please hang your wet raincoat on the wooden hook near the front door.",
+      "Image_URL": "images/vocab/2026-10-21/hang.webp"
+    },
+    {
+      "Date": "2026-10-21",
+      "Word": "sleepwalk",
+      "POS": "v.",
+      "Meaning": "夢遊",
+      "Example": "My cousin told a funny story about trying to sleepwalk into the kitchen at age six.",
+      "Image_URL": "images/vocab/2026-10-21/sleepwalk.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-10-21",
+      "Type": "MC",
+      "Question": "What time does Dad walk into the kitchen to feed the dog and wipe the dining table?",
+      "Option_A": "At 8:15.",
+      "Option_B": "At 8:30.",
+      "Option_C": "At 10:50.",
+      "Option_D": "At 11:30.",
+      "Answer": "A",
+      "Explanation": "第一段第二句指出 At a quarter past eight（八點過十五分，即 8:15），Dad walks into the kitchen to feed their hungry dog and wipe the wooden dining table。"
+    },
+    {
+      "Date": "2026-10-21",
+      "Type": "MC",
+      "Question": "What did Mom tell Emma to do after she accidentally dropped a plastic bowl?",
+      "Option_A": "Leave the house immediately to ride bicycles.",
+      "Option_B": "Take it easy, mop the spilled milk first, and cool down.",
+      "Option_C": "Sweep the living room floor and fix the cabinet door.",
+      "Option_D": "Hang dry jackets inside the hallway closet.",
+      "Answer": "B",
+      "Explanation": "第二段第三句寫道：Mom smiles calmly and says, \"Take it easy! Let's mop the spilled milk first and cool down before fixing anything.\""
+    },
+    {
+      "Date": "2026-10-21",
+      "Type": "TFNG",
+      "Question": "Leo swept the living room floor and cleaned the hallway stairs at 8:30.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段第一句提到 At half past eight（8:30）, Leo grabs a broom to sweep the living room floor and cleans the hallway stairs carefully，與題幹相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-10-21",
+      "Type": "TFNG",
+      "Question": "The Chen family left the house to ride bicycles at ten to eleven.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第三段第一句寫 ten to eleven（10:50）時房子全部打掃乾淨；最後一句明確指出 At half past eleven（11:30）才出門騎腳踏車，故題幹為 FALSE。"
+    },
+    {
+      "Date": "2026-10-21",
+      "Type": "TFNG",
+      "Question": "The Chen family eats noodles together at the river park every Saturday noon.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "第三段僅提到他們在 11:30 出門去河濱公園騎腳踏車，並未提及是否在公園吃麵，故為 NOT GIVEN。"
+    }
+  ]
+}

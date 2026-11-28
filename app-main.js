@@ -30,6 +30,9 @@ import {
   query,
   orderBy,
   limit,
+  startAt,
+  endAt,
+  startAfter,
   runTransaction,
   writeBatch,
   serverTimestamp
@@ -43,7 +46,7 @@ import {
   HAIR_COLORS,
   OUTFIT_COLORS,
   DEFAULT_AVATAR
-} from "./room-scene.js?v=20261126a";
+} from "./room-scene.js?v=20261128a";
 import {
   SHOP_CATEGORIES,
   SHOP_CATALOG,
@@ -68,7 +71,7 @@ import {
   isSellableShopItem,
   getBlockingDependentOwnedItems,
   normalizeOwnedItems
-} from "./shop-catalog.js?v=20261126a";
+} from "./shop-catalog.js?v=20261128a";
 import {
   PLACEABLE_FURNITURE_META,
   getCompanionPlaceableIds,
@@ -76,7 +79,7 @@ import {
   computeRoomGridStats,
   checkShopItemGridAvailability,
   normalizePendingParcels
-} from "./room-grid.js?v=20261126a";
+} from "./room-grid.js?v=20261128a";
 import {
   DEFAULT_TV_CHANNEL_VIDEOS,
   XP_RANK_LADDER,
@@ -102,23 +105,37 @@ import {
   resolveQuestProgressTargetIndex,
   evaluateSubmissionMetrics,
   formatExamDuration,
-  gradeIeltsExam
-} from "./app-helpers.js?v=20261126a";
-import { createPosterCustomizer } from "./poster-editor.js?v=20261126a";
-import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261126a";
+  gradeIeltsExam,
+  isSafeCurriculumUnitId,
+  toReviewQueueDocId,
+  normalizeEmailSearchPrefix,
+  mergeStudentRecordsByUid,
+  buildMergedPendingReviewItems
+} from "./app-helpers.js?v=20261128a";
+import { createPosterCustomizer } from "./poster-editor.js?v=20261128a";
+import { renderInteractiveReadingPassage, clearReadingScaffold } from "./reading-scaffold.js?v=20261128a";
 import {
   isEn,
   bi,
   getUiLanguage,
   setUiLanguage,
   applyStaticDomTranslations
-} from "./i18n.js?v=20261126a";
+} from "./i18n.js?v=20261128a";
 
 applyStaticDomTranslations();
+
+const initialLiveSheetsRequested = (() => {
+  try {
+    return new URLSearchParams(window.location.search).get("liveSheets") === "1";
+  } catch {
+    return false;
+  }
+})();
 
 if (window.location.search) {
   const cleanUrl = new URL(window.location.href);
   cleanUrl.searchParams.delete("date");
+  cleanUrl.searchParams.delete("liveSheets");
   window.history.replaceState({}, "", cleanUrl);
 }
 
@@ -167,6 +184,12 @@ let sheetsDetailsLoaded = false;
 let sheetsStage2Promise = null;
 let sheetsError = null;
 let authSessionNonce = 0;
+
+const LIVE_SHEETS_MODE_STORAGE_KEY = "studio_admin_live_sheets_v1";
+let curriculumSourceKind = "cdn"; // "cdn" | "live_sheets"
+let curriculumManifestHash = "20261128a";
+const studentLessonDetailCache = new Map();
+const studentLessonDetailPromiseCache = new Map();
 
 let currentScreen = "loading"; // "auth" | "onboarding" | "room" | "desktop" | "lesson"
 let activeLessonDate = null;
@@ -263,7 +286,7 @@ function setIeltsTestSyncStatus(testId, status) {
 
 async function getIeltsModule() {
   if (!ieltsModuleCache) {
-    ieltsModuleCache = await import("./ielts-exam.js?v=20261126a");
+    ieltsModuleCache = await import("./ielts-exam.js?v=20261128a");
   }
   return ieltsModuleCache;
 }
@@ -974,8 +997,17 @@ function sanitizeSubmissionMetricsMap(rawMap) {
 async function setLessonSubmitted(dateStr, nextSubmitted) {
   if (!currentUser || isLessonCompleted(dateStr)) return { submitted: false, xpGranted: 0 };
   const targetSubmitted = Boolean(nextSubmitted);
+  if (targetSubmitted && !isIeltsLessonId(dateStr)) {
+    await ensureStudentLessonDetailLoaded(dateStr);
+  }
   const metricSnapshot = targetSubmitted ? buildSubmissionMetricSnapshot(dateStr) : null;
   const userRef = doc(firestoreDb, "users", currentUser.uid);
+  const queueId = toReviewQueueDocId(currentUser.uid, dateStr);
+  const queueRef = queueId ? doc(firestoreDb, "reviewQueue", queueId) : null;
+  const lessonMeta = findLessonAnyTrack(dateStr);
+  const lessonTitle = String(lessonMeta?.Title || dateStr).trim().slice(0, 160);
+  const track = isIeltsLessonId(dateStr) ? "ielts" : "student";
+  const callerEmail = String(currentUser.email || currentUserProfile?.email || "").trim().toLowerCase();
 
   const result = await runTransaction(firestoreDb, async (tx) => {
     const snap = await tx.get(userRef);
@@ -998,7 +1030,6 @@ async function setLessonSubmitted(dateStr, nextSubmitted) {
     let xpGranted = 0;
     let nextXp = Math.max(0, Math.trunc(Number(data.xp ?? currentUserProfile?.xp ?? 0)));
     if (targetSubmitted && !xpAwardedMap[dateStr]) {
-      const lessonMeta = findLessonAnyTrack(dateStr);
       const unitXp = Math.max(0, Math.min(1000, getLessonXp(lessonMeta)));
       if (unitXp > 0) {
         xpAwardedMap[dateStr] = true;
@@ -1010,6 +1041,31 @@ async function setLessonSubmitted(dateStr, nextSubmitted) {
     }
 
     tx.update(userRef, patch);
+
+    if (queueRef) {
+      if (targetSubmitted && callerEmail) {
+        const safeName = String(
+          data.avatar?.name || data.displayName || currentUserProfile?.displayName || callerEmail.split("@")[0] || ""
+        ).trim().slice(0, 80);
+        const queuePayload = {
+          uid: currentUser.uid,
+          email: callerEmail,
+          displayName: safeName,
+          lessonDate: dateStr,
+          lessonTitle,
+          track,
+          submittedAt: Math.max(0, Math.trunc(Number(metricSnapshot?.submittedAt || Date.now()))),
+          updatedAt: serverTimestamp()
+        };
+        if (metricSnapshot) {
+          queuePayload.metrics = metricSnapshot;
+        }
+        tx.set(queueRef, queuePayload);
+      } else {
+        tx.delete(queueRef);
+      }
+    }
+
     return { submitted: targetSubmitted, submittedMap, xpAwardedMap, metricsMap, nextXp, xpGranted };
   });
 
@@ -1956,13 +2012,11 @@ async function openLesson(dateStr, { force = false, restoreScrollY = null } = {}
     await openWorkDesktop({ track: "student" });
     return false;
   }
-  if (!sheetsDetailsLoaded && sheetsStage2Promise) {
-    try {
-      await sheetsStage2Promise;
-    } catch (err) {
-      alert(bi(`無法載入單元單字與測驗資料：${err?.message || err}`, `Failed to load lesson vocabulary & quiz: ${err?.message || err}`));
-      return false;
-    }
+  try {
+    await ensureStudentLessonDetailLoaded(dateStr);
+  } catch (err) {
+    alert(bi(`無法載入單元單字與測驗資料：${err?.message || err}`, `Failed to load lesson vocabulary & quiz: ${err?.message || err}`));
+    return false;
   }
   currentScreen = "lesson";
   activeLessonDate = dateStr;
@@ -2000,7 +2054,9 @@ function restoreOpenModalFromNav(saved) {
   } else if (modal === "tv" && owned.wall_tv) {
     openTvModalPlayer();
   } else if (modal === "adminReview" && isAdminRole()) {
+    updateLiveSheetsToggleButton();
     if (!adminReviewDialog.open) adminReviewDialog.showModal();
+    renderPendingReviewQueue();
     if (cachedStudents.length > 0) {
       syncCachedStudentsSnapshot(cachedStudents, saved.reviewStudentUid || null);
     }
@@ -2066,6 +2122,12 @@ async function restoreSavedNavStateOrDefault() {
           spectateStudentRoom(saved.spectatingUid);
         } else {
           pendingRestoreSpectateUid = saved.spectatingUid;
+          fetchStudentProfileByUid(saved.spectatingUid).then(stu => {
+            if (stu && currentScreen === "room" && pendingRestoreSpectateUid === saved.spectatingUid) {
+              pendingRestoreSpectateUid = null;
+              spectateStudentRoom(stu.uid);
+            }
+          });
         }
       }
     }
@@ -2108,8 +2170,8 @@ function renderAppState() {
   if (sheetsError) {
     hideAllPrimaryScreens();
     errorEl.textContent = bi(
-      `載入失敗：${sheetsError.message}。請確認 Google 試算表已設為「知道連結的使用者皆可檢視」，且分頁名稱為 Lessons、Vocab、Quiz。`,
-      `Load error: ${sheetsError.message}. Verify the Google Sheet is shared as "Anyone with the link can view" with tabs Lessons, Vocab, and Quiz.`
+      `載入教材資料失敗：${sheetsError.message}。請重新整理頁面，或於管理員試算表模式檢查資料權限。`,
+      `Load error: ${sheetsError.message}. Please refresh the page or check curriculum data availability.`
     );
     errorEl.classList.remove("hidden");
     return;
@@ -2253,88 +2315,209 @@ function refreshLiveSheetViews() {
   if (financeDialog?.open) renderFinanceDialog();
 }
 
-async function loadSheets() {
-  const cached = readSheetsCache();
-  let prevCoreDigest = "";
-  let prevDetailsDigest = "";
-  if (cached) {
-    applySheetCore(cached.lessons, cached.shopRows || [], cached.settingRows || []);
-    applySheetDetails(cached.vocab, cached.quiz, cached.tvRows || [], cached.thoughtRows || []);
-    prevCoreDigest = computeSheetStageDigest([cached.lessons, cached.shopRows || [], cached.settingRows || []]);
-    prevDetailsDigest = computeSheetStageDigest([cached.vocab, cached.quiz, cached.tvRows || [], cached.thoughtRows || []]);
-    sheetsLoaded = true;
-    sheetsDetailsLoaded = true;
-    sheetsError = null;
-    renderAppState();
+function isAdminLiveSheetsEnabled() {
+  if (!isAdminRole()) return false;
+  if (initialLiveSheetsRequested) return true;
+  try {
+    return sessionStorage.getItem(LIVE_SHEETS_MODE_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
-    const cacheAgeMs = Date.now() - Number(cached.ts || 0);
-    if (Number.isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs < SHEETS_FRESH_TTL_MS) {
-      sheetsStage2Promise = Promise.resolve();
-      return;
+function updateLiveSheetsToggleButton() {
+  const btn = document.getElementById("admin-toggle-live-sheets-btn");
+  if (!btn) return;
+  const isLive = curriculumSourceKind === "live_sheets";
+  btn.textContent = isLive
+    ? bi("🧪 教材來源：試算表即時預覽", "🧪 Source: Live Google Sheets")
+    : bi("🌐 教材來源：靜態 CDN", "🌐 Source: Static CDN");
+  btn.classList.toggle("is-active", isLive);
+}
+
+function applyCurriculumManifest(manifestData) {
+  const rawLessons = Array.isArray(manifestData?.lessons) ? manifestData.lessons : [];
+  curriculumManifestHash = String(manifestData?.hash || "20261128a");
+  db.lessons = [...rawLessons].sort((a, b) => String(a.Date || "").localeCompare(String(b.Date || "")));
+}
+
+function applyConfigJson(configData) {
+  const settingRows = Array.isArray(configData?.settingRows) ? configData.settingRows : [];
+  const shopRows = Array.isArray(configData?.shopRows) ? configData.shopRows : [];
+  const tvRows = Array.isArray(configData?.tvRows) ? configData.tvRows : [];
+  const thoughtRows = Array.isArray(configData?.thoughtRows) ? configData.thoughtRows : [];
+
+  applyRemoteSettings(settingRows);
+  applyRemoteShopConfig(shopRows);
+  applyRemoteTvVideos(tvRows);
+  if (thoughtRows.length > 0) {
+    pendingThoughtRows = thoughtRows;
+    roomScene?.applyCustomThoughts(thoughtRows);
+  }
+}
+
+export async function ensureStudentLessonDetailLoaded(dateStr, { force = false } = {}) {
+  const cleanDate = String(dateStr || "").trim();
+  if (!cleanDate || isIeltsLessonId(cleanDate)) return null;
+
+  if (curriculumSourceKind === "live_sheets" && !force) {
+    if (!sheetsDetailsLoaded && sheetsStage2Promise) {
+      await sheetsStage2Promise;
     }
+    return {
+      lesson: db.lessons.find(l => l.Date === cleanDate) || null,
+      vocab: db.vocab.filter(v => v.Date === cleanDate),
+      quiz: db.quiz.filter(q => q.Date === cleanDate)
+    };
   }
 
-  // Run Stage 1 (small metadata) before Stage 2 (vocab/quiz) so all users don't burst 7 concurrent Sheet calls at t=0
-  const stage1Promise = Promise.all([
-    fetchSheetTab("Lessons"),
-    fetchOptionalSheetTab("Shop"),
-    fetchOptionalSheetTab("Settings")
-  ]);
+  if (!isSafeCurriculumUnitId(cleanDate)) {
+    throw new Error(bi(`課程代碼格式無效：${cleanDate}`, `Invalid lesson unit ID: ${cleanDate}`));
+  }
 
-  const stage2Promise = stage1Promise
-    .catch(() => null)
-    .then(() => Promise.all([
-      fetchSheetTab("Vocab"),
-      fetchSheetTab("Quiz"),
-      fetchOptionalSheetTab("TV_Videos"),
-      fetchOptionalSheetTab("Room_Thoughts")
-    ]));
-  sheetsStage2Promise = stage2Promise;
+  if (!force && studentLessonDetailCache.has(cleanDate)) {
+    return studentLessonDetailCache.get(cleanDate);
+  }
+  if (!force && studentLessonDetailPromiseCache.has(cleanDate)) {
+    return studentLessonDetailPromiseCache.get(cleanDate);
+  }
 
-  try {
-    const [lessons, shopRows, settingRows] = await stage1Promise;
-    const wasLoaded = sheetsLoaded;
-    const nextCoreDigest = computeSheetStageDigest([lessons, shopRows, settingRows]);
-    if (!wasLoaded || nextCoreDigest !== prevCoreDigest) {
-      applySheetCore(lessons, shopRows, settingRows);
-      prevCoreDigest = nextCoreDigest;
-      sheetsLoaded = true;
-      sheetsError = null;
-      if (!wasLoaded) {
-        renderAppState();
+  const unitMeta = db.lessons.find(l => l.Date === cleanDate);
+  const unitHash = String(unitMeta?.hash || curriculumManifestHash || "20261128a");
+  const p = (async () => {
+    const unitUrl = new URL(
+      `./data/curriculum/units/${encodeURIComponent(cleanDate)}.json?v=${encodeURIComponent(unitHash)}`,
+      import.meta.url
+    ).href;
+    const res = await fetch(unitUrl);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} (${cleanDate})`);
+    }
+    const payload = await res.json();
+    const unitLesson = payload?.lesson ? { ...unitMeta, ...payload.lesson } : unitMeta;
+    const unitVocab = Array.isArray(payload?.vocab) ? payload.vocab : [];
+    const unitQuiz = Array.isArray(payload?.quiz) ? payload.quiz : [];
+
+    if (unitLesson) {
+      const idx = db.lessons.findIndex(l => l.Date === cleanDate);
+      if (idx >= 0) {
+        db.lessons[idx] = { ...db.lessons[idx], ...unitLesson, vocabCount: unitVocab.length, quizCount: unitQuiz.length };
       } else {
-        refreshLiveSheetViews();
+        db.lessons = [...db.lessons, { ...unitLesson, vocabCount: unitVocab.length, quizCount: unitQuiz.length }]
+          .sort((a, b) => String(a.Date || "").localeCompare(String(b.Date || "")));
       }
     }
-  } catch (err) {
-    if (!sheetsLoaded) {
-      sheetsError = err;
-      renderAppState();
-      return;
-    }
-    console.warn("Stage 1 sheet refresh failed (using cached data):", err?.message || err);
-  }
+    db.vocab = [...db.vocab.filter(v => v.Date !== cleanDate), ...unitVocab];
+    db.quiz = [...db.quiz.filter(q => q.Date !== cleanDate), ...unitQuiz];
 
+    const bundle = { lesson: unitLesson || null, vocab: unitVocab, quiz: unitQuiz };
+    studentLessonDetailCache.set(cleanDate, bundle);
+    return bundle;
+  })();
+
+  studentLessonDetailPromiseCache.set(cleanDate, p);
   try {
-    const [vocab, quiz, tvRows, thoughtRows] = await stage2Promise;
-    const nextDetailsDigest = computeSheetStageDigest([vocab, quiz, tvRows, thoughtRows]);
-    const detailsChanged = !sheetsDetailsLoaded || nextDetailsDigest !== prevDetailsDigest;
-    applySheetDetails(vocab, quiz, tvRows, thoughtRows);
-    sheetsDetailsLoaded = true;
-    writeSheetsCache(latestSheetSnapshot);
-    if (detailsChanged) {
+    return await p;
+  } finally {
+    if (studentLessonDetailPromiseCache.get(cleanDate) === p) {
+      studentLessonDetailPromiseCache.delete(cleanDate);
+    }
+  }
+}
+
+async function loadSheets({ preferLiveSheets = false } = {}) {
+  const useLiveSheets = Boolean(preferLiveSheets && isAdminRole());
+  if (useLiveSheets) {
+    const stage1Promise = Promise.all([
+      fetchSheetTab("Lessons"),
+      fetchOptionalSheetTab("Shop"),
+      fetchOptionalSheetTab("Settings")
+    ]);
+    const stage2Promise = stage1Promise
+      .catch(() => null)
+      .then(() => Promise.all([
+        fetchSheetTab("Vocab"),
+        fetchSheetTab("Quiz"),
+        fetchOptionalSheetTab("TV_Videos"),
+        fetchOptionalSheetTab("Room_Thoughts")
+      ]));
+    sheetsStage2Promise = stage2Promise;
+
+    try {
+      const [lessons, shopRows, settingRows] = await stage1Promise;
+      if (lessons.length === 0) {
+        throw new Error(bi("Google 試算表的 Lessons 分頁中沒有資料。", "The Lessons tab in Google Sheets has no rows."));
+      }
+      curriculumSourceKind = "live_sheets";
+      applySheetCore(lessons, shopRows, settingRows);
+      sheetsLoaded = true;
+      sheetsError = null;
+      refreshLiveSheetViews();
+      renderAppState();
+
+      const [vocab, quiz, tvRows, thoughtRows] = await stage2Promise;
+      applySheetDetails(vocab, quiz, tvRows, thoughtRows);
+      sheetsDetailsLoaded = true;
+      writeSheetsCache(latestSheetSnapshot);
       if (currentScreen === "desktop") {
         renderHome();
       } else if (currentScreen === "lesson" && activeLessonDate) {
         renderLesson(activeLessonDate);
       }
-    }
-  } catch (err) {
-    if (!sheetsDetailsLoaded) {
-      console.warn("Stage 2 sheet details failed:", err?.message || err);
+      return;
+    } catch (err) {
+      if (!sheetsLoaded) {
+        sheetsError = err;
+        renderAppState();
+      }
       throw err;
     }
-    console.warn("Stage 2 sheet refresh failed (using cached data):", err?.message || err);
+  }
+
+  try {
+    const [indexRes, configRes] = await Promise.all([
+      fetch(new URL("./data/curriculum/index.json", import.meta.url).href, { cache: "no-cache" }),
+      fetch(new URL("./data/config/app-config.json", import.meta.url).href, { cache: "no-cache" }).catch(() => null)
+    ]);
+
+    if (!indexRes.ok) {
+      throw new Error(`Curriculum index HTTP ${indexRes.status}`);
+    }
+    const manifestData = await indexRes.json();
+    const configData = (configRes && configRes.ok) ? await configRes.json() : {};
+    if (!Array.isArray(manifestData?.lessons) || manifestData.lessons.length === 0) {
+      throw new Error(bi("教材索引清單中沒有課程資料。", "Curriculum manifest contains no lessons."));
+    }
+
+    curriculumSourceKind = "cdn";
+    applyCurriculumManifest(manifestData);
+    applyConfigJson(configData);
+    sheetsLoaded = true;
+    sheetsDetailsLoaded = true;
+    sheetsStage2Promise = Promise.resolve();
+    sheetsError = null;
+    refreshLiveSheetViews();
+    if (tvDialog?.open && typeof renderTvChannelList === "function") {
+      renderTvChannelList();
+    }
+    renderAppState();
+  } catch (err) {
+    const cached = readSheetsCache();
+    if (cached) {
+      curriculumSourceKind = "live_sheets";
+      applySheetCore(cached.lessons, cached.shopRows || [], cached.settingRows || []);
+      applySheetDetails(cached.vocab, cached.quiz, cached.tvRows || [], cached.thoughtRows || []);
+      sheetsLoaded = true;
+      sheetsDetailsLoaded = true;
+      sheetsStage2Promise = Promise.resolve();
+      sheetsError = null;
+      refreshLiveSheetViews();
+      renderAppState();
+      return;
+    }
+    sheetsError = err;
+    sheetsLoaded = false;
+    renderAppState();
   }
 }
 
@@ -2665,7 +2848,9 @@ function renderHome({ scrollToLatest = false } = {}) {
   let lastUnlockedStep = null;
 
   db.lessons.forEach((lesson, idx) => {
-    const vocabCount = db.vocab.filter(v => v.Date === lesson.Date).length;
+    const vocabCount = Number.isFinite(Number(lesson.vocabCount))
+      ? Number(lesson.vocabCount)
+      : db.vocab.filter(v => v.Date === lesson.Date).length;
     const isCompleted = completedSet.has(lesson.Date);
     const isSubmitted = isLessonSubmitted(lesson.Date);
     const isCurrent = idx === targetProgressIndex;
@@ -5387,7 +5572,7 @@ function createShopItemCard(item, ctx) {
   previewBox.className = "shop-item-preview";
   if (item.previewImage) {
     const img = document.createElement("img");
-    img.src = `${item.previewImage}?v=20261126a`;
+    img.src = `${item.previewImage}?v=20261128a`;
     img.alt = getShopItemName(item);
     img.loading = "lazy";
     previewBox.appendChild(img);
@@ -7365,7 +7550,15 @@ window.addEventListener("keydown", (e) => {
 });
 
 // Teacher Client Approval & Clam Reward Controller
+const ADMIN_USERS_PAGE_SIZE = 25;
+const ADMIN_QUEUE_LIMIT = 50;
 let cachedStudents = [];
+let pendingReviewQueue = [];
+let pendingReviewQueueLoaded = false;
+let adminUsersCursorDoc = null;
+let adminUsersHasMore = false;
+let adminUsersSearchTerm = "";
+let adminUsersLoading = false;
 let unsubscribeUserRealtime = null;
 let unsubscribeAdminQueueRealtime = null;
 let lastAdminPendingTotal = -1;
@@ -7375,6 +7568,18 @@ let lastUserProgressSig = "";
 let lastUserRoomVisualSig = "";
 let lastUserDialogSig = "";
 let lastUserHeaderSig = "";
+
+function updateAdminPendingBadge() {
+  const totalPending = buildMergedPendingReviewItems(pendingReviewQueue, cachedStudents).length;
+  if (totalPending !== lastAdminPendingTotal) {
+    lastAdminPendingTotal = totalPending;
+    const pendingBadge = document.getElementById("admin-pending-badge");
+    if (pendingBadge) {
+      pendingBadge.textContent = String(totalPending);
+      pendingBadge.classList.toggle("hidden", totalPending <= 0);
+    }
+  }
+}
 
 function stopRealtimeListeners() {
   if (unsubscribeUserRealtime) {
@@ -7390,6 +7595,12 @@ function stopRealtimeListeners() {
     unsubscribeTransactionsRealtime = null;
   }
   cachedStudents = [];
+  pendingReviewQueue = [];
+  pendingReviewQueueLoaded = false;
+  adminUsersCursorDoc = null;
+  adminUsersHasMore = false;
+  adminUsersSearchTerm = "";
+  adminUsersLoading = false;
   cachedTransactions = [];
   lastAdminPendingTotal = -1;
   lastAdminReviewSig = "";
@@ -7409,27 +7620,7 @@ function stopRealtimeListeners() {
 function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
   cachedStudents = docsList;
 
-  // Update live pending badge on header button only when count changes
-  let totalPending = 0;
-  cachedStudents.forEach(stu => {
-    const approved = stu.approvedLessons || {};
-    const overrides = stu.completionOverrides || {};
-    const submitted = stu.submittedLessons || {};
-    Object.keys(submitted).forEach(dateKey => {
-      if (submitted[dateKey] && !approved[dateKey] && !overrides[dateKey]) {
-        totalPending += 1;
-      }
-    });
-  });
-
-  if (totalPending !== lastAdminPendingTotal) {
-    lastAdminPendingTotal = totalPending;
-    const pendingBadge = document.getElementById("admin-pending-badge");
-    if (pendingBadge) {
-      pendingBadge.textContent = String(totalPending);
-      pendingBadge.classList.toggle("hidden", totalPending <= 0);
-    }
-  }
+  updateAdminPendingBadge();
 
   if (pendingRestoreSpectateUid && currentScreen === "room" && !getActiveOpenModalKey()) {
     const restoreUid = pendingRestoreSpectateUid;
@@ -7493,8 +7684,16 @@ function syncCachedStudentsSnapshot(docsList, preserveUid = null) {
 
   selectEl.innerHTML = "";
   if (cachedStudents.length === 0) {
-    selectEl.innerHTML = `<option value="">${bi("尚無註冊帳號", "No registered accounts")}</option>`;
-    summaryEl.textContent = bi("目前還沒有學生帳號註冊。", "No student accounts registered yet.");
+    if (adminUsersSearchTerm) {
+      selectEl.innerHTML = `<option value="">${escapeHtml(bi(`找不到符合「${adminUsersSearchTerm}」的帳號`, `No accounts matching "${adminUsersSearchTerm}"`))}</option>`;
+      summaryEl.textContent = bi(
+        "找不到符合該 Email 開頭的繪師帳號，請調整關鍵字或按「重設」顯示全部。",
+        "No matching illustrator accounts found. Adjust your email prefix or click Reset."
+      );
+    } else {
+      selectEl.innerHTML = `<option value="">${bi("尚無註冊帳號", "No registered accounts")}</option>`;
+      summaryEl.textContent = bi("目前還沒有學生帳號註冊。", "No student accounts registered yet.");
+    }
     listEl.innerHTML = "";
     return;
   }
@@ -7758,31 +7957,9 @@ function renderPendingReviewQueue() {
   if (!queueEl) return;
   queueEl.innerHTML = "";
 
-  const pendingEntries = [];
-  cachedStudents.forEach(stu => {
-    const approved = stu.approvedLessons || {};
-    const overrides = stu.completionOverrides || {};
-    const submitted = stu.submittedLessons || {};
-    const metricsMap = stu.submissionMetrics || {};
-    Object.keys(submitted).forEach(dateKey => {
-      if (submitted[dateKey] && !approved[dateKey] && !overrides[dateKey]) {
-        const lessonMeta = findLessonAnyTrack(dateKey);
-        const defaultTitle = isIeltsLessonId(dateKey)
-          ? dateKey.replace(/^ielts:/i, "IELTS ").toUpperCase()
-          : bi("英語單元任務", "English Quest");
-        pendingEntries.push({
-          stu,
-          dateStr: dateKey,
-          title: lessonMeta?.Title || defaultTitle,
-          metricRaw: metricsMap[dateKey] || null
-        });
-      }
-    });
-  });
+  const pendingItems = buildMergedPendingReviewItems(pendingReviewQueue, cachedStudents);
 
-  pendingEntries.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
-
-  if (pendingEntries.length === 0) {
+  if (pendingItems.length === 0) {
     const emptyEl = document.createElement("p");
     emptyEl.className = "form-hint";
     emptyEl.textContent = bi("目前沒有尚未驗收的待處理交稿。", "No pending submissions awaiting review.");
@@ -7790,40 +7967,67 @@ function renderPendingReviewQueue() {
     return;
   }
 
-  pendingEntries.forEach(({ stu, dateStr, title, metricRaw }) => {
-    const stuLabel = stu.avatar?.name
-      ? `${stu.displayName || stu.email} [${stu.avatar.name}]`
-      : (stu.displayName || stu.email);
+  pendingItems.forEach(item => {
+    const stu = item.studentProfile;
+    const lessonMeta = findLessonAnyTrack(item.lessonDate);
+    const defaultTitle = isIeltsLessonId(item.lessonDate)
+      ? item.lessonDate.replace(/^ielts:/i, "IELTS ").toUpperCase()
+      : bi("英語單元任務", "English Quest");
+    const title = lessonMeta?.Title || item.lessonTitle || defaultTitle;
+    const stuLabel = stu?.avatar?.name
+      ? `${stu.displayName || item.email} [${stu.avatar.name}]`
+      : (item.displayName || item.email);
+    const metricStu = stu || {
+      uid: item.uid,
+      email: item.email,
+      displayName: item.displayName,
+      submissionMetrics: item.metrics ? { [item.lessonDate]: item.metrics } : {}
+    };
+    const sublineText = stu
+      ? `${item.email || ""} ｜ ${bi("目前餘額", "Balance:")} ${Math.trunc(Number(stu.clams ?? STARTER_CLAMS))} ${bi("英蚌", "Clams")}`
+      : `${item.email || ""}${item.submittedAt > 0 ? ` ｜ ${new Date(item.submittedAt).toLocaleString(isEn() ? "en-US" : "zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}` : ""}`;
 
     const row = buildAdminSubmissionReviewRow({
-      rowKey: `pending:${stu.uid}:${dateStr}`,
-      stu,
-      dateStr,
-      headingText: `🔔 ${stuLabel} — ${dateStr} · ${title}`,
-      sublineText: `${stu.email || ""} ｜ ${bi("目前餘額", "Balance:")} ${Math.trunc(Number(stu.clams ?? STARTER_CLAMS))} ${bi("英蚌", "Clams")}`,
+      rowKey: `pending:${item.uid}:${item.lessonDate}`,
+      stu: metricStu,
+      dateStr: item.lessonDate,
+      headingText: `🔔 ${stuLabel} — ${item.lessonDate} · ${title}`,
+      sublineText,
       isPending: true,
       isApproved: false,
       highlightPending: true,
-      metricRaw,
+      metricRaw: item.metrics || null,
       onApprove: async (clamVal) => {
-        const res = await approveStudentLesson(stu.uid, dateStr, clamVal);
+        const res = await approveStudentLesson(item.uid, item.lessonDate, clamVal);
+        pendingReviewQueue = pendingReviewQueue.filter(
+          q => !(q.uid === item.uid && q.lessonDate === item.lessonDate)
+        );
         const xpNote = res.xpGranted > 0 ? bi(`與 +${res.xpGranted} XP`, ` & +${res.xpGranted} XP`) : "";
         showFeedback(
           "admin-review-feedback",
           "success",
           res.alreadyApproved
-            ? bi(`${stuLabel} 的 ${dateStr} 已是驗收狀態。`, `${stuLabel}'s ${dateStr} is already approved.`)
+            ? bi(`${stuLabel} 的 ${item.lessonDate} 已是驗收狀態。`, `${stuLabel}'s ${item.lessonDate} is already approved.`)
             : bi(
-                `已驗收 ${stuLabel}（${dateStr}）並即時發放 ${clamVal} 英蚌${xpNote}！`,
-                `Approved ${stuLabel} (${dateStr}) and awarded ${clamVal} Clams${xpNote}!`
+                `已驗收 ${stuLabel}（${item.lessonDate}）並即時發放 ${clamVal} 英蚌${xpNote}！`,
+                `Approved ${stuLabel} (${item.lessonDate}) and awarded ${clamVal} Clams${xpNote}!`
               )
         );
-        await loadStudentsForReview(stu.uid);
+        await fetchStudentProfileByUid(item.uid);
+        updateAdminPendingBadge();
+        renderPendingReviewQueue();
+        renderSelectedStudentReview();
       },
       onReject: async () => {
-        await rejectStudentSubmission(stu.uid, dateStr);
-        showFeedback("admin-review-feedback", "info", bi(`已退回 ${stuLabel} 的 ${dateStr} 交稿。`, `Returned ${stuLabel}'s ${dateStr} submission.`));
-        await loadStudentsForReview(stu.uid);
+        await rejectStudentSubmission(item.uid, item.lessonDate);
+        pendingReviewQueue = pendingReviewQueue.filter(
+          q => !(q.uid === item.uid && q.lessonDate === item.lessonDate)
+        );
+        showFeedback("admin-review-feedback", "info", bi(`已退回 ${stuLabel} 的 ${item.lessonDate} 交稿。`, `Returned ${stuLabel}'s ${item.lessonDate} submission.`));
+        await fetchStudentProfileByUid(item.uid);
+        updateAdminPendingBadge();
+        renderPendingReviewQueue();
+        renderSelectedStudentReview();
       }
     });
     queueEl.appendChild(row);
@@ -7939,44 +8143,129 @@ function startUserRealtimeListener(uid, nonce) {
   });
 }
 
+function updateAdminStudentListControlsUI() {
+  const statusEl = document.getElementById("review-student-list-status");
+  const loadMoreBtn = document.getElementById("admin-load-more-students-btn");
+  if (statusEl) {
+    if (adminUsersLoading) {
+      statusEl.textContent = bi("正在載入繪師名單…", "Loading illustrators…");
+    } else if (adminUsersSearchTerm) {
+      statusEl.textContent = bi(
+        `搜尋「${adminUsersSearchTerm}」：顯示 ${cachedStudents.length} 筆${adminUsersHasMore ? "（仍有更多）" : ""}`,
+        `Filter "${adminUsersSearchTerm}": ${cachedStudents.length} shown${adminUsersHasMore ? " (more available)" : ""}`
+      );
+    } else {
+      statusEl.textContent = bi(
+        `目前載入 ${cachedStudents.length} 位繪師${adminUsersHasMore ? "（尚有更多帳號）" : "（已顯示全部）"}`,
+        `Showing ${cachedStudents.length} illustrator(s)${adminUsersHasMore ? " (more available)" : " (all loaded)"}`
+      );
+    }
+  }
+  if (loadMoreBtn) {
+    loadMoreBtn.classList.toggle("hidden", !adminUsersHasMore);
+    loadMoreBtn.disabled = adminUsersLoading;
+  }
+}
+
 function startAdminQueueRealtimeListener(nonce) {
   if (unsubscribeAdminQueueRealtime) {
     unsubscribeAdminQueueRealtime();
     unsubscribeAdminQueueRealtime = null;
   }
-  const q = query(collection(firestoreDb, "users"), orderBy("email"));
+  const q = query(
+    collection(firestoreDb, "reviewQueue"),
+    orderBy("submittedAt", "desc"),
+    limit(ADMIN_QUEUE_LIMIT)
+  );
   unsubscribeAdminQueueRealtime = onSnapshot(q, (snap) => {
-    if (nonce !== authSessionNonce) return;
+    if (nonce !== authSessionNonce || !isAdminRole()) return;
     const list = [];
     snap.forEach(docSnap => {
-      list.push({ uid: docSnap.id, ...(docSnap.data() || {}) });
+      const data = docSnap.data() || {};
+      if (data.uid && data.lessonDate) {
+        list.push({ queueId: docSnap.id, ...data });
+      }
     });
-    syncCachedStudentsSnapshot(list);
+    pendingReviewQueue = list;
+    pendingReviewQueueLoaded = true;
+    updateAdminPendingBadge();
+    if (adminReviewDialog.open) {
+      renderPendingReviewQueue();
+    }
   }, (err) => {
     console.warn("Admin queue realtime listener warning:", err?.message || err);
   });
 }
 
-async function loadStudentsForReview(preserveUid = null) {
+async function fetchStudentProfileByUid(uid) {
+  if (!isAdminRole() || !uid) return null;
+  try {
+    const snap = await getDoc(doc(firestoreDb, "users", uid));
+    if (!snap.exists()) return null;
+    const record = { uid: snap.id, ...(snap.data() || {}) };
+    const preserveUid = document.getElementById("review-student-select")?.value || uid;
+    const nextList = mergeStudentRecordsByUid(cachedStudents, [record], { replace: false });
+    syncCachedStudentsSnapshot(nextList, preserveUid);
+    updateAdminStudentListControlsUI();
+    return record;
+  } catch (err) {
+    console.warn("Failed to fetch single student profile:", err?.message || err);
+    return null;
+  }
+}
+
+async function loadStudentsForReview(preserveUid = null, options = {}) {
   if (currentRole !== "super_admin" && currentRole !== "admin") return;
+  const append = Boolean(options?.append);
+  const searchPrefix = normalizeEmailSearchPrefix(
+    options?.searchEmail !== undefined ? options.searchEmail : adminUsersSearchTerm
+  );
+  if (!append) {
+    adminUsersCursorDoc = null;
+  }
+
   const selectEl = document.getElementById("review-student-select");
   const listEl = document.getElementById("review-lessons-list");
   const summaryEl = document.getElementById("review-student-summary");
-  if (cachedStudents.length === 0) {
+  if (!append && cachedStudents.length === 0 && selectEl && listEl) {
     selectEl.innerHTML = `<option value="">${bi("正在讀取學生名單...", "Loading illustrators...")}</option>`;
     listEl.innerHTML = "";
   }
 
+  adminUsersLoading = true;
+  updateAdminStudentListControlsUI();
+
   try {
-    const snap = await getDocs(query(collection(firestoreDb, "users"), orderBy("email")));
-    const list = [];
-    snap.forEach(docSnap => {
-      list.push({ uid: docSnap.id, ...(docSnap.data() || {}) });
-    });
-    syncCachedStudentsSnapshot(list, preserveUid);
+    const constraints = [orderBy("email")];
+    if (searchPrefix) {
+      constraints.push(startAt(searchPrefix), endAt(`${searchPrefix}\uf8ff`));
+    }
+    if (append && adminUsersCursorDoc) {
+      constraints.push(startAfter(adminUsersCursorDoc));
+    }
+    constraints.push(limit(ADMIN_USERS_PAGE_SIZE + 1));
+
+    const snap = await getDocs(query(collection(firestoreDb, "users"), ...constraints));
+    const hasMore = snap.docs.length > ADMIN_USERS_PAGE_SIZE;
+    const pageDocs = hasMore ? snap.docs.slice(0, ADMIN_USERS_PAGE_SIZE) : snap.docs;
+    adminUsersCursorDoc = pageDocs.length > 0 ? pageDocs[pageDocs.length - 1] : adminUsersCursorDoc;
+    adminUsersHasMore = hasMore;
+    adminUsersSearchTerm = searchPrefix;
+
+    const list = pageDocs.map(docSnap => ({ uid: docSnap.id, ...(docSnap.data() || {}) }));
+    const nextStudents = mergeStudentRecordsByUid(cachedStudents, list, { replace: !append });
+    adminUsersLoading = false;
+    syncCachedStudentsSnapshot(nextStudents, preserveUid);
+    updateAdminStudentListControlsUI();
   } catch (err) {
-    selectEl.innerHTML = `<option value="">${bi("讀取失敗", "Load failed")}</option>`;
-    summaryEl.textContent = bi("無法讀取名單，請確認網路或管理員權限。", "Unable to load list. Check your network or admin permissions.");
+    adminUsersLoading = false;
+    updateAdminStudentListControlsUI();
+    if (selectEl) {
+      selectEl.innerHTML = `<option value="">${bi("讀取失敗", "Load failed")}</option>`;
+    }
+    if (summaryEl) {
+      summaryEl.textContent = bi("無法讀取名單，請確認網路或管理員權限。", "Unable to load list. Check your network or admin permissions.");
+    }
     showFeedback("admin-review-feedback", "error", translateAuthError(err));
   }
 }
@@ -7994,6 +8283,8 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount)
     : (lessonMeta ? getLessonXp(lessonMeta) : fallbackXp);
   const safeXp = Math.max(0, Math.min(10000, Math.trunc(Number(resolvedXp) || 0)));
   const stuRef = doc(firestoreDb, "users", studentUid);
+  const queueId = toReviewQueueDocId(studentUid, dateStr);
+  const queueRef = queueId ? doc(firestoreDb, "reviewQueue", queueId) : null;
 
   const result = await runTransaction(firestoreDb, async (tx) => {
     const snap = await tx.get(stuRef);
@@ -8004,6 +8295,7 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount)
     const xpAwardedMap = sanitizeBoolMap(data.xpAwardedLessons);
 
     if (approvedMap[dateStr]) {
+      if (queueRef) tx.delete(queueRef);
       return {
         alreadyApproved: true,
         nextClams: data.clams ?? STARTER_CLAMS,
@@ -8035,6 +8327,9 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount)
       xpAwardedLessons: xpAwardedMap,
       updatedAt: serverTimestamp()
     });
+    if (queueRef) {
+      tx.delete(queueRef);
+    }
     if (safeReward > 0) {
       queueLedgerTransaction(tx, studentUid, {
         type: "income",
@@ -8087,16 +8382,22 @@ async function approveStudentLesson(studentUid, dateStr, rewardAmount, xpAmount)
 
 async function rejectStudentSubmission(studentUid, dateStr) {
   const stuRef = doc(firestoreDb, "users", studentUid);
+  const queueId = toReviewQueueDocId(studentUid, dateStr);
+  const queueRef = queueId ? doc(firestoreDb, "reviewQueue", queueId) : null;
   await runTransaction(firestoreDb, async (tx) => {
     const snap = await tx.get(stuRef);
-    if (!snap.exists()) return;
-    const data = snap.data() || {};
-    const submittedMap = sanitizeBoolMap(data.submittedLessons);
-    submittedMap[dateStr] = false;
-    tx.update(stuRef, {
-      submittedLessons: submittedMap,
-      updatedAt: serverTimestamp()
-    });
+    if (snap.exists()) {
+      const data = snap.data() || {};
+      const submittedMap = sanitizeBoolMap(data.submittedLessons);
+      submittedMap[dateStr] = false;
+      tx.update(stuRef, {
+        submittedLessons: submittedMap,
+        updatedAt: serverTimestamp()
+      });
+    }
+    if (queueRef) {
+      tx.delete(queueRef);
+    }
   });
 }
 
@@ -8193,7 +8494,7 @@ function renderSelectedStudentReview() {
         ? bi(`已發放 +${res.deltaApplied} 英蚌給 ${targetName}！（目前餘額 ${res.nextC} 英蚌）`, `Sent +${res.deltaApplied} Clams to ${targetName} (Balance: ${res.nextC} Clams)!`)
         : bi(`已調整 ${res.deltaApplied} 英蚌給 ${targetName}！（目前餘額 ${res.nextC} 英蚌）`, `Adjusted ${res.deltaApplied} Clams for ${targetName} (Balance: ${res.nextC} Clams)!`);
       showFeedback("admin-review-feedback", "success", msg);
-      await loadStudentsForReview(stu.uid);
+      await fetchStudentProfileByUid(stu.uid);
     } catch (err) {
       showFeedback("admin-review-feedback", "error", err?.message || translateAuthError(err));
       if (triggerBtn) triggerBtn.disabled = false;
@@ -8287,6 +8588,9 @@ function renderSelectedStudentReview() {
       metricRaw: metricsMap[lesson.Date] || null,
       onApprove: async (clamVal) => {
         const res = await approveStudentLesson(stu.uid, lesson.Date, clamVal);
+        pendingReviewQueue = pendingReviewQueue.filter(
+          q => !(q.uid === stu.uid && q.lessonDate === lesson.Date)
+        );
         const xpNote = res.xpGranted > 0 ? bi(`與 +${res.xpGranted} XP`, ` & +${res.xpGranted} XP`) : "";
         showFeedback(
           "admin-review-feedback",
@@ -8298,12 +8602,21 @@ function renderSelectedStudentReview() {
                 `Approved ${lesson.Date} and awarded ${clamVal} Clams${xpNote}!`
               )
         );
-        await loadStudentsForReview(stu.uid);
+        await fetchStudentProfileByUid(stu.uid);
+        updateAdminPendingBadge();
+        renderPendingReviewQueue();
+        renderSelectedStudentReview();
       },
       onReject: async () => {
         await rejectStudentSubmission(stu.uid, lesson.Date);
+        pendingReviewQueue = pendingReviewQueue.filter(
+          q => !(q.uid === stu.uid && q.lessonDate === lesson.Date)
+        );
         showFeedback("admin-review-feedback", "info", bi(`已退回 ${lesson.Date} 請繪師修改再交。`, `Returned ${lesson.Date} for revision.`));
-        await loadStudentsForReview(stu.uid);
+        await fetchStudentProfileByUid(stu.uid);
+        updateAdminPendingBadge();
+        renderPendingReviewQueue();
+        renderSelectedStudentReview();
       }
     });
 
@@ -8311,11 +8624,77 @@ function renderSelectedStudentReview() {
   });
 }
 
+document.getElementById("admin-student-search-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!isAdminRole()) return;
+  const inputEl = document.getElementById("review-student-search");
+  const nextQuery = normalizeEmailSearchPrefix(inputEl?.value || "");
+  if (inputEl) inputEl.value = nextQuery;
+  await loadStudentsForReview(null, { searchEmail: nextQuery, append: false });
+  saveNavState();
+});
+
+document.getElementById("admin-clear-search-btn")?.addEventListener("click", async () => {
+  if (!isAdminRole()) return;
+  const inputEl = document.getElementById("review-student-search");
+  if (inputEl) inputEl.value = "";
+  await loadStudentsForReview(document.getElementById("review-student-select")?.value || null, {
+    searchEmail: "",
+    append: false
+  });
+  saveNavState();
+});
+
+document.getElementById("admin-load-more-students-btn")?.addEventListener("click", async () => {
+  if (!isAdminRole() || !adminUsersHasMore || adminUsersLoading) return;
+  await loadStudentsForReview(document.getElementById("review-student-select")?.value || null, {
+    append: true,
+    searchEmail: adminUsersSearchTerm
+  });
+});
+
+document.getElementById("admin-toggle-live-sheets-btn")?.addEventListener("click", async (e) => {
+  if (!isAdminRole()) return;
+  const btn = e.currentTarget;
+  const enableLive = curriculumSourceKind !== "live_sheets";
+  btn.disabled = true;
+  clearFeedback("admin-review-feedback");
+  try {
+    try {
+      if (enableLive) {
+        sessionStorage.setItem(LIVE_SHEETS_MODE_STORAGE_KEY, "1");
+      } else {
+        sessionStorage.removeItem(LIVE_SHEETS_MODE_STORAGE_KEY);
+      }
+    } catch {
+      // Ignore storage failures
+    }
+    studentLessonDetailCache.clear();
+    await loadSheets({ preferLiveSheets: enableLive });
+    updateLiveSheetsToggleButton();
+    renderPendingReviewQueue();
+    renderSelectedStudentReview();
+    showFeedback(
+      "admin-review-feedback",
+      "success",
+      enableLive
+        ? bi("已切換為「Google 試算表即時預覽」，可直接檢視剛修改的分頁內容。", "Switched to Live Google Sheets preview for real-time edits.")
+        : bi("已切回「靜態 CDN 教材」模式（與一般玩家一致的高穩定路徑）。", "Switched back to Static CDN curriculum mode.")
+    );
+  } catch (err) {
+    showFeedback("admin-review-feedback", "error", err?.message || String(err));
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 openAdminReviewBtn?.addEventListener("click", () => {
   if (!isAdminRole()) return;
+  updateLiveSheetsToggleButton();
   if (!adminReviewDialog.open) {
     adminReviewDialog.showModal();
   }
+  renderPendingReviewQueue();
   if (cachedStudents.length > 0) {
     syncCachedStudentsSnapshot(cachedStudents);
   }
@@ -8327,7 +8706,10 @@ openAdminReviewBtn?.addEventListener("click", () => {
       }
     });
   }
-  loadStudentsForReview();
+  loadStudentsForReview(document.getElementById("review-student-select")?.value || null, {
+    searchEmail: adminUsersSearchTerm,
+    append: false
+  });
 });
 document.getElementById("refresh-review-btn").addEventListener("click", () => {
   if (isAdminRole() && !ieltsBank.loaded) {
@@ -8338,7 +8720,10 @@ document.getElementById("refresh-review-btn").addEventListener("click", () => {
       }
     });
   }
-  loadStudentsForReview(document.getElementById("review-student-select").value);
+  loadStudentsForReview(document.getElementById("review-student-select").value, {
+    searchEmail: adminUsersSearchTerm,
+    append: false
+  });
 });
 document.getElementById("admin-preview-story-btn")?.addEventListener("click", () => {
   if (currentRole !== "super_admin" && currentRole !== "admin") return;
@@ -8422,6 +8807,17 @@ document.getElementById("admin-reset-all-lessons-btn")?.addEventListener("click"
         });
       });
       await batch.commit();
+    }
+    try {
+      const qSnap = await getDocs(query(collection(firestoreDb, "reviewQueue"), limit(500)));
+      for (let i = 0; i < qSnap.docs.length; i += 400) {
+        const qBatch = writeBatch(firestoreDb);
+        qSnap.docs.slice(i, i + 400).forEach(qDoc => qBatch.delete(qDoc.ref));
+        await qBatch.commit();
+      }
+      pendingReviewQueue = [];
+    } catch (qErr) {
+      console.warn("Failed to clear reviewQueue during global reset:", qErr?.message || qErr);
     }
     if (currentUser && currentUserProfile) {
       userApprovedLessons = {};
@@ -8535,10 +8931,14 @@ document.getElementById("admin-visit-room-btn")?.addEventListener("click", () =>
   spectateStudentRoom(targetUid);
 });
 
-document.getElementById("room-visit-others-btn")?.addEventListener("click", () => {
+document.getElementById("room-visit-others-btn")?.addEventListener("click", async () => {
   if (currentRole !== "super_admin" && currentRole !== "admin") return;
   if (roomScene?.editMode) roomScene.exitFurnitureEditMode({ commit: true });
-  const others = cachedStudents.filter(s => s.uid !== currentUser?.uid);
+  let others = cachedStudents.filter(s => s.uid !== currentUser?.uid);
+  if (others.length === 0) {
+    await loadStudentsForReview(null, { searchEmail: "", append: false });
+    others = cachedStudents.filter(s => s.uid !== currentUser?.uid);
+  }
   const target = others[0] || cachedStudents[0];
   if (target) {
     spectateStudentRoom(target.uid);
@@ -8638,6 +9038,12 @@ onAuthStateChanged(auth, async (user) => {
     if (role === "super_admin" || role === "admin") {
       startAdminQueueRealtimeListener(nonce);
       ensureIeltsCloudAttemptsLoaded();
+      if (isAdminLiveSheetsEnabled() && curriculumSourceKind !== "live_sheets") {
+        loadSheets({ preferLiveSheets: true }).catch(err => {
+          console.warn("Admin live sheets preview reload failed:", err?.message || err);
+        });
+      }
+      updateLiveSheetsToggleButton();
     }
   } catch (err) {
     if (nonce !== authSessionNonce) return;

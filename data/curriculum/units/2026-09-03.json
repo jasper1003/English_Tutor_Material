@@ -1,0 +1,128 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "963841bb17",
+  "date": "2026-09-03",
+  "lesson": {
+    "Date": "2026-09-03",
+    "Title": "實用英語慣用語進階",
+    "Grammar_Focus": "透過語境推斷七大常用英文慣用語（speak one's language / give someone a hand / break a leg / spill the beans / get cold feet / call it a day / judge a book by its cover）",
+    "Reading_Title": "Rehearsal Night at the School Theater",
+    "Reading_Passage": "Last Friday evening, the Pine Hill school music club prepared for its big spring concert. At first, a tiny side stage behind the gym looked dusty and plain, yet the acoustics sounded clear and warm—proving that you should never judge a book by its cover. When the student director suggested eating warm pizza after rehearsal, the violin players laughed and shouted, \"You're speaking my language!\"<br><br>At seven o'clock, heavy wooden speakers needed to be carried onto the main floor. Two strong soccer players walked over right away to give the stage crew a hand. Meanwhile, everyone had planned a secret thank-you cake for Ms. Chen, their music teacher, though little Kevin nearly spilled the beans while carrying paper plates past her office door.<br><br>Ten minutes before the practice concert began, Emma, the shy piano soloist, suddenly got cold feet while staring at the bright stage lights. Her best friend squeezed her shoulder, smiled warmly, and whispered, \"Break a leg! You practiced harder than anyone.\" Emma took a deep breath and played every note smoothly. By nine-thirty, everyone was tired, so Ms. Chen clapped her hands and said, \"Great work tonight—let's call it a day!\"",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-09-03",
+      "Word": "speak one's language",
+      "POS": "phr.",
+      "Meaning": "說中某人的心聲；想法完全投契",
+      "Example": "When Ella suggested taking a break for mango shaved ice, I said she was speaking my language.",
+      "Image_URL": "images/vocab/2026-09-03/speak_one_s_language.webp"
+    },
+    {
+      "Date": "2026-09-03",
+      "Word": "give someone a hand",
+      "POS": "phr.",
+      "Meaning": "伸出援手幫某人一把",
+      "Example": "Could you give me a hand carrying these heavy science textbooks to the third floor?",
+      "Image_URL": "images/vocab/2026-09-03/give_someone_a_hand.webp"
+    },
+    {
+      "Date": "2026-09-03",
+      "Word": "break a leg",
+      "POS": "phr.",
+      "Meaning": "祝你好運；演出順利",
+      "Example": "Before the speech contest started, our English teacher smiled and told us to break a leg.",
+      "Image_URL": "images/vocab/2026-09-03/break_a_leg.webp"
+    },
+    {
+      "Date": "2026-09-03",
+      "Word": "spill the beans",
+      "POS": "phr.",
+      "Meaning": "洩漏秘密；說溜嘴",
+      "Example": "Please do not spill the beans about our surprise birthday gift for Dad tonight.",
+      "Image_URL": "images/vocab/2026-09-03/spill_the_beans.webp"
+    },
+    {
+      "Date": "2026-09-03",
+      "Word": "get cold feet",
+      "POS": "phr.",
+      "Meaning": "臨陣退縮；突然害怕膽怯",
+      "Example": "Leo wanted to dive from the high board, but he got cold feet when he looked down.",
+      "Image_URL": "images/vocab/2026-09-03/get_cold_feet.webp"
+    },
+    {
+      "Date": "2026-09-03",
+      "Word": "call it a day",
+      "POS": "phr.",
+      "Meaning": "今天就到此為止；收工",
+      "Example": "We have practiced basketball drills for two hours straight, so let's call it a day.",
+      "Image_URL": "images/vocab/2026-09-03/call_it_a_day.webp"
+    },
+    {
+      "Date": "2026-09-03",
+      "Word": "judge a book by its cover",
+      "POS": "phr.",
+      "Meaning": "以貌取人；單看外表評斷",
+      "Example": "That tiny noodle shop looks plain outside, so never judge a book by its cover before tasting.",
+      "Image_URL": "images/vocab/2026-09-03/judge_a_book_by_its_cover.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-09-03",
+      "Type": "MC",
+      "Question": "Who nearly spilled the beans about the secret thank-you cake?",
+      "Option_A": "Ms. Chen.",
+      "Option_B": "Emma.",
+      "Option_C": "Little Kevin.",
+      "Option_D": "The two soccer players.",
+      "Answer": "C",
+      "Explanation": "第二段最後一句明確提到：little Kevin nearly spilled the beans while carrying paper plates past her office door。"
+    },
+    {
+      "Date": "2026-09-03",
+      "Type": "MC",
+      "Question": "Why did Emma's friend say \"Break a leg!\" to her?",
+      "Option_A": "To ask Emma to help carry heavy speakers.",
+      "Option_B": "To wish Emma good luck before her piano solo.",
+      "Option_C": "To remind Emma that rehearsal was already over.",
+      "Option_D": "To warn Emma about walking near the office door.",
+      "Answer": "B",
+      "Explanation": "第三段第一、二句指出 Emma 上台獨奏前緊張膽怯（got cold feet），朋友輕拍她的肩膀說 Break a leg! 祝她演出順利。"
+    },
+    {
+      "Date": "2026-09-03",
+      "Type": "TFNG",
+      "Question": "Two soccer players helped the stage crew move heavy wooden speakers.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段第二句寫道 Two strong soccer players walked over right away to give the stage crew a hand（搬運木製音響），與題幹相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-09-03",
+      "Type": "TFNG",
+      "Question": "Ms. Chen asked the club to continue practicing until midnight.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第三段最後一句寫道 By nine-thirty, everyone was tired, so Ms. Chen... said, \"Great work tonight—let's call it a day!\"，九點半就收工了，與題幹「until midnight」相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-09-03",
+      "Type": "TFNG",
+      "Question": "The school music club won a national piano award the following week.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章只描述星期五晚上的排練情況，完全未提及隔週是否獲得全國鋼琴獎項，故為 NOT GIVEN。"
+    }
+  ]
+}

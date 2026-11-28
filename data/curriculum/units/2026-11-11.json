@@ -1,0 +1,174 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "e3921134f4",
+  "date": "2026-11-11",
+  "lesson": {
+    "Date": "2026-11-11",
+    "Title": "複習段考內容",
+    "Grammar_Focus": "綜合閱讀理解與 True / False / Not Given 邏輯推論",
+    "Reading_Title": "IU's Story & Digital Age Reflections",
+    "Reading_Passage": "IU is a successful Korean singer. She has fans all over the world. This is her success story. IU found her love for music in junior high school. In the seventh grade, she sang on stage for the first time and decided to become a singer. Her relatives didn't believe in her and made fun of her dream. However, IU didn't give up.<br><br>IU went to about twenty auditions before a company finally signed her in 2007. Three years later, IU had her first success with her song \"Good Day.\" After that, many people started listening to her music. Now, besides singing, IU also writes songs and acts. Her work is very popular. And that's not all. She often gives her money to those in need. She is a good example for young people.<br><br>In today's digital age, many people love to travel and share photos online. However, when we compare our daily routine with someone else's trip, we often forget that social media never shows a person's whole life. True happiness comes from simple moments in real life, such as starting a friendly conversation with a stranger and giving a warm comment.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-11-11",
+      "Word": "make a video",
+      "POS": "phr.",
+      "Meaning": "製作/拍攝影片",
+      "Example": "The software engineer decided to make a video to teach people how to protect their passwords from cyber attacks.",
+      "Image_URL": "images/vocab/2026-11-11/make_a_video.webp"
+    },
+    {
+      "Date": "2026-11-11",
+      "Word": "fight for one's rights",
+      "POS": "phr.",
+      "Meaning": "為……爭取權益",
+      "Example": "The brave lawyer went to court to fight for the rights of the factory workers after the terrible accident.",
+      "Image_URL": "images/vocab/2026-11-11/fight_for_one_s_rights.webp"
+    },
+    {
+      "Date": "2026-11-11",
+      "Word": "get butterflies in one's stomach",
+      "POS": "phr.",
+      "Meaning": "感到心神不寧；非常緊張",
+      "Example": "Although the young pilot was well-trained, he still got butterflies in his stomach before flying through the heavy storm.",
+      "Image_URL": "images/vocab/2026-11-11/get_butterflies_in_one_s_stomach.webp"
+    },
+    {
+      "Date": "2026-11-11",
+      "Word": "(a) good idea",
+      "POS": "phr.",
+      "Meaning": "好主意；好辦法",
+      "Example": "It sounds like a good idea to order two cups of hot chocolate in Montreal during freezing cold winter.",
+      "Image_URL": "images/vocab/2026-11-11/a_good_idea.webp"
+    },
+    {
+      "Date": "2026-11-11",
+      "Word": "stranger",
+      "POS": "n.",
+      "Meaning": "陌生人",
+      "Example": "The polite receptionist told the new employee not to open the security door for any strangers.",
+      "Image_URL": "images/vocab/2026-11-11/stranger.webp"
+    },
+    {
+      "Date": "2026-11-11",
+      "Word": "comment",
+      "POS": "n.",
+      "Meaning": "意見；評論",
+      "Example": "After the software engineer posted the new app online, he received many useful comments from users.",
+      "Image_URL": "images/vocab/2026-11-11/comment.webp"
+    },
+    {
+      "Date": "2026-11-11",
+      "Word": "conversation",
+      "POS": "n.",
+      "Meaning": "交談",
+      "Example": "Having a short conversation with local people is a great way to learn about the culture during a vacation.",
+      "Image_URL": "images/vocab/2026-11-11/conversation.webp"
+    },
+    {
+      "Date": "2026-11-11",
+      "Word": "common",
+      "POS": "adj.",
+      "Meaning": "常見的",
+      "Example": "It is very common for pilots to check the weather screen carefully before flying into heavy rain.",
+      "Image_URL": "images/vocab/2026-11-11/common.webp"
+    },
+    {
+      "Date": "2026-11-11",
+      "Word": "compare",
+      "POS": "v.",
+      "Meaning": "比較",
+      "Example": "If you always compare your life with others on social media, you will feel anxious and unhappy.",
+      "Image_URL": "images/vocab/2026-11-11/compare.webp"
+    },
+    {
+      "Date": "2026-11-11",
+      "Word": "whole",
+      "POS": "adj.",
+      "Meaning": "全部的；整體的",
+      "Example": "The tired firefighter slept for the whole afternoon after saving the family from the burning house.",
+      "Image_URL": "images/vocab/2026-11-11/whole.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-11-11",
+      "Type": "TFNG",
+      "Question": "IU decided to become a singer when she was in the seventh grade.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "文章第二段明確指出「In the seventh grade, she sang on stage for the first time and decided to become a singer.」。"
+    },
+    {
+      "Date": "2026-11-11",
+      "Type": "TFNG",
+      "Question": "IU's relatives believed she would succeed and gave her money to support her dream.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "文章第二段指出「Her relatives didn't believe in her and made fun of her dream.」，與題幹完全相反。"
+    },
+    {
+      "Date": "2026-11-11",
+      "Type": "TFNG",
+      "Question": "IU failed more than fifty auditions before she signed a contract with a company.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "文章第三段指出「IU went to about twenty auditions before a company finally signed her」，是大約二十次而非超過五十次。"
+    },
+    {
+      "Date": "2026-11-11",
+      "Type": "TFNG",
+      "Question": "Besides singing, IU writes songs, acts, and helps people in need.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "文章第四段指出「Now, besides singing, IU also writes songs and acts... She often gives her money to those in need.」。"
+    },
+    {
+      "Date": "2026-11-11",
+      "Type": "TFNG",
+      "Question": "IU plans to make a new music video in Canada next summer.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "全文並未提及 IU 明年夏天要去加拿大拍攝新音樂錄影帶的計畫。"
+    },
+    {
+      "Date": "2026-11-11",
+      "Type": "MC",
+      "Question": "What is the main reason why looking at travel posts online can make people feel unhappy?",
+      "Option_A": "Because flights to foreign countries are always cancelled due to severe weather.",
+      "Option_B": "Because people often compare their own lives with pictures that only show part of someone's life.",
+      "Option_C": "Because strangers leave rude comments on their social media pages.",
+      "Option_D": "Because people's smartphone batteries run out before they can finish reading.",
+      "Answer": "B",
+      "Explanation": "文章指出「When we compare our daily routine with someone else's trip, we often forget that social media never shows a person's whole life.」。"
+    },
+    {
+      "Date": "2026-11-11",
+      "Type": "MC",
+      "Question": "According to the author, how can someone feel better without traveling far away?",
+      "Option_A": "By buying an expensive ticket to fly across the Pacific Ocean.",
+      "Option_B": "By turning off the screen and staying in bed for the whole day.",
+      "Option_C": "By having a polite conversation with real people in a local place.",
+      "Option_D": "By posting many pictures online to get more likes and shares.",
+      "Answer": "C",
+      "Explanation": "文章建議「explore a nearby street and connect with real people... Starting a friendly conversation... can brighten your day.」。"
+    }
+  ]
+}

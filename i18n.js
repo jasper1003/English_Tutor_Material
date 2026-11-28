@@ -164,6 +164,14 @@ const STATIC_DOM_TRANSLATIONS = [
     en: "🔔 Pending Approval Queue (submissions appear here in real time)"
   },
   {
+    selector: "#admin-search-label",
+    zh: "依 Email 搜尋繪師（輸入開頭即可）",
+    en: "Search Illustrator by Email (prefix)"
+  },
+  { selector: "#admin-search-student-btn", zh: "搜尋", en: "Search" },
+  { selector: "#admin-clear-search-btn", zh: "重設", en: "Reset" },
+  { selector: "#admin-load-more-students-btn", zh: "載入更多 (+25)", en: "Load More (+25)" },
+  {
     selector: "#admin-select-student-label",
     zh: "選擇指定繪師（直接發錢／調整餘額、悄悄參觀房間或檢視課程）",
     en: "Select Illustrator (award/adjust clams, spectate studio, or inspect lessons)"

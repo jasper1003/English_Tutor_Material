@@ -1,0 +1,168 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "f3844ed4ba",
+  "date": "2026-08-13",
+  "lesson": {
+    "Date": "2026-08-13",
+    "Title": "國家與文化南歐篇",
+    "Grammar_Focus": "「one of the + 最高級 + 複數名詞」（最……的……之一）句型規則與主詞單複數動詞一致性，結合南歐文化詞彙",
+    "Reading_Title": "Sunlight and History Along the Mediterranean",
+    "Reading_Passage": "Southern Europe is famous for its bright sunshine, blue seas, and unforgettable flavors. Every spring, travelers fly to Italy to explore its historic art and lively street life. Rome, the country's capital, is one of the most historic cities in the world, where ancient stone arches stand right beside modern cafés. Visitors always love to taste real Italian pizza baked in hot wood ovens.<br><br>Further west, Spain offers warm beaches and crowded afternoon plazas. Madrid is one of the brightest capitals in Europe, and Spanish is one of the most widely spoken languages across the globe today. Just next door lies Portugal, a friendly coastal nation known for golden egg tarts and old ocean explorers who helped introduce new foods between continents.<br><br>Finally, a Mediterranean journey feels incomplete without Greece. Athens is one of the oldest cities in Europe, and its white marble temples still shine high above the city. One of the best experiences in Greece is watching the sunset over the bright blue sea while local guides introduce ancient stories. Across Italy, Spain, Portugal, and Greece, history and food blend into one warm culture.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-08-13",
+      "Word": "Italy",
+      "POS": "n.",
+      "Meaning": "義大利",
+      "Example": "Many visitors travel to Italy to admire famous Renaissance paintings and sculptures.",
+      "Image_URL": "images/vocab/2026-08-13/italy.webp"
+    },
+    {
+      "Date": "2026-08-13",
+      "Word": "Rome",
+      "POS": "n.",
+      "Meaning": "羅馬",
+      "Example": "You can walk past two-thousand-year-old stone arches in the center of Rome.",
+      "Image_URL": "images/vocab/2026-08-13/rome.webp"
+    },
+    {
+      "Date": "2026-08-13",
+      "Word": "Spain",
+      "POS": "n.",
+      "Meaning": "西班牙",
+      "Example": "Families in Spain often enjoy late dinners together after nine in the evening.",
+      "Image_URL": "images/vocab/2026-08-13/spain.webp"
+    },
+    {
+      "Date": "2026-08-13",
+      "Word": "Madrid",
+      "POS": "n.",
+      "Meaning": "馬德里",
+      "Example": "Madrid is famous for its huge art museums and sunny green city parks.",
+      "Image_URL": "images/vocab/2026-08-13/madrid.webp"
+    },
+    {
+      "Date": "2026-08-13",
+      "Word": "Greece",
+      "POS": "n.",
+      "Meaning": "希臘",
+      "Example": "Whitewashed houses sit on rocky cliffs overlooking the blue sea in Greece.",
+      "Image_URL": "images/vocab/2026-08-13/greece.webp"
+    },
+    {
+      "Date": "2026-08-13",
+      "Word": "Athens",
+      "POS": "n.",
+      "Meaning": "雅典",
+      "Example": "Ancient stone pillars still stand on the hill above modern Athens.",
+      "Image_URL": "images/vocab/2026-08-13/athens.webp"
+    },
+    {
+      "Date": "2026-08-13",
+      "Word": "Portugal",
+      "POS": "n.",
+      "Meaning": "葡萄牙",
+      "Example": "Yellow trams climb steep cobblestone streets in the hills of Portugal.",
+      "Image_URL": "images/vocab/2026-08-13/portugal.webp"
+    },
+    {
+      "Date": "2026-08-13",
+      "Word": "Italian",
+      "POS": "adj./n.",
+      "Meaning": "義大利的；義大利人／文",
+      "Example": "My dad cooks delicious Italian pasta with fresh tomatoes and basil every Sunday.",
+      "Image_URL": "images/vocab/2026-08-13/italian.webp"
+    },
+    {
+      "Date": "2026-08-13",
+      "Word": "bright",
+      "POS": "adj.",
+      "Meaning": "明亮的；陽光燦爛的",
+      "Example": "Open the curtains so the bright morning sunlight fills our study room.",
+      "Image_URL": "images/vocab/2026-08-13/bright.webp"
+    },
+    {
+      "Date": "2026-08-13",
+      "Word": "historic",
+      "POS": "adj.",
+      "Meaning": "歷史悠久的；具歷史意義的",
+      "Example": "Tainan is full of historic red brick temples and traditional snack shops.",
+      "Image_URL": "images/vocab/2026-08-13/historic.webp"
+    },
+    {
+      "Date": "2026-08-13",
+      "Word": "taste",
+      "POS": "v./n.",
+      "Meaning": "品嚐；味道",
+      "Example": "When you visit a night market, you should taste freshly grilled corn and bubble tea.",
+      "Image_URL": "images/vocab/2026-08-13/taste.webp"
+    },
+    {
+      "Date": "2026-08-13",
+      "Word": "introduce",
+      "POS": "v.",
+      "Meaning": "介紹；引進",
+      "Example": "Our English teacher asked each student to introduce a favorite festival in class.",
+      "Image_URL": "images/vocab/2026-08-13/introduce.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-08-13",
+      "Type": "MC",
+      "Question": "What does the passage say about Rome?",
+      "Option_A": "It is famous for yellow trams and golden egg tarts.",
+      "Option_B": "It is one of the most historic cities in the world.",
+      "Option_C": "It is the newest capital in Southern Europe.",
+      "Option_D": "It has no modern cafés near old buildings.",
+      "Answer": "B",
+      "Explanation": "第一段第三句寫道：Rome, the country's capital, is one of the most historic cities in the world。"
+    },
+    {
+      "Date": "2026-08-13",
+      "Type": "MC",
+      "Question": "According to the passage, what is Portugal known for?",
+      "Option_A": "Wood-baked pizza and marble temples.",
+      "Option_B": "Crowded afternoon plazas in Madrid.",
+      "Option_C": "Golden egg tarts and old ocean explorers.",
+      "Option_D": "Spreading the Spanish language across the globe.",
+      "Answer": "C",
+      "Explanation": "第二段最後一句指出：Portugal, a friendly coastal nation known for golden egg tarts and old ocean explorers who helped introduce new foods between continents。"
+    },
+    {
+      "Date": "2026-08-13",
+      "Type": "TFNG",
+      "Question": "Spanish is spoken by very few people outside Madrid today.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第二段第二句指出：Spanish is one of the most widely spoken languages across the globe today，與題幹「spoken by very few people」完全相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-08-13",
+      "Type": "TFNG",
+      "Question": "Athens is considered one of the oldest cities in Europe.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第三段第二句寫道：Athens is one of the oldest cities in Europe，與題幹意思相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-08-13",
+      "Type": "TFNG",
+      "Question": "Most tourists spend more money on food in Italy than in Spain.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章介紹了義大利披薩與西班牙廣場，但完全沒有比較遊客在這兩國的食物花費金額，故為 NOT GIVEN。"
+    }
+  ]
+}

@@ -1,0 +1,216 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "bf8a713ada",
+  "date": "2026-10-07",
+  "lesson": {
+    "Date": "2026-10-07",
+    "Title": "價值觀與感官科學",
+    "Grammar_Focus": "核心字彙字義與搭配（worth / value / condition / antique / still / mine / run out / gene / sense / detect / control）與多主題科普閱讀",
+    "Reading_Title": "Hidden Treasures in Science and History",
+    "Reading_Passage": "Last Saturday, eighth graders from Willow Junior High took part in a weekend discovery project with two very different stops. In the morning, the class visited an old antique shop near a still mountain lake. There, the owner showed students a dusty silver pocket watch from his own childhood. Although the outer glass looked scratched, the clock inside was in great condition. He explained that small silver parts inside made the watch worth far more in historical value than ordinary modern toys.<br><br>In the afternoon, the students joined a food science activity at a university lab. A friendly researcher explained why some people love green vegetables while others sense a strange soap taste when eating cilantro. It turns out a tiny gene helps people detect natural chemicals in leaves, and another gene can control how strongly we notice bitterness in broccoli.<br><br>At the end of the day, the students talked about what makes something truly valuable. Just as early miners worked hard before gold mines ran out, scientists explore invisible clues inside human DNA. Whether studying an old antique or testing a new chemical, curiosity turns every ordinary Saturday into a memorable learning experience.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-10-07",
+      "Word": "worth",
+      "POS": "adj.",
+      "Meaning": "有……價值的；值得",
+      "Example": "This quiet museum is worth visiting because it shows real fossils from the ice age.",
+      "Image_URL": "images/vocab/2026-10-07/worth.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "value",
+      "POS": "n.",
+      "Meaning": "價值；價格",
+      "Example": "Old handwritten letters from grandparents carry great emotional value for a family.",
+      "Image_URL": "images/vocab/2026-10-07/value.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "condition",
+      "POS": "n.",
+      "Meaning": "狀況；條件",
+      "Example": "Remember to check the tire condition before riding your bicycle on a long trip.",
+      "Image_URL": "images/vocab/2026-10-07/condition.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "antique",
+      "POS": "n./adj.",
+      "Meaning": "古董；古老的",
+      "Example": "A dusty wooden clock sat in the front window of the quiet antique shop.",
+      "Image_URL": "images/vocab/2026-10-07/antique.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "project",
+      "POS": "n.",
+      "Meaning": "專案計畫；專題",
+      "Example": "Our group built a solar fan for our spring science fair project.",
+      "Image_URL": "images/vocab/2026-10-07/project.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "still",
+      "POS": "adj.",
+      "Meaning": "平靜的；靜止的",
+      "Example": "Early in the morning, the still lake water reflected the snowy peaks like a mirror.",
+      "Image_URL": "images/vocab/2026-10-07/still.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "activity",
+      "POS": "n.",
+      "Meaning": "活動",
+      "Example": "Painting clay bowls was the most popular outdoor activity at summer camp.",
+      "Image_URL": "images/vocab/2026-10-07/activity.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "experience",
+      "POS": "n./v.",
+      "Meaning": "體驗；經驗",
+      "Example": "Cooking dinner for my whole family by myself was a proud new experience.",
+      "Image_URL": "images/vocab/2026-10-07/experience.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "mine",
+      "POS": "v./n.",
+      "Meaning": "開採；礦坑",
+      "Example": "Deep underground tunnels were built over a century ago to mine copper and silver.",
+      "Image_URL": "images/vocab/2026-10-07/mine.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "run out",
+      "POS": "phr.",
+      "Meaning": "用盡；耗盡",
+      "Example": "Write down your notes quickly before the blue marker runs out of ink.",
+      "Image_URL": "images/vocab/2026-10-07/run_out.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "gene",
+      "POS": "n.",
+      "Meaning": "基因",
+      "Example": "A single gene can decide whether a flower grows pink or white petals.",
+      "Image_URL": "images/vocab/2026-10-07/gene.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "sense",
+      "POS": "v./n.",
+      "Meaning": "感知；察覺",
+      "Example": "Wild birds can sense tiny changes in air pressure hours before a storm hits.",
+      "Image_URL": "images/vocab/2026-10-07/sense.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "chemical",
+      "POS": "n./adj.",
+      "Meaning": "化學物質；化學的",
+      "Example": "Citrus lemons contain a natural chemical that gives them their sour flavor.",
+      "Image_URL": "images/vocab/2026-10-07/chemical.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "bitterness",
+      "POS": "n.",
+      "Meaning": "苦味",
+      "Example": "Adding warm honey helps reduce the strong bitterness of dark cocoa.",
+      "Image_URL": "images/vocab/2026-10-07/bitterness.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "detect",
+      "POS": "v.",
+      "Meaning": "偵測；察覺",
+      "Example": "Smoke alarms quickly detect burning smells inside a kitchen to keep families safe.",
+      "Image_URL": "images/vocab/2026-10-07/detect.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "childhood",
+      "POS": "n.",
+      "Meaning": "童年時期",
+      "Example": "During my childhood, my grandfather taught me how to fly paper kites by the river.",
+      "Image_URL": "images/vocab/2026-10-07/childhood.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "soap",
+      "POS": "n.",
+      "Meaning": "肥皂",
+      "Example": "Wash your hands thoroughly with warm water and soap after painting in art class.",
+      "Image_URL": "images/vocab/2026-10-07/soap.webp"
+    },
+    {
+      "Date": "2026-10-07",
+      "Word": "control",
+      "POS": "v./n.",
+      "Meaning": "控制；掌控",
+      "Example": "A tiny computer chip helps control the temperature inside the greenhouse.",
+      "Image_URL": "images/vocab/2026-10-07/control.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-10-07",
+      "Type": "MC",
+      "Question": "Why was the dusty silver pocket watch worth more than ordinary modern toys?",
+      "Option_A": "Because its outer glass had no scratches at all.",
+      "Option_B": "Because it belonged to a famous university researcher.",
+      "Option_C": "Because the clock inside was in great condition with silver parts and historical value.",
+      "Option_D": "Because it could detect natural chemicals in green vegetables.",
+      "Answer": "C",
+      "Explanation": "第一段最後兩句指出：the clock inside was in great condition，而且內部的銀質零件讓它具備極高的歷史價值（historical value）。"
+    },
+    {
+      "Date": "2026-10-07",
+      "Type": "MC",
+      "Question": "According to the afternoon lab activity, why do some people taste soap when eating cilantro?",
+      "Option_A": "Farmers forget to wash cilantro leaves cleanly.",
+      "Option_B": "A tiny gene helps them detect natural chemicals in the leaves.",
+      "Option_C": "Cilantro only grows near still mountain lakes.",
+      "Option_D": "Bitterness in broccoli changes the taste of water.",
+      "Answer": "B",
+      "Explanation": "第二段最後一句寫道：a tiny gene helps people detect natural chemicals in leaves，讓某些人吃香菜時感覺像肥皂味。"
+    },
+    {
+      "Date": "2026-10-07",
+      "Type": "TFNG",
+      "Question": "The antique shop owner got the silver pocket watch during his childhood.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第一段第三句提到 the owner showed students a dusty silver pocket watch from his own childhood，與題幹相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-10-07",
+      "Type": "TFNG",
+      "Question": "The two stops on Saturday's project were both inside the same university lab.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第一、二段分別指出早上參訪湖邊的古董店（an old antique shop near a still mountain lake），下午才去大學實驗室（at a university lab），故題幹為 FALSE。"
+    },
+    {
+      "Date": "2026-10-07",
+      "Type": "TFNG",
+      "Question": "Half of the eighth graders from Willow Junior High disliked eating broccoli.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "第二段只解釋基因會控制人對花椰菜苦味的敏感度，並未統計這群學生中是否有一半討厭花椰菜，故為 NOT GIVEN。"
+    }
+  ]
+}

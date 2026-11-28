@@ -1,0 +1,66 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "fd26947c4e",
+  "date": "2026-10-28",
+  "lesson": {
+    "Date": "2026-10-28",
+    "Title": "新單字和閱讀理解",
+    "Grammar_Focus": "連接詞配對 (however / therefore / in fact / when / while / before / after) 與 save...from... 時態應用",
+    "Reading_Title": "Lucas's Midnight Mystery",
+    "Reading_Passage": "Last month, Lucas moved to an old apartment near his new school. At first, everything seemed fine; however, strange things started happening after the second week. Almost every night, Lucas had terrible dreams. In one dream, he was running through a dark forest when giant shadow monsters chased after him! He often woke up sweating and scared, and he couldn't fall asleep again for hours.<br><br>Because he couldn't get enough sleep, he was exhausted all the time. His parents told him to drink warm milk and listen to soft music before bed, but nothing worked. One morning, his mother noticed that the front door was unlocked and pairs of shoes were moved one by one into the kitchen. She decided to install a security monitor in the living room.<br><br>When they checked the video the next day, they were shocked. At a quarter to three in the morning, Lucas was slowly walking around the living room with his eyes half-closed! It turned out he was sleepwalking when he moved the shoes! To help him, his sister Maya hung a handmade dreamcatcher right above his bed. \"This web catches bad dreams and saves you from those dark monsters,\" she said with a smile. Believe it or not, the dreamcatcher really worked! Lucas finally slept through the night, and the midnight mystery was solved.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-10-28",
+      "Word": "save ... from ...",
+      "POS": "phr.",
+      "Meaning": "將……從……拯救出來",
+      "Example": "The doctor saved the little boy from serious illness.",
+      "Image_URL": "images/vocab/2026-10-28/save_from.webp"
+    },
+    {
+      "Date": "2026-10-28",
+      "Word": "however",
+      "POS": "adv.",
+      "Meaning": "然而；不過",
+      "Example": "Her parents gave her some advice; however, nothing worked.",
+      "Image_URL": "images/vocab/2026-10-28/however.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-10-28",
+      "Type": "MC",
+      "Question": "What does the word \"worked\" mean in the last paragraph?",
+      "Option_A": "Lucas's sister got a paid job at a company.",
+      "Option_B": "The dreamcatcher was successful and fixed the problem.",
+      "Option_C": "The security monitor was recording videos all night.",
+      "Option_D": "Lucas was doing heavy physical exercise in the room.",
+      "Answer": "B",
+      "Explanation": "根據最後一段「the dreamcatcher really worked! Lucas finally slept through the night」，此處 worked 意指捕夢網「奏效、成功解決了問題」。"
+    },
+    {
+      "Date": "2026-10-28",
+      "Type": "MC",
+      "Question": "Which of the following is TRUE about the story?",
+      "Option_A": "Lucas unlocked the door because a real monster chased him into the kitchen.",
+      "Option_B": "Drinking warm milk before bed successfully saved Lucas from his bad dreams.",
+      "Option_C": "Lucas moved the shoes while he was walking in his sleep.",
+      "Option_D": "Maya installed the camera monitor at a quarter to three in the morning.",
+      "Answer": "C",
+      "Explanation": "第三段明確指出「It turned out he was sleepwalking when he moved the shoes!」，他在夢遊時移動了鞋子。"
+    },
+    {
+      "Date": "2026-10-28",
+      "Type": "MC",
+      "Question": "Based on the passage, what happened when Lucas was having the bad dream?",
+      "Option_A": "Giant shadow monsters chased him while he was running in a dark forest.",
+      "Option_B": "His teeth fell out one by one while he was eating a cake.",
+      "Option_C": "He woke up and moved the shoes into the kitchen immediately.",
+      "Option_D": "His sister was making a dreamcatcher by the bedroom window.",
+      "Answer": "A",
+      "Explanation": "第一段提到「In one dream, he was running through a dark forest when giant shadow monsters chased after him!」。"
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "19b0c52f39",
+  "date": "2026-08-27",
+  "lesson": {
+    "Date": "2026-08-27",
+    "Title": "國家與文化南美篇",
+    "Grammar_Focus": "同級比較改寫練習與轉折／因果副詞辨析（however「然而」表轉折；therefore「因此」表結果），搭配拉丁美洲地理詞彙",
+    "Reading_Title": "Crossing Mountains and Rivers in Latin America",
+    "Reading_Passage": "Latin America stretches across bright coastlines, high green mountain valleys, and giant tropical rainforests. Many travelers start their journey in Mexico, enjoying lively street festivals and warm tacos before flying south to Colombia. In Colombia, rich mountain soil helps local farmers grow sweet coffee beans; therefore, Colombian coffee is loved by people around the world.<br><br>Further east lies Brazil, the largest nation in South America. Deep inside Brazil, the mighty Amazon River flows through thick green forests toward the Atlantic Ocean. Taking a small boat down this wide river is as exciting as hiking up snowy mountain peaks. However, the wild jungle can be tricky for visitors; therefore, experienced local guides always lead small tour boats safely.<br><br>On the western side of the continent, Peru carefully preserves ancient stone cities high in the Andes Mountains. Moving south, travelers often cross tall snowy mountain passes between Chile and Argentina. Chile forms a long, narrow strip beside the ocean, while Argentina is famous for wide grasslands, tasty grilled beef, and tango music. Together, these nations make South America as unforgettable as any region on earth.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-08-27",
+      "Word": "Mexico",
+      "POS": "n.",
+      "Meaning": "墨西哥",
+      "Example": "Bright paper flags hang over narrow sunny streets during festivals in Mexico.",
+      "Image_URL": "images/vocab/2026-08-27/mexico.webp"
+    },
+    {
+      "Date": "2026-08-27",
+      "Word": "Colombia",
+      "POS": "n.",
+      "Meaning": "哥倫比亞",
+      "Example": "Farmers pick ripe red coffee cherries by hand on green slopes in Colombia.",
+      "Image_URL": "images/vocab/2026-08-27/colombia.webp"
+    },
+    {
+      "Date": "2026-08-27",
+      "Word": "Peru",
+      "POS": "n.",
+      "Meaning": "秘魯",
+      "Example": "Fuzzy llamas walk along high stone trails near ancient ruins in Peru.",
+      "Image_URL": "images/vocab/2026-08-27/peru.webp"
+    },
+    {
+      "Date": "2026-08-27",
+      "Word": "Brazil",
+      "POS": "n.",
+      "Meaning": "巴西",
+      "Example": "Young players kick soccer balls on sandy coastal beaches across Brazil.",
+      "Image_URL": "images/vocab/2026-08-27/brazil.webp"
+    },
+    {
+      "Date": "2026-08-27",
+      "Word": "Chile",
+      "POS": "n.",
+      "Meaning": "智利",
+      "Example": "Tall snowy peaks rise sharply behind long ocean beaches in Chile.",
+      "Image_URL": "images/vocab/2026-08-27/chile.webp"
+    },
+    {
+      "Date": "2026-08-27",
+      "Word": "Argentina",
+      "POS": "n.",
+      "Meaning": "阿根廷",
+      "Example": "Couples dance traditional tango under warm street lamps in Argentina.",
+      "Image_URL": "images/vocab/2026-08-27/argentina.webp"
+    },
+    {
+      "Date": "2026-08-27",
+      "Word": "flow",
+      "POS": "v.",
+      "Meaning": "流動；流經",
+      "Example": "Cool mountain streams flow down the valley into a clear blue lake.",
+      "Image_URL": "images/vocab/2026-08-27/flow.webp"
+    },
+    {
+      "Date": "2026-08-27",
+      "Word": "cross",
+      "POS": "v.",
+      "Meaning": "橫越；穿過",
+      "Example": "Look carefully both ways before you cross the busy street in front of school.",
+      "Image_URL": "images/vocab/2026-08-27/cross.webp"
+    },
+    {
+      "Date": "2026-08-27",
+      "Word": "therefore",
+      "POS": "adv.",
+      "Meaning": "因此；所以",
+      "Example": "Ella reviewed every grammar note twice; therefore, she felt calm during the test.",
+      "Image_URL": "images/vocab/2026-08-27/therefore.webp"
+    },
+    {
+      "Date": "2026-08-27",
+      "Word": "however",
+      "POS": "adv.",
+      "Meaning": "然而；不過",
+      "Example": "The mountain trail looked short on the map; however, the steep climb took three hours.",
+      "Image_URL": "images/vocab/2026-08-27/however.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-08-27",
+      "Type": "MC",
+      "Question": "Why is Colombian coffee loved around the world according to the first paragraph?",
+      "Option_A": "Tourists carry beans across the ocean by small boat.",
+      "Option_B": "Rich mountain soil helps farmers grow sweet coffee beans.",
+      "Option_C": "The air in Colombia is thinner than in Peru.",
+      "Option_D": "Mexico sends all of its coffee seeds to Colombia.",
+      "Answer": "B",
+      "Explanation": "第一段最後一句寫道：In Colombia, rich mountain soil helps local farmers grow sweet coffee beans; therefore, Colombian coffee is loved around the world。"
+    },
+    {
+      "Date": "2026-08-27",
+      "Type": "MC",
+      "Question": "Why do experienced local guides lead small tour boats on the Amazon River?",
+      "Option_A": "Because boats are not allowed near the Atlantic Ocean.",
+      "Option_B": "Because the wild jungle can be tricky for visitors.",
+      "Option_C": "Because local guides want to sell grilled beef on boats.",
+      "Option_D": "Because visitors are forbidden to cross mountain passes.",
+      "Answer": "B",
+      "Explanation": "第二段最後一句指出：However, the wild jungle can be tricky for visitors; therefore, experienced local guides always lead small tour boats safely。"
+    },
+    {
+      "Date": "2026-08-27",
+      "Type": "TFNG",
+      "Question": "Brazil is the largest country in South America.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段第一句明確提到 Brazil, the largest nation in South America，與題幹完全相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-08-27",
+      "Type": "TFNG",
+      "Question": "Taking a boat down the Amazon River is much less exciting than hiking up snowy peaks.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第二段第三句寫道 Taking a boat on this wide river is as exciting as hiking up snowy peaks（兩者一樣刺激），與題幹「much less exciting」矛盾，故為 FALSE。"
+    },
+    {
+      "Date": "2026-08-27",
+      "Type": "TFNG",
+      "Question": "Most visitors stay in Peru for at least two weeks to climb the Andes Mountains.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "第三段只提到秘魯在安地斯山脈保留了古老石城，並未說明大多數旅客停留幾週，故為 NOT GIVEN。"
+    }
+  ]
+}

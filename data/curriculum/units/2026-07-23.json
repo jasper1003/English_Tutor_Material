@@ -1,0 +1,152 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "35ac84705c",
+  "date": "2026-07-23",
+  "lesson": {
+    "Date": "2026-07-23",
+    "Title": "單字與文法總複習",
+    "Grammar_Focus": "綜合複習過去進行式（was/were + V-ing + when/while）與未來簡單式（will / be going to）之情境判斷、否定與疑問句改寫",
+    "Reading_Title": "Behind the Scenes of the School News Team",
+    "Reading_Passage": "Yesterday afternoon, the Maple Junior High news club faced an urgent situation in the media room. While Mia was interviewing the school principal about the upcoming autumn sports day, her laptop computer suddenly froze, and a strange red warning flashed across the bright screen. At first, everyone worried that a clever hacker might try to steal student photos or break into their new digital platform.<br><br>Thankfully, Ben, a calm ninth grader who wants to become a security engineer, stayed focused and checked the system right away. He soon noticed that an old video editor had caused the crash, not an outside cyber attack. After he restarted the device and carefully updated the login password, the whole school platform worked smoothly again.<br><br>To prevent future trouble, the news club already made a clear safety plan. Next Monday, Ben is going to back up every written article and photo folder before the morning meeting. Mia also promised that she will check all unknown links with full attention before downloading anything new. As the team packed their bags, they predicted that their next school newspaper issue will be much safer and more exciting than before.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-07-23",
+      "Word": "hacker",
+      "POS": "n.",
+      "Meaning": "駭客",
+      "Example": "A clever hacker cannot easily enter an account that uses two-step verification.",
+      "Image_URL": "images/vocab/2026-07-23/hacker.webp"
+    },
+    {
+      "Date": "2026-07-23",
+      "Word": "urgent",
+      "POS": "adj.",
+      "Meaning": "緊急的",
+      "Example": "Our class leader sent an urgent message about the sudden change in bus time.",
+      "Image_URL": "images/vocab/2026-07-23/urgent.webp"
+    },
+    {
+      "Date": "2026-07-23",
+      "Word": "article",
+      "POS": "n.",
+      "Meaning": "文章；報導",
+      "Example": "Hannah wrote an interesting article about night market snacks for the school paper.",
+      "Image_URL": "images/vocab/2026-07-23/article.webp"
+    },
+    {
+      "Date": "2026-07-23",
+      "Word": "platform",
+      "POS": "n.",
+      "Meaning": "平台",
+      "Example": "Students upload their English speaking recordings onto the class learning platform.",
+      "Image_URL": "images/vocab/2026-07-23/platform.webp"
+    },
+    {
+      "Date": "2026-07-23",
+      "Word": "interview",
+      "POS": "v./n.",
+      "Meaning": "採訪；面試",
+      "Example": "Two student reporters will interview the winning basketball coach after practice.",
+      "Image_URL": "images/vocab/2026-07-23/interview.webp"
+    },
+    {
+      "Date": "2026-07-23",
+      "Word": "predict",
+      "POS": "v.",
+      "Meaning": "預測",
+      "Example": "Weather scientists use satellite maps to predict typhoons days before they arrive.",
+      "Image_URL": "images/vocab/2026-07-23/predict.webp"
+    },
+    {
+      "Date": "2026-07-23",
+      "Word": "crash",
+      "POS": "v./n.",
+      "Meaning": "當機；墜毀",
+      "Example": "Remember to save your essay often so you do not lose your work if the app crashes.",
+      "Image_URL": "images/vocab/2026-07-23/crash.webp"
+    },
+    {
+      "Date": "2026-07-23",
+      "Word": "system",
+      "POS": "n.",
+      "Meaning": "系統",
+      "Example": "The library added a fast scanning system to help students borrow books easily.",
+      "Image_URL": "images/vocab/2026-07-23/system.webp"
+    },
+    {
+      "Date": "2026-07-23",
+      "Word": "password",
+      "POS": "n.",
+      "Meaning": "密碼",
+      "Example": "Never share your email password with friends, even if you trust them.",
+      "Image_URL": "images/vocab/2026-07-23/password.webp"
+    },
+    {
+      "Date": "2026-07-23",
+      "Word": "attention",
+      "POS": "n.",
+      "Meaning": "注意力；關注",
+      "Example": "Listening carefully to the teacher's example requires full attention in class.",
+      "Image_URL": "images/vocab/2026-07-23/attention.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-07-23",
+      "Type": "MC",
+      "Question": "What caused Mia's computer to freeze yesterday afternoon?",
+      "Option_A": "A hacker stole student photos from the website.",
+      "Option_B": "An old video editor caused the computer to crash.",
+      "Option_C": "The school principal turned off the campus Wi-Fi.",
+      "Option_D": "Too many students logged in at the same time.",
+      "Answer": "B",
+      "Explanation": "第二段第二句明確指出：He noticed that an old video editor caused the crash, not an outside attack。"
+    },
+    {
+      "Date": "2026-07-23",
+      "Type": "MC",
+      "Question": "What has the club already planned to do next Monday?",
+      "Option_A": "Delete the old school newspaper website.",
+      "Option_B": "Ask the principal for brand-new laptops.",
+      "Option_C": "Back up every article and photo folder before the morning meeting.",
+      "Option_D": "Stop posting any photos on their digital platform.",
+      "Answer": "C",
+      "Explanation": "第三段第二句寫道：Next Monday, Ben is going to back up every article and photo folder before the morning meeting。"
+    },
+    {
+      "Date": "2026-07-23",
+      "Type": "TFNG",
+      "Question": "Mia was interviewing the school principal when her computer suddenly froze.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第一段第二句提到 While Mia was interviewing the school principal about the autumn sports day, her computer suddenly froze，與題幹完全相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-07-23",
+      "Type": "TFNG",
+      "Question": "The warning on Mia's screen happened because an outside hacker attacked the school.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第二段第二句指出 Ben noticed that an old video editor caused the crash, not an outside attack，與題幹說法相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-07-23",
+      "Type": "TFNG",
+      "Question": "Ben plans to study computer science in Taipei after graduating from junior high.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文中僅提到 Ben 是想成為資安工程師的九年級生，並未提及他畢業後是否要去台北就讀資工系，故為 NOT GIVEN。"
+    }
+  ]
+}

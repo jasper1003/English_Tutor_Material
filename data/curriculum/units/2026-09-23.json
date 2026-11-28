@@ -1,0 +1,176 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "cc29e53496",
+  "date": "2026-09-23",
+  "lesson": {
+    "Date": "2026-09-23",
+    "Title": "社團生活與所有格代名詞",
+    "Grammar_Focus": "時間從屬連接詞（after / before / when）時態一致與分詞化簡，以及所有格代名詞（mine / yours / his / hers / theirs）避免重複",
+    "Reading_Title": "Choosing the Right Club for a Busy Semester",
+    "Reading_Passage": "September brought the exciting autumn club festival at Lakeside Junior High. During lunch break, Ethan met his friend Nora outside the gym and asked, \"Hey, what's up? Did you make up your mind about which school club to join?\" Nora sighed softly because she loved soccer, yet her math score was poor last semester. Before choosing a sports team, she promised her parents she would finish every subject assignment first.<br><br>Ethan nodded and opened his backpack to show her a tiny rolling robot. \"Hold on—look at this!\" he smiled proudly. \"Ben built his in June, and mine turns corners even faster than his!\" Nora blinked in surprise and asked, \"Are you pulling my leg?\" Ethan laughed and showed how his robot followed a black line across the floor cleanly.<br><br>After seeing Ethan's clever model, Nora realized she could balance study and fun. When students finish homework before dinner, they still have time for their own favorite hobbies. That afternoon, Nora walked up to the sign-up desk and made a smart choice: she joined the robotics club to sharpen both her math skills and creativity.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-09-23",
+      "Word": "club",
+      "POS": "n.",
+      "Meaning": "社團",
+      "Example": "Every Friday afternoon, members of the cooking club bake fresh muffins together.",
+      "Image_URL": "images/vocab/2026-09-23/club.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "subject",
+      "POS": "n.",
+      "Meaning": "學科；主題",
+      "Example": "Geography is my favorite school subject because we learn about world maps.",
+      "Image_URL": "images/vocab/2026-09-23/subject.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "math",
+      "POS": "n.",
+      "Meaning": "數學",
+      "Example": "Practicing three math problems every evening makes big exams much easier.",
+      "Image_URL": "images/vocab/2026-09-23/math.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "soccer",
+      "POS": "n.",
+      "Meaning": "足球",
+      "Example": "Our school soccer team practices passing drills on the green field after class.",
+      "Image_URL": "images/vocab/2026-09-23/soccer.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "robot",
+      "POS": "n.",
+      "Meaning": "機器人",
+      "Example": "Students programmed a small blue robot to follow black tape along the table.",
+      "Image_URL": "images/vocab/2026-09-23/robot.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "festival",
+      "POS": "n.",
+      "Meaning": "節慶；嘉年華",
+      "Example": "Paper lanterns glowed brightly along the river during the autumn festival.",
+      "Image_URL": "images/vocab/2026-09-23/festival.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "choice",
+      "POS": "n.",
+      "Meaning": "選擇",
+      "Example": "Bringing an umbrella when the sky looks gray is always a wise choice.",
+      "Image_URL": "images/vocab/2026-09-23/choice.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "poor",
+      "POS": "adj.",
+      "Meaning": "不佳的；貧窮的",
+      "Example": "Going to bed after midnight often leads to poor focus in morning classes.",
+      "Image_URL": "images/vocab/2026-09-23/poor.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "whose",
+      "POS": "pron./adj.",
+      "Meaning": "誰的（東西）",
+      "Example": "Whose blue water bottle is sitting next to the basketball hoop?",
+      "Image_URL": "images/vocab/2026-09-23/whose.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "own",
+      "POS": "adj./v.",
+      "Meaning": "自己的；擁有",
+      "Example": "Each student designs their own colorful cover for the English portfolio.",
+      "Image_URL": "images/vocab/2026-09-23/own.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "make up one's mind",
+      "POS": "phr.",
+      "Meaning": "下定決心",
+      "Example": "After comparing two bicycles for a week, Sam finally made up his mind.",
+      "Image_URL": "images/vocab/2026-09-23/make_up_one_s_mind.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "pull one's leg",
+      "POS": "phr.",
+      "Meaning": "開玩笑；捉弄某人",
+      "Example": "Relax—I was only pulling your leg when I said our quiz has fifty pages!",
+      "Image_URL": "images/vocab/2026-09-23/pull_one_s_leg.webp"
+    },
+    {
+      "Date": "2026-09-23",
+      "Word": "hold on",
+      "POS": "phr.",
+      "Meaning": "稍候；等一下",
+      "Example": "Hold on for one second while I grab my keys from the kitchen table.",
+      "Image_URL": "images/vocab/2026-09-23/hold_on.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-09-23",
+      "Type": "MC",
+      "Question": "Why did Nora hesitate to join the soccer club at first?",
+      "Option_A": "Her math score was poor last semester, so she promised to focus on study assignments first.",
+      "Option_B": "She did not like playing outdoor sports during autumn.",
+      "Option_C": "The soccer club was already full before lunch break.",
+      "Option_D": "Her parents asked her to teach math to younger students.",
+      "Answer": "A",
+      "Explanation": "第一段第三、四句提到 Nora 喜歡足球，但上學期數學成績不佳（math score was poor last semester），因此答應父母會先把各科作業完成。"
+    },
+    {
+      "Date": "2026-09-23",
+      "Type": "MC",
+      "Question": "In the sentence \"Ben built his in June, and mine turns corners even faster than his!\", what do \"his\" and \"mine\" refer to?",
+      "Option_A": "Their soccer shoes.",
+      "Option_B": "Their math textbooks.",
+      "Option_C": "Their robots.",
+      "Option_D": "Their backpacks.",
+      "Answer": "C",
+      "Explanation": "第二段第一句提到 Ethan 從背包拿出一個會滾動的小型機器人（a tiny rolling robot），緊接著比較 Ben 的與自己的，故 his 和 mine 皆指「機器人」。"
+    },
+    {
+      "Date": "2026-09-23",
+      "Type": "TFNG",
+      "Question": "Ethan's robot turned corners faster than Ben's robot.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段第三句寫道 Ben built his in June, and mine turns corners even faster than his，與題幹相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-09-23",
+      "Type": "TFNG",
+      "Question": "Nora finally signed up for the soccer club on the afternoon of the festival.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第三段最後一句明確指出 she joined the robotics club to sharpen both her math skills and creativity，她最後加入了機器人社而非足球社，故為 FALSE。"
+    },
+    {
+      "Date": "2026-09-23",
+      "Type": "TFNG",
+      "Question": "Lakeside Junior High holds its club festival on the same day every year.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章只提到九月迎來秋季社團博覽會，並未說明學校每年是否固定在同一天舉辦，故為 NOT GIVEN。"
+    }
+  ]
+}

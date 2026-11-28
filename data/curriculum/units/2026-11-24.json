@@ -1,0 +1,897 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "03b5d6e2ae",
+  "date": "2026-11-24",
+  "lesson": {
+    "Date": "2026-11-24",
+    "Title": "10/21–11/11 總複習模擬測驗（聽力・單字・文法・克漏字・閱讀）",
+    "Grammar_Focus": "時間順逆讀法（past / half past / to）、連接詞（however / therefore / while）、不定詞 to V 與動名詞 V-ing（stop / remember / forget / decide / give up）、besides + V-ing 與 10/21–11/11 核心字彙",
+    "Reading_Title": "綜合模擬測驗：聽力・克漏字與三篇閱讀",
+    "Reading_Passage": "【聽力測驗 A：男女對話 (對應聽力第 1～2 題)】<br>AUDIO: audio/listening_2026-11-24_dialogue.m4a<br><br>Leo: Hey Claire, why are you pacing around the living room? You look like you just ran a race.<br>Claire: Oh, Leo! I'm acting in a short video audition this afternoon, and I have butterflies in my stomach.<br>Leo: Take it easy! You practiced the whole script twice yesterday. What time do we need to leave the house?<br>Claire: My cousin promised to drive us at a quarter to four. However, I still haven't finished my chores!<br>Leo: Don't worry, I'll help. Did you already feed the dog?<br>Claire: Yes, I remember feeding him right after lunch. Could you help me wipe the kitchen table while I hang up these wet towels?<br>Leo: Sure! Just remember to put your audition script inside your backpack before we step out the door.<br>Claire: Thanks, Leo. That's a good idea. I don't want to leave it in my desk drawer!<br><br>【聽力測驗 B：論說型短文 (對應聽力第 3～4 題)】<br>AUDIO: audio/listening_2026-11-24_talk.m4a<br><br>Many young people today dream of starting a career by making online videos. At first, sharing your work feels exciting. However, it is very common for beginners to feel discouraged when strangers leave unkind comments or make fun of their early videos.<br><br>In fact, comparing your very first project with a famous creator's hundredth video is rarely fair. If a comment offers helpful advice on your lighting or sound, you should stop to read it carefully. On the other hand, if a stranger is simply trying to hurt your feelings, remember to cool down and take it easy instead of fighting back online.<br><br>Therefore, believe in your own ideas and do not give up too quickly. Every confident speaker or actor started by practicing step by step, learning from mistakes, and keeping a positive attitude along the way.<br><br>【克漏字測驗文章 Cloze Passage (對應克漏字第 1～5 題)】<br><br>Last month, Emma started a new part-time job at a small neighborhood bakery. Her (1), Mrs. Lin, is very strict about keeping the shop spotless. Every afternoon at a (2) past four, Emma puts on her apron to (3) the flour off the wooden counters and clean the glass display cases. At first, she found the long list of tasks exhausting; (4), she never thought about quitting. Yesterday, a tired (5) who had been driving across the mountains all day walked in for hot bread and coffee. Seeing his big smile after one bite made Emma proud of her hard work.<br><br>【閱讀測驗 A：人物對話 Dialogue (對應閱讀 A 第 1～3 題)】<br><br>Mia: Hey, Leo! Why do you look so sleepy today? Did you stay up late playing video games again?<br><br>Leo: No! Actually, I went to bed at ten past ten, but I had a terrible dream and woke up sweating at a quarter to three. Even worse, my mom found all my sneakers lined up in the kitchen this morning!<br><br>Mia: Wait—did you sleepwalk again? You told me you used to do that when you were six!<br><br>Leo: Yes! And I have a violin audition at 4:00 p.m. today. I'm already getting butterflies in my stomach.<br><br>Mia: Take it easy, Leo. You practiced the whole week! Why don't you drink some warm tea to cool down first? I'll also remind you not to skip lunch before we leave for the music hall.<br><br>Leo: Thanks, Mia. Having a supportive friend like you really helps!<br><br>【閱讀測驗 B：報導型文章 News Report (對應閱讀 B 第 1～3 題)】<br><br>GREENWOOD DAILY — Local Delivery Driver Honored for Helping Workers and Community<br><br>Yesterday morning, a local delivery driver named Daniel Wu received a community award for his kindness and courage. Over the past three years, Daniel has worked hard to deliver fresh groceries and heavy parcels across town, even in freezing rain.<br><br>Two weeks ago, while driving past an old textile factory, Daniel noticed thick smoke coming out of a back window. Without hesitating, he stopped his truck to check the building and helped save two workers from the dangerous fire before firefighters arrived.<br><br>Later, Daniel also joined a town meeting to fight for better safety lights along the dark mountain road. \"It is very common for drivers to work late at night,\" Daniel told reporters. \"I didn't do this to become famous; I just believe everyone deserves a safe place to work.\" After the story was shared online, hundreds of warm comments praised Daniel for his brave actions.<br><br>【閱讀測驗 C：公告型文章 Public Notice (對應閱讀 C 第 1～3 題)】<br><br>COMMUNITY YOUTH CENTER — DIGITAL MEDIA & CAREER WORKSHOP<br><br>Do you dream of starting a career in online video creation or acting? Join our weekend workshop this Saturday!<br><br>Time: From a quarter past one to half past four in the afternoon. Place: Room 302, on the third floor (right beside the computer lab).<br><br>Activities: (1) Learn how to make a short video and write clear titles. (2) Practice having a friendly conversation on camera without getting nervous. (3) Discuss safe ways to reply to online comments from strangers.<br><br>Important Reminders: Please remember to bring your student ID card and a notebook. Do not bring food or sweet drinks into the computer room; however, bottled water is allowed. Also, we kindly ask all students to help sweep the floor before leaving the room.",
+    "XP": "60"
+  },
+  "vocab": [
+    {
+      "Date": "2026-11-24",
+      "Word": "do the dishes",
+      "POS": "phr.",
+      "Meaning": "洗碗盤",
+      "Example": "My sister and I take turns helping Mom do the dishes right after dinner.",
+      "Image_URL": "images/vocab/2026-10-21/do_the_dishes.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "half",
+      "POS": "n.",
+      "Meaning": "一半；二分之一（搭配 half past）",
+      "Example": "Our soccer practice ends at half past five, so I will be home by six.",
+      "Image_URL": "images/vocab/2026-10-21/half.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "quarter",
+      "POS": "n.",
+      "Meaning": "十五分鐘；四分之一",
+      "Example": "The school bus leaves the corner stop at a quarter to seven every morning.",
+      "Image_URL": "images/vocab/2026-10-21/quarter.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "past",
+      "POS": "prep.",
+      "Meaning": "過（幾點鐘幾分）；經過",
+      "Example": "It is already ten past nine, so let's hurry into the science classroom.",
+      "Image_URL": "images/vocab/2026-10-21/past.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "leave",
+      "POS": "v.",
+      "Meaning": "離開；出發",
+      "Example": "Check that you packed your student ID card before you leave the house.",
+      "Image_URL": "images/vocab/2026-10-21/leave.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "remember",
+      "POS": "v.",
+      "Meaning": "記得",
+      "Example": "Please remember to lock the balcony window before going to sleep tonight.",
+      "Image_URL": "images/vocab/2026-10-21/remember.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "take it easy",
+      "POS": "phr.",
+      "Meaning": "放輕鬆；別緊張",
+      "Example": "Take it easy and read each test question slowly before choosing your answer.",
+      "Image_URL": "images/vocab/2026-10-21/take_it_easy.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "cool down",
+      "POS": "phr.",
+      "Meaning": "冷靜一下；降溫",
+      "Example": "Drink a glass of water and cool down for five minutes after running laps.",
+      "Image_URL": "images/vocab/2026-10-21/cool_down.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "feed",
+      "POS": "v.",
+      "Meaning": "餵養",
+      "Example": "Every morning at seven, Kevin fills the metal bowl to feed his golden retriever.",
+      "Image_URL": "images/vocab/2026-10-21/feed.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "sweep",
+      "POS": "v.",
+      "Meaning": "打掃；掃地",
+      "Example": "Two students stay after school to sweep dry leaves off the classroom balcony.",
+      "Image_URL": "images/vocab/2026-10-21/sweep.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "floor",
+      "POS": "n.",
+      "Meaning": "地板；樓層",
+      "Example": "Our school library sits on the third floor right beside the computer lab.",
+      "Image_URL": "images/vocab/2026-10-21/floor.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "fix",
+      "POS": "v.",
+      "Meaning": "修理；解決",
+      "Example": "My uncle used a screwdriver to fix the loose leg on our kitchen chair.",
+      "Image_URL": "images/vocab/2026-10-21/fix.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "drawer",
+      "POS": "n.",
+      "Meaning": "抽屜",
+      "Example": "Keep spare batteries and scissors neatly inside the top desk drawer.",
+      "Image_URL": "images/vocab/2026-10-21/drawer.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "mop",
+      "POS": "v./n.",
+      "Meaning": "拖地；拖把",
+      "Example": "After rainy sports day, everyone grabbed a mop to dry the wet hallway.",
+      "Image_URL": "images/vocab/2026-10-21/mop.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "wipe",
+      "POS": "v.",
+      "Meaning": "擦拭",
+      "Example": "Use a clean damp cloth to wipe dust off your computer keyboard once a week.",
+      "Image_URL": "images/vocab/2026-10-21/wipe.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "hang",
+      "POS": "v.",
+      "Meaning": "吊；掛",
+      "Example": "Please hang your wet raincoat on the wooden hook near the front door.",
+      "Image_URL": "images/vocab/2026-10-21/hang.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "sleepwalk",
+      "POS": "v.",
+      "Meaning": "夢遊",
+      "Example": "My cousin told a funny story about trying to sleepwalk into the kitchen at age six.",
+      "Image_URL": "images/vocab/2026-10-21/sleepwalk.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "save ... from ...",
+      "POS": "phr.",
+      "Meaning": "將……從……拯救出來",
+      "Example": "The doctor saved the little boy from serious illness.",
+      "Image_URL": "images/vocab/2026-10-28/save_from.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "however",
+      "POS": "adv.",
+      "Meaning": "然而；不過",
+      "Example": "Her parents gave her some advice; however, nothing worked.",
+      "Image_URL": "images/vocab/2026-10-28/however.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "salesman",
+      "POS": "n.",
+      "Meaning": "業務員",
+      "Example": "The hardworking salesman plans to meet the branch manager before noon to show the new digital products.",
+      "Image_URL": "images/vocab/2026-11-04/salesman.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "boss",
+      "POS": "n.",
+      "Meaning": "老闆",
+      "Example": "The tech company boss told the software engineer not to turn off the main system during office hours.",
+      "Image_URL": "images/vocab/2026-11-04/boss.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "soldier",
+      "POS": "n.",
+      "Meaning": "士兵",
+      "Example": "After crossing the broken bridge, the brave soldiers stopped to rescue the scared travelers from the falling rocks.",
+      "Image_URL": "images/vocab/2026-11-04/soldier.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "farmer",
+      "POS": "n.",
+      "Meaning": "農夫",
+      "Example": "The Colombian coffee farmer hopes to harvest all the crops before the heavy rainy season arrives.",
+      "Image_URL": "images/vocab/2026-11-04/farmer.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "fisherman",
+      "POS": "n.",
+      "Meaning": "漁夫",
+      "Example": "When the weather screen showed a warning, the experienced fisherman decided not to sail into the dangerous storm.",
+      "Image_URL": "images/vocab/2026-11-04/fisherman.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "relative",
+      "POS": "n.",
+      "Meaning": "親戚",
+      "Example": "During his summer vacation in Canada, Kevin enjoyed visiting his distant relatives in Montreal.",
+      "Image_URL": "images/vocab/2026-11-04/relative.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "factory",
+      "POS": "n.",
+      "Meaning": "工廠",
+      "Example": "The skilled mechanic finished inspecting every machine in the car factory before the workers went home.",
+      "Image_URL": "images/vocab/2026-11-04/factory.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "truck driver",
+      "POS": "n.",
+      "Meaning": "卡車司機",
+      "Example": "It is very exhausting for the truck driver to transport fresh food across the high mountains all night.",
+      "Image_URL": "images/vocab/2026-11-04/truck_driver.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "believe",
+      "POS": "v.",
+      "Meaning": "相信",
+      "Example": "Some leaders refused to believe the climate report until the scientists showed the rising temperature data.",
+      "Image_URL": "images/vocab/2026-11-04/believe.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "act",
+      "POS": "v.",
+      "Meaning": "表演；行動",
+      "Example": "Although the young actor was nervous, he remembered to speak clearly after his teacher whispered, \"Break a leg!\"",
+      "Image_URL": "images/vocab/2026-11-04/act.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "give up",
+      "POS": "phr.",
+      "Meaning": "放棄",
+      "Example": "Zac made up his mind not to give up learning computer programming even though the subject was tough.",
+      "Image_URL": "images/vocab/2026-11-04/give_up.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "make fun of",
+      "POS": "phr.",
+      "Meaning": "取笑；嘲弄",
+      "Example": "It is not kind of you to make fun of Lucas just because he feels nervous on stage.",
+      "Image_URL": "images/vocab/2026-11-04/make_fun_of.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "career",
+      "POS": "n.",
+      "Meaning": "職業生涯；事業",
+      "Example": "After updating his resume, Charles decided to start a new career in digital media.",
+      "Image_URL": "images/vocab/2026-11-04/career.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "audition",
+      "POS": "n.",
+      "Meaning": "試鏡；試音",
+      "Example": "The young musician kept practicing the violin pieces all night to prepare for tomorrow's big audition.",
+      "Image_URL": "images/vocab/2026-11-04/audition.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "deliver",
+      "POS": "v.",
+      "Meaning": "投遞；運送",
+      "Example": "The delivery man stopped to check the fragile antique box to make sure it was still in good condition.",
+      "Image_URL": "images/vocab/2026-11-04/deliver.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "make a video",
+      "POS": "phr.",
+      "Meaning": "製作/拍攝影片",
+      "Example": "The software engineer decided to make a video to teach people how to protect their passwords from cyber attacks.",
+      "Image_URL": "images/vocab/2026-11-11/make_a_video.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "fight for one's rights",
+      "POS": "phr.",
+      "Meaning": "為……爭取權益",
+      "Example": "The brave lawyer went to court to fight for the rights of the factory workers after the terrible accident.",
+      "Image_URL": "images/vocab/2026-11-11/fight_for_one_s_rights.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "get butterflies in one's stomach",
+      "POS": "phr.",
+      "Meaning": "感到心神不寧；非常緊張",
+      "Example": "Although the young pilot was well-trained, he still got butterflies in his stomach before flying through the heavy storm.",
+      "Image_URL": "images/vocab/2026-11-11/get_butterflies_in_one_s_stomach.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "(a) good idea",
+      "POS": "phr.",
+      "Meaning": "好主意；好辦法",
+      "Example": "It sounds like a good idea to order two cups of hot chocolate in Montreal during freezing cold winter.",
+      "Image_URL": "images/vocab/2026-11-11/a_good_idea.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "stranger",
+      "POS": "n.",
+      "Meaning": "陌生人",
+      "Example": "The polite receptionist told the new employee not to open the security door for any strangers.",
+      "Image_URL": "images/vocab/2026-11-11/stranger.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "comment",
+      "POS": "n.",
+      "Meaning": "意見；評論",
+      "Example": "After the software engineer posted the new app online, he received many useful comments from users.",
+      "Image_URL": "images/vocab/2026-11-11/comment.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "conversation",
+      "POS": "n.",
+      "Meaning": "交談",
+      "Example": "Having a short conversation with local people is a great way to learn about the culture during a vacation.",
+      "Image_URL": "images/vocab/2026-11-11/conversation.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "common",
+      "POS": "adj.",
+      "Meaning": "常見的",
+      "Example": "It is very common for pilots to check the weather screen carefully before flying into heavy rain.",
+      "Image_URL": "images/vocab/2026-11-11/common.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "compare",
+      "POS": "v.",
+      "Meaning": "比較",
+      "Example": "If you always compare your life with others on social media, you will feel anxious and unhappy.",
+      "Image_URL": "images/vocab/2026-11-11/compare.webp"
+    },
+    {
+      "Date": "2026-11-24",
+      "Word": "whole",
+      "POS": "adj.",
+      "Meaning": "全部的；整體的",
+      "Example": "The tired firefighter slept for the whole afternoon after saving the family from the burning house.",
+      "Image_URL": "images/vocab/2026-11-11/whole.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[聽力 A 1/2] What time will Claire's cousin pick them up to go to the audition?",
+      "Option_A": "At 3:15 p.m.",
+      "Option_B": "At 3:30 p.m.",
+      "Option_C": "At 3:45 p.m.",
+      "Option_D": "At 4:15 p.m.",
+      "Answer": "C",
+      "Explanation": "對話中 Claire 說 My cousin promised to drive us at a quarter to four.「差十五分到四點」即 3:45 p.m.。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[聽力 A 2/2] Which task has Claire ALREADY finished?",
+      "Option_A": "Feeding the dog.",
+      "Option_B": "Wiping the kitchen table.",
+      "Option_C": "Hanging up the wet towels.",
+      "Option_D": "Packing her audition script into her backpack.",
+      "Answer": "A",
+      "Explanation": "Leo 問是否已經餵狗（Did you already feed the dog?），Claire 回答 Yes, I remember feeding him right after lunch.（記得已經餵過了）。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[聽力 B 1/2] According to the speaker, what should beginners do when they see an unkind comment that just tries to hurt their feelings?",
+      "Option_A": "Compare themselves with famous creators right away.",
+      "Option_B": "Stay calm and avoid arguing back online.",
+      "Option_C": "Stop making videos and delete their channel.",
+      "Option_D": "Ask their relatives to reply to every stranger.",
+      "Answer": "B",
+      "Explanation": "講者提醒遇到純粹惡意傷人的留言時，要記得 cool down and take it easy instead of fighting back online（冷靜放鬆、不要在網路上反擊）。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[聽力 B 2/2] What is the main purpose of this talk?",
+      "Option_A": "To warn students never to share videos on the internet.",
+      "Option_B": "To teach viewers how to buy expensive cameras and lighting.",
+      "Option_C": "To encourage new creators not to give up when facing negative comments.",
+      "Option_D": "To explain why famous actors rarely practice before an audition.",
+      "Answer": "C",
+      "Explanation": "短文主要鼓勵剛起步拍影片的創作者，遇到負評與取笑時要區分建設性建議與惡意留言，相信自己的想法且不要輕易放棄。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 1/20] Every evening after dinner, my brother and I take turns helping Mom ______ in the kitchen.",
+      "Option_A": "sleepwalk",
+      "Option_B": "do the dishes",
+      "Option_C": "make a video",
+      "Option_D": "get butterflies in our stomachs",
+      "Answer": "B",
+      "Explanation": "do the dishes 意為「洗碗盤」，符合晚飯後在廚房幫忙的情境。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 2/20] The library closes at ______ past five, so please return your books before 5:30 p.m.",
+      "Option_A": "quarter",
+      "Option_B": "whole",
+      "Option_C": "half",
+      "Option_D": "common",
+      "Answer": "C",
+      "Explanation": "half past five 表示五點半（5:30）。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 3/20] Please ______ to lock the front door before you go to bed tonight.",
+      "Option_A": "compare",
+      "Option_B": "remember",
+      "Option_C": "deliver",
+      "Option_D": "sweep",
+      "Answer": "B",
+      "Explanation": "remember to V 意為「記得去做某事（鎖門）」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 4/20] Look at the clock—it is already twenty ______ eight! If we don't hurry, we will miss the school bus.",
+      "Option_A": "past",
+      "Option_B": "whole",
+      "Option_C": "common",
+      "Option_D": "however",
+      "Answer": "A",
+      "Explanation": "twenty past eight 表示八點二十分（過八點二十分）。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 5/20] Before you ______ the house on a rainy morning, make sure you have an umbrella in your bag.",
+      "Option_A": "feed",
+      "Option_B": "fix",
+      "Option_C": "hang",
+      "Option_D": "leave",
+      "Answer": "D",
+      "Explanation": "leave 意為「離開；出發」，符合出門前帶傘的情境。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 6/20] Whenever you feel nervous before a big test, just ______ and take a few deep breaths.",
+      "Option_A": "take it easy",
+      "Option_B": "make fun of",
+      "Option_C": "give up",
+      "Option_D": "fight for your rights",
+      "Answer": "A",
+      "Explanation": "take it easy 意為「放輕鬆；別緊張」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 7/20] Leo spilled orange juice on the kitchen tiles, so he grabbed a ______ right away to clean it up.",
+      "Option_A": "drawer",
+      "Option_B": "mop",
+      "Option_C": "relative",
+      "Option_D": "boss",
+      "Answer": "B",
+      "Explanation": "mop 意為「拖把」，用來清理灑在磁磚上的果汁。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 8/20] My dad used a screwdriver to ______ the loose leg on our wooden dining chair.",
+      "Option_A": "fix",
+      "Option_B": "wipe",
+      "Option_C": "sweep",
+      "Option_D": "feed",
+      "Answer": "A",
+      "Explanation": "fix 意為「修理」，用螺絲起子修理鬆動的椅腳。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 9/20] Keep your spare scissors and extra batteries neatly inside the top desk ______.",
+      "Option_A": "floor",
+      "Option_B": "audition",
+      "Option_C": "drawer",
+      "Option_D": "factory",
+      "Answer": "C",
+      "Explanation": "drawer 意為「抽屜」，書桌最上層抽屜。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 10/20] Please ______ your wet raincoat on the wooden hook near the front door instead of throwing it on the sofa.",
+      "Option_A": "hang",
+      "Option_B": "deliver",
+      "Option_C": "act",
+      "Option_D": "compare",
+      "Answer": "A",
+      "Explanation": "hang 意為「吊；掛」，把濕雨衣掛在門旁掛鉤上。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 11/20] The brave firefighter ran into the burning house to ______ the scared puppy ______ the thick smoke.",
+      "Option_A": "make fun ... of",
+      "Option_B": "save ... from",
+      "Option_C": "give ... up",
+      "Option_D": "cool ... down",
+      "Answer": "B",
+      "Explanation": "save ... from ... 意為「將……從（危險中）拯救出來」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 12/20] Kevin studied hard for the science quiz; ______, he still forgot two key formulas during the test.",
+      "Option_A": "quarter",
+      "Option_B": "common",
+      "Option_C": "however",
+      "Option_D": "whole",
+      "Answer": "C",
+      "Explanation": "however 為轉折副詞「然而」，呼應前句用功準備與後句仍忘記公式的對比。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 13/20] The hardworking ______ traveled across three cities to show his company's new digital products to store managers.",
+      "Option_A": "salesman",
+      "Option_B": "soldier",
+      "Option_C": "fisherman",
+      "Option_D": "farmer",
+      "Answer": "A",
+      "Explanation": "salesman 意為「業務員」，符合向門市經理展示產品的情境。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 14/20] During the winter vacation, our family flew to Canada to visit some distant ______ in Montreal.",
+      "Option_A": "strangers",
+      "Option_B": "bosses",
+      "Option_C": "comments",
+      "Option_D": "relatives",
+      "Answer": "D",
+      "Explanation": "relatives 意為「親戚」，拜訪住在外國的遠房親戚。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 15/20] The young violinist practiced six hours a day to prepare for her big music ______.",
+      "Option_A": "factory",
+      "Option_B": "audition",
+      "Option_C": "drawer",
+      "Option_D": "floor",
+      "Answer": "B",
+      "Explanation": "audition 意為「試鏡；試音」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 16/20] Even though the programming course was very challenging, Zac refused to ______ and kept practicing every night.",
+      "Option_A": "give up",
+      "Option_B": "cool down",
+      "Option_C": "do the dishes",
+      "Option_D": "sleepwalk",
+      "Answer": "A",
+      "Explanation": "give up 意為「放棄」，雖然課程困難仍拒絕放棄。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 17/20] It is not kind to ______ your classmates when they make a mistake while speaking English on stage.",
+      "Option_A": "fight for",
+      "Option_B": "save from",
+      "Option_C": "make fun of",
+      "Option_D": "take it easy",
+      "Answer": "C",
+      "Explanation": "make fun of 意為「取笑；嘲弄」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 18/20] After working at the car ______ for five years, Mr. Lin decided to start a new career as a baker.",
+      "Option_A": "conversation",
+      "Option_B": "factory",
+      "Option_C": "audition",
+      "Option_D": "comment",
+      "Answer": "B",
+      "Explanation": "factory 意為「工廠」，在汽車工廠工作五年。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 19/20] Although she had practiced her speech ten times, Amy still ______ right before stepping onto the stage.",
+      "Option_A": "got butterflies in her stomach",
+      "Option_B": "made a video",
+      "Option_C": "did the dishes",
+      "Option_D": "cooled down",
+      "Answer": "A",
+      "Explanation": "get butterflies in one's stomach 意為「感到心神不寧；非常緊張」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[單字 20/20] If you always ______ your everyday life with edited photos online, you may easily feel anxious.",
+      "Option_A": "deliver",
+      "Option_B": "believe",
+      "Option_C": "compare",
+      "Option_D": "wipe",
+      "Answer": "C",
+      "Explanation": "compare A with B 意為「拿 A 與 B 比較」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[文法 1/10] Our English review class begins at 8:30 a.m. Which way is the CORRECT English expression for 8:30?",
+      "Option_A": "half to nine",
+      "Option_B": "a quarter past eight",
+      "Option_C": "half past eight",
+      "Option_D": "thirty to eight",
+      "Answer": "C",
+      "Explanation": "英文時間表示 30 分只用 half past + 點鐘（half past eight），絕無 half to 的用法；a quarter past eight 為 8:15。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[文法 2/10] Dad's train arrives at 2:45 p.m. That means the train will arrive at ______ in the afternoon.",
+      "Option_A": "a quarter to three",
+      "Option_B": "a quarter past two",
+      "Option_C": "a quarter to two",
+      "Option_D": "half past two",
+      "Answer": "A",
+      "Explanation": "2:45 超過半小時，用逆讀法「差 15 分鐘到 3 點」即為 a quarter to three。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[文法 3/10] Lucas drank warm milk and listened to soft music before bed; ______, he still had terrible nightmares.",
+      "Option_A": "therefore",
+      "Option_B": "however",
+      "Option_C": "because",
+      "Option_D": "so",
+      "Answer": "B",
+      "Explanation": "前後句語意呈現轉折對比（「喝溫牛奶」vs.「仍做惡夢」），且前有分號、後接逗號，應選轉折副詞 however。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[文法 4/10] While Lucas ______ around the living room with his eyes half-closed at 2:45 a.m., the security camera recorded everything.",
+      "Option_A": "walked",
+      "Option_B": "walks",
+      "Option_C": "is walking",
+      "Option_D": "was walking",
+      "Answer": "D",
+      "Explanation": "While 引導過去特定時間點正在持續進行的動作（凌晨 2:45 正在夢遊走動），應使用過去進行式 was walking。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[文法 5/10] When the weather screen showed a typhoon warning, the experienced fisherman decided ______ into the dark sea.",
+      "Option_A": "to not sail",
+      "Option_B": "not sailing",
+      "Option_C": "not to sail",
+      "Option_D": "don't sail",
+      "Answer": "C",
+      "Explanation": "decide 後須接不定詞 to V，其否定形式必須將 not 放在 to 的正前方，即 decided not to sail。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[文法 6/10] The truck driver had driven for four hours straight, so he stopped ______ a cup of hot coffee at a roadside stand.",
+      "Option_A": "to buy",
+      "Option_B": "buying",
+      "Option_C": "bought",
+      "Option_D": "buys",
+      "Answer": "A",
+      "Explanation": "stop to V 表示「停下原本正在做的事（開車），轉而去做另一件事（買杯咖啡）」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[文法 7/10] Don't forget ______ the top desk drawer before you leave the office tonight; important contracts are inside.",
+      "Option_A": "locking",
+      "Option_B": "lock",
+      "Option_C": "to lock",
+      "Option_D": "locked",
+      "Answer": "C",
+      "Explanation": "forget to V 表示「忘記尚未做的事情（等下離開前要去把抽屜上鎖）」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[文法 8/10] Wait—I clearly remember ______ the door key on the counter this morning! Why isn't it there now?",
+      "Option_A": "to put",
+      "Option_B": "putting",
+      "Option_C": "putted",
+      "Option_D": "puts",
+      "Answer": "B",
+      "Explanation": "remember V-ing 表示「記得曾經做過某件事（今天早上確實放過鑰匙）」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[文法 9/10] Although Zac got butterflies in his stomach during his first stage show, he never gave up ______ his dream.",
+      "Option_A": "follow",
+      "Option_B": "to follow",
+      "Option_C": "following",
+      "Option_D": "followed",
+      "Answer": "C",
+      "Explanation": "give up 為介系詞片語動詞，後方若接動詞必須使用動名詞（V-ing），故選 following。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[文法 10/10] Besides ______ her relatives in Montreal during vacation, Mia spent three whole afternoons practicing for her violin audition.",
+      "Option_A": "visit",
+      "Option_B": "to visit",
+      "Option_C": "visited",
+      "Option_D": "visiting",
+      "Answer": "D",
+      "Explanation": "besides 作「除了……之外（還……）」時為介系詞，後方的動詞須用動名詞 V-ing，故選 visiting。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[克漏字 (1)] 請依據上方【克漏字測驗文章】第 (1) 格前後文意，選出最適合的選項：",
+      "Option_A": "stranger",
+      "Option_B": "boss",
+      "Option_C": "soldier",
+      "Option_D": "fisherman",
+      "Answer": "B",
+      "Explanation": "前句提及 Emma 在社區烘焙坊打工，後面說對整潔要求嚴格且有名字（Mrs. Lin），故為她的「老闆（boss）」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[克漏字 (2)] 請依據上方【克漏字測驗文章】第 (2) 格前後文意，選出最適合的選項：",
+      "Option_A": "quarter",
+      "Option_B": "whole",
+      "Option_C": "common",
+      "Option_D": "past",
+      "Answer": "A",
+      "Explanation": "搭配後方 past four，構成時間表達 a quarter past four（四點十五分）。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[克漏字 (3)] 請依據上方【克漏字測驗文章】第 (3) 格前後文意，選出最適合的選項：",
+      "Option_A": "feed",
+      "Option_B": "hang",
+      "Option_C": "wipe",
+      "Option_D": "deliver",
+      "Answer": "C",
+      "Explanation": "wipe ... off ... 意為「把（麵粉）從木頭櫃台上擦拭乾淨」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[克漏字 (4)] 請依據上方【克漏字測驗文章】第 (4) 格前後文意，選出最適合的選項：",
+      "Option_A": "however",
+      "Option_B": "therefore",
+      "Option_C": "because",
+      "Option_D": "before",
+      "Answer": "A",
+      "Explanation": "前面說清單漫長又累人，後面說從未想過辭職，前後轉折且帶分號逗號，故選 however（然而）。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[克漏字 (5)] 請依據上方【克漏字測驗文章】第 (5) 格前後文意，選出最適合的選項：",
+      "Option_A": "audition",
+      "Option_B": "career",
+      "Option_C": "factory",
+      "Option_D": "truck driver",
+      "Answer": "D",
+      "Explanation": "後方關係子句提到 who had been driving across the mountains all day，只有職業人物 truck driver（卡車司機）符合邏輯。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[閱讀 A：人物對話] What time did Leo wake up from his terrible dream?",
+      "Option_A": "At 10:10 p.m.",
+      "Option_B": "At 2:45 a.m.",
+      "Option_C": "At 3:15 a.m.",
+      "Option_D": "At 4:00 p.m.",
+      "Answer": "B",
+      "Explanation": "對話中 Leo 提到「woke up sweating at a quarter to three」，a quarter to three 即差 15 分到凌晨 3 點（2:45 a.m.）。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[閱讀 A：人物對話] Why did Leo's mom find his sneakers in the kitchen?",
+      "Option_A": "Leo hid them inside a kitchen drawer.",
+      "Option_B": "Leo moved them there while sleepwalking.",
+      "Option_C": "Mia brought them over before leaving for school.",
+      "Option_D": "Their dog carried the shoes into the kitchen.",
+      "Answer": "B",
+      "Explanation": "Mia 問「did you sleepwalk again?」，Leo 回答 Yes，表示他是夢遊時把球鞋排進廚房的。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[閱讀 A：人物對話] How does Mia try to help Leo before his afternoon audition?",
+      "Option_A": "She makes fun of his nervousness to make him laugh.",
+      "Option_B": "She tells him to give up the violin audition today.",
+      "Option_C": "She encourages him to cool down and reminds him to eat lunch.",
+      "Option_D": "She offers to make a video of his sleepwalking at night.",
+      "Answer": "C",
+      "Explanation": "Mia 說「Take it easy... drink some warm tea to cool down first」並提醒他出門前別忘記吃午餐。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[閱讀 B：報導型文章] Where did Daniel Wu see thick smoke two weeks ago?",
+      "Option_A": "Inside a crowded music hall",
+      "Option_B": "At an old textile factory",
+      "Option_C": "On a fishing boat near the coast",
+      "Option_D": "In his own kitchen",
+      "Answer": "B",
+      "Explanation": "報導第二段指出「while driving past an old textile factory, Daniel noticed thick smoke coming out of a back window」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[閱讀 B：報導型文章] Besides rescuing two workers, what else did Daniel do for the community?",
+      "Option_A": "He spoke up for better safety lights on a dark mountain road.",
+      "Option_B": "He started a new career as a television reporter.",
+      "Option_C": "He opened a bakery for local farmers and fishermen.",
+      "Option_D": "He asked strangers to stop posting comments online.",
+      "Answer": "A",
+      "Explanation": "報導第三段說明他參加鎮民會議，為昏暗山路爭取更好的安全照明燈（fight for better safety lights along the dark mountain road）。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[閱讀 B：報導型文章] Which statement about Daniel Wu is TRUE according to the report?",
+      "Option_A": "He refused to deliver parcels when it rained.",
+      "Option_B": "He rescued two workers only after the firefighters asked him to.",
+      "Option_C": "He believed workers and drivers should have a safe working environment.",
+      "Option_D": "He was unhappy about receiving an award from the town.",
+      "Answer": "C",
+      "Explanation": "報導引用 Daniel 的話：「I just believe everyone deserves a safe place to work.」。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[閱讀 C：公告型文章] How long does the Saturday workshop last?",
+      "Option_A": "Two hours and fifteen minutes",
+      "Option_B": "Three hours and fifteen minutes",
+      "Option_C": "Three hours and a half",
+      "Option_D": "Four hours",
+      "Answer": "B",
+      "Explanation": "活動時間為 a quarter past one（1:15 p.m.）到 half past four（4:30 p.m.），總共 3 小時 15 分鐘（three hours and fifteen minutes）。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[閱讀 C：公告型文章] Which of the following will students learn to do at the workshop?",
+      "Option_A": "Repair broken furniture in a factory",
+      "Option_B": "Feed pets and do the dishes at home",
+      "Option_C": "Shoot a short video and handle comments from strangers safely",
+      "Option_D": "Compare ticket prices for international flights",
+      "Answer": "C",
+      "Explanation": "活動列表列出製作短片（make a short video）、對鏡頭友好交談與安全回覆陌生人留言。"
+    },
+    {
+      "Date": "2026-11-24",
+      "Type": "MC",
+      "Question": "[閱讀 C：公告型文章] What are students asked to do before they leave Room 302?",
+      "Option_A": "Sweep the floor",
+      "Option_B": "Hang their coats outside",
+      "Option_C": "Leave their notebooks in the drawer",
+      "Option_D": "Mop the hallway stairs",
+      "Answer": "A",
+      "Explanation": "公告最後一句寫明「we kindly ask all students to help sweep the floor before leaving the room」。"
+    }
+  ]
+}

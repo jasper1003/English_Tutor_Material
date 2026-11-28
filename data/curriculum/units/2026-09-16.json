@@ -1,0 +1,136 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "14dd720725",
+  "date": "2026-09-16",
+  "lesson": {
+    "Date": "2026-09-16",
+    "Title": "澳洲俚語與不定代名詞",
+    "Grammar_Focus": "Another（三者以上未指定另一個 + 單數）vs The other（兩者中另一個 / 其餘全部），結合實用片語（in fact / just like / come right up / be mad at）",
+    "Reading_Title": "Funny Words During Our Week in Sydney",
+    "Reading_Passage": "Last winter, our school sent two groups of eighth graders to Australia for a cultural exchange week. One group stayed with host families near Sydney Harbor, and the other stayed in a quiet town by the beach. Before leaving Taiwan, Kevin thought Australian English would sound just like American English. In fact, local slang surprised him on his very first morning!<br><br>While walking into a sunny corner bakery, Kevin heard a friendly clerk greet him with \"G'day, mate!\" Because it sounded like \"go die\" at first, Kevin almost wondered why the clerk would be mad at him! Thankfully, his host brother laughed and explained that it simply meant \"Good day!\" Later, Kevin ordered a cup of hot chocolate and liked it so much that he politely asked for another cup.<br><br>Inside the bakery, the smiling clerk replied, \"Your hot chokkie and bikkies are coming right up!\" Kevin learned that \"bikkies\" meant cookies. After visiting three famous parks in Sydney—one on Monday, another on Wednesday, and the third on Friday—Kevin realized that listening carefully helps travelers enjoy new cultures without misunderstanding.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-09-16",
+      "Word": "another",
+      "POS": "pron./adj.",
+      "Meaning": "另一個（三者以上未指定；再一個）",
+      "Example": "That mango smoothie was so refreshing that Mark ordered another glass right away.",
+      "Image_URL": "images/vocab/2026-09-16/another.webp"
+    },
+    {
+      "Date": "2026-09-16",
+      "Word": "the other",
+      "POS": "pron./adj.",
+      "Meaning": "另一個（兩者中剩下的那一個）",
+      "Example": "I found my left running shoe under the bed, yet I am still looking for the other one.",
+      "Image_URL": "images/vocab/2026-09-16/the_other.webp"
+    },
+    {
+      "Date": "2026-09-16",
+      "Word": "in fact",
+      "POS": "phr.",
+      "Meaning": "事實上；其實",
+      "Example": "The history quiz looked long at first; in fact, all five questions were easy to answer.",
+      "Image_URL": "images/vocab/2026-09-16/in_fact.webp"
+    },
+    {
+      "Date": "2026-09-16",
+      "Word": "just like",
+      "POS": "phr.",
+      "Meaning": "就像……一樣",
+      "Example": "This fresh pineapple cake tastes just like the ones my grandmother bakes at home.",
+      "Image_URL": "images/vocab/2026-09-16/just_like.webp"
+    },
+    {
+      "Date": "2026-09-16",
+      "Word": "come right up",
+      "POS": "phr.",
+      "Meaning": "馬上就來；準備好了",
+      "Example": "The friendly noodle chef smiled and called out that our beef bowls were coming right up.",
+      "Image_URL": "images/vocab/2026-09-16/come_right_up.webp"
+    },
+    {
+      "Date": "2026-09-16",
+      "Word": "be mad at",
+      "POS": "phr.",
+      "Meaning": "對……生氣",
+      "Example": "Don't be mad at Tom for forgetting the soccer ball; he really tried his best today.",
+      "Image_URL": "images/vocab/2026-09-16/be_mad_at.webp"
+    },
+    {
+      "Date": "2026-09-16",
+      "Word": "clerk",
+      "POS": "n.",
+      "Meaning": "店員；辦事員",
+      "Example": "The polite bookstore clerk wrapped our gift in shiny blue paper with a ribbon.",
+      "Image_URL": "images/vocab/2026-09-16/clerk.webp"
+    },
+    {
+      "Date": "2026-09-16",
+      "Word": "Australian",
+      "POS": "adj./n.",
+      "Meaning": "澳洲的；澳洲人",
+      "Example": "Our Australian coach taught us fun rugby passing games during PE class.",
+      "Image_URL": "images/vocab/2026-09-16/australian.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-09-16",
+      "Type": "MC",
+      "Question": "Why was Kevin confused when the bakery clerk greeted him with \"G'day, mate!\"?",
+      "Option_A": "He thought the clerk was asking him to leave the bakery.",
+      "Option_B": "At first, it sounded like \"go die\" and made him wonder if the clerk was mad at him.",
+      "Option_C": "He wanted cold lemonade instead of hot chocolate.",
+      "Option_D": "He thought \"mate\" meant a pair of warm winter gloves.",
+      "Answer": "B",
+      "Explanation": "第二段第二句明確指出：Because it sounded like \"go die\" at first, Kevin almost wondered why the clerk would be mad at him!"
+    },
+    {
+      "Date": "2026-09-16",
+      "Type": "MC",
+      "Question": "What does the Australian slang word \"bikkies\" mean in the passage?",
+      "Option_A": "Bicycles.",
+      "Option_B": "Hot chocolate.",
+      "Option_C": "Cookies.",
+      "Option_D": "Postcards.",
+      "Answer": "C",
+      "Explanation": "第三段第二句清楚說明：Kevin learned that \"bikkies\" meant cookies。"
+    },
+    {
+      "Date": "2026-09-16",
+      "Type": "TFNG",
+      "Question": "Before leaving Taiwan, Kevin already knew many Australian slang words.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第一段最後兩句指出 Kevin 原以為澳洲英語跟美式英語一樣，事實上第一天早上就被當地俚語嚇一跳（local slang surprised him），與題幹相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-09-16",
+      "Type": "TFNG",
+      "Question": "Kevin ordered a second cup of hot chocolate because he enjoyed the first one.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段最後一句寫道：Kevin ordered a cup of hot chocolate and liked it so much that he politely asked for another cup，與題幹意思一致，故為 TRUE。"
+    },
+    {
+      "Date": "2026-09-16",
+      "Type": "TFNG",
+      "Question": "Kevin's host brother works part-time at the corner bakery every Saturday.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "第二段只提到寄宿家庭的哥哥笑著向他解釋「G'day」的意思，並未說明哥哥在麵包店打工，故為 NOT GIVEN。"
+    }
+  ]
+}

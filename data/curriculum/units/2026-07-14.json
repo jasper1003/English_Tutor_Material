@@ -1,0 +1,184 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "8b31395064",
+  "date": "2026-07-14",
+  "lesson": {
+    "Date": "2026-07-14",
+    "Title": "數位時代與網路安全",
+    "Grammar_Focus": "未來簡單式 will（預測或臨時決定）與 be going to（既定計畫或眼前跡象）的區分，以及字尾 -ment 名詞化（require → requirement）",
+    "Reading_Title": "Smart Habits for a Safer Digital Campus",
+    "Reading_Passage": "Almost every junior high student uses a smartphone app to chat with friends, post fun photos, and learn new skills online. While our digital tools bring great convenience to everyday life, staying safe in cyber space requires smart and careful daily habits. Last semester, several students at Maple Junior High received strange pop-up messages on their phone screens right after they clicked free game links from unknown websites.<br><br>To improve campus network security, the school computer club is going to host an interactive workshop next Friday afternoon. The club members already prepared a clear plan to teach younger students how hackers steal personal data from public Wi-Fi networks. During the session, students will learn why they should turn off automatic sharing settings and avoid unknown downloads. If anyone notices a suspicious warning on a screen, a computer teacher will help check the device right away.<br><br>Next month, the school library platform will also update its online login rules. Every user will need a stronger password with numbers and symbols before they log in to borrow e-books. As the club leader explained, protecting private data is not hard once students build careful habits every day.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-07-14",
+      "Word": "require",
+      "POS": "v.",
+      "Meaning": "需要；需求",
+      "Example": "Most library computers require a student ID number before you can use them.",
+      "Image_URL": "images/vocab/2026-07-14/require.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "download",
+      "POS": "v.",
+      "Meaning": "下載",
+      "Example": "Only download study apps from the official store to keep your tablet safe.",
+      "Image_URL": "images/vocab/2026-07-14/download.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "post",
+      "POS": "v.",
+      "Meaning": "貼文；發布",
+      "Example": "Wait until you get home before you post vacation photos on social media.",
+      "Image_URL": "images/vocab/2026-07-14/post.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "steal",
+      "POS": "v.",
+      "Meaning": "偷竊",
+      "Example": "Fake shopping links try to steal credit card numbers from careless buyers.",
+      "Image_URL": "images/vocab/2026-07-14/steal.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "screen",
+      "POS": "n.",
+      "Meaning": "螢幕",
+      "Example": "Remember to rest your eyes after looking at a bright computer screen for an hour.",
+      "Image_URL": "images/vocab/2026-07-14/screen.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "message",
+      "POS": "n.",
+      "Meaning": "訊息",
+      "Example": "My mom sent me a voice message to remind me to bring an umbrella.",
+      "Image_URL": "images/vocab/2026-07-14/message.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "app",
+      "POS": "n.",
+      "Meaning": "應用程式",
+      "Example": "Eric uses a flashcard app on the train to review five new words every morning.",
+      "Image_URL": "images/vocab/2026-07-14/app.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "security",
+      "POS": "n.",
+      "Meaning": "安全；保安",
+      "Example": "Changing your password twice a year is a good habit for account security.",
+      "Image_URL": "images/vocab/2026-07-14/security.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "digital",
+      "POS": "adj.",
+      "Meaning": "數位的",
+      "Example": "Our teacher shared a digital notebook so everyone could read the notes at home.",
+      "Image_URL": "images/vocab/2026-07-14/digital.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "cyber",
+      "POS": "adj.",
+      "Meaning": "網路的；虛擬空間的",
+      "Example": "Police officers taught our class how to report cyber bullying immediately.",
+      "Image_URL": "images/vocab/2026-07-14/cyber.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "online",
+      "POS": "adv.",
+      "Meaning": "在線上；網路上",
+      "Example": "Kevin meets his English tutor online every Wednesday evening from his bedroom.",
+      "Image_URL": "images/vocab/2026-07-14/online.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "data",
+      "POS": "n.",
+      "Meaning": "資料；數據",
+      "Example": "Back up your school project data on a USB drive before the presentation.",
+      "Image_URL": "images/vocab/2026-07-14/data.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "turn off",
+      "POS": "phr.",
+      "Meaning": "關掉（電源或設定）",
+      "Example": "Please turn off your Bluetooth and Wi-Fi when you are not using them.",
+      "Image_URL": "images/vocab/2026-07-14/turn_off.webp"
+    },
+    {
+      "Date": "2026-07-14",
+      "Word": "log in",
+      "POS": "phr.",
+      "Meaning": "登入（帳號系統）",
+      "Example": "Students must log in with their school email to check their homework grades.",
+      "Image_URL": "images/vocab/2026-07-14/log_in.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-07-14",
+      "Type": "MC",
+      "Question": "Why did some students at Maple Junior High receive strange pop-up messages last semester?",
+      "Option_A": "They joined the school computer club workshop.",
+      "Option_B": "They clicked on free game links.",
+      "Option_C": "They borrowed e-books from the school library.",
+      "Option_D": "They turned off automatic sharing settings.",
+      "Answer": "B",
+      "Explanation": "第一段末句指出：several students... received strange pop-up messages on their phone screens after they clicked free game links。"
+    },
+    {
+      "Date": "2026-07-14",
+      "Type": "MC",
+      "Question": "What change will the school library platform make next month?",
+      "Option_A": "It will stop lending paper books to students.",
+      "Option_B": "It will ask students to bring their own Wi-Fi routers.",
+      "Option_C": "It will require a stronger password when users log in.",
+      "Option_D": "It will delete all student accounts from last semester.",
+      "Answer": "C",
+      "Explanation": "第三段第一、二句說明圖書館平台下個月將更新登入規定：Every user will need a stronger password before they log in to borrow e-books。"
+    },
+    {
+      "Date": "2026-07-14",
+      "Type": "TFNG",
+      "Question": "The school computer club already has a plan for next Friday's workshop.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段第二句明確提到 The club members already prepared a clear plan to teach students，與題幹意思完全一致，故為 TRUE。"
+    },
+    {
+      "Date": "2026-07-14",
+      "Type": "TFNG",
+      "Question": "The computer club advises students to keep automatic sharing turned on while using public Wi-Fi.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第二段第三句指出 students will learn why they should turn off automatic sharing settings，與題幹「keep... turned on」相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-07-14",
+      "Type": "TFNG",
+      "Question": "Every student at Maple Junior High must pay a fee to join the workshop.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章並未提及參加下週五工作坊是否需要付費，屬於未提及資訊，故為 NOT GIVEN。"
+    }
+  ]
+}

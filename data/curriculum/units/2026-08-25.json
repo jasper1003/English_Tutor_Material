@@ -1,0 +1,184 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "b6ab43e809",
+  "date": "2026-08-25",
+  "lesson": {
+    "Date": "2026-08-25",
+    "Title": "國家與文化北美篇",
+    "Grammar_Focus": "同級比較句型（A + be/V + as + 原級 + as + B / not as + 原級 + as），注意不可加 -er/more 且比較對象須對稱（that of）",
+    "Reading_Title": "From Cold Montreal to Busy American Cities",
+    "Reading_Passage": "North America is home to two huge countries: Canada and the United States. In Canada, Montreal is a lively historic city where residents speak both English and French. Winter in Montreal is often as cold as winter in Chicago, so people wear heavy coats when snow covers the streets. However, a small quiet county outside the city is not as crowded as downtown New York City.<br><br>Across the United States, fifty states work together under one national flag. Hundreds of years ago, brave leaders helped unite the early thirteen states into one strong country. George Washington led his people through hard times, and today Washington, D.C. stands as the nation's capital with grand museums. On the east coast, Boston is one of the oldest cities, though Boston is not as big as New York City.<br><br>Further west, Chicago shines with tall glass towers, while San Francisco welcomes visitors with its famous red Golden Gate Bridge and tech hubs. Down south, Los Angeles offers sunny beaches and movie studios. Even though every city feels unique, each one plays a part in making North America as energetic and powerful as ever.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-08-25",
+      "Word": "Canada",
+      "POS": "n.",
+      "Meaning": "加拿大",
+      "Example": "Red maple leaves turn bright gold and crimson across parks in Canada every autumn.",
+      "Image_URL": "images/vocab/2026-08-25/canada.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "Montreal",
+      "POS": "n.",
+      "Meaning": "蒙特婁",
+      "Example": "Street signs in Montreal are written in French, and bakeries smell like warm bread.",
+      "Image_URL": "images/vocab/2026-08-25/montreal.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "Washington, D.C.",
+      "POS": "n.",
+      "Meaning": "華盛頓特區",
+      "Example": "Pink cherry blossoms bloom around the grand museums of Washington, D.C. in spring.",
+      "Image_URL": "images/vocab/2026-08-25/washington_d_c.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "New York City",
+      "POS": "n.",
+      "Meaning": "紐約市",
+      "Example": "Yellow taxis and bright theater lights stay busy all night in New York City.",
+      "Image_URL": "images/vocab/2026-08-25/new_york_city.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "Los Angeles",
+      "POS": "n.",
+      "Meaning": "洛杉磯",
+      "Example": "Palm trees line the sunny sidewalks near beaches in Los Angeles.",
+      "Image_URL": "images/vocab/2026-08-25/los_angeles.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "Chicago",
+      "POS": "n.",
+      "Meaning": "芝加哥",
+      "Example": "Tourists enjoy boat rides between tall glass skyscrapers along the river in Chicago.",
+      "Image_URL": "images/vocab/2026-08-25/chicago.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "San Francisco",
+      "POS": "n.",
+      "Meaning": "舊金山",
+      "Example": "Morning fog often floats gently under the tall red bridge in San Francisco.",
+      "Image_URL": "images/vocab/2026-08-25/san_francisco.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "Boston",
+      "POS": "n.",
+      "Meaning": "波士頓",
+      "Example": "Students walk along historic red-brick paths between famous libraries in Boston.",
+      "Image_URL": "images/vocab/2026-08-25/boston.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "state",
+      "POS": "n.",
+      "Meaning": "州；國家",
+      "Example": "California is a sunny coastal state known for national parks and tech companies.",
+      "Image_URL": "images/vocab/2026-08-25/state.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "county",
+      "POS": "n.",
+      "Meaning": "郡；縣",
+      "Example": "Our quiet hometown county built three new public bicycle trails this year.",
+      "Image_URL": "images/vocab/2026-08-25/county.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "lead",
+      "POS": "v.",
+      "Meaning": "帶領；領導（過去式 led）",
+      "Example": "A calm team captain knows how to lead players when the game gets tough.",
+      "Image_URL": "images/vocab/2026-08-25/lead.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "unite",
+      "POS": "v.",
+      "Meaning": "團結；聯合",
+      "Example": "School music festivals always unite different grades for one joyful night.",
+      "Image_URL": "images/vocab/2026-08-25/unite.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "brave",
+      "POS": "adj.",
+      "Meaning": "勇敢的",
+      "Example": "It takes a brave student to raise their hand and try speaking first in class.",
+      "Image_URL": "images/vocab/2026-08-25/brave.webp"
+    },
+    {
+      "Date": "2026-08-25",
+      "Word": "powerful",
+      "POS": "adj.",
+      "Meaning": "強大的",
+      "Example": "A powerful ocean wave pushed the wooden fishing boat back toward the shore.",
+      "Image_URL": "images/vocab/2026-08-25/powerful.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-08-25",
+      "Type": "MC",
+      "Question": "According to the first paragraph, how does winter in Montreal compare with winter in Chicago?",
+      "Option_A": "Montreal's winter is much warmer than Chicago's.",
+      "Option_B": "Winter in Montreal is often as cold as winter in Chicago.",
+      "Option_C": "Chicago never gets any snow during winter.",
+      "Option_D": "Montreal is more crowded than downtown New York City.",
+      "Answer": "B",
+      "Explanation": "第一段第三句明確寫道：Winter in Montreal is often as cold as winter in Chicago。"
+    },
+    {
+      "Date": "2026-08-25",
+      "Type": "MC",
+      "Question": "Which city is famous for its red Golden Gate Bridge and tech hubs?",
+      "Option_A": "Boston.",
+      "Option_B": "Washington, D.C.",
+      "Option_C": "San Francisco.",
+      "Option_D": "Los Angeles.",
+      "Answer": "C",
+      "Explanation": "第三段第一句指出：while San Francisco welcomes visitors with its famous red Golden Gate Bridge and tech hubs。"
+    },
+    {
+      "Date": "2026-08-25",
+      "Type": "TFNG",
+      "Question": "Residents in Montreal speak both English and French.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第一段第二句提到 Montreal is a lively historic city where residents speak both English and French，與題幹相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-08-25",
+      "Type": "TFNG",
+      "Question": "Boston is larger in size than New York City.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第二段最後一句寫道：Boston is not as big as New York City，表示波士頓沒有紐約大，故題幹為 FALSE。"
+    },
+    {
+      "Date": "2026-08-25",
+      "Type": "TFNG",
+      "Question": "Los Angeles has more movie studios today than it did thirty years ago.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "第三段僅說洛杉磯有陽光沙灘和電影製片廠，並未將其數量與三十年前做比較，故為 NOT GIVEN。"
+    }
+  ]
+}

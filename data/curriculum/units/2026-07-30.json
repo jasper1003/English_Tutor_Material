@@ -1,0 +1,160 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "a0938a5f8e",
+  "date": "2026-07-30",
+  "lesson": {
+    "Date": "2026-07-30",
+    "Title": "比較級文法精講",
+    "Grammar_Focus": "形容詞比較級規則變化（-er / -r / 去y+ier / 重複字尾+er / more + 多音節）、不規則變化（better / worse / more / less）與程度修飾語（much / even / far / a lot + 比較級）",
+    "Reading_Title": "A Smarter Way to Review Vocabulary",
+    "Reading_Passage": "Last semester, Claire used to copy English words twenty times in a thick paper notebook before every weekly test. However, she soon noticed that memorizing lists silently at her desk made studying much harder and slower than she expected. After talking with her English tutor, she decided to test a new study routine that combines picture flashcards, short stories, and speaking aloud.<br><br>Within three weeks, the change in her scores was clear. Reviewing ten words with colorful photos was far easier and much more exciting than staring at plain black-and-white pages. Claire also learned that reading short stories in the evening was even better for her memory than studying late at night when she felt sleepy. When she practiced earlier in the afternoon, she made fewer mistakes and felt less worried before quizzes.<br><br>Of course, digital study tools also have clear limits. Spending too much time on social media apps can make focus much worse than using a simple paper book. Now, Claire keeps her phone on silent mode during study hours. Using a smart plan regularly has helped her become faster, calmer, and much more confident in English class.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-07-30",
+      "Word": "safe",
+      "POS": "adj.",
+      "Meaning": "安全的",
+      "Example": "Wearing a helmet makes riding a bicycle along the river path much safer.",
+      "Image_URL": "images/vocab/2026-07-30/safe.webp"
+    },
+    {
+      "Date": "2026-07-30",
+      "Word": "busy",
+      "POS": "adj.",
+      "Meaning": "忙碌的",
+      "Example": "Night markets are always busier on Saturday evenings than on Tuesday mornings.",
+      "Image_URL": "images/vocab/2026-07-30/busy.webp"
+    },
+    {
+      "Date": "2026-07-30",
+      "Word": "easy",
+      "POS": "adj.",
+      "Meaning": "容易的；簡單的",
+      "Example": "Learning new words with picture cards is much easier than memorizing a dry list.",
+      "Image_URL": "images/vocab/2026-07-30/easy.webp"
+    },
+    {
+      "Date": "2026-07-30",
+      "Word": "smart",
+      "POS": "adj.",
+      "Meaning": "聰明的；明智的",
+      "Example": "Taking short five-minute breaks is a smart way to keep your mind fresh.",
+      "Image_URL": "images/vocab/2026-07-30/smart.webp"
+    },
+    {
+      "Date": "2026-07-30",
+      "Word": "exciting",
+      "POS": "adj.",
+      "Meaning": "令人興奮的",
+      "Example": "The science fair this year is even more exciting than last year's event.",
+      "Image_URL": "images/vocab/2026-07-30/exciting.webp"
+    },
+    {
+      "Date": "2026-07-30",
+      "Word": "important",
+      "POS": "adj.",
+      "Meaning": "重要的",
+      "Example": "Getting enough sleep before a big exam is more important than staying up late.",
+      "Image_URL": "images/vocab/2026-07-30/important.webp"
+    },
+    {
+      "Date": "2026-07-30",
+      "Word": "better",
+      "POS": "adj./adv.",
+      "Meaning": "更好的（good/well 比較級）",
+      "Example": "Speaking English out loud helps your pronunciation get much better over time.",
+      "Image_URL": "images/vocab/2026-07-30/better.webp"
+    },
+    {
+      "Date": "2026-07-30",
+      "Word": "worse",
+      "POS": "adj./adv.",
+      "Meaning": "更糟的（bad/badly 比較級）",
+      "Example": "Skipping breakfast makes my focus much worse during the first two morning classes.",
+      "Image_URL": "images/vocab/2026-07-30/worse.webp"
+    },
+    {
+      "Date": "2026-07-30",
+      "Word": "less",
+      "POS": "adj./adv.",
+      "Meaning": "更少的（little 比較級）",
+      "Example": "Using a reusable bottle helps our class produce less plastic waste every week.",
+      "Image_URL": "images/vocab/2026-07-30/less.webp"
+    },
+    {
+      "Date": "2026-07-30",
+      "Word": "unique",
+      "POS": "adj.",
+      "Meaning": "獨特的",
+      "Example": "Every student has a unique learning style that works best for their memory.",
+      "Image_URL": "images/vocab/2026-07-30/unique.webp"
+    },
+    {
+      "Date": "2026-07-30",
+      "Word": "regularly",
+      "POS": "adv.",
+      "Meaning": "規律地；定期地",
+      "Example": "If you review old notes regularly, you will forget far fewer words.",
+      "Image_URL": "images/vocab/2026-07-30/regularly.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-07-30",
+      "Type": "MC",
+      "Question": "Why did Claire change her vocabulary study method?",
+      "Option_A": "She lost her paper notebook at school.",
+      "Option_B": "Copying words twenty times made studying much harder and slower.",
+      "Option_C": "Her teacher forbade students from using paper books.",
+      "Option_D": "She wanted to spend more time on social media apps.",
+      "Answer": "B",
+      "Explanation": "第一段第二句明確指出：she soon noticed that memorizing lists silently made studying much harder and slower than she expected，因此決定改變方法。"
+    },
+    {
+      "Date": "2026-07-30",
+      "Type": "MC",
+      "Question": "What does Claire do now during study hours to protect her focus?",
+      "Option_A": "She studies late at night when everyone is asleep.",
+      "Option_B": "She only reads black-and-white dictionaries.",
+      "Option_C": "She keeps her phone on silent mode.",
+      "Option_D": "She copies each word twenty times before dinner.",
+      "Answer": "C",
+      "Explanation": "第三段第三句提到：Now, Claire keeps her phone on silent mode during study hours。"
+    },
+    {
+      "Date": "2026-07-30",
+      "Type": "TFNG",
+      "Question": "Claire found that studying with picture flashcards was easier than staring at plain black-and-white pages.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段第二句寫道：Reviewing ten words with photos was far easier and much more exciting than staring at black-and-white pages，與題幹完全相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-07-30",
+      "Type": "TFNG",
+      "Question": "Claire made more mistakes when she studied earlier in the afternoon.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第二段最後一句指出：When she practiced earlier in the afternoon, she made fewer mistakes and felt less worried，與題幹「more mistakes」相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-07-30",
+      "Type": "TFNG",
+      "Question": "Claire's older brother also uses the same flashcard routine for his college classes.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章完全沒有提到 Claire 的哥哥或大學課程，屬於未提及資訊，故為 NOT GIVEN。"
+    }
+  ]
+}

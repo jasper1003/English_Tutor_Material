@@ -1,0 +1,184 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "c1fa6ee4f8",
+  "date": "2026-08-11",
+  "lesson": {
+    "Date": "2026-08-11",
+    "Title": "國家與文化西歐與中歐篇",
+    "Grammar_Focus": "形容詞最高級三大規則（the + -est / the most + adj. / 不規則 best, worst, most）及西歐、中歐國家城市詞彙",
+    "Reading_Title": "Ten Days Across Western and Central Europe",
+    "Reading_Passage": "Last July, Uncle Sam took a ten-day train journey to explore Western and Central Europe. He started in London, the busy capital of the UK, which felt like the most crowded city on his entire trip. After crossing the sea to France, he visited Paris to see famous art museums and taste freshly baked bread every morning.<br><br>Next, the train carried him into The Netherlands, where riding a bicycle along Amsterdam's canals was the easiest way to get around. Later, he stopped in Belgium to buy boxes of the most delicious chocolate before heading east into Germany. In Berlin, he saw how modern startups work side by side with historic stone walls.<br><br>During the second half of the trip, Uncle Sam traveled south to Switzerland and Austria. The high snowy Alps and quiet mountain villages in Austria felt like the most peaceful places in Europe. Finally, he reached Prague in the Czech Republic, home to one of the oldest castles in Central Europe, and traveled through Poland on his way home. For Uncle Sam, taking trains was clearly the best way to discover how each European country keeps its own charm.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-08-11",
+      "Word": "The UK",
+      "POS": "n.",
+      "Meaning": "英國",
+      "Example": "Afternoon tea with scones and jam is a classic tradition in the UK.",
+      "Image_URL": "images/vocab/2026-08-11/the_uk.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "London",
+      "POS": "n.",
+      "Meaning": "倫敦",
+      "Example": "Red double-decker buses carry thousands of commuters across London every morning.",
+      "Image_URL": "images/vocab/2026-08-11/london.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "France",
+      "POS": "n.",
+      "Meaning": "法國",
+      "Example": "Every summer, cyclists race across sunny country roads in France.",
+      "Image_URL": "images/vocab/2026-08-11/france.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "Paris",
+      "POS": "n.",
+      "Meaning": "巴黎",
+      "Example": "Visitors stand beside the Seine River in Paris to watch the evening lights.",
+      "Image_URL": "images/vocab/2026-08-11/paris.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "Germany",
+      "POS": "n.",
+      "Meaning": "德國",
+      "Example": "Engineers in Germany build high-speed cars and quiet electric trains.",
+      "Image_URL": "images/vocab/2026-08-11/germany.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "The Netherlands",
+      "POS": "n.",
+      "Meaning": "荷蘭",
+      "Example": "Colorful tulip fields and historic windmills make the Netherlands unforgettable.",
+      "Image_URL": "images/vocab/2026-08-11/the_netherlands.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "Belgium",
+      "POS": "n.",
+      "Meaning": "比利時",
+      "Example": "Sweet waffles and rich dark chocolate are famous treats from Belgium.",
+      "Image_URL": "images/vocab/2026-08-11/belgium.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "Switzerland",
+      "POS": "n.",
+      "Meaning": "瑞士",
+      "Example": "Clean lakes and snow-covered mountain peaks attract hikers to Switzerland.",
+      "Image_URL": "images/vocab/2026-08-11/switzerland.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "Austria",
+      "POS": "n.",
+      "Meaning": "奧地利",
+      "Example": "Many classical musicians performed inside grand concert halls in Austria.",
+      "Image_URL": "images/vocab/2026-08-11/austria.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "Czech Republic",
+      "POS": "n.",
+      "Meaning": "捷克共和國",
+      "Example": "Stone bridges and red-roofed towers make the Czech Republic look like a storybook.",
+      "Image_URL": "images/vocab/2026-08-11/czech_republic.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "Poland",
+      "POS": "n.",
+      "Meaning": "波蘭",
+      "Example": "Old town squares in Poland are carefully rebuilt with bright pastel houses.",
+      "Image_URL": "images/vocab/2026-08-11/poland.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "explore",
+      "POS": "v.",
+      "Meaning": "探索；探險",
+      "Example": "Students used a map to explore every hidden trail in the forest park.",
+      "Image_URL": "images/vocab/2026-08-11/explore.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "crowded",
+      "POS": "adj.",
+      "Meaning": "擁擠的",
+      "Example": "The train station gets extremely crowded right before the long holiday begins.",
+      "Image_URL": "images/vocab/2026-08-11/crowded.webp"
+    },
+    {
+      "Date": "2026-08-11",
+      "Word": "peaceful",
+      "POS": "adj.",
+      "Meaning": "平靜的；安靜祥和的",
+      "Example": "Reading a novel beside a quiet lake on Sunday morning feels very peaceful.",
+      "Image_URL": "images/vocab/2026-08-11/peaceful.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-08-11",
+      "Type": "MC",
+      "Question": "Which city felt like the most crowded place on Uncle Sam's trip?",
+      "Option_A": "Paris.",
+      "Option_B": "London.",
+      "Option_C": "Berlin.",
+      "Option_D": "Prague.",
+      "Answer": "B",
+      "Explanation": "第一段第二句指出：He started in London, the busy capital of the UK, which felt like the most crowded city on his entire trip。"
+    },
+    {
+      "Date": "2026-08-11",
+      "Type": "MC",
+      "Question": "What was the easiest way to get around in Amsterdam according to the passage?",
+      "Option_A": "Riding a bicycle along the canals.",
+      "Option_B": "Driving a German sports car.",
+      "Option_C": "Taking a crowded underground subway.",
+      "Option_D": "Walking across snowy mountain passes.",
+      "Answer": "A",
+      "Explanation": "第二段第一句提到：in The Netherlands, where riding a bicycle along Amsterdam's canals was the easiest way to get around。"
+    },
+    {
+      "Date": "2026-08-11",
+      "Type": "TFNG",
+      "Question": "Uncle Sam bought chocolate in Belgium before traveling east to Germany.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段第二句寫道：he stopped in Belgium to buy boxes of the most delicious chocolate before heading east into Germany，與題幹相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-08-11",
+      "Type": "TFNG",
+      "Question": "Uncle Sam felt that traveling by car was better than taking trains in Europe.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第三段最後一句明確指出：For Uncle Sam, taking trains was clearly the best way to discover...，與題幹「traveling by car was better」相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-08-11",
+      "Type": "TFNG",
+      "Question": "Uncle Sam stayed in Austria for four nights because of heavy snow.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章只提到整趟旅行共十天以及奧地利山城十分寧靜，並未說明他在奧地利住了幾晚或是否遇上下雪滯留，故為 NOT GIVEN。"
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "70824513b2",
+  "date": "2026-09-08",
+  "lesson": {
+    "Date": "2026-09-08",
+    "Title": "天氣描述與授與動詞",
+    "Grammar_Focus": "天氣四種描述句型（How is / What is...like / It is+adj. / There is+N / We have+N）及授與動詞（to 型 vs for 型，物為代名詞必用介系詞）",
+    "Reading_Title": "A Breezy Autumn Trip to the Coast",
+    "Reading_Passage": "Autumn is my favorite season because the air turns cool and fresh after a long, hot summer. Last Saturday, our class took a one-day vacation to a quiet coastal town. When we got off the bus, someone asked, \"What is the weather like here today?\" It was cloudy and windy near the ocean, and we soon had light rain along the beach path.<br><br>Before walking outside, Maya felt a bit nervous because she had left her thick jacket on the school bus. Thankfully, her friend Leo was kind enough to lend his spare jacket to her, and Ms. Wu bought warm wool gloves for two students whose hands were freezing. Knowing when to borrow or lend simple things made our whole trip much warmer.<br><br>At noon, everyone felt hungry, so we stepped into a cozy seaside café. Sam ordered hot vegetable soup for his younger sister, and our teacher showed colorful old postcards to the class. Before heading back, each student bought a scenic postcard, wrote a short note, and mailed it to their parents. Even with cloudy skies, sharing small gifts made the cool day unforgettable.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-09-08",
+      "Word": "vacation",
+      "POS": "n.",
+      "Meaning": "假期",
+      "Example": "During summer vacation, my cousins and I spent three days riding bikes in Hualien.",
+      "Image_URL": "images/vocab/2026-09-08/vacation.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "season",
+      "POS": "n.",
+      "Meaning": "季節；賽季",
+      "Example": "Mango ice tastes best during the hot summer season in southern Taiwan.",
+      "Image_URL": "images/vocab/2026-09-08/season.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "spring",
+      "POS": "n.",
+      "Meaning": "春天",
+      "Example": "Pink cherry blossoms open across mountain parks every spring.",
+      "Image_URL": "images/vocab/2026-09-08/spring.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "autumn",
+      "POS": "n.",
+      "Meaning": "秋天",
+      "Example": "Dry leaves crunch softly under our sneakers along quiet trails in autumn.",
+      "Image_URL": "images/vocab/2026-09-08/autumn.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "cloudy",
+      "POS": "adj.",
+      "Meaning": "多雲的；陰天的",
+      "Example": "Take a light raincoat because the sky looks dark and cloudy this afternoon.",
+      "Image_URL": "images/vocab/2026-09-08/cloudy.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "windy",
+      "POS": "adj.",
+      "Meaning": "風大的",
+      "Example": "It was so windy at the hilltop that our paper hats nearly flew away.",
+      "Image_URL": "images/vocab/2026-09-08/windy.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "cool",
+      "POS": "adj.",
+      "Meaning": "涼爽的；酷的",
+      "Example": "After a hot afternoon, a cool evening breeze feels wonderful on the balcony.",
+      "Image_URL": "images/vocab/2026-09-08/cool.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "postcard",
+      "POS": "n.",
+      "Meaning": "明信片",
+      "Example": "Uncle Ben always sends a stamp-covered postcard whenever he visits a new city.",
+      "Image_URL": "images/vocab/2026-09-08/postcard.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "borrow",
+      "POS": "v.",
+      "Meaning": "借入",
+      "Example": "May I borrow your green highlighter for a minute to mark this grammar rule?",
+      "Image_URL": "images/vocab/2026-09-08/borrow.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "lend",
+      "POS": "v.",
+      "Meaning": "借出",
+      "Example": "Our English teacher offered to lend two extra dictionaries to students during class.",
+      "Image_URL": "images/vocab/2026-09-08/lend.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "glove",
+      "POS": "n.",
+      "Meaning": "手套",
+      "Example": "Remember to pack warm gloves before hiking up Hehuanshan in winter.",
+      "Image_URL": "images/vocab/2026-09-08/glove.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "jacket",
+      "POS": "n.",
+      "Meaning": "外套；夾克",
+      "Example": "My dad bought a waterproof blue jacket for me before the rainy season started.",
+      "Image_URL": "images/vocab/2026-09-08/jacket.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "nervous",
+      "POS": "adj.",
+      "Meaning": "緊張的；擔憂的",
+      "Example": "Drinking warm water and breathing slowly helps when you feel nervous before a quiz.",
+      "Image_URL": "images/vocab/2026-09-08/nervous.webp"
+    },
+    {
+      "Date": "2026-09-08",
+      "Word": "order",
+      "POS": "v./n.",
+      "Meaning": "點餐；訂購；餐點",
+      "Example": "Let's check the lunch menu quickly so we can order noodles for everyone.",
+      "Image_URL": "images/vocab/2026-09-08/order.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-09-08",
+      "Type": "MC",
+      "Question": "Why did Maya feel nervous before walking outside at the coastal town?",
+      "Option_A": "She lost her train ticket inside the café.",
+      "Option_B": "She had left her thick jacket on the school bus.",
+      "Option_C": "She forgot to bring money for hot vegetable soup.",
+      "Option_D": "She could not find any postcards to mail home.",
+      "Answer": "B",
+      "Explanation": "第二段第一句明確寫道：Maya felt a bit nervous because she had left her thick jacket on the school bus。"
+    },
+    {
+      "Date": "2026-09-08",
+      "Type": "MC",
+      "Question": "What did Ms. Wu buy for two students whose hands were freezing?",
+      "Option_A": "Hot chocolate.",
+      "Option_B": "Colorful postcards.",
+      "Option_C": "Warm wool gloves.",
+      "Option_D": "Spare raincoats.",
+      "Answer": "C",
+      "Explanation": "第二段第二句指出：Ms. Wu bought warm wool gloves for two students whose hands were freezing。"
+    },
+    {
+      "Date": "2026-09-08",
+      "Type": "TFNG",
+      "Question": "The weather at the coastal town was sunny and completely dry all day.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第一段最後一句寫道 It was cloudy and windy near the ocean, and we soon had light rain along the beach path，與題幹「sunny and completely dry」相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-09-08",
+      "Type": "TFNG",
+      "Question": "Students wrote short notes on postcards and mailed them to their parents.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第三段第三句提到 each student bought a scenic postcard, wrote a short note, and mailed it to their parents，與題幹完全相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-09-08",
+      "Type": "TFNG",
+      "Question": "Leo's spare jacket originally belonged to his older brother.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "第二段只說 Leo 把備用外套借給 Maya，並未提及那件外套原本屬於誰，故為 NOT GIVEN。"
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "426e6798c1",
+  "date": "2026-06-30",
+  "lesson": {
+    "Date": "2026-06-30",
+    "Title": "自然災害與應變",
+    "Grammar_Focus": "過去進行式（was/were + V-ing）與 when / while 連接詞用法：when 後接過去簡單式（突發動作），while 後接過去進行式（持續動作）",
+    "Reading_Title": "A Sudden Night on Green Mountain",
+    "Reading_Passage": "Last July, Leo and his parents went camping on Green Mountain for the weekend. On Saturday evening, the weather looked calm and pleasant at first, and Leo was cooking noodles outside the tent while his father was checking the weather report on his phone. However, a strong typhoon was moving toward the coast much faster than anyone expected.<br><br>Suddenly, thick dark clouds covered the moon, and a heavy wind began to blow across the valley. While the giant pine trees were shaking wildly above them, an unexpected earthquake hit the area. The ground moved violently under their feet, and small rocks started rolling down the narrow mountain road. It was a truly terrible and dangerous moment because falling tree branches nearly destroyed their small blue tent.<br><br>Thankfully, a mountain rescue team was already patrolling nearby when the storm broke out. The team noticed the family's bright flashlight signals through the rain and arrived in a sturdy truck within fifteen minutes. Although the storm ruined part of their camp, everyone stayed warm and safe inside the mountain station. Leo realized how important it is to listen to weather warnings before anything serious can happen.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-06-30",
+      "Word": "typhoon",
+      "POS": "n.",
+      "Meaning": "颱風",
+      "Example": "Our school canceled all outdoor clubs because a strong typhoon was coming.",
+      "Image_URL": "images/vocab/2026-06-30/typhoon.webp"
+    },
+    {
+      "Date": "2026-06-30",
+      "Word": "earthquake",
+      "POS": "n.",
+      "Meaning": "地震",
+      "Example": "Every student practiced hiding under a desk during the earthquake drill.",
+      "Image_URL": "images/vocab/2026-06-30/earthquake.webp"
+    },
+    {
+      "Date": "2026-06-30",
+      "Word": "rescue",
+      "POS": "v./n.",
+      "Meaning": "救援；營救",
+      "Example": "Firefighters arrived quickly to rescue the lost hiker from the mountain.",
+      "Image_URL": "images/vocab/2026-06-30/rescue.webp"
+    },
+    {
+      "Date": "2026-06-30",
+      "Word": "suddenly",
+      "POS": "adv.",
+      "Meaning": "突然地",
+      "Example": "We were walking to the bus stop when it suddenly started to rain heavily.",
+      "Image_URL": "images/vocab/2026-06-30/suddenly.webp"
+    },
+    {
+      "Date": "2026-06-30",
+      "Word": "happen",
+      "POS": "v.",
+      "Meaning": "發生",
+      "Example": "Please tell the teacher right away if anything unusual happens in the science lab.",
+      "Image_URL": "images/vocab/2026-06-30/happen.webp"
+    },
+    {
+      "Date": "2026-06-30",
+      "Word": "shake",
+      "POS": "v.",
+      "Meaning": "搖晃；震動",
+      "Example": "The windows began to shake when the heavy truck drove past our house.",
+      "Image_URL": "images/vocab/2026-06-30/shake.webp"
+    },
+    {
+      "Date": "2026-06-30",
+      "Word": "ground",
+      "POS": "n.",
+      "Meaning": "地面；土地",
+      "Example": "After the autumn storm, colorful leaves covered the wet ground in the park.",
+      "Image_URL": "images/vocab/2026-06-30/ground.webp"
+    },
+    {
+      "Date": "2026-06-30",
+      "Word": "destroy",
+      "POS": "v.",
+      "Meaning": "破壞；摧毀",
+      "Example": "The strong river flood destroyed the old wooden bridge near the village.",
+      "Image_URL": "images/vocab/2026-06-30/destroy.webp"
+    },
+    {
+      "Date": "2026-06-30",
+      "Word": "terrible",
+      "POS": "adj.",
+      "Meaning": "可怕的；糟糕的",
+      "Example": "Ben missed the school trip because he caught a terrible cold on Friday.",
+      "Image_URL": "images/vocab/2026-06-30/terrible.webp"
+    },
+    {
+      "Date": "2026-06-30",
+      "Word": "dangerous",
+      "POS": "adj.",
+      "Meaning": "危險的",
+      "Example": "Swimming alone in a deep river after heavy rain is very dangerous.",
+      "Image_URL": "images/vocab/2026-06-30/dangerous.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-06-30",
+      "Type": "MC",
+      "Question": "What was Leo doing on Saturday evening before the storm arrived?",
+      "Option_A": "He was checking the weather report on his phone.",
+      "Option_B": "He was cooking noodles outside the tent.",
+      "Option_C": "He was driving a sturdy truck down the road.",
+      "Option_D": "He was shining a flashlight inside the mountain station.",
+      "Answer": "B",
+      "Explanation": "第一段第二句明確指出：Leo was cooking noodles outside the tent while his father was checking the weather report on his phone。"
+    },
+    {
+      "Date": "2026-06-30",
+      "Type": "MC",
+      "Question": "Why was the moment on the mountain dangerous for the family?",
+      "Option_A": "They forgot to bring any food or water for camping.",
+      "Option_B": "The rescue truck broke down on the narrow road.",
+      "Option_C": "Rocks rolled down and falling branches almost destroyed their tent.",
+      "Option_D": "They lost their flashlights in the deep forest.",
+      "Answer": "C",
+      "Explanation": "第二段末句指出：rocks started rolling down the narrow road... falling branches nearly destroyed their small tent，說明落石與樹枝幾乎摧毀帳篷。"
+    },
+    {
+      "Date": "2026-06-30",
+      "Type": "TFNG",
+      "Question": "The typhoon reached the coast slower than the family expected.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第一段最後一句寫道 a strong typhoon was moving toward the coast faster than anyone expected，與題幹「slower」相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-06-30",
+      "Type": "TFNG",
+      "Question": "The mountain rescue team found the family by seeing their flashlight signals.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第三段第二句提到 The team saw the family's flashlight signals and arrived in a sturdy truck within fifteen minutes，與文意相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-06-30",
+      "Type": "TFNG",
+      "Question": "Leo's mother stayed in the city instead of joining the camping trip.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "第一段只說 Leo and his parents went camping，並未提及媽媽留在城市，文章未提供此資訊，故為 NOT GIVEN。"
+    }
+  ]
+}

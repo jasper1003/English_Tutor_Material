@@ -1,0 +1,184 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "081d928660",
+  "date": "2026-08-04",
+  "lesson": {
+    "Date": "2026-08-04",
+    "Title": "國家與文化亞洲篇",
+    "Grammar_Focus": "七大洲與亞洲主要國家地理詞彙，並運用形容詞比較級比較各國氣候、人口與城市特色",
+    "Reading_Title": "Across Seven Continents in My Notebook",
+    "Reading_Passage": "Last summer, our geography teacher gave the class a fun project called World Map Notes. We learned that our planet has seven major continents: Asia, Europe, Africa, North America, South America, Antarctica, and Oceania. Compared with Europe or Australia, Asia has a much bigger population and some of the busiest modern cities on earth.<br><br>In the second part of the project, each group compared two Asian countries. My partner and I chose Japan and Thailand. We found that Tokyo in Japan has a faster subway network, while Bangkok in Thailand is much hotter all year round and famous for lively street markets. Another group compared Singapore and Vietnam. Even though Singapore is much smaller in land area than Vietnam, Singapore is a busier financial center near the equator.<br><br>Finally, two classmates shared fascinating facts about India and South Korea. India's capital, New Delhi, has a much larger population than Seoul, while South Korea's pop music and dramas are more popular among teenagers across Asia than ever before. Comparing different countries helped us realize that every culture has its own special beauty.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-08-04",
+      "Word": "Asia",
+      "POS": "n.",
+      "Meaning": "亞洲",
+      "Example": "Taiwan is a warm island located in East Asia with delicious night market food.",
+      "Image_URL": "images/vocab/2026-08-04/asia.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "Europe",
+      "POS": "n.",
+      "Meaning": "歐洲",
+      "Example": "Many historic castles and old stone bridges still stand in cities across Europe.",
+      "Image_URL": "images/vocab/2026-08-04/europe.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "Africa",
+      "POS": "n.",
+      "Meaning": "非洲",
+      "Example": "Africa is home to wide grasslands where lions, giraffes, and elephants live.",
+      "Image_URL": "images/vocab/2026-08-04/africa.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "North America",
+      "POS": "n.",
+      "Meaning": "北美洲",
+      "Example": "Both Canada and the United States are large countries in North America.",
+      "Image_URL": "images/vocab/2026-08-04/north_america.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "South America",
+      "POS": "n.",
+      "Meaning": "南美洲",
+      "Example": "The Amazon rainforest in South America produces oxygen for the whole planet.",
+      "Image_URL": "images/vocab/2026-08-04/south_america.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "Antarctica",
+      "POS": "n.",
+      "Meaning": "南極洲",
+      "Example": "Antarctica is much colder than any other continent, and penguins live on its ice.",
+      "Image_URL": "images/vocab/2026-08-04/antarctica.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "Oceania",
+      "POS": "n.",
+      "Meaning": "大洋洲",
+      "Example": "Oceania includes sunny island nations surrounded by clear blue ocean water.",
+      "Image_URL": "images/vocab/2026-08-04/oceania.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "Australia",
+      "POS": "n.",
+      "Meaning": "澳洲",
+      "Example": "Tourists travel to Australia to see kangaroos, koalas, and the Sydney Opera House.",
+      "Image_URL": "images/vocab/2026-08-04/australia.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "Japan",
+      "POS": "n.",
+      "Meaning": "日本",
+      "Example": "High-speed trains in Japan carry travelers quickly from Tokyo to Kyoto.",
+      "Image_URL": "images/vocab/2026-08-04/japan.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "Thailand",
+      "POS": "n.",
+      "Meaning": "泰國",
+      "Example": "Visitors to Thailand enjoy spicy noodle dishes and colorful floating markets.",
+      "Image_URL": "images/vocab/2026-08-04/thailand.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "India",
+      "POS": "n.",
+      "Meaning": "印度",
+      "Example": "India has a long history, rich spices, and over one billion people.",
+      "Image_URL": "images/vocab/2026-08-04/india.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "Vietnam",
+      "POS": "n.",
+      "Meaning": "越南",
+      "Example": "Pho, a warm beef noodle soup from Vietnam, is loved by people around the world.",
+      "Image_URL": "images/vocab/2026-08-04/vietnam.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "South Korea",
+      "POS": "n.",
+      "Meaning": "南韓",
+      "Example": "Many young fans learn simple words from South Korea because of pop music.",
+      "Image_URL": "images/vocab/2026-08-04/south_korea.webp"
+    },
+    {
+      "Date": "2026-08-04",
+      "Word": "Singapore",
+      "POS": "n.",
+      "Meaning": "新加坡",
+      "Example": "Singapore is famous for its clean green gardens and modern glass buildings.",
+      "Image_URL": "images/vocab/2026-08-04/singapore.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-08-04",
+      "Type": "MC",
+      "Question": "Which two countries did the writer and their partner compare in the project?",
+      "Option_A": "Singapore and Vietnam.",
+      "Option_B": "Japan and Thailand.",
+      "Option_C": "India and South Korea.",
+      "Option_D": "Australia and Europe.",
+      "Answer": "B",
+      "Explanation": "第二段第二句明確說明：My partner and I chose Japan and Thailand。"
+    },
+    {
+      "Date": "2026-08-04",
+      "Type": "MC",
+      "Question": "What did the class note about Singapore compared with Vietnam?",
+      "Option_A": "Singapore has a larger land area than Vietnam.",
+      "Option_B": "Singapore is much colder than Japan all year round.",
+      "Option_C": "Singapore is smaller in area, yet it is a busier financial center.",
+      "Option_D": "Singapore has a bigger population than New Delhi.",
+      "Answer": "C",
+      "Explanation": "第二段最後一句指出：Even though Singapore is much smaller in land area than Vietnam, Singapore is a busier financial center near the equator。"
+    },
+    {
+      "Date": "2026-08-04",
+      "Type": "TFNG",
+      "Question": "Asia has a larger population than Europe.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第一段最後一句寫道：Compared with Europe or Australia, Asia has a much bigger population，與題幹完全相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-08-04",
+      "Type": "TFNG",
+      "Question": "Bangkok is colder than Tokyo throughout the year.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第二段第三句指出 Bangkok in Thailand is much hotter all year round，與題幹「colder」矛盾，故為 FALSE。"
+    },
+    {
+      "Date": "2026-08-04",
+      "Type": "TFNG",
+      "Question": "The writer plans to travel to Antarctica during the next winter vacation.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章只介紹地理課的世界地圖報告內容，並未提及作者寒假的旅遊計畫，故為 NOT GIVEN。"
+    }
+  ]
+}

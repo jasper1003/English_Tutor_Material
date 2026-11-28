@@ -1,0 +1,144 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "47c207b2d6",
+  "date": "2026-08-20",
+  "lesson": {
+    "Date": "2026-08-20",
+    "Title": "國家與文化北歐篇",
+    "Grammar_Focus": "比較級與最高級綜合複習（one of the + 最高級 + 複數名詞 / 比較級修飾），搭配北歐五國地理、設計與氣候詞彙",
+    "Reading_Title": "Warm Lights and Simple Design in Northern Europe",
+    "Reading_Passage": "Every winter, freezing winds blow across Northern Europe, yet people in Nordic countries know how to make their homes warm and welcoming. In Finland, families enjoy traditional steam baths called saunas after walking in the snow, while visitors in Norway sail along deep blue fjords between tall mountains. Nearby, travelers head to Iceland to admire green lights dancing across the dark winter sky above icy fields and hot volcanoes.<br><br>Nordic countries are also famous for simple, smart everyday products. Sweden created world-famous furniture stores where buyers choose bright, practical pieces with a simpler design than heavy traditional tables. Even teenagers can easily assemble a new bookshelf at home using just one small tool. Meanwhile, Denmark is the birthplace of colorful building blocks that help children invent new castles, ships, and robots.<br><br>Last month, two classmates from Taipei visited Denmark and Sweden during a school exchange week. They discovered why Denmark is often ranked as one of the happiest nations in the world: people spend more time with family, respect nature, and keep daily life joyful even during the coldest season.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-08-20",
+      "Word": "Denmark",
+      "POS": "n.",
+      "Meaning": "丹麥",
+      "Example": "Colorful harbor houses and wide bike lanes welcome visitors in Denmark.",
+      "Image_URL": "images/vocab/2026-08-20/denmark.webp"
+    },
+    {
+      "Date": "2026-08-20",
+      "Word": "Sweden",
+      "POS": "n.",
+      "Meaning": "瑞典",
+      "Example": "Many parks and clean lakes cover the countryside of Sweden.",
+      "Image_URL": "images/vocab/2026-08-20/sweden.webp"
+    },
+    {
+      "Date": "2026-08-20",
+      "Word": "Norway",
+      "POS": "n.",
+      "Meaning": "挪威",
+      "Example": "Tall waterfalls drop straight into deep blue bays along the coast of Norway.",
+      "Image_URL": "images/vocab/2026-08-20/norway.webp"
+    },
+    {
+      "Date": "2026-08-20",
+      "Word": "Finland",
+      "POS": "n.",
+      "Meaning": "芬蘭",
+      "Example": "Thousands of quiet pine forests and snowy lakes make Finland peaceful in winter.",
+      "Image_URL": "images/vocab/2026-08-20/finland.webp"
+    },
+    {
+      "Date": "2026-08-20",
+      "Word": "Iceland",
+      "POS": "n.",
+      "Meaning": "冰島",
+      "Example": "Tourists soak in warm outdoor pools while snow falls around them in Iceland.",
+      "Image_URL": "images/vocab/2026-08-20/iceland.webp"
+    },
+    {
+      "Date": "2026-08-20",
+      "Word": "assemble",
+      "POS": "v.",
+      "Meaning": "組裝；裝配",
+      "Example": "My brother and I helped assemble our new study desk by following the picture guide.",
+      "Image_URL": "images/vocab/2026-08-20/assemble.webp"
+    },
+    {
+      "Date": "2026-08-20",
+      "Word": "admire",
+      "POS": "v.",
+      "Meaning": "欣賞；讚賞",
+      "Example": "Hikers stopped at the top of the hill to admire the orange sunset.",
+      "Image_URL": "images/vocab/2026-08-20/admire.webp"
+    },
+    {
+      "Date": "2026-08-20",
+      "Word": "simple",
+      "POS": "adj.",
+      "Meaning": "簡約的；簡單的",
+      "Example": "A simple notebook and a black pen are sometimes all you need to take clear notes.",
+      "Image_URL": "images/vocab/2026-08-20/simple.webp"
+    },
+    {
+      "Date": "2026-08-20",
+      "Word": "freezing",
+      "POS": "adj.",
+      "Meaning": "極冷的；冰凍的",
+      "Example": "Put on your thick wool coat and gloves before going out in this freezing wind.",
+      "Image_URL": "images/vocab/2026-08-20/freezing.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-08-20",
+      "Type": "MC",
+      "Question": "Why do people like buying Swedish furniture described in the passage?",
+      "Option_A": "It is made from hot volcanic rocks in Iceland.",
+      "Option_B": "It has a simpler design and customers can easily assemble it at home.",
+      "Option_C": "Every piece comes with a free trip to Denmark.",
+      "Option_D": "It is heavier and darker than traditional European styles.",
+      "Answer": "B",
+      "Explanation": "第二段第二、三句說明：Swedish furniture 有 simpler design than heavy traditional tables，且 teenagers can easily assemble a new bookshelf at home。"
+    },
+    {
+      "Date": "2026-08-20",
+      "Type": "MC",
+      "Question": "What do travelers go to Iceland to admire according to the first paragraph?",
+      "Option_A": "Traditional steam baths inside city malls.",
+      "Option_B": "Colorful plastic building blocks in toy museums.",
+      "Option_C": "Green lights dancing across the dark winter sky.",
+      "Option_D": "Tall office towers beside deep rivers.",
+      "Answer": "C",
+      "Explanation": "第一段最後一句寫道：travelers head to Iceland to admire green lights dancing across the dark winter sky。"
+    },
+    {
+      "Date": "2026-08-20",
+      "Type": "TFNG",
+      "Question": "People in Finland enjoy traditional steam baths called saunas during winter.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第一段第二句明確提到 In Finland, families enjoy traditional steam baths called saunas after walking in the snow，與題幹相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-08-20",
+      "Type": "TFNG",
+      "Question": "Assembling a bookshelf from Sweden requires hiring a professional carpenter.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第二段第三句指出 Even teenagers can easily assemble a new bookshelf at home using just one small tool，不必請專業木匠，故為 FALSE。"
+    },
+    {
+      "Date": "2026-08-20",
+      "Type": "TFNG",
+      "Question": "The two classmates from Taipei bought five boxes of Danish blocks to bring home.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "第三段僅提到台北學生造訪丹麥和瑞典並體會當地幸福感，並未提及他們是否購買積木帶回家，故為 NOT GIVEN。"
+    }
+  ]
+}

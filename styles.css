@@ -3437,6 +3437,51 @@ dialog.settings-dialog.review-dialog {
   flex-wrap: wrap;
 }
 
+.admin-student-search {
+  display: block;
+}
+
+.admin-search-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-search-form label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.admin-search-form input[type="search"] {
+  font: inherit;
+  font-size: max(1rem, 1em);
+  min-height: 44px;
+}
+
+.admin-search-form input[type="search"]:focus-visible,
+.admin-pagination-row button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.admin-pagination-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-block-start: 0.35rem;
+}
+
+@media (pointer: coarse) {
+  .admin-search-form input[type="search"],
+  .admin-search-form .btn,
+  .admin-pagination-row .btn {
+    min-height: 48px;
+  }
+}
+
 /* =========================================================
  * XP Level HUD, Rank-Up Toast, Reading Scaffold & Landlord Note
  * ========================================================= */

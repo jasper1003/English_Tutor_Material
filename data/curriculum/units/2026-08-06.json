@@ -1,0 +1,152 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "32c4ec95fc",
+  "date": "2026-08-06",
+  "lesson": {
+    "Date": "2026-08-06",
+    "Title": "國家與文化非洲篇",
+    "Grammar_Focus": "非洲國家與經濟文化詞彙，搭配比較級與實用片語（be full of / play a role in）對比各國特色與歷史",
+    "Reading_Title": "From Ancient Pyramids to Modern African Cities",
+    "Reading_Passage": "Africa is a vast continent that mixes ancient wonders with fast-growing modern economies. In the northeast, Egypt attracts millions of visitors every year because of its incredible stone pyramids along the Nile River. Built thousands of years ago, these ancient monuments are much older than most capital cities in Europe and Asia. Today, busy markets in Cairo are full of colorful spices, handmade crafts, and curious travelers.<br><br>Further west, Nigeria has a larger population than any other nation on the continent, with more than two hundred million people. Because of its young workforce and lively tech scene, Nigeria plays a major role in Africa's digital and financial growth. Many young builders there create mobile payment tools that help small shop owners handle daily finance more easily.<br><br>At the southern tip of the continent, South Africa is well known for its rich diamond mines and breathtaking national parks. Its modern cities welcome global visitors who want both exciting wildlife trips and strong business networks. Learning about these three countries shows students that Africa is far more diverse and dynamic than a simple textbook map.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-08-06",
+      "Word": "Egypt",
+      "POS": "n.",
+      "Meaning": "埃及",
+      "Example": "Many history fans dream of riding a boat down the Nile River in Egypt.",
+      "Image_URL": "images/vocab/2026-08-06/egypt.webp"
+    },
+    {
+      "Date": "2026-08-06",
+      "Word": "pyramid",
+      "POS": "n.",
+      "Meaning": "金字塔",
+      "Example": "Each stone block in the Great Pyramid weighs more than an average family car.",
+      "Image_URL": "images/vocab/2026-08-06/pyramid.webp"
+    },
+    {
+      "Date": "2026-08-06",
+      "Word": "Nigeria",
+      "POS": "n.",
+      "Meaning": "奈及利亞",
+      "Example": "Lagos in Nigeria is one of the fastest-growing coastal cities in West Africa.",
+      "Image_URL": "images/vocab/2026-08-06/nigeria.webp"
+    },
+    {
+      "Date": "2026-08-06",
+      "Word": "South Africa",
+      "POS": "n.",
+      "Meaning": "南非",
+      "Example": "Travelers visit South Africa to see dramatic coastal cliffs and wild elephants.",
+      "Image_URL": "images/vocab/2026-08-06/south_africa.webp"
+    },
+    {
+      "Date": "2026-08-06",
+      "Word": "finance",
+      "POS": "n.",
+      "Meaning": "金融；財務",
+      "Example": "Our high school invited a bank expert to explain personal finance and saving.",
+      "Image_URL": "images/vocab/2026-08-06/finance.webp"
+    },
+    {
+      "Date": "2026-08-06",
+      "Word": "financial",
+      "POS": "adj.",
+      "Meaning": "金融的；財務的",
+      "Example": "Checking your monthly spending is a smart financial habit for teenagers.",
+      "Image_URL": "images/vocab/2026-08-06/financial.webp"
+    },
+    {
+      "Date": "2026-08-06",
+      "Word": "incredible",
+      "POS": "adj.",
+      "Meaning": "難以置信的；驚人的",
+      "Example": "Seeing the starry night sky over the quiet desert was an incredible experience.",
+      "Image_URL": "images/vocab/2026-08-06/incredible.webp"
+    },
+    {
+      "Date": "2026-08-06",
+      "Word": "ancient",
+      "POS": "adj.",
+      "Meaning": "古老的；遠古的",
+      "Example": "Archaeologists found ancient clay pots buried deep beneath the dry sand.",
+      "Image_URL": "images/vocab/2026-08-06/ancient.webp"
+    },
+    {
+      "Date": "2026-08-06",
+      "Word": "be full of",
+      "POS": "phr.",
+      "Meaning": "充滿著……",
+      "Example": "During the weekend book fair, the city hall is full of students and parents.",
+      "Image_URL": "images/vocab/2026-08-06/be_full_of.webp"
+    },
+    {
+      "Date": "2026-08-06",
+      "Word": "play a role in",
+      "POS": "phr.",
+      "Meaning": "在……中扮演角色",
+      "Example": "Clean public parks play an important role in keeping city life healthy.",
+      "Image_URL": "images/vocab/2026-08-06/play_a_role_in.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-08-06",
+      "Type": "MC",
+      "Question": "Why does Nigeria play a major role in Africa's digital and financial growth?",
+      "Option_A": "It has the oldest stone pyramids along the Nile River.",
+      "Option_B": "It is famous for diamond mines at the southern tip of Africa.",
+      "Option_C": "It has a large young population and a lively tech scene.",
+      "Option_D": "Its spice markets attract more tourists than Europe.",
+      "Answer": "C",
+      "Explanation": "第二段第二句明確指出：Because of its young workforce and lively tech scene, Nigeria plays a major role in Africa's digital and financial growth。"
+    },
+    {
+      "Date": "2026-08-06",
+      "Type": "MC",
+      "Question": "What is South Africa especially well known for according to the passage?",
+      "Option_A": "Mobile payment apps designed in Cairo.",
+      "Option_B": "Rich diamond mines and national parks.",
+      "Option_C": "Having over two hundred million people.",
+      "Option_D": "Ancient monuments older than Asian cities.",
+      "Answer": "B",
+      "Explanation": "第三段第一句說明：South Africa is well known for its rich diamond mines and breathtaking national parks。"
+    },
+    {
+      "Date": "2026-08-06",
+      "Type": "TFNG",
+      "Question": "Egypt's ancient monuments are older than most capital cities in Europe and Asia.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第一段第三句寫道：these ancient monuments are much older than most capital cities in Europe and Asia，與題幹完全相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-08-06",
+      "Type": "TFNG",
+      "Question": "Nigeria has a smaller population than Egypt.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第二段第一句指出 Nigeria has a larger population than any other nation on the continent，既然居全洲之冠，不可能比埃及少，故為 FALSE。"
+    },
+    {
+      "Date": "2026-08-06",
+      "Type": "TFNG",
+      "Question": "Cairo plans to build a new subway line next year.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章只提到開羅的市集與古蹟，並未提及任何開羅明年的地鐵建設計畫，故為 NOT GIVEN。"
+    }
+  ]
+}

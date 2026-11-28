@@ -1,5 +1,5 @@
-import { bi, isEn } from "./i18n.js?v=20261126a";
-import { hasOwnedSofa } from "./shop-catalog.js?v=20261126a";
+import { bi, isEn } from "./i18n.js?v=20261128a";
+import { hasOwnedSofa } from "./shop-catalog.js?v=20261128a";
 
 export const DEFAULT_TV_CHANNEL_VIDEOS = [
   { id: "n61ULEU7CO0", title: "Best of lofi hip hop — beats to relax / study to", author: "Lofi Girl" },
@@ -1533,4 +1533,123 @@ export function buildIeltsStructuredReviewRequest({
     wrongItems,
     sections
   };
+}
+
+/**
+ * Validate a student curriculum lesson Date slug for safe CDN unit URL construction.
+ */
+export function isSafeCurriculumUnitId(dateStr) {
+  return /^[A-Za-z0-9_-]{1,64}$/.test(String(dateStr || "").trim());
+}
+
+/**
+ * Build the deterministic Firestore document ID for a pending reviewQueue item.
+ * Keeps UID prefix explicit before '__' so Security Rules can validate ownership safely.
+ */
+export function toReviewQueueDocId(uid, lessonDate) {
+  const cleanUid = String(uid || "").trim();
+  const safeKey = String(lessonDate || "")
+    .trim()
+    .replace(/[^A-Za-z0-9_-]/g, "_")
+    .slice(0, 64);
+  if (!cleanUid || !safeKey) return "";
+  return `${cleanUid}__${safeKey}`;
+}
+
+/**
+ * Normalize an Admin email search prefix for Firestore case-insensitive prefix range queries.
+ */
+export function normalizeEmailSearchPrefix(raw) {
+  return String(raw || "").trim().toLowerCase().slice(0, 120);
+}
+
+/**
+ * Merge newly loaded student records into the cached paginated list, sorted by email.
+ */
+export function mergeStudentRecordsByUid(existingList = [], incomingList = [], { replace = false } = {}) {
+  const byUid = new Map();
+  if (!replace && Array.isArray(existingList)) {
+    existingList.forEach(item => {
+      if (item && item.uid) byUid.set(item.uid, item);
+    });
+  }
+  if (Array.isArray(incomingList)) {
+    incomingList.forEach(item => {
+      if (item && item.uid) byUid.set(item.uid, item);
+    });
+  }
+  return Array.from(byUid.values()).sort((a, b) =>
+    String(a.email || "").localeCompare(String(b.email || ""))
+  );
+}
+
+/**
+ * Combine realtime reviewQueue documents with any unseen legacy submissions already present
+ * on loaded student profiles, deduplicated by uid::lessonDate and excluding approved units.
+ */
+export function buildMergedPendingReviewItems(queueItems = [], loadedStudents = []) {
+  const studentByUid = new Map();
+  if (Array.isArray(loadedStudents)) {
+    loadedStudents.forEach(stu => {
+      if (stu && stu.uid) studentByUid.set(stu.uid, stu);
+    });
+  }
+
+  const seenKeys = new Set();
+  const merged = [];
+
+  (Array.isArray(queueItems) ? queueItems : []).forEach(entry => {
+    const uid = String(entry?.uid || "").trim();
+    const lessonDate = String(entry?.lessonDate || "").trim();
+    if (!uid || !lessonDate) return;
+    const stu = studentByUid.get(uid) || null;
+    if (stu) {
+      const completed = isLessonCompletedFromMaps(lessonDate, stu.completionOverrides, stu.approvedLessons);
+      const stillSubmitted = Boolean(stu.submittedLessons?.[lessonDate]);
+      if (completed || !stillSubmitted) return;
+    }
+    const dedupeKey = `${uid}::${lessonDate}`;
+    if (seenKeys.has(dedupeKey)) return;
+    seenKeys.add(dedupeKey);
+    merged.push({
+      uid,
+      email: String(entry.email || stu?.email || "").trim().toLowerCase(),
+      displayName: String(entry.displayName || stu?.displayName || stu?.avatar?.name || "").trim(),
+      lessonDate,
+      lessonTitle: String(entry.lessonTitle || lessonDate).trim(),
+      track: entry.track === "ielts" ? "ielts" : "student",
+      submittedAt: Math.max(0, Math.trunc(Number(entry.submittedAt || entry.metrics?.submittedAt || 0))),
+      metrics: entry.metrics || stu?.submissionMetrics?.[lessonDate] || null,
+      studentProfile: stu
+    });
+  });
+
+  if (Array.isArray(loadedStudents)) {
+    loadedStudents.forEach(stu => {
+      if (!stu || !stu.uid) return;
+      const submittedMap = stu.submittedLessons || {};
+      Object.entries(submittedMap).forEach(([lessonDate, isSubmitted]) => {
+        if (!isSubmitted) return;
+        if (isLessonCompletedFromMaps(lessonDate, stu.completionOverrides, stu.approvedLessons)) return;
+        const dedupeKey = `${stu.uid}::${lessonDate}`;
+        if (seenKeys.has(dedupeKey)) return;
+        seenKeys.add(dedupeKey);
+        const metric = stu.submissionMetrics?.[lessonDate] || null;
+        merged.push({
+          uid: stu.uid,
+          email: String(stu.email || "").trim().toLowerCase(),
+          displayName: String(stu.displayName || stu.avatar?.name || "").trim(),
+          lessonDate,
+          lessonTitle: lessonDate,
+          track: lessonDate.startsWith("ielts:") ? "ielts" : "student",
+          submittedAt: Math.max(0, Math.trunc(Number(metric?.submittedAt || 0))),
+          metrics: metric,
+          studentProfile: stu
+        });
+      });
+    });
+  }
+
+  merged.sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+  return merged;
 }

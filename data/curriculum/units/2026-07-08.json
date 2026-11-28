@@ -1,0 +1,152 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "2b86859f80",
+  "date": "2026-07-08",
+  "lesson": {
+    "Date": "2026-07-08",
+    "Title": "糧食與全球分配",
+    "Grammar_Focus": "故事脈絡下的過去式與過去進行式整合（when / while），以及因果連接詞 because / so 的句型應用",
+    "Reading_Title": "Food Drives and Fair Sharing",
+    "Reading_Passage": "Today, the world's population is over eight billion, and global farms actually produce plenty of food for everyone on the planet. However, millions of children and adults still face serious hunger every single day. While large supermarkets in wealthy cities often throw away unsold bread, milk, and fresh fruit, families in remote villages sometimes wait weeks for basic food supplies.<br><br>Last month, Maya joined a student volunteer group in her town to deal with local food waste. During the busy weekend, she visited a neighborhood community kitchen where workers were carefully sorting boxes of fresh vegetables. Several local bakeries had decided to share their extra loaves instead of throwing them into the trash at closing time. Soon, small delivery vans arrived to transport the clean food boxes to elderly neighbors who depend on community meals.<br><br>Maya quickly saw that fairness begins with simple everyday choices. When people buy only what they truly need and share extra resources, much less food goes to waste. By the end of the afternoon, Maya felt truly proud because her small team helped forty families enjoy a warm dinner without spending extra money.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-07-08",
+      "Word": "population",
+      "POS": "n.",
+      "Meaning": "人口",
+      "Example": "The population of our city has grown quickly over the past ten years.",
+      "Image_URL": "images/vocab/2026-07-08/population.webp"
+    },
+    {
+      "Date": "2026-07-08",
+      "Word": "waste",
+      "POS": "v./n.",
+      "Meaning": "浪費；廢棄物",
+      "Example": "Do not waste clean drinking water when you brush your teeth every morning.",
+      "Image_URL": "images/vocab/2026-07-08/waste.webp"
+    },
+    {
+      "Date": "2026-07-08",
+      "Word": "share",
+      "POS": "v./n.",
+      "Meaning": "分享；分配；一份",
+      "Example": "Lily always brings homemade cookies to share with her classmates during break.",
+      "Image_URL": "images/vocab/2026-07-08/share.webp"
+    },
+    {
+      "Date": "2026-07-08",
+      "Word": "produce",
+      "POS": "v.",
+      "Meaning": "生產；製造",
+      "Example": "Sunny farms in southern Taiwan produce sweet pineapples every summer.",
+      "Image_URL": "images/vocab/2026-07-08/produce.webp"
+    },
+    {
+      "Date": "2026-07-08",
+      "Word": "plenty",
+      "POS": "pron./n.",
+      "Meaning": "豐富；充足",
+      "Example": "There is plenty of time to review the unit before the quiz starts.",
+      "Image_URL": "images/vocab/2026-07-08/plenty.webp"
+    },
+    {
+      "Date": "2026-07-08",
+      "Word": "hunger",
+      "POS": "n.",
+      "Meaning": "飢餓",
+      "Example": "Charities around the world work together to fight childhood hunger.",
+      "Image_URL": "images/vocab/2026-07-08/hunger.webp"
+    },
+    {
+      "Date": "2026-07-08",
+      "Word": "transport",
+      "POS": "v.",
+      "Meaning": "運輸；運送",
+      "Example": "Refrigerated trucks transport cold milk safely from the farm to stores.",
+      "Image_URL": "images/vocab/2026-07-08/transport.webp"
+    },
+    {
+      "Date": "2026-07-08",
+      "Word": "fair",
+      "POS": "adj.",
+      "Meaning": "公平的",
+      "Example": "Our coach made a fair rule so every player gets equal time on the court.",
+      "Image_URL": "images/vocab/2026-07-08/fair.webp"
+    },
+    {
+      "Date": "2026-07-08",
+      "Word": "deal with",
+      "POS": "phr.",
+      "Meaning": "處理；應對",
+      "Example": "Making a checklist is a smart way to deal with heavy homework before exams.",
+      "Image_URL": "images/vocab/2026-07-08/deal_with.webp"
+    },
+    {
+      "Date": "2026-07-08",
+      "Word": "depend on",
+      "POS": "phr.",
+      "Meaning": "取決於；依靠",
+      "Example": "Many mountain villages depend on rain to water their rice fields.",
+      "Image_URL": "images/vocab/2026-07-08/depend_on.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-07-08",
+      "Type": "MC",
+      "Question": "Why did Maya join the student volunteer group last month?",
+      "Option_A": "To build a new supermarket in a remote village.",
+      "Option_B": "To help deal with local food waste in her town.",
+      "Option_C": "To learn how to bake fresh bread at a local bakery.",
+      "Option_D": "To count the total population of her community.",
+      "Answer": "B",
+      "Explanation": "第二段第一句提到 Maya joined a student volunteer group in her town to deal with local food waste，明確說明參加目的是處理當地食物浪費問題。"
+    },
+    {
+      "Date": "2026-07-08",
+      "Type": "MC",
+      "Question": "How did the local bakeries support the community kitchen?",
+      "Option_A": "They drove big trucks across the country.",
+      "Option_B": "They sold bread at half price to students.",
+      "Option_C": "They shared their extra loaves instead of throwing them away.",
+      "Option_D": "They donated money to build new farms.",
+      "Answer": "C",
+      "Explanation": "第二段第三句提到 Some local bakeries had decided to share their extra loaves instead of throwing them into the trash。"
+    },
+    {
+      "Date": "2026-07-08",
+      "Type": "TFNG",
+      "Question": "Global farms currently fail to produce enough food for the world's population.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第一段第一句指出 global farms actually produce plenty of food for everyone，與題幹「fail to produce enough」矛盾，故為 FALSE。"
+    },
+    {
+      "Date": "2026-07-08",
+      "Type": "TFNG",
+      "Question": "Some elderly neighbors rely on community meals for their food.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第二段最後一句寫道 elderly neighbors who depend on community meals（depend on 即 rely on），與文意相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-07-08",
+      "Type": "TFNG",
+      "Question": "Maya plans to study agriculture at university next year.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "文章僅說明 Maya 當週末志工的經歷與感受，並未提及她明年大學的科系規劃，故為 NOT GIVEN。"
+    }
+  ]
+}

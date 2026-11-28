@@ -1,0 +1,168 @@
+{
+  "exportedAt": "2026-11-28T06:22:04.176373+00:00",
+  "hash": "d0b1d84c7c",
+  "date": "2026-07-28",
+  "lesson": {
+    "Date": "2026-07-28",
+    "Title": "職業與生活進階",
+    "Grammar_Focus": "進階職業單字辨識（會計師、建築師、飛行員等）與過去進行式／未來式綜合句型練習",
+    "Reading_Title": "Busy Morning on River Street",
+    "Reading_Passage": "Every weekday morning, River Street wakes up early with people from many different professions. At seven o'clock, a friendly postman rides his green scooter past the corner bakery, while a hardworking janitor sweeps fallen leaves off the library steps. Inside the glass office tower across the street, an accountant is already checking numbers on two screens before the morning meeting begins.<br><br>Not far away, a skilled mechanic opens his garage early to repair a neighborhood bus. Down the block, a young architect meets a builder to review drawings for a bright new community gym. Meanwhile, at the local salon, a hairdresser prepares clean combs and warm towels for her first customer of the day. Even a busy dentist across the square greets students who come for checkups before school.<br><br>Life on River Street is not always quiet. Yesterday afternoon, when smoke suddenly rose from a kitchen roof, brave firefighters arrived in minutes and put out the fire safely. Later that evening, a local musician played gentle guitar songs in the park, while a photographer captured warm smiles of neighbors sitting together. From a pilot flying high above to a flight attendant serving travelers, every worker helps keep the community moving.",
+    "XP": "40"
+  },
+  "vocab": [
+    {
+      "Date": "2026-07-28",
+      "Word": "accountant",
+      "POS": "n.",
+      "Meaning": "會計師",
+      "Example": "My aunt works as an accountant and helps small shops organize their tax records.",
+      "Image_URL": "images/vocab/2026-07-28/accountant.webp"
+    },
+    {
+      "Date": "2026-07-28",
+      "Word": "photographer",
+      "POS": "n.",
+      "Meaning": "攝影師",
+      "Example": "A wildlife photographer waited quietly for hours to take a clear photo of the eagle.",
+      "Image_URL": "images/vocab/2026-07-28/photographer.webp"
+    },
+    {
+      "Date": "2026-07-28",
+      "Word": "musician",
+      "POS": "n.",
+      "Meaning": "音樂家；樂手",
+      "Example": "The street musician played cheerful violin melodies near the subway exit.",
+      "Image_URL": "images/vocab/2026-07-28/musician.webp"
+    },
+    {
+      "Date": "2026-07-28",
+      "Word": "dentist",
+      "POS": "n.",
+      "Meaning": "牙醫",
+      "Example": "Visiting a dentist every six months keeps your teeth healthy and strong.",
+      "Image_URL": "images/vocab/2026-07-28/dentist.webp"
+    },
+    {
+      "Date": "2026-07-28",
+      "Word": "pilot",
+      "POS": "n.",
+      "Meaning": "飛行員",
+      "Example": "The experienced pilot landed the airplane smoothly despite the strong wind.",
+      "Image_URL": "images/vocab/2026-07-28/pilot.webp"
+    },
+    {
+      "Date": "2026-07-28",
+      "Word": "flight attendant",
+      "POS": "n.",
+      "Meaning": "空服員",
+      "Example": "A polite flight attendant offered warm blankets to passengers on the night flight.",
+      "Image_URL": "images/vocab/2026-07-28/flight_attendant.webp"
+    },
+    {
+      "Date": "2026-07-28",
+      "Word": "postman",
+      "POS": "n.",
+      "Meaning": "郵差",
+      "Example": "Our neighborhood postman always greets everyone with a big smile when delivering letters.",
+      "Image_URL": "images/vocab/2026-07-28/postman.webp"
+    },
+    {
+      "Date": "2026-07-28",
+      "Word": "hairdresser",
+      "POS": "n.",
+      "Meaning": "美髮師；理髮師",
+      "Example": "Leo asked his hairdresser for a neat, short haircut before school picture day.",
+      "Image_URL": "images/vocab/2026-07-28/hairdresser.webp"
+    },
+    {
+      "Date": "2026-07-28",
+      "Word": "firefighter",
+      "POS": "n.",
+      "Meaning": "消防員",
+      "Example": "Every firefighter wears heavy heatproof gear before entering a burning house.",
+      "Image_URL": "images/vocab/2026-07-28/firefighter.webp"
+    },
+    {
+      "Date": "2026-07-28",
+      "Word": "janitor",
+      "POS": "n.",
+      "Meaning": "清潔管理員；工友",
+      "Example": "The school janitor checks all classroom doors and turns off lights every evening.",
+      "Image_URL": "images/vocab/2026-07-28/janitor.webp"
+    },
+    {
+      "Date": "2026-07-28",
+      "Word": "mechanic",
+      "POS": "n.",
+      "Meaning": "技師；技工",
+      "Example": "The bike mechanic fixed my flat tire and oiled the chain in ten minutes.",
+      "Image_URL": "images/vocab/2026-07-28/mechanic.webp"
+    },
+    {
+      "Date": "2026-07-28",
+      "Word": "architect",
+      "POS": "n.",
+      "Meaning": "建築師",
+      "Example": "A creative architect designed our new library with huge windows for natural sunlight.",
+      "Image_URL": "images/vocab/2026-07-28/architect.webp"
+    }
+  ],
+  "quiz": [
+    {
+      "Date": "2026-07-28",
+      "Type": "MC",
+      "Question": "Why did the young architect meet a builder on River Street?",
+      "Option_A": "To repair a broken neighborhood bus.",
+      "Option_B": "To review drawings for a new community gym.",
+      "Option_C": "To check financial numbers on two screens.",
+      "Option_D": "To clean fallen leaves off the library steps.",
+      "Answer": "B",
+      "Explanation": "第二段第二句指出：a young architect meets a builder to review drawings for a bright new community gym。"
+    },
+    {
+      "Date": "2026-07-28",
+      "Type": "MC",
+      "Question": "What happened yesterday afternoon when smoke rose from a kitchen roof?",
+      "Option_A": "A pilot landed a helicopter on the square.",
+      "Option_B": "Neighbors played guitar songs in the rain.",
+      "Option_C": "Firefighters arrived quickly and put out the fire safely.",
+      "Option_D": "The accountant closed the glass office tower for a week.",
+      "Answer": "C",
+      "Explanation": "第三段第二句寫道：when smoke suddenly rose from a kitchen roof, brave firefighters arrived in minutes and put out the fire safely。"
+    },
+    {
+      "Date": "2026-07-28",
+      "Type": "TFNG",
+      "Question": "The accountant checks numbers before the morning meeting begins.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "TRUE",
+      "Explanation": "第一段最後一句提到 an accountant is already checking numbers on two screens before the morning meeting begins，與題幹相符，故為 TRUE。"
+    },
+    {
+      "Date": "2026-07-28",
+      "Type": "TFNG",
+      "Question": "Yesterday afternoon, firefighters needed several hours to reach the kitchen fire.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "FALSE",
+      "Explanation": "第三段第二句指出 brave firefighters arrived in minutes and put out the fire safely，數分鐘即抵達，與題幹「several hours」相反，故為 FALSE。"
+    },
+    {
+      "Date": "2026-07-28",
+      "Type": "TFNG",
+      "Question": "The local musician has lived on River Street for over twenty years.",
+      "Option_A": "TRUE",
+      "Option_B": "FALSE",
+      "Option_C": "NOT GIVEN",
+      "Option_D": "-",
+      "Answer": "NOT GIVEN",
+      "Explanation": "第三段僅提到當晚有位音樂家在公園彈吉他，並未交代他在這條街住了多久，故為 NOT GIVEN。"
+    }
+  ]
+}
